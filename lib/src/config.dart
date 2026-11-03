@@ -18,6 +18,8 @@ enum TypeScriptHttpAdapter { fetch, axios, none }
 
 enum PersistedQueriesMode { off, apq }
 
+enum JavaRestHttpAdapter { jdk, none }
+
 enum JavaWsAdapter { java11, okhttp, none }
 
 /// Async style for the generated Java client. `blocking` keeps the existing
@@ -614,6 +616,9 @@ class JavaClientConfig extends ClientLanguageConfig {
   final JavaJsonCodec jsonCodec;
   final JavaAsyncStyle asyncStyle;
   final JavaReactiveHttpClient reactiveHttpClient;
+  final JavaRestHttpAdapter restHttpAdapter;
+  final RestQueryListStyle queryListStyle;
+  final RestFormNesting formNesting;
   @override final AutoGenerateQueriesFor? autoGenerateQueriesFor;
 
   JavaClientConfig({
@@ -635,6 +640,9 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.jsonCodec = JavaJsonCodec.jackson,
     this.asyncStyle = JavaAsyncStyle.blocking,
     this.reactiveHttpClient = JavaReactiveHttpClient.jdk,
+    this.restHttpAdapter = JavaRestHttpAdapter.jdk,
+    this.queryListStyle = RestQueryListStyle.repeat,
+    this.formNesting = RestFormNesting.dot,
     this.defaultAlias,
     this.autoGenerateQueriesFor,
     this.autoGenerateQueriesArgumentLimit = 200,
@@ -674,6 +682,9 @@ class JavaClientConfig extends ClientLanguageConfig {
         (e) => e.name == json['reactiveHttpClient'],
         orElse: () => JavaReactiveHttpClient.jdk,
       ),
+      restHttpAdapter: _enumFromJson(JavaRestHttpAdapter.values, json['restHttpAdapter'], JavaRestHttpAdapter.jdk),
+      queryListStyle: _enumFromJson(RestQueryListStyle.values, json['queryListStyle'], RestQueryListStyle.repeat),
+      formNesting: _enumFromJson(RestFormNesting.values, json['formNesting'], RestFormNesting.dot),
       autoGenerateQueriesFor: json['autoGenerateQueriesFor'] != null
           ? AutoGenerateQueriesFor.fromJson(json['autoGenerateQueriesFor'] as Map<String, dynamic>)
           : null,

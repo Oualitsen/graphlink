@@ -185,6 +185,8 @@ enum GraphLinkAckStatus ${glInternal} {none progress acknoledged }
 /// Imported by both the client and adapter files — no circular dependency.
 const dartUploadsFile = """
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 typedef UploadProgressCallback = void Function(int sent, int total);
@@ -217,6 +219,90 @@ class GLUpload {
       mimeType: mimeType,
     );
   }
+
+}
+class GLMultipartPart {
+  const GLMultipartPart.text(this.name, String this.value, {this.mimeType}) : file = null;
+  const GLMultipartPart.file(this.name, GLUpload this.file) : value = null, mimeType = null;
+
+  final String name;
+  final String? value;
+  final String? mimeType;
+  final GLUpload? file;
+}
+
+class GLMultipartBody {
+  GLMultipartBody._(this.contentType, this.length, this.stream);
+
+  final String contentType;
+  final int? length;
+  final Stream<List<int>> stream;
+
+  factory GLMultipartBody.of(Map<String, Object> parts) {
+    return GLMultipartBody.parts([
+      for (final entry in parts.entries)
+        entry.value is GLUpload
+            ? GLMultipartPart.file(entry.key, entry.value as GLUpload)
+            : GLMultipartPart.text(entry.key, entry.value as String),
+    ]);
+  }
+
+  factory GLMultipartBody.parts(List<GLMultipartPart> parts) {
+    final random = Random.secure();
+    final boundary = 'graphlink-' + List.generate(24, (_) => random.nextInt(16).toRadixString(16)).join();
+    final segments = <Object>[];
+    int? length = 0;
+    void addBytes(List<int> bytes) {
+      segments.add(bytes);
+      if (length != null) length = length! + bytes.length;
+    }
+
+    for (final part in parts) {
+      final file = part.file;
+      var head = '--' + boundary + '\\r\\nContent-Disposition: form-data; name="' + _quote(part.name) + '"';
+      if (file != null) {
+        head += '; filename="' + _quote(file.filename ?? part.name) + '"\\r\\nContent-Type: ' + file.mimeType;
+      } else if (part.mimeType != null) {
+        head += '\\r\\nContent-Type: ' + part.mimeType!;
+      }
+      addBytes(utf8.encode(head + '\\r\\n\\r\\n'));
+      if (file == null) {
+        addBytes(utf8.encode(part.value!));
+      } else {
+        segments.add(file);
+        length = file.length == null || length == null ? null : length! + file.length!;
+      }
+      addBytes(const [13, 10]);
+    }
+    addBytes(utf8.encode('--' + boundary + '--\\r\\n'));
+
+    Stream<List<int>> chunks() async* {
+      for (final segment in segments) {
+        if (segment is GLUpload) {
+          yield* segment.stream;
+        } else {
+          yield segment as List<int>;
+        }
+      }
+    }
+
+    return GLMultipartBody._('multipart/form-data; boundary=' + boundary, length, chunks());
+  }
+
+  Stream<List<int>> withProgress(UploadProgressCallback? onProgress) => glUploadProgress(stream, length, onProgress);
+
+  static String _quote(String value) =>
+      value.replaceAll('"', '%22').replaceAll('\\r', '%0D').replaceAll('\\n', '%0A');
+}
+
+Stream<List<int>> glUploadProgress(Stream<List<int>> source, int? total, UploadProgressCallback? onProgress) {
+  if (onProgress == null || total == null || total == 0) return source;
+  var sent = 0;
+  return source.map((chunk) {
+    sent += chunk.length;
+    onProgress(sent, total);
+    return chunk;
+  });
 }
 """;
 

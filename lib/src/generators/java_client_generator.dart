@@ -29,7 +29,11 @@ Future<Set<String>> generateJavaClientClasses(
   );
   final flavor = JavaReactiveFlavor.of(javaConfig.asyncStyle);
   final clientSerializer = JavaClientSerializer(parser, serializer,
-      jsonCodec: jsonCodec, flavor: flavor);
+      jsonCodec: jsonCodec,
+      flavor: flavor,
+      restHttpAdapter: javaConfig.restHttpAdapter,
+      commaQueryLists: javaConfig.queryListStyle == RestQueryListStyle.comma,
+      bracketFormNesting: javaConfig.formNesting == RestFormNesting.bracket);
   final futures = <Future<File>>[];
   final destinationDir = config.outputDir;
   final packageName = javaConfig.packageName;
@@ -145,7 +149,7 @@ Future<Set<String>> generateJavaClientClasses(
     packageName: packageName,
   ));
 
-  if (parser.hasUploadMutations) {
+  if (parser.hasUploadMutations || clientSerializer.hasRest) {
     for (final entry in {
       'GLUpload.java': clientSerializer.generateUploadsFile(),
       'UploadProgressCallback.java': clientSerializer.generateUploadProgressCallbackFile(),
@@ -159,6 +163,22 @@ Future<Set<String>> generateJavaClientClasses(
         packageName: packageName,
       ));
     }
+  }
+
+  if (clientSerializer.hasRest) {
+    for (final entry in clientSerializer.generateRestFiles().entries) {
+      futures.add(writeToFile(
+        data: serializer.serializeGlClass(entry.value),
+        fileName: entry.key,
+        subdir: 'client',
+        imports: [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+  }
+
+  if (parser.hasUploadMutations) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.generateMultipartAdapterFile(prefix)),
       fileName: 'GraphLinkMultipartAdapter.java',

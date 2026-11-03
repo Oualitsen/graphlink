@@ -3,7 +3,6 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
 

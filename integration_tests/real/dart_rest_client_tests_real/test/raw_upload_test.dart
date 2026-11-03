@@ -72,12 +72,11 @@ void main() {
       }
     });
 
-    test('progress with an unknown length reports -1 for the total', () async {
-      final reports = <List<int>>[];
-      await client.mutations.eRaw(file: uploadOf(pattern(40000), knownLength: false), onProgress: (s, t) => reports.add([s, t]));
-      expect(reports, isNotEmpty);
-      expect(reports.every((r) => r[1] == -1 || r[1] == 40000), isTrue);
-      expect(reports.last[0], 40000);
+    test('progress is not reported when the length is unknown', () async {
+      var calls = 0;
+      final e = await client.mutations.eRaw(file: uploadOf(pattern(40000), knownLength: false), onProgress: (_, __) => calls++);
+      expect(e.bodySize, 40000);
+      expect(calls, 0);
     });
 
     test('a stream that fails mid-way fails the call and does not hang', () async {

@@ -243,7 +243,9 @@ class GoSerializer extends GLSerializer {
       iface?.interfaceNames.forEach((n) => visit(n.token));
     }
 
-    def.interfaceNames.forEach((n) => visit(n.token));
+    for (var n in def.interfaceNames) {
+      visit(n.token);
+    }
     return result;
   }
 
@@ -293,11 +295,10 @@ class GoSerializer extends GLSerializer {
     } else if (declaredType == '*$ownType') {
       body = 'copied := $accessor\nreturn &copied';
     } else if (ownType == '*$declaredType') {
-      body = codeGenUtils.ifStatement(
+      body = '${codeGenUtils.ifStatement(
             condition: '$accessor == nil',
             ifBlockStatements: ['var zero $declaredType', 'return zero'],
-          ) +
-          '\nreturn *$accessor';
+          )}\nreturn *$accessor';
     } else {
       body = 'return $accessor';
     }

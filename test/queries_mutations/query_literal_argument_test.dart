@@ -90,7 +90,7 @@ void main() {
         type Query { search(name: String!, limit: Int!): [User!]!  byFilter(f: Filter!): [User!]! }
         input Filter { a: String! b: String! }
         type User { id: ID! }
-      ''' + '\n$operation');
+      ''' '\n$operation');
       final query = g.queries.values.first;
       return GLGraphqlSerializer(g, escapeDolar).serializeQueryDefinition(query);
     }

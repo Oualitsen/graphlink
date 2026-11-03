@@ -74,14 +74,29 @@ void main() {
       final out = _serializer(_schema).generateDioAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
-      expect(out, contains('FormData.fromMap'));
+    });
+
+    test('dio adapter streams a GLMultipartBody and never buffers a file', () {
+      final out = _serializer(_schema).generateDioAdapterFile().toFileContent();
+      expect(out, contains('GLMultipartBody.of(parts)'));
+      expect(out, contains('body.withProgress(onProgress)'));
+      expect(out, isNot(contains('FormData')));
+      expect(out, isNot(contains('u.length ?? 0')));
     });
 
     test('http adapter imports graph_link_uploads.dart', () {
       final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
-      expect(out, contains('MultipartRequest'));
+    });
+
+    test('http adapter streams a GLMultipartBody and never buffers a file', () {
+      final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile().toFileContent();
+      expect(out, contains('GLMultipartBody.of(parts)'));
+      expect(out, contains('class _GLStreamedRequest extends http.BaseRequest'));
+      expect(out, isNot(contains('toBytes()')));
+      expect(out, isNot(contains('MultipartFile')));
+      expect(out, isNot(contains('u.length ?? 0')));
     });
   });
 

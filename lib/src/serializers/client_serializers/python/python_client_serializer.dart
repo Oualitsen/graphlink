@@ -132,7 +132,7 @@ class PythonClientSerializer extends GLClientSerializer {
 
   GLClassModel? generateRestHttpxAdapterFile() {
     if (!_restViaHttp) return null;
-    return GLClassModel(
+    return const GLClassModel(
       imports: [
         'import inspect',
         'from typing import Any, AsyncIterator, Callable, Dict, Optional',
@@ -260,7 +260,7 @@ class PythonClientSerializer extends GLClientSerializer {
     final persisted = _parser.persistedQueries;
     final useGet = _parser.persistedQueriesUseGet;
     final cg = codeGenUtils;
-    final fromJsonType = 'Callable[[Dict[str, Any]], TFull]';
+    const fromJsonType = 'Callable[[Dict[str, Any]], TFull]';
 
     return cg.createClass(className: _resolverBaseClassName, statements: [
       cg.createMethod(
@@ -841,7 +841,7 @@ class PythonClientSerializer extends GLClientSerializer {
     final cg = codeGenUtils;
     final hasUploads = _parser.hasMutations && _parser.hasUploadMutations;
     final hasSubs = _parser.hasSubscriptions;
-    final headersType = 'Optional[Callable[[], Awaitable[Optional[Dict[str, str]]]]]';
+    const headersType = 'Optional[Callable[[], Awaitable[Optional[Dict[str, str]]]]]';
     return cg.createMethod(
       decorators: ['@classmethod'],
       methodName: 'with_http',

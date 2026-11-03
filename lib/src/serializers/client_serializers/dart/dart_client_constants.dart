@@ -600,6 +600,13 @@ class RestPart {
 class RestMultipartBody extends RestBody {
   final List<RestPart> parts;
   const RestMultipartBody(this.parts);
+
+  GLMultipartBody toBody() => GLMultipartBody.parts([
+        for (final part in parts)
+          part.file == null
+              ? GLMultipartPart.text(part.name, part.value!, mimeType: part.mimeType)
+              : GLMultipartPart.file(part.name, part.file!),
+      ]);
 }
 
 class RestRawBody extends RestBody {
@@ -857,7 +864,7 @@ class GraphLinkRestHttpAdapter {
 
   Future<RestResponse> call(RestRequest request) async {
     final headers = <String, String>{...?await headersProvider?.call(), ...request.headers};
-    final outgoing = await _build(request, _uri(request), headers);
+    final outgoing = _build(request, _uri(request), headers);
     final response = await outgoing.send();
     return RestResponse(status: response.statusCode, headers: response.headers, stream: response.stream);
   }
@@ -869,7 +876,7 @@ class GraphLinkRestHttpAdapter {
     return base.replace(path: '$path${request.path}', query: query.isEmpty ? null : query);
   }
 
-  Future<http.BaseRequest> _build(RestRequest request, Uri uri, Map<String, String> headers) async {
+  http.BaseRequest _build(RestRequest request, Uri uri, Map<String, String> headers) {
     final body = request.body;
     if (body is RestMultipartBody) return _multipart(request, body, uri, headers);
     if (body is RestRawBody) return _raw(request, body, uri, headers);
@@ -881,65 +888,31 @@ class GraphLinkRestHttpAdapter {
     return outgoing;
   }
 
-  Future<http.BaseRequest> _multipart(RestRequest request, RestMultipartBody body, Uri uri, Map<String, String> headers) async {
-    final outgoing = http.MultipartRequest(request.method, uri)..headers.addAll(headers);
-    for (final part in body.parts) {
-      final file = part.file;
-      if (file == null) {
-        final mimeType = part.mimeType;
-        outgoing.files.add(http.MultipartFile.fromString(part.name, part.value!,
-            contentType: mimeType == null ? null : MediaType.parse(mimeType)));
-      } else {
-        final length = file.length;
-        final contentType = MediaType.parse(file.mimeType);
-        outgoing.files.add(length == null
-            ? http.MultipartFile.fromBytes(part.name, await _readAll(file.stream), filename: file.filename, contentType: contentType)
-            : http.MultipartFile(part.name, file.stream, length, filename: file.filename, contentType: contentType));
-      }
-    }
-    final onProgress = request.onSendProgress;
-    if (onProgress == null) return outgoing;
-    final bytes = await outgoing.finalize().toBytes();
-    final counted = http.StreamedRequest(request.method, uri)
+  http.BaseRequest _multipart(RestRequest request, RestMultipartBody body, Uri uri, Map<String, String> headers) {
+    final multipart = body.toBody();
+    return _GLRestStreamedRequest(request.method, uri, multipart.withProgress(request.onSendProgress))
       ..headers.addAll(headers)
-      ..headers['content-type'] = outgoing.headers['content-type']!
-      ..contentLength = bytes.length;
-    const chunkSize = 8192;
-    final chunks = [
-      for (var i = 0; i < bytes.length; i += chunkSize) bytes.sublist(i, i + chunkSize > bytes.length ? bytes.length : i + chunkSize),
-    ];
-    _pipe(counted, Stream.fromIterable(chunks), bytes.length, onProgress);
-    return counted;
+      ..headers['content-type'] = multipart.contentType
+      ..contentLength = multipart.length;
   }
 
   http.BaseRequest _raw(RestRequest request, RestRawBody body, Uri uri, Map<String, String> headers) {
-    final outgoing = http.StreamedRequest(request.method, uri)..headers.addAll(headers);
     final length = body.upload.length;
-    if (length != null) outgoing.contentLength = length;
-    _pipe(outgoing, body.upload.stream, length, request.onSendProgress);
-    return outgoing;
+    return _GLRestStreamedRequest(request.method, uri, glUploadProgress(body.upload.stream, length, request.onSendProgress))
+      ..headers.addAll(headers)
+      ..contentLength = length;
   }
+}
 
-  void _pipe(http.StreamedRequest outgoing, Stream<List<int>> source, int? total, UploadProgressCallback? onProgress) {
-    var sent = 0;
-    source.listen(
-      (chunk) {
-        sent += chunk.length;
-        outgoing.sink.add(chunk);
-        onProgress?.call(sent, total ?? -1);
-      },
-      onError: outgoing.sink.addError,
-      onDone: outgoing.sink.close,
-      cancelOnError: true,
-    );
-  }
+class _GLRestStreamedRequest extends http.BaseRequest {
+  final Stream<List<int>> _stream;
 
-  Future<List<int>> _readAll(Stream<List<int>> stream) async {
-    final builder = BytesBuilder(copy: false);
-    await for (final chunk in stream) {
-      builder.add(chunk);
-    }
-    return builder.takeBytes();
+  _GLRestStreamedRequest(String method, Uri url, this._stream) : super(method, url);
+
+  @override
+  http.ByteStream finalize() {
+    super.finalize();
+    return http.ByteStream(_stream);
   }
 }
 ''';
@@ -955,18 +928,19 @@ class GraphLinkRestDioAdapter {
   Future<RestResponse> call(RestRequest request) async {
     final headers = <String, String>{...?await headersProvider?.call(), ...request.headers};
     final body = request.body;
-    final upload = body is RestRawBody ? body.upload : null;
-    if (upload?.length != null) headers['Content-Length'] = '${upload!.length}';
+    final multipart = body is RestMultipartBody ? body.toBody() : null;
+    final length = multipart != null ? multipart.length : (body is RestRawBody ? body.upload.length : null);
+    if (multipart != null) headers['Content-Type'] = multipart.contentType;
+    if (length != null) headers['Content-Length'] = '$length';
     final response = await dio.request<ResponseBody>(
       _uri(request).toString(),
-      data: await _data(body, request.onSendProgress),
+      data: multipart != null ? multipart.withProgress(request.onSendProgress) : _data(body, request.onSendProgress),
       options: Options(
         method: request.method,
         headers: headers,
         responseType: ResponseType.stream,
         validateStatus: (_) => true,
       ),
-      onSendProgress: body is RestMultipartBody ? request.onSendProgress : null,
     );
     return RestResponse(
       status: response.statusCode ?? 0,
@@ -982,57 +956,13 @@ class GraphLinkRestDioAdapter {
     return base.replace(path: '$path${request.path}', query: query.isEmpty ? null : query);
   }
 
-  Future<Object?> _data(RestBody? body, UploadProgressCallback? onProgress) async {
+  Object? _data(RestBody? body, UploadProgressCallback? onProgress) {
     if (body is RestJsonBody) return body.json;
     if (body is RestFormBody) {
       return body.fields.map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}').join('&');
     }
-    if (body is RestRawBody) return _counted(body.upload.stream, body.upload.length, onProgress);
-    if (body is RestMultipartBody) return _form(body);
+    if (body is RestRawBody) return glUploadProgress(body.upload.stream, body.upload.length, onProgress);
     return null;
-  }
-
-  Stream<List<int>> _counted(Stream<List<int>> source, int? total, UploadProgressCallback? onProgress) {
-    if (onProgress == null) return source;
-    var sent = 0;
-    return source.map((chunk) {
-      sent += chunk.length;
-      onProgress(sent, total ?? -1);
-      return chunk;
-    });
-  }
-
-  Future<FormData> _form(RestMultipartBody body) async {
-    final form = FormData();
-    for (final part in body.parts) {
-      final file = part.file;
-      if (file == null) {
-        final mimeType = part.mimeType;
-        if (mimeType == null) {
-          form.fields.add(MapEntry(part.name, part.value!));
-        } else {
-          form.files.add(MapEntry(part.name, MultipartFile.fromString(part.value!, contentType: MediaType.parse(mimeType))));
-        }
-      } else {
-        final length = file.length;
-        final contentType = MediaType.parse(file.mimeType);
-        form.files.add(MapEntry(
-          part.name,
-          length == null
-              ? MultipartFile.fromBytes(await _readAll(file.stream), filename: file.filename, contentType: contentType)
-              : MultipartFile.fromStream(() => file.stream, length, filename: file.filename, contentType: contentType),
-        ));
-      }
-    }
-    return form;
-  }
-
-  Future<List<int>> _readAll(Stream<List<int>> stream) async {
-    final builder = BytesBuilder(copy: false);
-    await for (final chunk in stream) {
-      builder.add(chunk);
-    }
-    return builder.takeBytes();
   }
 }
 ''';

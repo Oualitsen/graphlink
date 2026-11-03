@@ -1,9 +1,17 @@
 import 'dart:io';
 
-const _testPackagePath = 'client-app/src/test/java/dev/graphlink/test';
-const _generatedPath = 'client-app/src/test/generated/java/dev/graphlink/test';
-const _blocking = 'java_client_tests_real';
-const _reactive = 'java_client_tests_reactor_real';
+class _Suite {
+  final String blocking;
+  final String reactive;
+  final String package;
+
+  const _Suite(this.blocking, this.reactive, this.package);
+}
+
+const _suites = [
+  _Suite('java_client_tests_real', 'java_client_tests_reactor_real', 'dev/graphlink/test'),
+  _Suite('java_rest_client_tests_real', 'java_rest_reactor_client_tests_real', 'dev/graphlink/rest'),
+];
 
 // The reactive suite runs the same tests as the blocking one: every
 // `client.queries.x(...)` / `client.mutations.x(...)` returns a Mono, so the
@@ -11,9 +19,15 @@ const _reactive = 'java_client_tests_reactor_real';
 // counterpart in the reactive suite (adapters, subscriptions) are not derived.
 void main() {
   final root = File.fromUri(Platform.script).parent.path;
-  final source = Directory('$root/$_blocking/$_testPackagePath');
-  final handWritten = _fileNames(Directory('$root/$_reactive/$_testPackagePath'));
-  final target = Directory('$root/$_reactive/$_generatedPath');
+  for (final suite in _suites) {
+    _derive(root, suite.blocking, suite.reactive, suite.package);
+  }
+}
+
+void _derive(String root, String blocking, String reactive, String package) {
+  final source = Directory('$root/$blocking/client-app/src/test/java/$package');
+  final handWritten = _fileNames(Directory('$root/$reactive/client-app/src/test/java/$package'));
+  final target = Directory('$root/$reactive/client-app/src/test/generated/java/$package');
 
   if (target.existsSync()) target.deleteSync(recursive: true);
   target.createSync(recursive: true);
@@ -32,7 +46,7 @@ Set<String> _fileNames(Directory dir) => dir.existsSync()
     ? dir.listSync().whereType<File>().map((f) => f.uri.pathSegments.last).toSet()
     : {};
 
-final _clientCall = RegExp(r'client\.(queries|mutations)\.\w+\(');
+final _clientCall = RegExp(r'\.(queries|mutations)\.\w+\(');
 
 String _toReactive(String source) {
   final out = StringBuffer();

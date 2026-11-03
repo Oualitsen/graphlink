@@ -31,7 +31,7 @@ Across all three
   - I changed shared code: the Python serializer and GLUpload, the Swift fromJson dispatch, the Go serializer and client.
   - I re-ran only the mock suites and the Dart unit tests.
   - The existing Spring-server suites for these languages need the JAR, and I didn't run them.
-  - I also didn't check whether the Python client in server_integration_tests uses GLUpload.
+  - I also did       n't check whether the Python client in server_integration_tests uses GLUpload.
   - The GLUpload change is the riskiest, because it also affects the GraphQL upload path.
 - Little coverage.
   - Go real tests are 30 and Kotlin's are 61, against Dart's 133 in the same areas.
@@ -39,4 +39,4 @@ Across all three
   - There is no mid-stream failure test for Go or Swift.
 - CI. The new ci.yml jobs have not been run.
 - Naming oddity. Swift's restHttpAdapter reuses the wsAdapter enum (urlsession|none) instead of having its own.
-- Limit I didn't mention. Swift can't do chunked uploads at all, since the whole file is Data.
+- Limit I didn't mention. Swift can't do chunked uploads at all, since the whole file is Data.       
