@@ -38,10 +38,46 @@ describe('multipart body', () => {
     expect(parts.map((p) => p.sha256)).toEqual(files.map(sha256Of));
   });
 
-  it('an upload of unknown length is buffered and still arrives intact', async () => {
+  it('an upload of unknown length is streamed chunked and arrives intact', async () => {
     const bytes = pattern(300000);
     const e = await client.mutations.eMultipart({ one: uploadOf(bytes, { filename: 'u.bin', knownLength: false }) });
     expect(part(e, 'one').sha256).toBe(sha256Of(bytes));
+    expect(e.chunked).toBe(true);
+  });
+
+  it('progress is not reported when the total size is unknown', async () => {
+    const reports: Array<[number, number]> = [];
+    await client.mutations.eMultipart({ one: uploadOf(pattern(40000), { knownLength: false }) }, (s, t) => reports.push([s, t]));
+    expect(reports).toHaveLength(0);
+  });
+
+  it('a file is not read in full before the first progress report', async () => {
+    const bytes = pattern(6 * 1024 * 1024);
+    const chunk = 65536;
+    let pulled = 0;
+    let pulledAtFirstReport = -1;
+    let offset = 0;
+    const slow = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        if (offset >= bytes.length) {
+          controller.close();
+          return;
+        }
+        if (offset % (256 * 1024) === 0) await new Promise((resolve) => setTimeout(resolve, 2));
+        controller.enqueue(bytes.slice(offset, offset + chunk));
+        offset += chunk;
+        pulled = offset;
+      },
+    });
+    const e = await client.mutations.eMultipart(
+      { one: { stream: slow, length: bytes.length, filename: 'big.bin', mimeType: 'application/octet-stream' } },
+      () => {
+        if (pulledAtFirstReport < 0) pulledAtFirstReport = pulled;
+      },
+    );
+    expect(part(e, 'one').sha256).toBe(sha256Of(bytes));
+    expect(pulledAtFirstReport).toBeGreaterThanOrEqual(0);
+    expect(pulledAtFirstReport).toBeLessThan(bytes.length);
   });
 
   it('a non-ASCII filename survives', async () => {

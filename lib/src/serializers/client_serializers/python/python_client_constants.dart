@@ -227,7 +227,10 @@ from __future__ import annotations
 import asyncio
 import mimetypes
 import os
-from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Callable, Dict, Iterable, Optional, Union
+import random
+import time
+from dataclasses import dataclass
+from typing import Any, AsyncIterable, AsyncIterator, Awaitable, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 UploadProgressCallback = Callable[[int, int], None]
 
@@ -311,6 +314,64 @@ class GLUpload:
         if hasattr(self._source, "__aiter__"):
             raise TypeError("GraphQL multipart uploads need bytes or a file; an async stream can only be sent over REST")
         return b"".join(self._source)  # type: ignore[arg-type]
+
+
+@dataclass
+class GLMultipartPart:
+    name: str
+    value: Optional[str] = None
+    file: Optional[GLUpload] = None
+    mime_type: Optional[str] = None
+
+
+def gl_multipart_stream(
+    parts: List[Any], on_progress: Optional[UploadProgressCallback] = None
+) -> Tuple[str, Optional[int], AsyncIterator[bytes]]:
+    boundary = f"----graphlink{random.getrandbits(48):x}{int(time.time() * 1000):x}"
+
+    def quoted(text: str) -> str:
+        return text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A")
+
+    heads: List[bytes] = []
+    lengths: List[Optional[int]] = []
+    for part in parts:
+        upload = part.file
+        disposition = f'form-data; name="{quoted(part.name)}"'
+        if upload is not None:
+            disposition += f'; filename="{quoted(upload.filename if upload.filename is not None else part.name)}"'
+        mime_type = part.mime_type if upload is None else upload.mime_type
+        head = f"--{boundary}\r\nContent-Disposition: {disposition}\r\n"
+        if mime_type is not None:
+            head += f"Content-Type: {mime_type}\r\n"
+        heads.append(f"{head}\r\n".encode("utf-8"))
+        lengths.append(len((part.value or "").encode("utf-8")) if upload is None else upload.length)
+    tail = f"--{boundary}--\r\n".encode("utf-8")
+    known = all(length is not None for length in lengths)
+    total = sum(len(h) + (n or 0) + 2 for h, n in zip(heads, lengths)) + len(tail) if known else None
+
+    async def body() -> AsyncIterator[bytes]:
+        for part, head in zip(parts, heads):
+            yield head
+            if part.file is None:
+                yield (part.value or "").encode("utf-8")
+            else:
+                async for chunk in part.file.chunks():
+                    yield chunk
+            yield b"\r\n"
+        yield tail
+
+    return f"multipart/form-data; boundary={boundary}", total, gl_counted_stream(body(), total, on_progress)
+
+
+async def gl_counted_stream(
+    source: AsyncIterator[bytes], total: Optional[int], on_progress: Optional[UploadProgressCallback]
+) -> AsyncIterator[bytes]:
+    sent = 0
+    async for chunk in source:
+        sent += len(chunk)
+        yield chunk
+        if on_progress is not None and total:
+            on_progress(sent, total)
 
 
 GLUploadConverter = Callable[[GLUpload], Any]

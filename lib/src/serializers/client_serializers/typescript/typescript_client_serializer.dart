@@ -879,7 +879,10 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     );
     if (hasUploads && httpAdapter == TypeScriptHttpAdapter.fetch) {
       buffer.writeln(
-        "import type { GLUpload, GLMultipartAdapter, UploadProgressCallback } from './graph-link-uploads.js';",
+        "import { glFetchMultipart } from './graph-link-uploads.js';",
+      );
+      buffer.writeln(
+        "import type { GLUpload, GLMultipartAdapter, GLMultipartPart, UploadProgressCallback } from './graph-link-uploads.js';",
       );
     }
     if (_parser.persistedQueriesUseGet) {
@@ -903,7 +906,10 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   // ── REST files ────────────────────────────────────────────────────────────
 
   GLClassModel generateRestFile() => const GLClassModel(
-        imports: ["import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';"],
+        imports: [
+          "import { glUploadProgress, glUploadStream } from './graph-link-uploads.js';",
+          "import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';",
+        ],
         body: tsRestFile,
       );
 
@@ -923,7 +929,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     final fetch = restHttpAdapter == TypeScriptHttpAdapter.fetch;
     return GLClassModel(
       imports: [
-        "import { RestResponse, restFormBody, restMultipart, restReadAll, restUrl${fetch ? ', restChunkedStream, restCountedStream' : ''} } from './graph-link-rest.js';",
+        "import { RestResponse, restFormBody, restUrl${fetch ? ', restCountedStream' : ''} } from './graph-link-rest.js';",
+        "import { ${fetch ? 'glFetchMultipart' : 'glFormDataMultipart, glMultipartBody, glUploadProgress, glUploadStream'} } from './graph-link-uploads.js';",
         "import type { GLRestAdapter, RestRequest } from './graph-link-rest.js';",
       ],
       body: fetch ? tsRestFetchAdapter : tsRestAxiosAdapter,

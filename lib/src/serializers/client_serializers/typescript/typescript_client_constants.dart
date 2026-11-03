@@ -34,6 +34,154 @@ export function glUploadFromFile(file: File): GLUpload {
     mimeType: file.type || 'application/octet-stream',
   };
 }
+
+export interface GLMultipartPart {
+  name: string;
+  value?: string;
+  mimeType?: string;
+  file?: GLUpload;
+}
+
+export interface GLMultipartBody {
+  contentType: string;
+  length?: number;
+  stream: ReadableStream<Uint8Array>;
+}
+
+export function glUploadStream(source: ReadableStream<Uint8Array> | Blob): ReadableStream<Uint8Array> {
+  return typeof (source as Blob).stream === 'function'
+    ? ((source as Blob).stream() as ReadableStream<Uint8Array>)
+    : (source as ReadableStream<Uint8Array>);
+}
+
+export function glUploadProgress(
+  source: ReadableStream<Uint8Array>,
+  total: number | undefined,
+  onProgress: UploadProgressCallback | undefined,
+): ReadableStream<Uint8Array> {
+  if (onProgress === undefined || total === undefined || total === 0) return source;
+  let sent = 0;
+  return source.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      sent += chunk.length;
+      onProgress(sent, total);
+      controller.enqueue(chunk);
+    },
+  }));
+}
+
+export function glMultipartBody(parts: GLMultipartPart[]): GLMultipartBody {
+  const boundary = `graphlink-${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
+  const encoder = new TextEncoder();
+  const quote = (text: string): string => text.replace(/"/g, '%22').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  const segments: Array<Uint8Array | GLUpload> = [];
+  let length: number | undefined = 0;
+  const addBytes = (bytes: Uint8Array): void => {
+    segments.push(bytes);
+    if (length !== undefined) length += bytes.length;
+  };
+  for (const part of parts) {
+    const file = part.file;
+    let head = `--${boundary}\r\nContent-Disposition: form-data; name="${quote(part.name)}"`;
+    if (file !== undefined) {
+      head += `; filename="${quote(file.filename ?? part.name)}"\r\nContent-Type: ${file.mimeType}`;
+    } else if (part.mimeType !== undefined) {
+      head += `\r\nContent-Type: ${part.mimeType}`;
+    }
+    addBytes(encoder.encode(`${head}\r\n\r\n`));
+    if (file === undefined) {
+      addBytes(encoder.encode(part.value ?? ''));
+    } else {
+      segments.push(file);
+      length = file.length === undefined || length === undefined ? undefined : length + file.length;
+    }
+    addBytes(encoder.encode('\r\n'));
+  }
+  addBytes(encoder.encode(`--${boundary}--\r\n`));
+
+  let index = 0;
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      for (;;) {
+        if (reader === undefined) {
+          if (index >= segments.length) {
+            controller.close();
+            return;
+          }
+          const segment = segments[index++]!;
+          if (segment instanceof Uint8Array) {
+            controller.enqueue(segment);
+            return;
+          }
+          reader = glUploadStream(segment.stream).getReader();
+        }
+        const next = await reader.read();
+        if (next.done) {
+          reader = undefined;
+          continue;
+        }
+        controller.enqueue(next.value);
+        return;
+      }
+    },
+    async cancel(reason) {
+      await reader?.cancel(reason);
+    },
+  });
+  return { contentType: `multipart/form-data; boundary=${boundary}`, length, stream };
+}
+
+let glRequestStreams: boolean | undefined;
+
+function glRequestStreamsSupported(): boolean {
+  if (glRequestStreams !== undefined) return glRequestStreams;
+  try {
+    let duplexRead = false;
+    const request = new Request('http://localhost', {
+      method: 'POST',
+      body: new ReadableStream(),
+      get duplex() {
+        duplexRead = true;
+        return 'half';
+      },
+    } as RequestInit);
+    glRequestStreams = duplexRead && !request.headers.has('Content-Type');
+  } catch {
+    glRequestStreams = false;
+  }
+  return glRequestStreams;
+}
+
+export function glFormDataMultipart(parts: GLMultipartPart[]): FormData {
+  const form = new FormData();
+  for (const part of parts) {
+    const file = part.file;
+    if (file === undefined) {
+      const value = part.value ?? '';
+      form.append(part.name, part.mimeType === undefined ? value : new Blob([value], { type: part.mimeType }));
+    } else if (typeof (file.stream as Blob).arrayBuffer === 'function') {
+      form.append(part.name, file.stream as Blob, file.filename ?? part.name);
+    } else {
+      throw new Error('GraphLink: this runtime cannot stream a ReadableStream upload; pass a Blob or File');
+    }
+  }
+  return form;
+}
+
+export interface GLFetchMultipart {
+  body: BodyInit;
+  headers: Record<string, string>;
+  duplex?: 'half';
+}
+
+export function glFetchMultipart(parts: GLMultipartPart[], onProgress?: UploadProgressCallback): GLFetchMultipart {
+  if (!glRequestStreamsSupported()) return { body: glFormDataMultipart(parts), headers: {} };
+  const multipart = glMultipartBody(parts);
+  const headers: Record<string, string> = { 'Content-Type': multipart.contentType };
+  if (multipart.length !== undefined) headers['Content-Length'] = String(multipart.length);
+  return { body: glUploadProgress(multipart.stream, multipart.length, onProgress), headers, duplex: 'half' };
+}
 ''';
 
 // ── Cache store ───────────────────────────────────────────────────────────────
@@ -508,16 +656,19 @@ export function createMultipartFetchAdapter(
   return async (parts: Record<string, unknown>, onProgress?: UploadProgressCallback): Promise<string> => {
     const fn = (options?.fetchFn ?? (globalThis as Record<string, unknown>)['fetch']) as _FetchFn;
     const extraHeaders = options?.headers ? await options.headers() : {};
-    const formData = new FormData();
-    for (const [key, value] of Object.entries(parts)) {
-      if (value !== null && typeof value === 'object' && 'stream' in value) {
-        const upload = value as GLUpload;
-        formData.append(key, upload.stream as Blob, upload.filename);
-      } else {
-        formData.append(key, value as string);
-      }
-    }
-    const response = await fn(url, { method: 'POST', body: formData, headers: extraHeaders });
+    const list: GLMultipartPart[] = Object.entries(parts).map(([name, value]) =>
+      value !== null && typeof value === 'object' && 'stream' in value
+        ? { name, file: value as GLUpload }
+        : { name, value: value as string },
+    );
+    const multipart = glFetchMultipart(list, onProgress);
+    const init: Record<string, unknown> = {
+      method: 'POST',
+      body: multipart.body,
+      headers: { ...extraHeaders, ...multipart.headers },
+    };
+    if (multipart.duplex !== undefined) init.duplex = multipart.duplex;
+    const response = await fn(url, init as never);
     if (!response.ok) {
       throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
     }

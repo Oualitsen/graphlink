@@ -177,67 +177,12 @@ export function restFormBody(fields: Array<[string, string]>): string {
   return fields.map(([k, v]) => `${restEncodeQuery(k)}=${restEncodeQuery(v)}`).join('&');
 }
 
-export async function restMultipart(parts: RestPart[]): Promise<{ contentType: string; bytes: Uint8Array }> {
-  const boundary = `----graphlink${Math.random().toString(16).slice(2)}${Date.now().toString(16)}`;
-  const encoder = new TextEncoder();
-  const quote = (text: string): string => text.replace(/"/g, '%22').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-  const chunks: Uint8Array[] = [];
-  for (const part of parts) {
-    const file = part.file;
-    let disposition = `form-data; name="${quote(part.name)}"`;
-    if (file?.filename !== undefined) disposition += `; filename="${quote(file.filename)}"`;
-    const mimeType = file === undefined ? part.mimeType : file.mimeType;
-    let head = `--${boundary}\r\nContent-Disposition: ${disposition}\r\n`;
-    if (mimeType !== undefined) head += `Content-Type: ${mimeType}\r\n`;
-    chunks.push(encoder.encode(`${head}\r\n`));
-    chunks.push(file === undefined ? encoder.encode(part.value ?? '') : await restReadAll(file.stream));
-    chunks.push(encoder.encode('\r\n'));
-  }
-  chunks.push(encoder.encode(`--${boundary}--\r\n`));
-  const size = chunks.reduce((sum, c) => sum + c.length, 0);
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.length;
-  }
-  return { contentType: `multipart/form-data; boundary=${boundary}`, bytes };
-}
-
 export function restCountedStream(
   source: ReadableStream<Uint8Array> | Blob,
   total: number | undefined,
   onProgress: UploadProgressCallback | undefined,
 ): ReadableStream<Uint8Array> {
-  const stream = typeof (source as Blob).stream === 'function'
-    ? (source as Blob).stream() as ReadableStream<Uint8Array>
-    : source as ReadableStream<Uint8Array>;
-  if (onProgress === undefined) return stream;
-  let sent = 0;
-  return stream.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
-    transform(chunk, controller) {
-      sent += chunk.length;
-      onProgress(sent, total ?? -1);
-      controller.enqueue(chunk);
-    },
-  }));
-}
-
-export function restChunkedStream(bytes: Uint8Array, onProgress: UploadProgressCallback | undefined): ReadableStream<Uint8Array> {
-  const chunkSize = 8192;
-  let offset = 0;
-  return new ReadableStream<Uint8Array>({
-    pull(controller) {
-      if (offset >= bytes.length) {
-        controller.close();
-        return;
-      }
-      const chunk = bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length));
-      offset += chunk.length;
-      controller.enqueue(chunk);
-      onProgress?.(offset, bytes.length);
-    },
-  });
+  return glUploadProgress(glUploadStream(source), total, onProgress);
 }
 
 function restText(value: unknown): string {
@@ -429,15 +374,10 @@ export function createRestFetchAdapter(baseUrl: string, options?: RestFetchAdapt
     } else if (body?.kind === 'form') {
       init.body = restFormBody(body.fields);
     } else if (body?.kind === 'multipart') {
-      const multipart = await restMultipart(body.parts);
-      headers['Content-Type'] = multipart.contentType;
-      headers['Content-Length'] = String(multipart.bytes.length);
-      if (request.onSendProgress === undefined) {
-        init.body = multipart.bytes;
-      } else {
-        init.body = restChunkedStream(multipart.bytes, request.onSendProgress);
-        init.duplex = 'half';
-      }
+      const multipart = glFetchMultipart(body.parts, request.onSendProgress);
+      Object.assign(headers, multipart.headers);
+      init.body = multipart.body;
+      if (multipart.duplex !== undefined) init.duplex = multipart.duplex;
     } else if (body?.kind === 'raw') {
       const upload = body.upload;
       if (upload.length !== undefined) headers['Content-Length'] = String(upload.length);
@@ -476,6 +416,17 @@ export interface RestAxiosAdapterOptions {
   headers?: () => Record<string, string> | Promise<Record<string, string>>;
 }
 
+function restIsNode(): boolean {
+  const process = (globalThis as Record<string, unknown>)['process'] as { versions?: { node?: string } } | undefined;
+  return process?.versions?.node !== undefined;
+}
+
+async function restNodeReadable(stream: ReadableStream<Uint8Array>): Promise<unknown> {
+  const specifier = 'node:stream';
+  const { Readable } = (await import(/* @vite-ignore */ specifier)) as { Readable: { fromWeb(stream: unknown): unknown } };
+  return Readable.fromWeb(stream);
+}
+
 export function createRestAxiosAdapter(
   baseUrl: string,
   axiosInstance: _RestAxiosLike,
@@ -487,6 +438,7 @@ export function createRestAxiosAdapter(
       ...request.headers,
     };
     let data: unknown;
+    let browserProgress = false;
     const body = request.body;
     if (body === undefined && !Object.keys(headers).some((k) => k.toLowerCase() === 'content-type')) {
       headers['Content-Type'] = false;
@@ -496,11 +448,26 @@ export function createRestAxiosAdapter(
     } else if (body?.kind === 'form') {
       data = restFormBody(body.fields);
     } else if (body?.kind === 'multipart') {
-      const multipart = await restMultipart(body.parts);
-      headers['Content-Type'] = multipart.contentType;
-      data = multipart.bytes;
+      if (restIsNode()) {
+        const multipart = glMultipartBody(body.parts);
+        headers['Content-Type'] = multipart.contentType;
+        if (multipart.length !== undefined) headers['Content-Length'] = String(multipart.length);
+        data = await restNodeReadable(glUploadProgress(multipart.stream, multipart.length, request.onSendProgress));
+      } else {
+        data = glFormDataMultipart(body.parts);
+        browserProgress = true;
+      }
     } else if (body?.kind === 'raw') {
-      data = await restReadAll(body.upload.stream);
+      const upload = body.upload;
+      if (upload.length !== undefined) headers['Content-Length'] = String(upload.length);
+      if (restIsNode()) {
+        data = await restNodeReadable(glUploadProgress(glUploadStream(upload.stream), upload.length, request.onSendProgress));
+      } else if (typeof (upload.stream as Blob).arrayBuffer === 'function') {
+        data = upload.stream;
+        browserProgress = true;
+      } else {
+        throw new Error('GraphLink: axios cannot stream a request body in the browser; pass a Blob or File, or use the fetch adapter');
+      }
     }
     const onSendProgress = request.onSendProgress;
     const response = await axiosInstance.request({
@@ -510,7 +477,7 @@ export function createRestAxiosAdapter(
       data,
       responseType: 'arraybuffer',
       validateStatus: () => true,
-      onUploadProgress: onSendProgress === undefined
+      onUploadProgress: onSendProgress === undefined || !browserProgress
         ? undefined
         : (event) => onSendProgress(event.loaded, event.total ?? -1),
     });

@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import quote, quote_plus, unquote
 
-from .graph_link_uploads import GLUpload, UploadProgressCallback
+from .graph_link_uploads import GLUpload, UploadProgressCallback, gl_counted_stream, gl_multipart_stream
 
 DownloadProgressCallback = Callable[[int, int], None]
 
@@ -193,56 +193,6 @@ def rest_form_body(fields: List[Tuple[str, str]]) -> str:
     return "&".join(f"{rest_encode_query(k)}={rest_encode_query(v)}" for k, v in fields)
 
 
-def rest_multipart_stream(
-    parts: List[RestPart], on_progress: Optional[UploadProgressCallback] = None
-) -> Tuple[str, Optional[int], AsyncIterator[bytes]]:
-    boundary = f"----graphlink{random.getrandbits(48):x}{int(time.time() * 1000):x}"
-
-    def quoted(text: str) -> str:
-        return text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A")
-
-    heads: List[bytes] = []
-    lengths: List[Optional[int]] = []
-    for part in parts:
-        upload = part.file
-        disposition = f'form-data; name="{quoted(part.name)}"'
-        if upload is not None and upload.filename is not None:
-            disposition += f'; filename="{quoted(upload.filename)}"'
-        mime_type = part.mime_type if upload is None else upload.mime_type
-        head = f"--{boundary}\r\nContent-Disposition: {disposition}\r\n"
-        if mime_type is not None:
-            head += f"Content-Type: {mime_type}\r\n"
-        heads.append(f"{head}\r\n".encode("utf-8"))
-        lengths.append(len((part.value or "").encode("utf-8")) if upload is None else upload.length)
-    tail = f"--{boundary}--\r\n".encode("utf-8")
-    known = all(length is not None for length in lengths)
-    total = sum(len(h) + (n or 0) + 2 for h, n in zip(heads, lengths)) + len(tail) if known else None
-
-    async def body() -> AsyncIterator[bytes]:
-        for part, head in zip(parts, heads):
-            yield head
-            if part.file is None:
-                yield (part.value or "").encode("utf-8")
-            else:
-                async for chunk in part.file.chunks():
-                    yield chunk
-            yield b"\r\n"
-        yield tail
-
-    return f"multipart/form-data; boundary={boundary}", total, rest_counted_stream(body(), total, on_progress)
-
-
-async def rest_counted_stream(
-    source: AsyncIterator[bytes], total: Optional[int], on_progress: Optional[UploadProgressCallback]
-) -> AsyncIterator[bytes]:
-    sent = 0
-    async for chunk in source:
-        sent += len(chunk)
-        yield chunk
-        if on_progress is not None:
-            on_progress(sent, -1 if total is None else total)
-
-
 def rest_text(value: Any) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -424,14 +374,14 @@ class GraphLinkRestHttpxAdapter:
         elif isinstance(body, RestFormBody):
             content = rest_form_body(body.fields).encode("utf-8")
         elif isinstance(body, RestMultipartBody):
-            headers["Content-Type"], length, content = rest_multipart_stream(body.parts, request.on_send_progress)
+            headers["Content-Type"], length, content = gl_multipart_stream(body.parts, request.on_send_progress)
             if length is not None:
                 headers["Content-Length"] = str(length)
         elif isinstance(body, RestRawBody):
             upload = body.upload
             if upload.length is not None:
                 headers["Content-Length"] = str(upload.length)
-            content = rest_counted_stream(upload.chunks(), upload.length, request.on_send_progress)
+            content = gl_counted_stream(upload.chunks(), upload.length, request.on_send_progress)
         built = self.client.build_request(request.method, rest_url(self.base_url, request), headers=headers, content=content)
         response = await self.client.send(built, stream=True)
 
