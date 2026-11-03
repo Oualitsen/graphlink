@@ -71,18 +71,13 @@ class GoRestOperationSerializer {
     return _serializer.serializeType(GLType.makeNullable(a.argument.type));
   }
 
-  bool _needsDeref(GLRestArgument a) =>
-      a.argument.defaultValue != null &&
-      !a.argument.type.nullable &&
-      _serializer.usesPointer(GLType.makeNullable(a.argument.type));
-
+ 
   String _value(GLRestArgument a) {
     if (!_isOptional(a)) return _param(a);
     if (a.argument.defaultValue != null) return _param(a);
     return '$_options.${_field(a)}';
   }
 
-  bool _nullableUpload(GLRestArgument a) => _isUpload(a) && a.argument.type.nullable && !a.argument.type.isList;
 
   String operationToMethod(GLRestOperation op) {
     final returnType = _returnType(op);

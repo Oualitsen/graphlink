@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
@@ -311,7 +310,7 @@ class DartClientSerializer extends GLClientSerializer {
   // ── Import helpers ─────────────────────────────────────────────────────────
 
   List<String> _importsForType(GLQueryType type) {
-    return [
+    return {
       if (type != GLQueryType.subscription) "import 'dart:convert';",
       "import 'dart:async';",
       "import 'graph_link_cache_store.dart';",
@@ -330,7 +329,7 @@ class DartClientSerializer extends GLClientSerializer {
       ],
       ..._restImportsFor(type),
       ...schemaImportsFor(type),
-    ].toSet().toList();
+    }.toList();
   }
 
   List<String> _restImportsFor(GLQueryType type) {
@@ -1102,13 +1101,6 @@ class DartClientSerializer extends GLClientSerializer {
   String get _postUrlExpr => _parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url';
 
   GLClassModel generateHttpAdapterFile() {
-    if (_parser.hasUploadMutations) {
-      stdout.writeln(
-        '⚠️  Upload mutations detected with the http adapter.\n'
-        '   Progress tracking buffers the entire request body in memory.\n'
-        '   For large files, consider switching to the Dio adapter (httpAdapter: "dio").',
-      );
-    }
     return GLClassModel(
       imports: [
         "import 'dart:async';",
@@ -1117,7 +1109,15 @@ class DartClientSerializer extends GLClientSerializer {
         if (_parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
         if (_parser.persistedQueriesUseGet) "import 'graph_link_persisted_queries.dart';",
       ],
-      body: codeGenUtils.createClass(
+      body: [
+        _httpAdapterClass(),
+        if (_parser.hasUploadMutations) _httpStreamedRequestClass(),
+      ].join('\n\n'),
+    );
+  }
+
+  String _httpAdapterClass() {
+    return codeGenUtils.createClass(
         className: 'GraphLinkHttpAdapter',
         statements: [
           'final String url;',
@@ -1149,7 +1149,6 @@ class DartClientSerializer extends GLClientSerializer {
           if (_parser.persistedQueriesUseGet) _httpGetMethod(),
           if (_parser.hasUploadMutations) _httpMultipartMethod(),
         ],
-      ),
     );
   }
 
@@ -1176,26 +1175,6 @@ class DartClientSerializer extends GLClientSerializer {
   }
 
   String _httpMultipartMethod() {
-    final addPart = codeGenUtils.ifStatement(
-      condition: 'entry.value is GLUpload',
-      ifBlockStatements: [
-        codeGenUtils.constDecl('u', 'entry.value as GLUpload'),
-        'request.files.add(${codeGenUtils.callExpression('http.MultipartFile', [
-          'entry.key, u.stream, u.length ?? 0',
-          'filename: u.filename',
-          'contentType: MediaType.parse(u.mimeType)',
-        ])});',
-      ],
-      elseBlockStatements: ['request.fields[entry.key] = entry.value as String;'],
-    );
-    final countedStream = 'final counted = Stream.fromIterable([\n'
-        '  for (var i = 0; i < bodyBytes.length; i += chunkSize)\n'
-        '    bodyBytes.sublist(i, (i + chunkSize).clamp(0, bodyBytes.length)),\n'
-        ']).map(${codeGenUtils.functionLiteral(['chunk'], [
-      'sent += chunk.length;',
-      'onProgress(sent, total);',
-      'return chunk;',
-    ])});';
     return codeGenUtils.createMethod(
       returnType: 'Future<String>',
       methodName: 'multipartCall',
@@ -1203,29 +1182,37 @@ class DartClientSerializer extends GLClientSerializer {
       namedArguments: false,
       arguments: ['Map<String, Object> parts', 'UploadProgressCallback? onProgress'],
       statements: [
-        codeGenUtils.constDecl("request", "http.MultipartRequest('POST', Uri.parse(url))"),
-        codeGenUtils.constDecl('extraHeaders', 'await headersProvider?.call() ?? {}'),
-        'request.headers.addAll(extraHeaders);',
-        codeGenUtils.forEachLoop(variable: 'entry', iterable: 'parts.entries', statements: [addPart]),
-        codeGenUtils.ifStatement(
-          condition: 'onProgress == null',
-          ifBlockStatements: [
-            codeGenUtils.constDecl('streamed', 'await request.send()'),
-            'return (await http.Response.fromStream(streamed)).body;',
-          ],
-        ),
-        codeGenUtils.constDecl('bodyBytes', 'await request.finalize().toBytes()'),
-        codeGenUtils.constDecl('total', 'bodyBytes.length'),
-        'int sent = 0;',
-        'const chunkSize = 8192;',
-        countedStream,
-        codeGenUtils.constDecl("raw", "http.StreamedRequest('POST', Uri.parse(url))"),
-        'raw.headers.addAll(extraHeaders);',
-        "raw.headers['content-type'] = request.headers['content-type']!;",
-        'raw.contentLength = total;',
-        'counted.listen(raw.sink.add, onDone: raw.sink.close);',
-        codeGenUtils.constDecl('streamed', 'await raw.send()'),
+        codeGenUtils.constDecl('body', 'GLMultipartBody.of(parts)'),
+        codeGenUtils.constDecl('request', '_GLStreamedRequest(Uri.parse(url), body.withProgress(onProgress))'),
+        'request.headers.addAll(await headersProvider?.call() ?? {});',
+        "request.headers['content-type'] = body.contentType;",
+        'request.contentLength = body.length;',
+        codeGenUtils.constDecl('streamed', 'await request.send()'),
         'return (await http.Response.fromStream(streamed)).body;',
+      ],
+    );
+  }
+
+  String _httpStreamedRequestClass() {
+    return codeGenUtils.createClass(
+      className: '_GLStreamedRequest',
+      extendsClassName: 'http.BaseRequest',
+      statements: [
+        'final Stream<List<int>> _stream;',
+        codeGenUtils.createMethod(
+          methodName: '_GLStreamedRequest',
+          namedArguments: false,
+          arguments: ['Uri url', 'this._stream'],
+          initializers: ["super('POST', url)"],
+        ),
+        codeGenUtils.createMethod(
+          override: true,
+          returnType: 'http.ByteStream',
+          methodName: 'finalize',
+          namedArguments: false,
+          arguments: [],
+          statements: ['super.finalize();', 'return http.ByteStream(_stream);'],
+        ),
       ],
     );
   }
@@ -1323,18 +1310,6 @@ class DartClientSerializer extends GLClientSerializer {
   }
 
   String _dioMultipartMethod() {
-    final convertPart = codeGenUtils.ifStatement(
-      condition: 'entry.value is GLUpload',
-      ifBlockStatements: [
-        codeGenUtils.constDecl('u', 'entry.value as GLUpload'),
-        'converted[entry.key] = ${codeGenUtils.callExpression('MultipartFile', [
-          'u.stream, u.length ?? 0',
-          'filename: u.filename',
-          'contentType: u.mimeType.isNotEmpty ? MediaType.parse(u.mimeType) : null',
-        ])};',
-      ],
-      elseBlockStatements: ['converted[entry.key] = entry.value;'],
-    );
     return codeGenUtils.createMethod(
       returnType: 'Future<String>',
       methodName: 'multipartCall',
@@ -1342,14 +1317,14 @@ class DartClientSerializer extends GLClientSerializer {
       namedArguments: false,
       arguments: ['Map<String, Object> parts', 'UploadProgressCallback? onProgress'],
       statements: [
-        codeGenUtils.constDecl('converted', '<String, dynamic>{}'),
-        codeGenUtils.forEachLoop(variable: 'entry', iterable: 'parts.entries', statements: [convertPart]),
-        codeGenUtils.constDecl('formData', 'FormData.fromMap(converted)'),
-        codeGenUtils.constDecl('response', 'await ${codeGenUtils.callExpression('dio.post<dynamic>', [
-          'url',
-          'data: formData',
-          'onSendProgress: onProgress != null ? (sent, total) => onProgress(sent, total) : null',
-        ])}'),
+        codeGenUtils.constDecl('body', 'GLMultipartBody.of(parts)'),
+        codeGenUtils.constDecl(
+            'response',
+            'await ${codeGenUtils.callExpression('dio.post<dynamic>', [
+                  'url',
+                  'data: body.withProgress(onProgress)',
+                  'options: Options(contentType: body.contentType, headers: {if (body.length != null) \'Content-Length\': \'\${body.length}\'})',
+                ])}'),
         codeGenUtils.constDecl('data', 'response.data'),
         'return data is String ? data : jsonEncode(data);',
       ],

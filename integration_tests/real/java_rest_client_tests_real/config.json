@@ -1,0 +1,26 @@
+{
+  "schemaPaths": ["../schema_rest/rest.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/java/dev/graphlink/rest/generated",
+  "clientConfig": {
+    "java": {
+      "packageName":                "dev.graphlink.rest.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "immutableInputFields":       true,
+      "immutableTypeFields":        true,
+      "inputAsRecord":              false,
+      "typeAsRecord":               false,
+      "jsonCodec":                  "jackson",
+      "captureErrors":              false
+    }
+  }
+}

@@ -44,10 +44,17 @@ void main() {
       expect(parts.map((p) => p.sha256), files.map(sha256Of));
     });
 
-    test('an upload of unknown length is buffered and still arrives intact', () async {
+    test('an upload of unknown length is streamed chunked and arrives intact', () async {
       final bytes = pattern(300000);
       final e = await client.mutations.eMultipart(one: uploadOf(bytes, filename: 'u.bin', knownLength: false));
       expect(e.part('one').sha256, sha256Of(bytes));
+      expect(e.chunked, isTrue);
+    });
+
+    test('progress is not reported when the total size is unknown', () async {
+      var calls = 0;
+      await client.mutations.eMultipart(one: uploadOf(pattern(40000), knownLength: false), onProgress: (_, __) => calls++);
+      expect(calls, 0);
     });
 
     test('a non-ASCII filename survives', () async {

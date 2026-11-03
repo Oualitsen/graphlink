@@ -67,9 +67,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   List<String> _restImportsFor(GLQueryType type) {
     final operations = _restOperations(type);
     if (operations.isEmpty) return const [];
-    final uploads = _parser.uploadScalarNames;
-    final usesUploads =
-        operations.any((o) => o.arguments.any((a) => uploads.contains(a.argument.type.firstType.token)));
     final tokens = <GLToken>[];
     for (final operation in operations) {
       final names = [
@@ -271,7 +268,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     final body = _buildClass(GLQueryType.query);
     if (body == null) return null;
     return GLClassModel(
-      imports: [
+      imports: {
         ...schemaImportsFor(GLQueryType.query),
         ..._errorImport(),
         if (observables) "import { Observable } from 'rxjs';",
@@ -282,7 +279,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
         ..._restImportsFor(GLQueryType.query),
-      ].toSet().toList(),
+      }.toList(),
       body: body,
     );
   }
@@ -291,7 +288,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     final body = _buildClass(GLQueryType.mutation);
     if (body == null) return null;
     return GLClassModel(
-      imports: [
+      imports: {
         ...schemaImportsFor(GLQueryType.mutation),
         ..._errorImport(),
         if (observables) "import { Observable } from 'rxjs';",
@@ -302,7 +299,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         ..._restImportsFor(GLQueryType.mutation),
-      ].toSet().toList(),
+      }.toList(),
       body: body,
     );
   }

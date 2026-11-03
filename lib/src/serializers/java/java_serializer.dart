@@ -10,6 +10,8 @@ import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_rest_discriminator.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -406,6 +408,24 @@ class JavaSerializer extends GLSerializer {
     return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
   }
 
+  String fromJsonValueExpr(String valueExpr, GLType type, GLToken context) {
+    final placeholder = GLField(name: type.tokenInfo, type: type, arguments: const [], directives: []);
+    return getFromJsonCall(placeholder, valueExpr, 1, context, type);
+  }
+
+  List<String> _requiredFieldChecks(List<GLField> fields, GLToken context) {
+    final token = context.token;
+    if (!grammar.restReachableTypeNames.contains(token)) return const [];
+    return [
+      for (final field in fields)
+        if (!field.type.nullable && field.initialValue == null)
+          codeGenUtils.ifStatement(
+            condition: 'json.get("${field.name.token}") == null',
+            ifBlockStatements: ['throw new IllegalArgumentException("$token.${field.name.token} is missing or null in the response");'],
+          ),
+    ];
+  }
+
   String generateFromJson(List<GLField> fields, String token, GLToken context) {
     var buffer = StringBuffer();
     context.addImport(JavaImports.suppressWarnings);
@@ -415,6 +435,7 @@ class JavaSerializer extends GLSerializer {
       codeGenUtils.createMethod(returnType: "public static ${token}", methodName: "fromJson", arguments: [
         '${_mapOf('String', 'Object')} json'
       ], statements: [
+        ..._requiredFieldChecks(fields, context),
         "return new ${token}(",
         ...fields.map((field) {
           var statement = getFromJsonCall(field, 'json', 0, context);
@@ -1086,10 +1107,52 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
+  String _discriminatedFromJson(String token, Set<GLTypeDefinition> subTypes, GLRestDiscriminator discriminator) {
+    String typeName(GLTypeDefinition t) => t.derivedFromType?.tokenInfo.token ?? t.tokenInfo.token;
+    final byTypename = codeGenUtils.switchStatement(
+      expression: 'typename',
+      cases: [
+        for (final t in subTypes)
+          JavaCaseStatement(caseValue: '"${typeName(t)}"', statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+      defaultStatements: ['break;'],
+    );
+    final byValue = codeGenUtils.switchStatement(
+      expression: 'value',
+      cases: [
+        for (final t in subTypes)
+          JavaCaseStatement(
+              caseValue: '"${discriminator.valueByType[typeName(t)] ?? typeName(t)}"',
+              statement: 'return ${t.codeName}.fromJson(json);'),
+      ],
+      defaultStatements: [
+        'throw new IllegalArgumentException("Cannot decode $token: unknown \\"${discriminator.field}\\" value (" + value + ")");',
+      ],
+    );
+    return codeGenUtils.createMethod(
+      returnType: 'static $token',
+      methodName: 'fromJson',
+      arguments: ['${_mapOf("String", "Object")} json'],
+      statements: [
+        'String typename = (String)json.get("__typename");',
+        codeGenUtils.ifStatement(condition: 'typename != null', ifBlockStatements: [byTypename]),
+        'Object discriminator = json.get("${discriminator.field}");',
+        codeGenUtils.ifStatement(
+          condition: 'discriminator == null',
+          ifBlockStatements: ['throw new IllegalArgumentException("Cannot decode $token: missing \\"${discriminator.field}\\" value");'],
+        ),
+        'String value = discriminator.toString();',
+        byValue,
+      ],
+    );
+  }
+
   String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
     if (subTypes.isEmpty) {
       return "";
     }
+    final discriminator = grammar.restDiscriminators[token];
+    if (discriminator != null) return _discriminatedFromJson(token, subTypes, discriminator);
     return codeGenUtils.createMethod(
       returnType: "static $token",
       methodName: "fromJson",

@@ -18,6 +18,10 @@ import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_operation_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_rest_constants.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_rest_operation_serializer.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
 
 
 
@@ -27,18 +31,83 @@ class JavaClientSerializer extends GLClientSerializer {
   final codeGenUtils = JavaCodeGenUtils();
   final JavaJsonCodec jsonCodec;
   final JavaReactiveFlavor flavor;
+  final JavaRestHttpAdapter restHttpAdapter;
 
   late final JavaClientContext _ctx;
   late final JavaClientOperationSerializer _opSer;
+  late final JavaRestOperationSerializer _restSer;
   GLImportContainer? _activeContainer;
 
   JavaClientSerializer(this._grammar, GLSerializer serializer,
       {this.jsonCodec = JavaJsonCodec.jackson,
-      this.flavor = JavaReactiveFlavor.blocking})
+      this.flavor = JavaReactiveFlavor.blocking,
+      this.restHttpAdapter = JavaRestHttpAdapter.jdk,
+      bool commaQueryLists = false,
+      bool bracketFormNesting = false})
       : super(serializer, GLGraphqlSerializer(_grammar, false)) {
     _ctx = JavaClientContext(_grammar, codeGenUtils, gqlSerializer, serializer,
         flavor: flavor);
     _opSer = JavaClientOperationSerializer(_ctx);
+    _restSer = JavaRestOperationSerializer(
+      _grammar,
+      codeGenUtils,
+      serializer as JavaSerializer,
+      flavor,
+      commaLists: commaQueryLists,
+      bracketNesting: bracketFormNesting,
+    );
+  }
+
+  List<GLRestOperation> _restOperations(GLQueryType type) =>
+      _grammar.restOperations.values.where((o) => o.type == type).toList();
+
+  bool _hasOperations(GLQueryType type) =>
+      _grammar.hasQueryType(type) || _restOperations(type).isNotEmpty;
+
+  bool get hasRest => _grammar.restOperations.isNotEmpty;
+
+  bool get _hasGraphQL => GLQueryType.values.any(_grammar.hasQueryType);
+
+  bool get generatesRestAdapter => hasRest && restHttpAdapter != JavaRestHttpAdapter.none;
+
+  bool get _restOnly => hasRest && !_hasGraphQL;
+
+  List<String> get _restCtorParams => !hasRest
+      ? const []
+      : generatesRestAdapter
+          ? const ['String restBaseUrl']
+          : const ['GLRestAdapter restAdapter'];
+
+  List<String> get _restNames => !hasRest ? const [] : [generatesRestAdapter ? 'restBaseUrl' : 'restAdapter'];
+
+  List<String> _withRest(List<String> args, {bool headers = false, String? expr}) {
+    if (!hasRest) return args;
+    final at = args.indexOf('encoder');
+    final restExpr = expr ??
+        (generatesRestAdapter
+            ? 'new DefaultGraphLinkRestAdapter(restBaseUrl${headers ? ', headersProvider' : ''})'
+            : 'restAdapter');
+    return [...args.sublist(0, at), restExpr, ...args.sublist(at)];
+  }
+
+  Set<GLToken> _restTokens(GLQueryType type) {
+    final tokens = <GLToken>{};
+    for (final operation in _restOperations(type)) {
+      final names = [
+        operation.field.type.firstType.token,
+        ...operation.arguments.map((a) => a.argument.type.firstType.token),
+      ];
+      for (final name in names) {
+        if (_grammar.isEnum(name) ||
+            _grammar.isInput(name) ||
+            _grammar.types.containsKey(name) ||
+            _grammar.interfaces.containsKey(name)) {
+          final token = _grammar.getTokenByKey(name);
+          if (token != null) tokens.add(token);
+        }
+      }
+    }
+    return tokens;
   }
 
   @override
@@ -88,9 +157,9 @@ class JavaClientSerializer extends GLClientSerializer {
     bodyBuf
         .writeln(codeGenUtils.createClass(className: clientName, statements: [
       'private final Map<String, String> $svFragmentMap = new HashMap<>();',
-      if (_grammar.hasQueries)
+      if (_hasOperations(GLQueryType.query))
         'public final ${classNameFromType(GLQueryType.query)} queries;',
-      if (_grammar.hasMutations)
+      if (_hasOperations(GLQueryType.mutation))
         'public final ${classNameFromType(GLQueryType.mutation)} mutations;',
       if (_grammar.hasSubscriptions)
         'public final ${classNameFromType(GLQueryType.subscription)} subscriptions;',
@@ -98,15 +167,15 @@ class JavaClientSerializer extends GLClientSerializer {
         methodName: clientName,
         returnType: 'public',
         statements: [
-          '${codeGenUtils.callExpression('this', [
-            'adapter',
-            if (_grammar.persistedQueriesUseGet) 'getAdapter',
+          '${codeGenUtils.callExpression('this', _withRest([
+            if (_hasGraphQL) 'adapter',
+            if (_hasGraphQL && _grammar.persistedQueriesUseGet) 'getAdapter',
             if (_grammar.hasUploadMutations) 'multipartAdapter',
             'encoder',
             'decoder',
             'null',
             if (_grammar.hasSubscriptions) 'wsAdapter',
-          ])};',
+          ], expr: 'restAdapter'))};',
         ],
         arguments: [
           _adapterDeclaration(false),
@@ -121,18 +190,23 @@ class JavaClientSerializer extends GLClientSerializer {
           if (_grammar.hasSubscriptions) 'GraphLinkWebSocketAdapter wsAdapter'
         ],
         statements: [
+          if (_restOnly) ...[
+            'GraphLinkClientAdapter adapter = new GraphLinkNoGraphQL();',
+            if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter = adapter;',
+          ],
           codeGenUtils.ifStatement(
             condition: 'store == null',
             ifBlockStatements: ['store = new InMemoryGraphLinkCacheStore();'],
           ),
           "Objects.requireNonNull(adapter);",
+          if (hasRest) "Objects.requireNonNull(restAdapter);",
           "Objects.requireNonNull(encoder);",
           "Objects.requireNonNull(decoder);",
           if (_grammar.hasSubscriptions) "Objects.requireNonNull(wsAdapter);",
-          if (_grammar.hasQueries)
-            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, ${_getArg}$svFragmentMap, encoder, decoder, store);",
-          if (_grammar.hasMutations)
-            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_getArg}${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}$svFragmentMap, encoder, decoder, store);",
+          if (_hasOperations(GLQueryType.query))
+            "queries = new ${classNameFromType(GLQueryType.query)}(adapter, ${_getArg}${_restArg(GLQueryType.query)}$svFragmentMap, encoder, decoder, store);",
+          if (_hasOperations(GLQueryType.mutation))
+            "mutations = new ${classNameFromType(GLQueryType.mutation)}(adapter, ${_getArg}${_grammar.hasUploadMutations ? 'multipartAdapter, ' : ''}${_restArg(GLQueryType.mutation)}$svFragmentMap, encoder, decoder, store);",
           if (_grammar.hasSubscriptions)
             "subscriptions = new ${classNameFromType(GLQueryType.subscription)}(adapter, wsAdapter, $svFragmentMap, encoder, decoder, store);",
           ..._grammar.usedFragments
@@ -158,6 +232,8 @@ class JavaClientSerializer extends GLClientSerializer {
 
   String get _getArg => _grammar.persistedQueriesUseGet ? 'getAdapter, ' : '';
 
+  String _restArg(GLQueryType type) => _restOperations(type).isEmpty ? '' : 'restAdapter, ';
+
   List<String> _getAdapterExpr(String urlArgs) => [
         if (_grammar.persistedQueriesUseGet) 'new DefaultGraphLinkGetAdapter($urlArgs, encoder, decoder)',
       ];
@@ -173,6 +249,8 @@ class JavaClientSerializer extends GLClientSerializer {
             ? 'new GsonGraphLinkJsonCodec()'
             : null;
 
+    if (_restOnly) return _restOnlyConvenienceConstructors(encoderDecoderArgs, defaultCodec);
+
     if (!_grammar.hasSubscriptions) {
       return [
         // When uploads are present, an intermediate constructor takes
@@ -186,20 +264,21 @@ class JavaClientSerializer extends GLClientSerializer {
             arguments: [
               'DefaultGraphLinkClientAdapter adapter',
               if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
+              if (hasRest) 'GLRestAdapter restAdapter',
               ...encoderDecoderArgs
             ],
-            statements: ['${codeGenUtils.callExpression('this', ['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null'])};'],
+            statements: ['${codeGenUtils.callExpression('this', _withRest(['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null'], expr: 'restAdapter'))};'],
           ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
-          arguments: ['String url', ...encoderDecoderArgs],
+          arguments: ['String url', ..._restCtorParams, ...encoderDecoderArgs],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder'])};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder'], headers: false))};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null'])};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null'], headers: false))};'
                 ],
         ),
         codeGenUtils.createMethod(
@@ -207,23 +286,24 @@ class JavaClientSerializer extends GLClientSerializer {
           methodName: clientName,
           arguments: [
             'String url',
+            ..._restCtorParams,
             'Supplier<Map<String, String>> headersProvider',
             ...encoderDecoderArgs
           ],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder'])};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder'], headers: true))};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null'])};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null'], headers: true))};'
                 ],
         ),
         if (defaultCodec != null)
           codeGenUtils.createMethod(
             returnType: 'public',
             methodName: clientName,
-            arguments: ['String url'],
-            statements: ['${codeGenUtils.callExpression('this', ['url', '$defaultCodec', '$defaultCodec'])};'],
+            arguments: ['String url', ..._restCtorParams],
+            statements: ['${codeGenUtils.callExpression('this', ['url', ..._restNames, '$defaultCodec', '$defaultCodec'])};'],
           ),
       ];
     }
@@ -237,24 +317,25 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: [
             'DefaultGraphLinkClientAdapter adapter',
             if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
+            if (hasRest) 'GLRestAdapter restAdapter',
             ...encoderDecoderArgs,
             'GraphLinkWebSocketAdapter wsAdapter'
           ],
           statements: [
-            '${codeGenUtils.callExpression('this', ['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null', 'wsAdapter'])};'
+            '${codeGenUtils.callExpression('this', _withRest(['adapter', if (_grammar.persistedQueriesUseGet) 'getAdapter', 'adapter', 'encoder', 'decoder', 'null', 'wsAdapter'], expr: 'restAdapter'))};'
           ],
         ),
       //Single URL, ws derived by replacing http→ws
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
-        arguments: ['String url', ...encoderDecoderArgs],
+        arguments: ['String url', ..._restCtorParams, ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -262,28 +343,29 @@ class JavaClientSerializer extends GLClientSerializer {
         methodName: clientName,
         arguments: [
           'String url',
+          ..._restCtorParams,
           'Supplier<Map<String, String>> headersProvider',
           ...encoderDecoderArgs
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
               ],
       ),
       // Option B — explicit wsUrl
       codeGenUtils.createMethod(
         returnType: 'public',
         methodName: clientName,
-        arguments: ['String url', 'String wsUrl', ...encoderDecoderArgs],
+        arguments: ['String url', ..._restCtorParams, 'String wsUrl', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -291,33 +373,157 @@ class JavaClientSerializer extends GLClientSerializer {
         methodName: clientName,
         arguments: [
           'String url',
+          ..._restCtorParams,
           'String wsUrl',
           'Supplier<Map<String, String>> headersProvider',
           ...encoderDecoderArgs
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', ['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'])};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
               ],
       ),
       if (defaultCodec != null) ...[
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
-          arguments: ['String url'],
-          statements: ['${codeGenUtils.callExpression('this', ['url', '$defaultCodec', '$defaultCodec'])};'],
+          arguments: ['String url', ..._restCtorParams],
+          statements: ['${codeGenUtils.callExpression('this', ['url', ..._restNames, '$defaultCodec', '$defaultCodec'])};'],
         ),
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: clientName,
-          arguments: ['String url', 'String wsUrl'],
-          statements: ['${codeGenUtils.callExpression('this', ['url', 'wsUrl', '$defaultCodec', '$defaultCodec'])};'],
+          arguments: ['String url', ..._restCtorParams, 'String wsUrl'],
+          statements: ['${codeGenUtils.callExpression('this', ['url', ..._restNames, 'wsUrl', '$defaultCodec', '$defaultCodec'])};'],
         ),
       ],
     ];
+  }
+
+  List<String> _restOnlyConvenienceConstructors(List<String> encoderDecoderArgs, String? defaultCodec) {
+    if (!generatesRestAdapter) return const [];
+    return [
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String restBaseUrl', ...encoderDecoderArgs],
+        statements: ['${codeGenUtils.callExpression('this', ['new DefaultGraphLinkRestAdapter(restBaseUrl)', 'encoder', 'decoder'])};'],
+      ),
+      codeGenUtils.createMethod(
+        returnType: 'public',
+        methodName: clientName,
+        arguments: ['String restBaseUrl', 'Supplier<Map<String, String>> headersProvider', ...encoderDecoderArgs],
+        statements: ['${codeGenUtils.callExpression('this', ['new DefaultGraphLinkRestAdapter(restBaseUrl, headersProvider)', 'encoder', 'decoder'])};'],
+      ),
+      if (defaultCodec != null)
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: clientName,
+          arguments: ['String restBaseUrl'],
+          statements: ['${codeGenUtils.callExpression('this', ['restBaseUrl', defaultCodec, defaultCodec])};'],
+        ),
+    ];
+  }
+
+  // ── REST files ──────────────────────────────────────────────────────────────
+
+  Map<String, GLClassModel> generateRestFiles() {
+    final reactiveImports = [...flavor.singleImports, ...flavor.optionalTypeImports];
+    return {
+      'RestBody.java': const GLClassModel(imports: [JavaImports.list, JavaImports.map], body: javaRestBody),
+      'RestPart.java': const GLClassModel(body: javaRestPart),
+      'RestRequest.java': const GLClassModel(imports: [JavaImports.list, JavaImports.map], body: javaRestRequest),
+      'RestResponse.java': const GLClassModel(imports: [
+        'java.io.ByteArrayInputStream',
+        'java.io.Closeable',
+        'java.io.IOException',
+        'java.io.InputStream',
+        'java.io.OutputStream',
+        'java.io.UncheckedIOException',
+        'java.nio.charset.StandardCharsets',
+        JavaImports.collections,
+        JavaImports.map,
+      ], body: javaRestResponse),
+      'RestError.java': const GLClassModel(imports: [JavaImports.map], body: javaRestError),
+      'DownloadProgressCallback.java': const GLClassModel(body: javaDownloadProgressCallback),
+      'GLDownload.java': const GLClassModel(imports: [
+        'java.io.Closeable',
+        'java.io.IOException',
+        'java.io.InputStream',
+        'java.io.UncheckedIOException',
+        'java.net.URLDecoder',
+        'java.nio.charset.StandardCharsets',
+        JavaImports.map,
+        'java.util.regex.Matcher',
+        'java.util.regex.Pattern',
+      ], body: javaGLDownload),
+      'GLRestAdapter.java': GLClassModel(imports: flavor.singleImports, body: javaRestAdapterInterface(flavor)),
+      'GraphLinkRestUtils.java': const GLClassModel(imports: [
+        'java.nio.charset.StandardCharsets',
+        JavaImports.arrayList,
+        JavaImports.collections,
+        JavaImports.linkedHashMap,
+        JavaImports.list,
+        JavaImports.map,
+        JavaImports.treeMap,
+        'java.util.StringJoiner',
+      ], body: javaRestUtils),
+      'GraphLinkRestResolver.java': GLClassModel(
+        imports: [
+          JavaImports.function,
+          JavaImports.supplier,
+          JavaImports.hashMap,
+          JavaImports.list,
+          JavaImports.map,
+          JavaImports.optional,
+          ...reactiveImports,
+        ],
+        importDepencies: [
+          _grammar.getTokenByKey('GraphLinkClientAdapter')!,
+          _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
+          _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+        ],
+        body: javaRestResolver(flavor, withGetAdapter: _grammar.persistedQueriesUseGet),
+      ),
+      if (generatesRestAdapter)
+        'DefaultGraphLinkRestAdapter.java': GLClassModel(
+          imports: [
+            'java.io.ByteArrayInputStream',
+            'java.io.IOException',
+            'java.io.InputStream',
+            'java.io.SequenceInputStream',
+            'java.io.UncheckedIOException',
+            'java.net.URI',
+            'java.net.http.HttpClient',
+            'java.net.http.HttpHeaders',
+            'java.net.http.HttpRequest',
+            'java.net.http.HttpResponse',
+            'java.nio.charset.StandardCharsets',
+            JavaImports.arrayList,
+            JavaImports.collections,
+            JavaImports.linkedHashMap,
+            JavaImports.list,
+            JavaImports.map,
+            JavaImports.supplier,
+            JavaImports.uuid,
+            'java.util.Locale',
+            'java.util.StringJoiner',
+            'java.util.zip.GZIPInputStream',
+            'java.util.zip.InflaterInputStream',
+            ...flavor.singleImports,
+          ],
+          body: javaRestJdkAdapter(flavor),
+        ),
+      if (!_hasGraphQL)
+        'GraphLinkNoGraphQL.java': GLClassModel(
+          imports: flavor.singleImports,
+          importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+          body: javaNoGraphQLAdapter(flavor, operationName: _grammar.operationNameAsParameter),
+        ),
+    };
   }
 
   /// Wraps [inner] in the flavor's deferred-single type, or returns it bare
@@ -456,10 +662,11 @@ class JavaClientSerializer extends GLClientSerializer {
 
   String _adapterDeclaration(bool withStore) {
     return [
-      'GraphLinkClientAdapter adapter',
-      if (_grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
+      if (_hasGraphQL) 'GraphLinkClientAdapter adapter',
+      if (_hasGraphQL && _grammar.persistedQueriesUseGet) 'GraphLinkClientAdapter getAdapter',
       if (_grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
+      if (hasRest) 'GLRestAdapter restAdapter',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
       if (withStore) 'GraphLinkCacheStore store',
@@ -495,12 +702,16 @@ class JavaClientSerializer extends GLClientSerializer {
       'GraphLinkJsonDecoder'
     ].map((e) => _grammar.getTypeByName(e)!));
 
-    final methods = buildOperationMethods(type);
+    final restOperations = _restOperations(type);
+    final methods = [
+      ...buildOperationMethods(type),
+      ...restOperations.map((op) => _restSer.operationToMethod(op, importContainer)),
+    ];
     if (methods.isEmpty) return null;
 
     final classBody = codeGenUtils.createClass(
         staticClass: false,
-        className: "${classNameFromType(type)} extends GraphLinkResolverBase",
+        className: "${classNameFromType(type)} extends ${restOperations.isEmpty ? 'GraphLinkResolverBase' : 'GraphLinkRestResolver'}",
         statements: [
           ...declareAdapter(type),
           codeGenUtils.createMethod(
@@ -511,6 +722,7 @@ class JavaClientSerializer extends GLClientSerializer {
                 '${codeGenUtils.callExpression('super', [
                   'adapter',
                   if (type != GLQueryType.subscription && _grammar.persistedQueriesUseGet) 'getAdapter',
+                  if (restOperations.isNotEmpty) 'restAdapter',
                   'fragmentMap',
                   'store',
                   'encoder',
@@ -527,9 +739,14 @@ class JavaClientSerializer extends GLClientSerializer {
     return GLClassModel(
       importDepencies: {
         ..._getQueryImports(type),
+        ..._restTokens(type),
         ...importContainer.importDepencies
       }.toList(),
-      imports: [...importContainer.imports, ...flavor.imports],
+      imports: [
+        ...importContainer.imports,
+        ...flavor.imports,
+        if (restOperations.isNotEmpty) ...[...flavor.optionalTypeImports, if (flavor.isReactive) JavaImports.optional],
+      ],
       body: classBody,
     );
   }
@@ -546,6 +763,7 @@ class JavaClientSerializer extends GLClientSerializer {
         'GraphLinkWebSocketAdapter wsAdapter',
       if (type == GLQueryType.mutation && _grammar.hasUploadMutations)
         'GraphLinkMultipartAdapter multipartAdapter',
+      if (_restOperations(type).isNotEmpty) 'GLRestAdapter restAdapter',
       'Map<String, String> fragmentMap',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',

@@ -1,4 +1,5 @@
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/utils.dart';
 
 /// Strategy object that encapsulates every per-library divergence needed to
 /// generate reactive Java client code for Reactor, RxJava3 and Mutiny.
@@ -151,6 +152,101 @@ class JavaReactiveFlavor {
         return '$src.onFailure().recoverWithUni($fallbackLambda)';
       default:
         return src;
+    }
+  }
+
+  /// Defers [singleExpr] (an expression producing the deferred-single) until subscription.
+  String defer(String singleExpr) {
+    switch (single) {
+      case 'Mono':
+        return 'Mono.defer(() -> $singleExpr)';
+      case 'Single':
+        return 'Single.defer(() -> $singleExpr)';
+      case 'Uni':
+        return 'Uni.createFrom().deferred(() -> $singleExpr)';
+      default:
+        return singleExpr;
+    }
+  }
+
+  String singleType(String type) => isReactive ? '$single<${type.toBoxedType}>' : type;
+
+  String maybeType(String type) {
+    switch (single) {
+      case 'Mono':
+        return 'Mono<${type.toBoxedType}>';
+      case 'Single':
+        return 'Maybe<${type.toBoxedType}>';
+      case 'Uni':
+        return 'Uni<${type.toBoxedType}>';
+      default:
+        return type;
+    }
+  }
+
+  String get voidType {
+    switch (single) {
+      case 'Mono':
+        return 'Mono<Void>';
+      case 'Single':
+        return 'Completable';
+      case 'Uni':
+        return 'Uni<Void>';
+      default:
+        return 'void';
+    }
+  }
+
+  /// Extra imports for the Maybe / Completable types of the RxJava flavor.
+  List<String> get optionalTypeImports =>
+      single == 'Single' ? const ['io.reactivex.rxjava3.core.Maybe', 'io.reactivex.rxjava3.core.Completable'] : const [];
+
+  /// Wraps a possibly-null value into the flavor's maybe-type (empty when null).
+  String maybeOf(String expr) {
+    switch (single) {
+      case 'Mono':
+        return 'Mono.justOrEmpty($expr)';
+      case 'Single':
+        return 'Maybe.fromOptional(Optional.ofNullable($expr))';
+      case 'Uni':
+        return 'Uni.createFrom().item($expr)';
+      default:
+        return expr;
+    }
+  }
+
+  /// `src.flatMap(param -> {` returning a maybe-type from the lambda body.
+  String flatMapToMaybeOpen(String src, String param) {
+    switch (single) {
+      case 'Mono':
+        return '$src.flatMap($param -> {';
+      case 'Single':
+        return '$src.flatMapMaybe($param -> {';
+      default:
+        return '$src.chain($param -> {';
+    }
+  }
+
+  /// `src.flatMap(param -> {` returning the flavor's completed void-type from the body.
+  String flatMapToVoidOpen(String src, String param) {
+    switch (single) {
+      case 'Mono':
+        return '$src.flatMap($param -> {';
+      case 'Single':
+        return '$src.flatMapCompletable($param -> {';
+      default:
+        return '$src.chain($param -> {';
+    }
+  }
+
+  String get voidDone {
+    switch (single) {
+      case 'Mono':
+        return 'Mono.<Void>empty()';
+      case 'Single':
+        return 'Completable.complete()';
+      default:
+        return 'Uni.createFrom().voidItem()';
     }
   }
 

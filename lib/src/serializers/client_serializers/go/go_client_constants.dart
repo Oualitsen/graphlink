@@ -307,7 +307,7 @@ String goResolverBase({
 }) {
   final opParam = operationNameAsParameter ? ', operationName string' : '';
   final opArg = operationNameAsParameter ? ', glOperationName(body)' : '';
-  final base = r'''
+  const base = r'''
 const glTagKeyPrefix = "__tag__"
 
 // GraphLinkAdapter sends one serialised GraphQL request and returns the raw response body.
@@ -665,7 +665,7 @@ String goPersistedQueries({
   required bool useGet,
 }) {
   final opArg = operationNameAsParameter ? ', glOperationName(body)' : '';
-  final common = r'''
+  const common = r'''
 const glPersistedMinQueryLength = __MIN__
 const glPersistedNotFound = "PersistedQueryNotFound"
 const glPersistedNotSupported = "PersistedQueryNotSupported"

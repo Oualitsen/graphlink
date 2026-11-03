@@ -1,6 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';

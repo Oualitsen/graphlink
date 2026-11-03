@@ -6,7 +6,6 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_operation_serializer.dart';
