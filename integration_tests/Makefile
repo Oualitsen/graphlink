@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -109,6 +109,15 @@ typescript-real:
 java-real:
 	$(MAKE) -C real/java_client_tests_real ci
 
+java-reactor-real:
+	$(MAKE) -C real/java_client_tests_reactor_real ci
+
+java-rxjava3-real:
+	$(MAKE) -C real/java_client_tests_rxjava3_real ci
+
+java-mutiny-real:
+	$(MAKE) -C real/java_client_tests_mutiny_real ci
+
 kotlin-upload-real:
 	$(MAKE) -C real/kotlin_client_upload_tests_real ci
 
@@ -159,7 +168,7 @@ go-rest-real:
 
 all: dart dart-rest typescript typescript-rest java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin kotlin-rest swift swift-rest python python-rest go go-rest
 
-all-real: dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
+all-real: dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

@@ -1,0 +1,4 @@
+client-app/src/main/java/dev/graphlink/test/generated/
+client-app/target/
+.dart_tool/
+pubspec.lock
