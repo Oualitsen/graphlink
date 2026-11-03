@@ -10,7 +10,7 @@ types and the client are the same, so you can move an API from REST to GraphQL o
 and the call site does not change.
 
 !!! note
-    REST operations are generated for the **Dart**, **TypeScript**, **Kotlin**, **Python** and **Swift** and **Go** clients. Other client targets ignore them for now.
+    REST operations are generated for the **Dart**, **TypeScript**, **Java** (blocking and reactive), **Kotlin**, **Python**, **Swift** and **Go** clients. Other client targets ignore them for now.
 
 ```graphql
 scalar Void @glVoid
@@ -167,6 +167,41 @@ client.mutations.avatar(id = "p1", file = GLUpload(stream, "image/png", length, 
 - `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
 - JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder`, so they must handle nested maps and lists.
 
+## Java
+
+Methods are plain positional methods; pass `null` for an omitted optional argument (a declared default is applied when it is `null`).
+Operations that upload get an overload with a trailing `UploadProgressCallback`, and downloads one with a `DownloadProgressCallback`:
+
+```java
+GraphLinkClient client = new GraphLinkClient(
+    "https://api.example.com/graphql",
+    "https://api.example.com",
+    () -> Map.of("Authorization", "Bearer " + token),
+    encoder, decoder);
+Product product = client.queries.product("p1", null);
+client.mutations.avatar("p1", GLUpload.fromFile(new File("p1.png")), (sent, total) -> {});
+```
+
+- The generated `DefaultGraphLinkRestAdapter` uses the JDK `HttpClient` (`restHttpAdapter: "none"` skips it and the factories take a
+  `GLRestAdapter`). It streams uploads and downloads; a `GLUpload` with a negative `length` is sent chunked and reports no progress.
+- Errors: `RestError` (`getStatus()`, `getHeaders()`, `getBody()`); an empty body for a non-null result is an `IllegalStateException`,
+  a missing non-null field an `IllegalArgumentException` naming the type and field. A transport failure is never a `RestError`.
+- `void` operations (`Void`) return nothing. `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
+- JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder` (the Jackson codec is generated with `jsonCodec: "jackson"`).
+- Nested object keys in a query string come out in alphabetical order (`groups.0.ids` before `groups.0.name`).
+
+### Reactive
+
+With `asyncStyle` set (see [Java client](java-client.md#reactive-client-v500)), REST operations return `Mono<T>` instead, and
+`GLRestAdapter.execute` returns `Mono<RestResponse>`. The request is built identically to the blocking client.
+
+- Nothing is sent until you subscribe.
+- A nullable result that comes back empty (`204`, or an empty body) completes without a value; for a non-null result it is an
+  `IllegalStateException` error signal. `RestError` is an error signal too, and `staleIfOffline` is served on a transport error signal only.
+- `void` operations return `Mono<Void>`.
+- The generated adapter uses the JDK `HttpClient.sendAsync` regardless of `reactiveHttpClient` (that option only affects the GraphQL adapter).
+- The test suites cover `reactor`; `rxjava3` and `mutiny` generate the same shapes but are not exercised against a server.
+
 ## Python
 
 Methods are `async` with keyword-only arguments:
@@ -241,7 +276,7 @@ err = client.Mutations.Avatar(ctx, "p1", generated.GLUploadFromBytes(data, "p1.p
 
 ## Known limitations
 
-- Dart, TypeScript, Kotlin, Python, Swift and Go clients only.
+- Dart, TypeScript, Java, Kotlin, Python, Swift and Go clients only.
 - An empty list and an absent list are indistinguishable on the wire.
 - Subscriptions are always GraphQL.
 - Void is not yet supported by the server generators.
