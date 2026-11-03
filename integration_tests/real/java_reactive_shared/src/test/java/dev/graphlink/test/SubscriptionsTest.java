@@ -12,8 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import reactor.core.Disposable;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -24,16 +22,17 @@ import static dev.graphlink.test.Fixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Reactive (Flux) port of the subscription integration tests. The blocking
- * suite registered a {@code GraphLinkSubscriptionListener} callback; the
- * reactive client returns a {@code Flux<T>}, so each test subscribes and
- * collects emissions through onNext / onComplete instead.
+ * Reactive port of the subscription integration tests, shared by every reactive
+ * flavor. The blocking suite registered a {@code GraphLinkSubscriptionListener}
+ * callback; the reactive clients return a stream (Flux, Observable or Multi),
+ * so each test subscribes through {@code Rx.subscribe} and collects emissions
+ * through onNext / onComplete instead.
  */
 class SubscriptionsTest {
 
     private DefaultGraphLinkWebSocketAdapter wsAdapter;
     private GraphLinkClient client;
-    private final List<Disposable> disposables = new CopyOnWriteArrayList<>();
+    private final List<Runnable> disposers = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     void setUp() {
@@ -46,12 +45,12 @@ class SubscriptionsTest {
 
     @AfterEach
     void tearDown() {
-        disposables.forEach(Disposable::dispose);
+        disposers.forEach(Runnable::run);
         wsAdapter.close();
     }
 
-    private void track(Disposable d) {
-        disposables.add(d);
+    private void track(Runnable disposer) {
+        disposers.add(disposer);
     }
 
     // ── userCreated ────────────────────────────────────────────────────────────
@@ -63,7 +62,7 @@ class SubscriptionsTest {
         void firstEvent_isAlice() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             List<UserCreatedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userCreated().subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -75,7 +74,7 @@ class SubscriptionsTest {
         void firstEvent_name_isAliceSmith() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             List<UserCreatedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userCreated().subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -87,7 +86,7 @@ class SubscriptionsTest {
         void firstEvent_status_deserializesToEnum() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             List<UserCreatedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userCreated().subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -99,7 +98,7 @@ class SubscriptionsTest {
         void bothEvents_deliveredInOrder() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(2);
             List<UserCreatedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userCreated().subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -113,7 +112,7 @@ class SubscriptionsTest {
         void onComplete_calledAfterStream() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicBoolean completed = new AtomicBoolean(false);
-            track(client.subscriptions.userCreated().subscribe(
+            track(Rx.subscribe(client.subscriptions.userCreated(), 
                     r -> {},
                     err -> {},
                     () -> { completed.set(true); latch.countDown(); }));
@@ -136,8 +135,8 @@ class SubscriptionsTest {
             List<UserCreatedResponse> events1 = new CopyOnWriteArrayList<>();
             List<UserCreatedResponse> events2 = new CopyOnWriteArrayList<>();
 
-            track(client.subscriptions.userCreated().subscribe(r -> { events1.add(r); latch1.countDown(); }));
-            track(client.subscriptions.userCreated().subscribe(r -> { events2.add(r); latch2.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> { events1.add(r); latch1.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> { events2.add(r); latch2.countDown(); }));
 
             assertTrue(latch1.await(10, TimeUnit.SECONDS), "Subscription 1 timed out");
             assertTrue(latch2.await(10, TimeUnit.SECONDS), "Subscription 2 timed out");
@@ -154,8 +153,8 @@ class SubscriptionsTest {
             List<UserStatusChangedResponse> events1 = new CopyOnWriteArrayList<>();
             List<UserStatusChangedResponse> events2 = new CopyOnWriteArrayList<>();
 
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> { events1.add(r); latch1.countDown(); }));
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> { events2.add(r); latch2.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> { events1.add(r); latch1.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> { events2.add(r); latch2.countDown(); }));
 
             assertTrue(latch1.await(10, TimeUnit.SECONDS), "Subscription 1 timed out");
             assertTrue(latch2.await(10, TimeUnit.SECONDS), "Subscription 2 timed out");
@@ -180,8 +179,8 @@ class SubscriptionsTest {
             List<UserCreatedResponse> userCreatedEvents = new CopyOnWriteArrayList<>();
             List<UserStatusChangedResponse> statusEvents = new CopyOnWriteArrayList<>();
 
-            track(client.subscriptions.userCreated().subscribe(r -> { userCreatedEvents.add(r); latch1.countDown(); }));
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> { statusEvents.add(r); latch2.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> { userCreatedEvents.add(r); latch1.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> { statusEvents.add(r); latch2.countDown(); }));
 
             assertTrue(latch1.await(10, TimeUnit.SECONDS), "userCreated timed out");
             assertTrue(latch2.await(10, TimeUnit.SECONDS), "userStatusChanged timed out");
@@ -197,8 +196,8 @@ class SubscriptionsTest {
             List<UserStatusChangedResponse> events1 = new CopyOnWriteArrayList<>();
             List<UserStatusChangedResponse> events2 = new CopyOnWriteArrayList<>();
 
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> { events1.add(r); latch1.countDown(); }));
-            track(client.subscriptions.userStatusChanged("user-2").subscribe(r -> { events2.add(r); latch2.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> { events1.add(r); latch1.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-2"), r -> { events2.add(r); latch2.countDown(); }));
 
             assertTrue(latch1.await(10, TimeUnit.SECONDS));
             assertTrue(latch2.await(10, TimeUnit.SECONDS));
@@ -215,8 +214,8 @@ class SubscriptionsTest {
             List<UserCreatedResponse> singleEvents = new CopyOnWriteArrayList<>();
             List<UserCreatedsResponse> listEvents = new CopyOnWriteArrayList<>();
 
-            track(client.subscriptions.userCreated().subscribe(r -> { singleEvents.add(r); latch1.countDown(); }));
-            track(client.subscriptions.userCreateds(List.of("user-1", "user-2")).subscribe(r -> { listEvents.add(r); latch2.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userCreated(), r -> { singleEvents.add(r); latch1.countDown(); }));
+            track(Rx.subscribe(client.subscriptions.userCreateds(List.of("user-1", "user-2")), r -> { listEvents.add(r); latch2.countDown(); }));
 
             assertTrue(latch1.await(10, TimeUnit.SECONDS));
             assertTrue(latch2.await(10, TimeUnit.SECONDS));
@@ -237,7 +236,7 @@ class SubscriptionsTest {
         void event_returnsCorrectUser() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             List<UserStatusChangedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -249,7 +248,7 @@ class SubscriptionsTest {
         void event_status_isCorrect() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             List<UserStatusChangedResponse> events = new CopyOnWriteArrayList<>();
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(r -> {
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), r -> {
                 events.add(r);
                 latch.countDown();
             }));
@@ -261,7 +260,7 @@ class SubscriptionsTest {
         void onComplete_calledAfterStream() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
             AtomicBoolean completed = new AtomicBoolean(false);
-            track(client.subscriptions.userStatusChanged("user-1").subscribe(
+            track(Rx.subscribe(client.subscriptions.userStatusChanged("user-1"), 
                     r -> {},
                     err -> {},
                     () -> { completed.set(true); latch.countDown(); }));

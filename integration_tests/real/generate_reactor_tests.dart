@@ -5,14 +5,21 @@ class _Suite {
   final String reactive;
   final String package;
   final bool wrapInRx;
+  final Set<String> excluded;
 
-  const _Suite(this.blocking, this.reactive, this.package, {this.wrapInRx = false});
+  const _Suite(this.blocking, this.reactive, this.package, {this.wrapInRx = false, this.excluded = const {}});
 }
 
+// Blocking-only tests written against the listener-callback subscription API; the
+// reactive flavors share a stream-based SubscriptionsTest in java_reactive_shared.
+const _listenerOnly = {'SubscriptionReconnectTest.java', 'SubscriptionsTest.java'};
+
 const _suites = [
-  _Suite('java_client_tests_real', 'java_client_tests_reactor_real', 'dev/graphlink/test'),
+  _Suite('java_client_tests_real', 'java_client_tests_reactor_real', 'dev/graphlink/test', excluded: _listenerOnly),
   _Suite('java_rest_client_tests_real', 'java_rest_reactor_client_tests_real', 'dev/graphlink/rest'),
   _Suite('java_client_upload_tests_real', 'java_client_upload_reactor_tests_real', 'dev/graphlink/upload'),
+  _Suite('java_client_tests_real', 'java_client_tests_rxjava3_real', 'dev/graphlink/test', wrapInRx: true, excluded: _listenerOnly),
+  _Suite('java_client_tests_real', 'java_client_tests_mutiny_real', 'dev/graphlink/test', wrapInRx: true, excluded: _listenerOnly),
   _Suite('java_rest_client_tests_real', 'java_rest_rxjava3_client_tests_real', 'dev/graphlink/rest', wrapInRx: true),
   _Suite('java_rest_client_tests_real', 'java_rest_mutiny_client_tests_real', 'dev/graphlink/rest', wrapInRx: true),
 ];
@@ -27,11 +34,14 @@ const _suites = [
 void main() {
   final root = File.fromUri(Platform.script).parent.path;
   for (final suite in _suites) {
-    _derive(root, suite.blocking, suite.reactive, suite.package, suite.wrapInRx);
+    _derive(root, suite);
   }
 }
 
-void _derive(String root, String blocking, String reactive, String package, bool wrapInRx) {
+void _derive(String root, _Suite suite) {
+  final blocking = suite.blocking;
+  final reactive = suite.reactive;
+  final package = suite.package;
   final source = Directory('$root/$blocking/client-app/src/test/java/$package');
   final handWritten = _fileNames(Directory('$root/$reactive/client-app/src/test/java/$package'));
   final target = Directory('$root/$reactive/client-app/src/test/generated/java/$package');
@@ -42,8 +52,8 @@ void _derive(String root, String blocking, String reactive, String package, bool
   var count = 0;
   for (final file in source.listSync().whereType<File>()) {
     final name = file.uri.pathSegments.last;
-    if (!name.endsWith('.java') || handWritten.contains(name)) continue;
-    File('${target.path}/$name').writeAsStringSync(_toReactive(file.readAsStringSync(), wrapInRx));
+    if (!name.endsWith('.java') || handWritten.contains(name) || suite.excluded.contains(name)) continue;
+    File('${target.path}/$name').writeAsStringSync(_toReactive(file.readAsStringSync(), suite.wrapInRx));
     count++;
   }
   stdout.writeln('Derived $count reactive tests into ${target.path}');

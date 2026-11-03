@@ -301,10 +301,12 @@ don't confuse them:
   `schema_real/`) runs them against a hand-written, trusted Spring Boot server
   (`real/spring_server/`, `real/spring_upload_server/`) JAR. This validates **generated
   client code** — most cross-language parity bugs have been caught here.
-  `real/java_client_tests_reactor_real` shares `schema_real/` and derives most of its tests from
-  `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
-  git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
-  default values) are hand-written there. Edit the blocking test, not the derived copy.
+  The reactive GraphQL suites `real/java_client_tests_{reactor,rxjava3,mutiny}_real` share `schema_real/` and derive most of their tests
+  from `java_client_tests_real` via `real/generate_reactor_tests.dart` into a git-ignored `src/test/generated/` (`.block()` appended for
+  Reactor, each call wrapped in the package's `Rx.block(...)` for RxJava 3 and Mutiny). The flavor-neutral hand-written tests
+  (`SubscriptionsTest`, the mock adapter core and the multipart adapter core) live once in `real/java_reactive_shared/`; each package
+  adds only its `Rx` helper and thin `MockAdapter` / `RealMultipartAdapter` wrappers. `SubscriptionReconnectTest` is blocking/Reactor only.
+  Edit the blocking test, not the derived copy.
 - **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
   Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
 - **REST operations** (`@glRest*`, Java client): one mock and one real package per flavor, all against `real/schema_rest/`.

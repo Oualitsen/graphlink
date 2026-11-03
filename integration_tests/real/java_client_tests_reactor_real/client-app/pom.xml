@@ -67,6 +67,7 @@
                         <configuration>
                             <sources>
                                 <source>src/test/generated/java</source>
+                                <source>../../java_reactive_shared/src/test/java</source>
                             </sources>
                         </configuration>
                     </execution>
