@@ -27,6 +27,16 @@ public abstract class RestBody {
         public Multipart(List<RestPart> parts) { this.parts = parts; }
 
         public List<RestPart> getParts() { return parts; }
+
+        public GLMultipartBody toBody() {
+            List<GLMultipartBody.Part> converted = new java.util.ArrayList<>();
+            for (RestPart part : parts) {
+                converted.add(part.getFile() != null
+                    ? GLMultipartBody.Part.file(part.getName(), part.getFile())
+                    : GLMultipartBody.Part.text(part.getName(), part.getValue(), part.getMimeType()));
+            }
+            return GLMultipartBody.of(converted);
+        }
     }
 
     public static final class Raw extends RestBody {
@@ -781,16 +791,15 @@ String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
     ]),
     _braces('if (body instanceof RestBody.Raw)', [
       'GLUpload upload = ((RestBody.Raw) body).getUpload();',
-      'return stream(upload.getStream(), upload.getLength(), request.getOnSendProgress());',
+      'return stream(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength());',
     ]),
-    'RestMultipart multipart = RestMultipart.of(((RestBody.Multipart) body).getParts());',
-    'headers.put("Content-Type", multipart.contentType);',
-    'return stream(multipart.stream, multipart.length, request.getOnSendProgress());',
+    'GLMultipartBody multipart = ((RestBody.Multipart) body).toBody();',
+    'headers.put("Content-Type", multipart.getContentType());',
+    'return stream(multipart.getStream(request.getOnSendProgress()), multipart.getLength());',
   ]);
 
-  final stream = _method('private static HttpRequest.BodyPublisher stream(InputStream source, long length, UploadProgressCallback onProgress)', [
+  final stream = _method('private static HttpRequest.BodyPublisher stream(InputStream in, long length)', [
     _braces('if (length == 0)', ['return HttpRequest.BodyPublishers.noBody();']),
-    'InputStream in = onProgress == null ? source : new ProgressInputStream(source, length, onProgress);',
     'HttpRequest.BodyPublisher publisher = HttpRequest.BodyPublishers.ofInputStream(() -> in);',
     'return length > 0 ? HttpRequest.BodyPublishers.fromPublisher(publisher, length) : publisher;',
   ]);
@@ -826,82 +835,6 @@ String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
     ]),
   ].join('\n\n');
 
-  final partLoop = _braces('for (RestPart part : parts)', [
-    'String disposition = "form-data; name=\\"" + quote(part.getName()) + "\\"";',
-    'String mimeType = part.getMimeType();',
-    'GLUpload file = part.getFile();',
-    _braces('if (file != null)', [
-      _braces('if (file.getFilename() != null && !file.getFilename().isEmpty())', [
-        'disposition += "; filename=\\"" + quote(file.getFilename()) + "\\"";',
-      ]),
-      'mimeType = file.getMimeType();',
-    ]),
-    'String head = "--" + boundary + "\\r\\nContent-Disposition: " + disposition + "\\r\\n" + (mimeType == null || mimeType.isEmpty() ? "" : "Content-Type: " + mimeType + "\\r\\n") + "\\r\\n";',
-    'byte[] headBytes = head.getBytes(StandardCharsets.UTF_8);',
-    'streams.add(new ByteArrayInputStream(headBytes));',
-    'length = add(length, headBytes.length);',
-    '${_braces('if (file != null)', [
-          'streams.add(file.getStream());',
-          'length = file.getLength() < 0 ? -1 : add(length, file.getLength());',
-        ])} ${_braces('else', [
-          'byte[] valueBytes = part.getValue().getBytes(StandardCharsets.UTF_8);',
-          'streams.add(new ByteArrayInputStream(valueBytes));',
-          'length = add(length, valueBytes.length);',
-        ])}',
-    'streams.add(new ByteArrayInputStream(CRLF));',
-    'length = add(length, CRLF.length);',
-  ]);
-
-  final multipart = _braces('private static final class RestMultipart', [
-    'private static final byte[] CRLF = {13, 10};',
-    'final String contentType;',
-    'final InputStream stream;',
-    'final long length;',
-    _method('private RestMultipart(String contentType, InputStream stream, long length)', [
-      'this.contentType = contentType;',
-      'this.stream = stream;',
-      'this.length = length;',
-    ]),
-    _method('static RestMultipart of(List<RestPart> parts)', [
-      'String boundary = "----graphlink" + UUID.randomUUID().toString().replace("-", "");',
-      'List<InputStream> streams = new ArrayList<>();',
-      'long length = 0;',
-      partLoop,
-      'byte[] tail = ("--" + boundary + "--\\r\\n").getBytes(StandardCharsets.UTF_8);',
-      'streams.add(new ByteArrayInputStream(tail));',
-      'length = add(length, tail.length);',
-      'return new RestMultipart("multipart/form-data; boundary=" + boundary, new SequenceInputStream(Collections.enumeration(streams)), length);',
-    ]),
-    _method('private static long add(long total, long amount)', ['return total < 0 ? -1 : total + amount;']),
-    _method('private static String quote(String value)', [
-      'return value.replace("\\"", "%22").replace("\\r", "%0D").replace("\\n", "%0A");',
-    ]),
-  ]);
-
-  final progress = _braces('private static final class ProgressInputStream extends InputStream', [
-    'private final InputStream delegate;',
-    'private final long total;',
-    'private final UploadProgressCallback callback;',
-    'private long sent = 0L;',
-    _method('ProgressInputStream(InputStream delegate, long total, UploadProgressCallback callback)', [
-      'this.delegate = delegate;',
-      'this.total = total;',
-      'this.callback = callback;',
-    ]),
-    _method('@Override\npublic int read() throws IOException', [
-      'int value = delegate.read();',
-      _braces('if (value >= 0)', ['report(1);']),
-      'return value;',
-    ]),
-    _method('@Override\npublic int read(byte[] buffer, int offset, int length) throws IOException', [
-      'int count = delegate.read(buffer, offset, length);',
-      _braces('if (count > 0)', ['report(count);']),
-      'return count;',
-    ]),
-    _method('@Override\npublic void close() throws IOException', ['delegate.close();']),
-    _method('private void report(long count)', ['sent += count;', 'callback.onProgress(sent, total);']),
-  ]);
-
   final body = [
     'private final String baseUrl;',
     'private final Supplier<Map<String, String>> headersProvider;',
@@ -914,8 +847,6 @@ String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
     publisher,
     stream,
     convert,
-    multipart,
-    progress,
   ].join('\n\n');
   return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${body.ident()}\n}\n';
 }

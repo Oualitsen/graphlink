@@ -18,13 +18,14 @@ type Query { noop: String }
 ''';
 
 void main() {
-  test('the WebClient adapter imports MultipartBodyBuilder from the package Spring ships it in', () {
+  test('the WebClient adapter streams a GLMultipartBody instead of building a multipart form in memory', () {
     final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)..parse(_schema);
     final adapter = JavaClientSerializer(parser, JavaSerializer(parser, importPrefix: ''), flavor: JavaReactiveFlavor.reactor)
         .generateWebClientDefaultClientAdapterFile()
         .toFileContent();
 
-    expect(adapter, contains('org.springframework.http.client.MultipartBodyBuilder'));
-    expect(adapter, isNot(contains('org.springframework.util.MultipartBodyBuilder')));
+    expect(adapter, contains('GLMultipartBody.ofGraphQL(operations, mapJson, files)'));
+    expect(adapter, contains('BodyInserters.fromResource(resource)'));
+    expect(adapter, isNot(contains('MultipartBodyBuilder')));
   });
 }

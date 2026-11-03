@@ -113,6 +113,9 @@ class UploadsTest {
         assertTrue(unknown.getChunked());
         assertNull(unknown.getContentLength());
         assertEquals(sha256Of(bytes), part(unknown, "one").getSha256());
+        List<long[]> reports = new ArrayList<>();
+        client.mutations.eMultipart(null, null, null, uploadOf(bytes, "p.bin", "application/octet-stream", false), null, (sent, total) -> reports.add(new long[] {sent, total}));
+        assertTrue(reports.isEmpty(), "progress must not be reported when the total is unknown");
     }
 
     @Test
@@ -163,9 +166,7 @@ class UploadsTest {
         for (int i = 1; i < reports.size(); i++) assertTrue(reports.get(i)[0] >= reports.get(i - 1)[0]);
         List<long[]> unknown = new ArrayList<>();
         client.mutations.eRaw(uploadOf(pattern(40000), null, "application/octet-stream", false), (s, t) -> unknown.add(new long[] {s, t}));
-        assertFalse(unknown.isEmpty());
-        assertTrue(unknown.stream().allMatch(r -> r[1] == -1L || r[1] == 40000L));
-        assertEquals(40000L, unknown.get(unknown.size() - 1)[0]);
+        assertTrue(unknown.isEmpty(), "progress must not be reported when the total is unknown");
     }
 
     @Test

@@ -712,11 +712,12 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
           sink.writeAll(okio.Okio.source(upload.getStream()));
         }
       };
-      RequestBody uploadBody = onProgress != null ? new ProgressRequestBody(fileBody, onProgress) : fileBody;
       String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();
-      bodyBuilder.addFormDataPart(entry.getKey(), filename, uploadBody);
+      bodyBuilder.addFormDataPart(entry.getKey(), filename, fileBody);
     }
-    Request.Builder reqBuilder = new Request.Builder().url(url).post(bodyBuilder.build());
+    RequestBody body = bodyBuilder.build();
+    if (onProgress != null && body.contentLength() > 0) body = new ProgressRequestBody(body, onProgress);
+    Request.Builder reqBuilder = new Request.Builder().url(url).post(body);
     if (headersProvider != null) {
       Map<String, String> headers = headersProvider.get();
       if (headers != null) headers.forEach(reqBuilder::header);
@@ -797,15 +798,13 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
 
   @Override
   public String executeMultipart(String operations, String mapJson, Map<String, GLUpload> files, UploadProgressCallback onProgress) throws IOException {
-    String boundary = "----GraphLinkBoundary" + java.util.UUID.randomUUID().toString().replace("-", "");
-    byte[] body = buildMultipartBody(boundary, operations, mapJson, files);
-    HttpRequest.BodyPublisher basePublisher = HttpRequest.BodyPublishers.ofByteArray(body);
-    HttpRequest.BodyPublisher publisher = onProgress != null
-        ? new CountingBodyPublisher(basePublisher, body.length, onProgress)
-        : basePublisher;
+    GLMultipartBody body = GLMultipartBody.ofGraphQL(operations, mapJson, files);
+    java.io.InputStream in = body.getStream(onProgress);
+    HttpRequest.BodyPublisher publisher = HttpRequest.BodyPublishers.ofInputStream(() -> in);
+    if (body.getLength() >= 0) publisher = HttpRequest.BodyPublishers.fromPublisher(publisher, body.getLength());
     HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
         .uri(URI.create(url))
-        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+        .header("Content-Type", body.getContentType())
         .POST(publisher);
     if (headersProvider != null) {
       Map<String, String> headers = headersProvider.get();
@@ -817,60 +816,6 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new java.io.IOException(e);
-    }
-  }
-
-  private byte[] buildMultipartBody(String boundary, String operations, String mapJson, Map<String, GLUpload> files) throws IOException {
-    java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-    writePart(out, boundary, "operations", "application/json", operations.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    writePart(out, boundary, "map", "application/json", mapJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    for (Map.Entry<String, GLUpload> entry : files.entrySet()) {
-      GLUpload upload = entry.getValue();
-      String filename = upload.getFilename() != null ? upload.getFilename() : entry.getKey();
-      out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      out.write(("Content-Disposition: form-data; name=\\"" + entry.getKey() + "\\"; filename=\\"" + filename + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      out.write(("Content-Type: " + upload.getMimeType() + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-      upload.getStream().transferTo(out);
-      out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    }
-    out.write(("--" + boundary + "--\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    return out.toByteArray();
-  }
-
-  private void writePart(java.io.ByteArrayOutputStream out, String boundary, String name, String contentType, byte[] data) throws IOException {
-    out.write(("--" + boundary + "\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    out.write(("Content-Disposition: form-data; name=\\"" + name + "\\"\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    out.write(("Content-Type: " + contentType + "\\r\\n\\r\\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
-    out.write(data);
-    out.write("\\r\\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-  }
-
-  private static final class CountingBodyPublisher implements HttpRequest.BodyPublisher {
-    private final HttpRequest.BodyPublisher delegate;
-    private final long total;
-    private final UploadProgressCallback callback;
-
-    CountingBodyPublisher(HttpRequest.BodyPublisher delegate, long total, UploadProgressCallback callback) {
-      this.delegate = delegate;
-      this.total = total;
-      this.callback = callback;
-    }
-
-    @Override public long contentLength() { return delegate.contentLength(); }
-
-    @Override
-    public void subscribe(java.util.concurrent.Flow.Subscriber<? super java.nio.ByteBuffer> subscriber) {
-      delegate.subscribe(new java.util.concurrent.Flow.Subscriber<>() {
-        long sent = 0;
-        @Override public void onSubscribe(java.util.concurrent.Flow.Subscription sub) { subscriber.onSubscribe(sub); }
-        @Override public void onNext(java.nio.ByteBuffer item) {
-          sent += item.remaining();
-          callback.onProgress(sent, total);
-          subscriber.onNext(item);
-        }
-        @Override public void onError(Throwable t) { subscriber.onError(t); }
-        @Override public void onComplete() { subscriber.onComplete(); }
-      });
     }
   }
 }

@@ -664,6 +664,7 @@
 ### Fixes
 
 - **Dart uploads (GraphQL and REST)** — the `http` and Dio adapters stream multipart and raw uploads lazily (`GLMultipartBody` in `graph_link_uploads.dart`) instead of building them in memory, so progress is real on both. A `GLUpload` with no `length` used to fail on GraphQL with `Content size exceeds specified contentLength` and was read into memory on REST; it is now sent chunked. `onProgress` is no longer called when the total size is unknown (REST used to report a total of `-1`).
+- **Java uploads (GraphQL and REST, blocking and reactive)** — the JDK, OkHttp and WebClient adapters stream multipart and raw uploads (a new `GLMultipartBody`) instead of building the body in memory; the JDK GraphQL adapter used to copy every file into a `ByteArrayOutputStream`. A `GLUpload` with a negative `length` is sent chunked, and `onProgress` is no longer called when the total size is unknown. OkHttp now reports progress for the whole request body instead of per file, and the WebClient adapter reports progress at all.
 
 ### New features
 
