@@ -393,15 +393,30 @@ Enable globally in config with `"captureErrors": true` under `clientConfig.swift
 
 ## File uploads
 
-Upload mutations accept a `GLUpload` value (raw `Data` plus filename/MIME type) and are sent
-through `DefaultGraphLinkURLSessionMultipartAdapter` per the GraphQL multipart request spec:
+Upload mutations accept a `GLUpload` and are sent through `DefaultGraphLinkURLSessionMultipartAdapter` per the GraphQL
+multipart request spec. The body is streamed: a file is read in 64 KiB chunks as `URLSession` has room to send them, never
+loaded whole.
 
 ```swift
-let upload = GLUpload(data: fileData, filename: "avatar.png", mimeType: "image/png")
+// from memory
+let upload = GLUpload(data: fileData, mimeType: "image/png", filename: "avatar.png")
+
+// from disk: streamed, the length comes from the file system
+let upload = try GLUpload(fileURL: url, mimeType: "image/png")
+
+// from any async sequence of Data; `length: nil` sends the body chunked
+let upload = GLUpload(length: size, mimeType: "video/mp4", filename: "clip.mp4") { makeChunks() }
+
 try await client.mutations.uploadAvatar(userId: "1", file: upload)
 ```
 
-Pass an `UploadProgressCallback` to the generated method to observe upload progress.
+Pass an `UploadProgressCallback` to the generated method to observe upload progress. It reports bytes written to the
+socket and is only called when the total size is known (`GLUpload.length` is not `nil` for every file); an upload of
+unknown size is sent with chunked transfer encoding and reports no progress. `URLSession` coalesces the callbacks, so
+expect a few reports for a small body, not one per chunk.
+
+`GLUpload` no longer exposes a `data` property; call `try await upload.readAll()` if you need the bytes (for example in a
+custom `GraphLinkMultipartAdapter`).
 
 ## Known limitations
 

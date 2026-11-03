@@ -85,6 +85,30 @@ func upload(_ data: Data, filename: String? = nil, mimeType: String = "applicati
     GLUpload(data: data, mimeType: mimeType, filename: filename)
 }
 
+func streamedUpload(
+    _ data: Data,
+    filename: String? = nil,
+    knownLength: Bool = true,
+    chunkSize: Int = 65_536,
+    onPull: (@Sendable (Int) -> Void)? = nil,
+    pauseEvery: Int = 0
+) -> GLUpload {
+    GLUpload(length: knownLength ? data.count : nil, filename: filename) {
+        GLChunks {
+            let cursor = Collector<Int>()
+            return {
+                let offset = cursor.all.last ?? 0
+                guard offset < data.count else { return nil }
+                if pauseEvery > 0, offset % pauseEvery == 0 { try await Task.sleep(nanoseconds: 2_000_000) }
+                let end = min(offset + chunkSize, data.count)
+                cursor.add(end)
+                onPull?(end)
+                return data.subdata(in: offset..<end)
+            }
+        }
+    }
+}
+
 final class Collector<T: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var items: [T] = []

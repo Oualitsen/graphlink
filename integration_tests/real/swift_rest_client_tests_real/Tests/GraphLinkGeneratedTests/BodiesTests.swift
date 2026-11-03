@@ -185,6 +185,45 @@ final class MultipartBodyTests: RestCase {
         XCTAssertEqual(all.last?[0], all.last?[1])
         XCTAssertGreaterThan(all.last?[1] ?? 0, data.count)
     }
+
+    func test_unknownLengthMultipartIsStreamedChunkedAndIntact() async throws {
+        let data = pattern(300_000)
+        let e = try await client.mutations.eMultipart(one: streamedUpload(data, filename: "u.bin", knownLength: false))
+        XCTAssertEqual(part(e, "one").sha256, sha256Hex(data))
+        XCTAssertTrue(e.chunked)
+    }
+
+    func test_progressIsNotReportedWhenTheTotalIsUnknown() async throws {
+        let reports = Collector<[Int]>()
+        _ = try await client.mutations.eMultipart(
+            one: streamedUpload(pattern(40_000), filename: "u.bin", knownLength: false),
+            onProgress: { reports.add([$0, $1]) }
+        )
+        XCTAssertTrue(reports.all.isEmpty)
+    }
+
+    func test_aFileIsNotReadInFullBeforeTheFirstProgressReport() async throws {
+        let data = pattern(6 * 1024 * 1024)
+        let pulled = Collector<Int>()
+        let atFirstReport = Collector<Int>()
+        let e = try await client.mutations.eMultipart(
+            one: streamedUpload(data, filename: "big.bin", onPull: { pulled.add($0) }, pauseEvery: 256 * 1024),
+            onProgress: { _, _ in if atFirstReport.all.isEmpty { atFirstReport.add(pulled.all.last ?? 0) } }
+        )
+        XCTAssertEqual(part(e, "one").sha256, sha256Hex(data))
+        XCTAssertLessThan(atFirstReport.all.first ?? Int.max, data.count)
+    }
+
+    func test_aFileFromDiskIsStreamedWithItsLength() async throws {
+        let data = pattern(500_000)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("graphlink-\(UUID().uuidString).bin")
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let e = try await client.mutations.eMultipart(one: try GLUpload(fileURL: url))
+        XCTAssertEqual(part(e, "one").sha256, sha256Hex(data))
+        XCTAssertEqual(part(e, "one").filename, url.lastPathComponent)
+        XCTAssertFalse(e.chunked)
+    }
 }
 
 final class RawBodyTests: RestCase {
@@ -229,5 +268,33 @@ final class RawBodyTests: RestCase {
         let all = reports.all
         XCTAssertEqual(all.last, [data.count, data.count])
         XCTAssertEqual(all.map { $0[0] }, all.map { $0[0] }.sorted())
+    }
+
+    func test_unknownLengthRawUploadIsChunkedWithoutProgress() async throws {
+        let data = pattern(250_000)
+        let reports = Collector<[Int]>()
+        let e = try await client.mutations.eRaw(file: streamedUpload(data, knownLength: false), onProgress: { reports.add([$0, $1]) })
+        XCTAssertTrue(e.chunked)
+        XCTAssertNil(e.contentLength)
+        XCTAssertEqual(e.bodySha256, sha256Hex(data))
+        XCTAssertTrue(reports.all.isEmpty)
+    }
+
+    func test_aSourceThatFailsMidwayFailsTheCallWithoutHanging() async throws {
+        let failing = GLUpload(length: nil) {
+            GLChunks {
+                let state = Collector<Int>()
+                return {
+                    if state.all.isEmpty { state.add(1); return Data(count: 1000) }
+                    throw URLError(.cancelled)
+                }
+            }
+        }
+        do {
+            _ = try await client.mutations.eRaw(file: failing)
+            XCTFail("expected the call to fail")
+        } catch {}
+        let after = try await client.queries.eAccept()
+        XCTAssertEqual(after.method, "GET")
     }
 }

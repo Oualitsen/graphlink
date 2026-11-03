@@ -20,11 +20,13 @@ final class MockRest: @unchecked Sendable {
 
     func call(_ request: RestRequest) async throws -> RestResponse {
         if failTransport { throw URLError(.notConnectedToInternet) }
+        var rawBody = ""
+        if case .raw(let upload) = request.body { rawBody = String(decoding: try await upload.readAll(), as: UTF8.self) }
         lock.lock()
         _calls.append(request)
         switch request.body {
         case .json(let data): _bodies.append(String(decoding: data, as: UTF8.self))
-        case .raw(let upload): _bodies.append(String(decoding: upload.data, as: UTF8.self))
+        case .raw: _bodies.append(rawBody)
         default: break
         }
         let spec = specs["\(request.method) \(request.path)"]

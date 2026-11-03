@@ -484,22 +484,310 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
 
 // ── Upload ────────────────────────────────────────────────────────────────────
 //
-// Kotlin's `GLUpload` wraps a raw `InputStream` for true streaming uploads.
-// Swift has no directly equivalent portable byte-stream type outside
-// Combine/AsyncSequence machinery, so `GLUpload` holds the file as `Data`
-// instead — simpler and correct for the typical mobile/desktop upload sizes
-// this client targets, at the cost of not streaming arbitrarily large files
-// from disk without buffering them in memory first.
-const swiftGLUpload = '''
+// Uploads are pulled lazily in 64 KiB chunks: from memory (`init(data:)`), from
+// disk (`init(fileURL:)`) or from any async sequence (`init(length:chunks:)`).
+// Nothing reads a file ahead of what URLSession has room to send.
+const swiftGLUpload = r'''
+public struct GLChunks: AsyncSequence, Sendable {
+    public typealias Element = Data
+
+    private let start: @Sendable () -> (() async throws -> Data?)
+
+    public init(_ start: @escaping @Sendable () -> (() async throws -> Data?)) {
+        self.start = start
+    }
+
+    public struct AsyncIterator: AsyncIteratorProtocol {
+        fileprivate let pull: () async throws -> Data?
+
+        public mutating func next() async throws -> Data? {
+            try await pull()
+        }
+    }
+
+    public func makeAsyncIterator() -> AsyncIterator {
+        AsyncIterator(pull: start())
+    }
+}
+
+private final class GLChunkCursor: @unchecked Sendable {
+    var offset = 0
+}
+
+private final class GLFileChunks: @unchecked Sendable {
+    private let handle: FileHandle
+
+    init(_ url: URL) throws {
+        handle = try FileHandle(forReadingFrom: url)
+    }
+
+    deinit {
+        try? handle.close()
+    }
+
+    func next() throws -> Data? {
+        guard let data = try handle.read(upToCount: 65536), !data.isEmpty else { return nil }
+        return data
+    }
+}
+
 public struct GLUpload: Sendable {
-    public let data: Data
     public let mimeType: String
     public let filename: String?
+    public let length: Int?
+    private let source: @Sendable () -> GLChunks
 
     public init(data: Data, mimeType: String = "application/octet-stream", filename: String? = nil) {
-        self.data = data
         self.mimeType = mimeType
         self.filename = filename
+        self.length = data.count
+        self.source = {
+            GLChunks {
+                let cursor = GLChunkCursor()
+                return {
+                    guard cursor.offset < data.count else { return nil }
+                    let end = min(cursor.offset + 65536, data.count)
+                    defer { cursor.offset = end }
+                    return data.subdata(in: cursor.offset..<end)
+                }
+            }
+        }
+    }
+
+    public init(fileURL: URL, mimeType: String = "application/octet-stream", filename: String? = nil) throws {
+        let size = try FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? Int
+        self.mimeType = mimeType
+        self.filename = filename ?? fileURL.lastPathComponent
+        self.length = size
+        self.source = {
+            GLChunks {
+                let reader = try? GLFileChunks(fileURL)
+                return { try reader?.next() }
+            }
+        }
+    }
+
+    public init<S: AsyncSequence & Sendable>(
+        length: Int?,
+        mimeType: String = "application/octet-stream",
+        filename: String? = nil,
+        chunks: @escaping @Sendable () -> S
+    ) where S.Element == Data {
+        self.mimeType = mimeType
+        self.filename = filename
+        self.length = length
+        self.source = {
+            GLChunks {
+                var iterator = chunks().makeAsyncIterator()
+                return { try await iterator.next() }
+            }
+        }
+    }
+
+    public func chunks() -> GLChunks {
+        source()
+    }
+
+    public func readAll() async throws -> Data {
+        var out = Data()
+        for try await chunk in chunks() { out.append(chunk) }
+        return out
+    }
+}
+
+public struct GLMultipartPart: Sendable {
+    public let name: String
+    public let value: String?
+    public let file: GLUpload?
+    public let mimeType: String?
+
+    public init(name: String, value: String? = nil, file: GLUpload? = nil, mimeType: String? = nil) {
+        self.name = name
+        self.value = value
+        self.file = file
+        self.mimeType = mimeType
+    }
+}
+
+public struct GLMultipartBody: Sendable {
+    private enum Segment: Sendable {
+        case bytes(Data)
+        case file(GLUpload)
+    }
+
+    public let contentType: String
+    public let length: Int?
+    private let segments: [Segment]
+
+    public init(parts: [GLMultipartPart]) {
+        let boundary = "graphlink-" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        func quoted(_ text: String) -> String {
+            text.replacingOccurrences(of: "\"", with: "%22")
+                .replacingOccurrences(of: "\r", with: "%0D")
+                .replacingOccurrences(of: "\n", with: "%0A")
+        }
+        var segments: [Segment] = []
+        var total: Int? = 0
+        func add(_ data: Data) {
+            segments.append(.bytes(data))
+            if let current = total { total = current + data.count }
+        }
+        for part in parts {
+            var head = "--\(boundary)\r\nContent-Disposition: form-data; name=\"\(quoted(part.name))\""
+            if let file = part.file {
+                head += "; filename=\"\(quoted(file.filename ?? part.name))\"\r\nContent-Type: \(file.mimeType)"
+            } else if let mimeType = part.mimeType {
+                head += "\r\nContent-Type: \(mimeType)"
+            }
+            add(Data((head + "\r\n\r\n").utf8))
+            if let file = part.file {
+                segments.append(.file(file))
+                if let current = total, let size = file.length { total = current + size } else { total = nil }
+            } else {
+                add(Data((part.value ?? "").utf8))
+            }
+            add(Data("\r\n".utf8))
+        }
+        add(Data("--\(boundary)--\r\n".utf8))
+        self.contentType = "multipart/form-data; boundary=\(boundary)"
+        self.length = total
+        self.segments = segments
+    }
+
+    public func chunks() -> GLChunks {
+        let segments = self.segments
+        return GLChunks {
+            var index = 0
+            var current: GLChunks.AsyncIterator?
+            return {
+                while true {
+                    if var iterator = current {
+                        if let chunk = try await iterator.next() {
+                            current = iterator
+                            return chunk
+                        }
+                        current = nil
+                    }
+                    guard index < segments.count else { return nil }
+                    let segment = segments[index]
+                    index += 1
+                    switch segment {
+                    case .bytes(let data): return data
+                    case .file(let file): current = file.chunks().makeAsyncIterator()
+                    }
+                }
+            }
+        }
+    }
+}
+
+public final class GLStreamedUpload: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    private let chunks: GLChunks
+    private let length: Int?
+    private let onProgress: UploadProgressCallback?
+    private var body = Data()
+    private var pump: Task<Void, Never>?
+    private var pumpError: Error?
+    private var continuation: CheckedContinuation<(Data, URLResponse), Error>?
+    private var task: URLSessionUploadTask?
+
+    private init(chunks: GLChunks, length: Int?, onProgress: UploadProgressCallback?) {
+        self.chunks = chunks
+        self.length = length
+        self.onProgress = onProgress
+    }
+
+    public static func send(
+        _ request: URLRequest,
+        chunks: GLChunks,
+        length: Int?,
+        session: URLSession,
+        onProgress: UploadProgressCallback?
+    ) async throws -> (Data, URLResponse) {
+        if length == 0 { return try await session.upload(for: request, from: Data()) }
+        var request = request
+        if let length { request.setValue(String(length), forHTTPHeaderField: "Content-Length") }
+        let upload = GLStreamedUpload(chunks: chunks, length: length, onProgress: onProgress)
+        let task = session.uploadTask(withStreamedRequest: request)
+        task.delegate = upload
+        upload.task = task
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                upload.continuation = continuation
+                task.resume()
+            }
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    public func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        needNewBodyStream completionHandler: @escaping @Sendable (InputStream?) -> Void
+    ) {
+        pump?.cancel()
+        var input: InputStream?
+        var output: OutputStream?
+        Stream.getBoundStreams(withBufferSize: 65536, inputStream: &input, outputStream: &output)
+        guard let input, let output else {
+            completionHandler(nil)
+            return
+        }
+        let chunks = self.chunks
+        pump = Task.detached { [weak self] in
+            output.open()
+            defer { output.close() }
+            do {
+                for try await chunk in chunks {
+                    var offset = 0
+                    while offset < chunk.count {
+                        try Task.checkCancellation()
+                        if output.hasSpaceAvailable {
+                            let written = chunk.withUnsafeBytes { raw in
+                                output.write(raw.bindMemory(to: UInt8.self).baseAddress!.advanced(by: offset), maxLength: chunk.count - offset)
+                            }
+                            if written < 0 { throw output.streamError ?? URLError(.networkConnectionLost) }
+                            offset += written
+                        } else {
+                            try await Task.sleep(nanoseconds: 1_000_000)
+                        }
+                    }
+                }
+            } catch is CancellationError {
+            } catch {
+                self?.pumpError = error
+                self?.task?.cancel()
+            }
+        }
+        completionHandler(input)
+    }
+
+    public func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didSendBodyData bytesSent: Int64,
+        totalBytesSent: Int64,
+        totalBytesExpectedToSend: Int64
+    ) {
+        if let onProgress, let length, length > 0 { onProgress(Int(totalBytesSent), length) }
+    }
+
+    public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        body.append(data)
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        pump?.cancel()
+        let continuation = self.continuation
+        self.continuation = nil
+        if let failure = pumpError ?? error {
+            continuation?.resume(throwing: failure)
+        } else if let response = task.response {
+            continuation?.resume(returning: (body, response))
+        } else {
+            continuation?.resume(throwing: URLError(.badServerResponse))
+        }
     }
 }
 ''';
@@ -512,13 +800,7 @@ const swiftGraphLinkMultipartAdapter = '''
 public typealias GraphLinkMultipartAdapter = (Data, Data, [String: GLUpload], UploadProgressCallback?) async throws -> Data
 ''';
 
-// `onProgress` is only invoked once, after the full multipart body has been
-// built and handed to `URLSession.upload(for:from:)` — true incremental
-// progress needs a `URLSessionTaskDelegate` hooked to the session, which is
-// beyond what this default adapter does; it exists to satisfy the
-// `UploadProgressCallback?` parameter shape, not to provide real streaming
-// progress. Swap in a custom `GraphLinkMultipartAdapter` closure for that.
-const swiftDefaultGraphLinkURLSessionMultipartAdapter = '''
+const swiftDefaultGraphLinkURLSessionMultipartAdapter = r'''
 public struct DefaultGraphLinkURLSessionMultipartAdapter: Sendable {
     private let url: URL
     private let headersProvider: (@Sendable () -> [String: String])?
@@ -531,35 +813,19 @@ public struct DefaultGraphLinkURLSessionMultipartAdapter: Sendable {
     }
 
     public func executeMultipart(_ operations: Data, _ mapJson: Data, _ files: [String: GLUpload], _ onProgress: UploadProgressCallback?) async throws -> Data {
-        let boundary = "GraphLinkBoundary-" + UUID().uuidString
-        var body = Data()
-
-        func appendField(_ name: String, _ value: Data) {
-            body.append("--\\(boundary)\\r\\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\\"\\(name)\\"\\r\\n\\r\\n".data(using: .utf8)!)
-            body.append(value)
-            body.append("\\r\\n".data(using: .utf8)!)
-        }
-
-        appendField("operations", operations)
-        appendField("map", mapJson)
-        for (key, upload) in files {
-            let filename = upload.filename ?? key
-            body.append("--\\(boundary)\\r\\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\\"\\(key)\\"; filename=\\"\\(filename)\\"\\r\\n".data(using: .utf8)!)
-            body.append("Content-Type: \\(upload.mimeType)\\r\\n\\r\\n".data(using: .utf8)!)
-            body.append(upload.data)
-            body.append("\\r\\n".data(using: .utf8)!)
-        }
-        body.append("--\\(boundary)--\\r\\n".data(using: .utf8)!)
+        var parts = [
+            GLMultipartPart(name: "operations", value: String(decoding: operations, as: UTF8.self), mimeType: "application/json"),
+            GLMultipartPart(name: "map", value: String(decoding: mapJson, as: UTF8.self), mimeType: "application/json"),
+        ]
+        for key in files.keys.sorted() { parts.append(GLMultipartPart(name: key, file: files[key])) }
+        let body = GLMultipartBody(parts: parts)
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("multipart/form-data; boundary=\\(boundary)", forHTTPHeaderField: "Content-Type")
-        headersProvider?().forEach { request.setValue(\$1, forHTTPHeaderField: \$0) }
+        request.setValue(body.contentType, forHTTPHeaderField: "Content-Type")
+        headersProvider?().forEach { request.setValue($1, forHTTPHeaderField: $0) }
 
-        onProgress?(body.count, body.count)
-        let (data, _) = try await session.upload(for: request, from: body)
+        let (data, _) = try await GLStreamedUpload.send(request, chunks: body.chunks(), length: body.length, session: session, onProgress: onProgress)
         return data
     }
 }
