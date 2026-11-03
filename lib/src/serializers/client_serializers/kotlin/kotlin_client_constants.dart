@@ -271,14 +271,16 @@ class DefaultGraphLinkClientAdapter(
             val fileBody: RequestBody = object : RequestBody() {
                 override fun contentType() = upload.mimeType.toMediaType()
                 override fun contentLength() = upload.length
+                override fun isOneShot() = true
                 override fun writeTo(sink: BufferedSink) {
-                    sink.writeAll(upload.stream.source())
+                    upload.stream.source().use { sink.writeAll(it) }
                 }
             }
-            val uploadBody = if (onProgress != null) ProgressRequestBody(fileBody, onProgress) else fileBody
-            bodyBuilder.addFormDataPart(key, upload.filename ?: key, uploadBody)
+            bodyBuilder.addFormDataPart(key, upload.filename ?: key, fileBody)
         }
-        val reqBuilder = Request.Builder().url(url).post(bodyBuilder.build())
+        var body: RequestBody = bodyBuilder.build()
+        if (onProgress != null && body.contentLength() > 0) body = ProgressRequestBody(body, onProgress)
+        val reqBuilder = Request.Builder().url(url).post(body)
         headersProvider?.invoke()?.forEach { (k, v) -> reqBuilder.header(k, v) }
         httpClient.newCall(reqBuilder.build()).execute().use { it.body!!.string() }
     }
@@ -289,6 +291,7 @@ class DefaultGraphLinkClientAdapter(
     ) : RequestBody() {
         override fun contentType() = delegate.contentType()
         override fun contentLength() = delegate.contentLength()
+        override fun isOneShot() = delegate.isOneShot()
         override fun writeTo(sink: BufferedSink) {
             val total = contentLength()
             var sent = 0L

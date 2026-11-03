@@ -54,7 +54,12 @@ class UploadsTest {
     @Test
     fun unknownLengthAndNonAsciiFilename() = runBlocking {
         val bytes = pattern(300000)
-        assertEquals(sha256Of(bytes), client.mutations.eMultipart(one = uploadOf(bytes, "u.bin", knownLength = false)).part("one").sha256)
+        val unknown = client.mutations.eMultipart(one = uploadOf(bytes, "u.bin", knownLength = false))
+        assertEquals(sha256Of(bytes), unknown.part("one").sha256)
+        assertTrue(unknown.chunked)
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        client.mutations.eMultipart(one = uploadOf(bytes, "p.bin", knownLength = false), onProgress = UploadProgressCallback { _, _ -> calls.incrementAndGet() })
+        assertEquals(0, calls.get())
         val name = client.mutations.eMultipart(one = uploadOf(pattern(3), "é漢.png")).part("one").filename
         assertTrue(name == "é漢.png" || name == restEncode("é漢.png"))
     }
@@ -148,9 +153,31 @@ class UploadsTest {
         for (i in 1 until reports.size) assertTrue(reports[i][0] >= reports[i - 1][0])
         val unknown = mutableListOf<LongArray>()
         client.mutations.eRaw(file = uploadOf(pattern(40000), knownLength = false), onProgress = UploadProgressCallback { s, t -> unknown.add(longArrayOf(s, t)) })
-        assertTrue(unknown.isNotEmpty())
-        assertTrue(unknown.all { it[1] == -1L || it[1] == 40000L })
-        assertEquals(40000L, unknown.last()[0])
+        assertTrue(unknown.isEmpty(), "progress must not be reported when the total is unknown")
+    }
+
+    @Test
+    fun aMultipartFileIsNotReadInFullBeforeTheFirstProgressReport() = runBlocking {
+        val bytes = pattern(6 * 1024 * 1024)
+        val pulled = java.util.concurrent.atomic.AtomicLong()
+        val pulledAtFirstReport = java.util.concurrent.atomic.AtomicLong(-1)
+        val slow = object : java.io.InputStream() {
+            private var position = 0
+            override fun read(): Int = throw UnsupportedOperationException()
+            override fun read(buffer: ByteArray, offset: Int, count: Int): Int {
+                if (position >= bytes.size) return -1
+                val read = minOf(count, 65536, bytes.size - position)
+                System.arraycopy(bytes, position, buffer, offset, read)
+                position += read
+                pulled.addAndGet(read.toLong())
+                if (position % (256 * 1024) == 0) Thread.sleep(2)
+                return read
+            }
+        }
+        val upload = GLUpload(slow, "application/octet-stream", bytes.size.toLong(), "big.bin")
+        val e = client.mutations.eMultipart(one = upload, onProgress = UploadProgressCallback { _, _ -> pulledAtFirstReport.compareAndSet(-1, pulled.get()) })
+        assertEquals(sha256Of(bytes), e.part("one").sha256)
+        assertTrue(pulledAtFirstReport.get() in 0 until bytes.size, "read ${pulledAtFirstReport.get()} of ${bytes.size} bytes before the first report")
     }
 
     @Test

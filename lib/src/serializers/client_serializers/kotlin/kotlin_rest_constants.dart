@@ -345,15 +345,14 @@ class DefaultGraphLinkRestAdapter(
             if (file == null) {
                 builder.addPart(MultipartBody.Part.createFormData(part.name, null, part.value!!.toRequestBody(part.mimeType?.toMediaTypeOrNull())))
             } else {
-                val bytes = file.stream.use { it.readBytes() }
-                builder.addPart(MultipartBody.Part.createFormData(part.name, file.filename, bytes.toRequestBody(file.mimeType.toMediaTypeOrNull())))
+                builder.addPart(MultipartBody.Part.createFormData(part.name, file.filename, rawBody(file, file.mimeType.toMediaTypeOrNull())))
             }
         }
         return builder.build()
     }
 
     private fun counted(delegate: RequestBody, callback: UploadProgressCallback?): RequestBody {
-        if (callback == null) return delegate
+        if (callback == null || delegate.contentLength() <= 0) return delegate
         return object : RequestBody() {
             override fun contentType() = delegate.contentType()
             override fun contentLength() = delegate.contentLength()
