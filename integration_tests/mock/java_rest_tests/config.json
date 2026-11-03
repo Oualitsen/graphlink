@@ -1,0 +1,27 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "Double",
+    "Int":     "Integer",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/java/dev/graphlink/restmock/generated",
+  "clientConfig": {
+    "java": {
+      "packageName":                "dev.graphlink.restmock.generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":        true,
+      "nullableFieldsRequired":     false,
+      "immutableInputFields":       true,
+      "immutableTypeFields":        true,
+      "inputAsRecord":              false,
+      "typeAsRecord":               false,
+      "jsonCodec":                  "jackson",
+      "wsAdapter":                  "none",
+      "captureErrors":              false
+    }
+  }
+}
