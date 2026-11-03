@@ -249,32 +249,6 @@ public func restFormBody(_ entries: [RestEntry]) -> Data {
     Data(entries.map { "\(restEncodeQuery($0.name))=\(restEncodeQuery($0.value))" }.joined(separator: "&").utf8)
 }
 
-public func restMultipart(_ parts: [RestPart]) -> (contentType: String, data: Data) {
-    let boundary = "----graphlink" + UUID().uuidString.replacingOccurrences(of: "-", with: "")
-    func quoted(_ text: String) -> String {
-        text.replacingOccurrences(of: "\"", with: "%22")
-            .replacingOccurrences(of: "\r", with: "%0D")
-            .replacingOccurrences(of: "\n", with: "%0A")
-    }
-    var body = Data()
-    for part in parts {
-        var disposition = "form-data; name=\"\(quoted(part.name))\""
-        if let filename = part.file?.filename { disposition += "; filename=\"\(quoted(filename))\"" }
-        let mimeType = part.file?.mimeType ?? part.mimeType
-        var head = "--\(boundary)\r\nContent-Disposition: \(disposition)\r\n"
-        if let mimeType { head += "Content-Type: \(mimeType)\r\n" }
-        body.append(Data((head + "\r\n").utf8))
-        if let file = part.file {
-            body.append(file.data)
-        } else {
-            body.append(Data((part.value ?? "").utf8))
-        }
-        body.append(Data("\r\n".utf8))
-    }
-    body.append(Data("--\(boundary)--\r\n".utf8))
-    return ("multipart/form-data; boundary=\(boundary)", body)
-}
-
 private func restIsContainer(_ value: Any) -> Bool {
     value is [Any?] || value is [String: Any?]
 }
@@ -487,26 +461,33 @@ public struct DefaultGraphLinkRestAdapter: Sendable {
         urlRequest.cachePolicy = .reloadIgnoringLocalCacheData
         var headers = headersProvider?() ?? [:]
         for (name, value) in request.headers { headers[name] = value }
-        var uploadBody: Data?
+        var streamed: (chunks: GLChunks, length: Int?)?
         switch request.body {
         case .json(let data):
             urlRequest.httpBody = data
         case .form(let entries):
             urlRequest.httpBody = restFormBody(entries)
         case .multipart(let parts):
-            let multipart = restMultipart(parts)
+            let multipart = GLMultipartBody(parts: parts.map {
+                GLMultipartPart(name: $0.name, value: $0.value, file: $0.file, mimeType: $0.mimeType)
+            })
             headers["Content-Type"] = multipart.contentType
-            uploadBody = multipart.data
+            streamed = (multipart.chunks(), multipart.length)
         case .raw(let upload):
-            uploadBody = upload.data
+            streamed = (upload.chunks(), upload.length)
         case nil:
             break
         }
         for (name, value) in headers { urlRequest.setValue(value, forHTTPHeaderField: name) }
 
-        if let uploadBody {
-            let delegate = RestProgressDelegate(request.onSendProgress)
-            let (data, response) = try await session.upload(for: urlRequest, from: uploadBody, delegate: delegate)
+        if let streamed {
+            let (data, response) = try await GLStreamedUpload.send(
+                urlRequest,
+                chunks: streamed.chunks,
+                length: streamed.length,
+                session: session,
+                onProgress: request.onSendProgress
+            )
             return try Self.response(response, RestResponse.fromData(status: 0, data: data).stream)
         }
         let (bytes, response) = try await session.bytes(for: urlRequest)
@@ -541,24 +522,6 @@ public struct DefaultGraphLinkRestAdapter: Sendable {
             if let name = name as? String { headers[name.lowercased()] = String(describing: value) }
         }
         return RestResponse(status: http.statusCode, headers: headers, stream: stream)
-    }
-}
-
-private final class RestProgressDelegate: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let onProgress: UploadProgressCallback?
-
-    init(_ onProgress: UploadProgressCallback?) {
-        self.onProgress = onProgress
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        task: URLSessionTask,
-        didSendBodyData bytesSent: Int64,
-        totalBytesSent: Int64,
-        totalBytesExpectedToSend: Int64
-    ) {
-        onProgress?(Int(totalBytesSent), Int(totalBytesExpectedToSend))
     }
 }
 ''';
