@@ -28,10 +28,17 @@ Future<Set<String>> generateJavaClientClasses(
     importPrefix: importPrefix,
   );
   final flavor = JavaReactiveFlavor.of(javaConfig.asyncStyle);
+  if (flavor.isReactive &&
+      javaConfig.reactiveHttpClient == JavaReactiveHttpClient.webclient &&
+      javaConfig.asyncStyle != JavaAsyncStyle.reactor) {
+    throw ArgumentError('reactiveHttpClient "webclient" requires asyncStyle "reactor" '
+        '(got "${javaConfig.asyncStyle.name}"). Use "jdk" for rxjava3/mutiny.');
+  }
   final clientSerializer = JavaClientSerializer(parser, serializer,
       jsonCodec: jsonCodec,
       flavor: flavor,
       restHttpAdapter: javaConfig.restHttpAdapter,
+      reactiveHttpClient: javaConfig.reactiveHttpClient,
       commaQueryLists: javaConfig.queryListStyle == RestQueryListStyle.comma,
       bracketFormNesting: javaConfig.formNesting == RestFormNesting.bracket);
   final futures = <Future<File>>[];

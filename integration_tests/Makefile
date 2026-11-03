@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java java-rest java-rest-reactor kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -35,6 +35,12 @@ java-rest:
 
 java-rest-reactor:
 	$(MAKE) -C mock/java_rest_reactor_tests ci
+
+java-rest-rxjava3:
+	$(MAKE) -C mock/java_rest_rxjava3_tests ci
+
+java-rest-mutiny:
+	$(MAKE) -C mock/java_rest_mutiny_tests ci
 
 kotlin:
 	$(MAKE) -C mock/kotlin_client_tests ci
@@ -118,6 +124,12 @@ java-rest-real:
 java-rest-reactor-real:
 	$(MAKE) -C real/java_rest_reactor_client_tests_real ci
 
+java-rest-rxjava3-real:
+	$(MAKE) -C real/java_rest_rxjava3_client_tests_real ci
+
+java-rest-mutiny-real:
+	$(MAKE) -C real/java_rest_mutiny_client_tests_real ci
+
 swift-upload-real:
 	$(MAKE) -C real/swift_client_upload_tests_real ci
 
@@ -145,9 +157,9 @@ go-real:
 go-rest-real:
 	$(MAKE) -C real/go_rest_client_tests_real ci
 
-all: dart dart-rest typescript typescript-rest java java-rest java-rest-reactor kotlin kotlin-rest swift swift-rest python python-rest go go-rest
+all: dart dart-rest typescript typescript-rest java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin kotlin-rest swift swift-rest python python-rest go go-rest
 
-all-real: dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-real java-reactor-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
+all-real: dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

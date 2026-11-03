@@ -2,7 +2,7 @@ PORT = 9980
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/rest/generated
 
-.PHONY: generate test clean ci ci-no-generate start-server stop-server
+.PHONY: generate test clean ci ci-no-generate start-server stop-server variants
 
 clean:
 	rm -rf $(GENERATED_DIR)
@@ -22,6 +22,19 @@ stop-server:
 test:
 	cd $(CLIENT_DIR) && mvn -B -q test
 
-ci: start-server generate test stop-server
+# Runs the same tests against the default (JDK) adapter and the WebClient adapter.
+variants:
+	dart pub get
+	cd webclient && dart pub get
+	dart run ../generate_reactor_tests.dart
+	$(MAKE) clean
+	dart run ../../generate.dart
+	$(MAKE) test
+	$(MAKE) clean
+	cd webclient && dart run ../../../generate.dart
+	$(MAKE) test
 
-ci-no-generate: start-server test stop-server
+ci: start-server
+	status=0; $(MAKE) variants || status=$$?; $(MAKE) stop-server; exit $$status
+
+ci-no-generate: ci
