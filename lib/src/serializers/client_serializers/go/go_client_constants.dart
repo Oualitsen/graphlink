@@ -855,9 +855,11 @@ func glMultipartStream(parts []glMultipartPart) (contentType string, body io.Rea
 		disposition := fmt.Sprintf(`form-data; name="%s"`, quote.Replace(part.Name))
 		mimeType := part.MimeType
 		if part.File != nil {
-			if part.File.Filename != "" {
-				disposition += fmt.Sprintf(`; filename="%s"`, quote.Replace(part.File.Filename))
+			filename := part.File.Filename
+			if filename == "" {
+				filename = part.Name
 			}
+			disposition += fmt.Sprintf(`; filename="%s"`, quote.Replace(filename))
 			mimeType = part.File.MimeType
 		}
 		head := fmt.Sprintf("--%s\r\nContent-Disposition: %s\r\n", boundary, disposition)
@@ -1577,7 +1579,7 @@ func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[stri
 	}
 	contentType, reader, total, closeAll := glMultipartStream(streamParts)
 	defer closeAll()
-	if onProgress != nil {
+	if onProgress != nil && total > 0 {
 		reader = &glProgressReader{reader: reader, total: total, callback: onProgress}
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, a.URL, reader)

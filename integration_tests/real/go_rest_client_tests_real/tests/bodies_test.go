@@ -3,7 +3,9 @@ package tests
 import (
 	"io"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"graphlink.dev/resttests/generated"
@@ -233,7 +235,9 @@ func TestRawBodyStreamedAndProgress(t *testing.T) {
 	eq(t, last, [2]int64{int64(len(data)), int64(len(data))})
 
 	unknown := generated.NewGLUpload(io.NopCloser(strings.NewReader(string(pattern(250000)))), "")
-	chunked := must(client.Mutations.ERaw(ctx, unknown))
+	unknownCalls := 0
+	chunked := must(client.Mutations.ERaw(ctx, unknown, generated.ERawOptions{OnProgress: func(sent, total int64) { unknownCalls++ }}))
+	eq(t, unknownCalls, 0)
 	isTrue(t, chunked.Chunked, "unknown length is chunked")
 	isTrue(t, chunked.ContentLength == nil, "no content length")
 	eq(t, chunked.BodySha256, sha(pattern(250000)))
@@ -251,4 +255,43 @@ func TestMultipartStreamsWithAndWithoutLength(t *testing.T) {
 	chunked := must(client.Mutations.EMultipart(ctx, generated.EMultipartOptions{One: &unknown}))
 	isTrue(t, chunked.Chunked && chunked.ContentLength == nil, "unknown length is chunked")
 	eq(t, part(t, chunked, "one").Sha256, sha(data))
+
+	unknownCalls := 0
+	again := generated.NewGLUpload(io.NopCloser(strings.NewReader(string(data))), "u.bin")
+	must(client.Mutations.EMultipart(ctx, generated.EMultipartOptions{One: &again, OnProgress: func(sent, total int64) { unknownCalls++ }}))
+	eq(t, unknownCalls, 0)
+}
+
+type slowReader struct {
+	data   []byte
+	offset int
+	pulled *int64
+}
+
+func (r *slowReader) Read(buffer []byte) (int, error) {
+	if r.offset >= len(r.data) {
+		return 0, io.EOF
+	}
+	if r.offset%(256*1024) == 0 {
+		time.Sleep(2 * time.Millisecond)
+	}
+	n := copy(buffer, r.data[r.offset:min(r.offset+65536, len(r.data))])
+	r.offset += n
+	atomic.StoreInt64(r.pulled, int64(r.offset))
+	return n, nil
+}
+
+func TestMultipartFileIsNotReadInFullBeforeTheFirstProgressReport(t *testing.T) {
+	ctx, client := setup(t)
+	data := pattern(6 * 1024 * 1024)
+	var pulled int64
+	atFirstReport := int64(-1)
+	file := generated.GLUpload{Reader: &slowReader{data: data, pulled: &pulled}, Length: int64(len(data)), Filename: "big.bin", MimeType: "application/octet-stream"}
+	e := must(client.Mutations.EMultipart(ctx, generated.EMultipartOptions{One: &file, OnProgress: func(sent, total int64) {
+		if atFirstReport < 0 {
+			atFirstReport = atomic.LoadInt64(&pulled)
+		}
+	}}))
+	eq(t, part(t, e, "one").Sha256, sha(data))
+	isTrue(t, atFirstReport >= 0 && atFirstReport < int64(len(data)), "file was read in full before the first progress report")
 }

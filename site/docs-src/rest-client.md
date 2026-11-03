@@ -140,8 +140,9 @@ await client.mutations.avatar({ id: 'p1', file: glUploadFromBlob(blob) }, (sent,
   (`createRestFetchAdapter` or `createRestAxiosAdapter(baseUrl, axios)`), or `"none"` to supply your own. A schema with only
   REST operations takes just the REST adapter: `new GraphLinkClient(restAdapter)`.
 - Errors: `RestError` (`status`, `headers`, `body`); a missing non-null field or an empty body for a non-null result is a plain `Error`.
-- Downloads return a `GLDownload` whose `stream` is a web `ReadableStream`. The axios adapter buffers request and response bodies,
-  so it reports upload progress but does not stream; the fetch adapter streams.
+- Downloads return a `GLDownload` whose `stream` is a web `ReadableStream`. The fetch adapter streams uploads and downloads. The axios
+  adapter buffers responses but streams uploads on Node (a `Readable` body); in the browser XHR cannot stream, so it passes a `Blob`
+  or `FormData` through and a `ReadableStream` upload throws. Upload progress is only reported when the total size is known.
 - Floats are formatted by JavaScript (`3`, not `3.0`).
 
 ## Kotlin
@@ -186,8 +187,8 @@ await client.mutations.avatar(id="p1", file=GLUpload.from_file("p1.png"), on_pro
 - Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `ValueError`, a missing non-null field
   a pydantic `ValidationError` naming the model and field, an unknown discriminator a `ValidationError` naming the parent and value.
 - Uploads stream in 64 KB chunks: `GLUpload.from_file(path)` reads from disk as it sends and `GLUpload.from_stream(source, length=...)` takes any
-  (async) iterable of bytes. With a known length the request carries `Content-Length`; without one it is sent chunked and progress reports
-  `-1` as the total. Raw and multipart REST bodies both stream. GraphQL multipart uploads still need bytes or a file, which they read into memory.
+  (async) iterable of bytes. With a known length the request carries `Content-Length`; without one it is sent chunked and no progress is reported.
+  Raw and multipart REST bodies stream, and so do GraphQL multipart uploads.
   A `GLDownload` exposes an async `stream` of chunks and `bytes()`.
 
 ## Swift
@@ -209,7 +210,8 @@ try await client.mutations.avatar(id: "p1", file: GLUpload(data: data, mimeType:
 - Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `RestDecodeError`. Decoding uses the
   regular generated `fromJson`, so a response that breaks the schema (a missing non-null field, an unknown discriminator value) traps,
   exactly as it does for GraphQL: declare a field nullable if the server may omit it.
-- `GLUpload` holds its `Data` in memory (known length, no chunked streaming); a `GLDownload` exposes an `AsyncThrowingStream<Data, Error>`.
+- A `GLUpload` pulls its bytes lazily (`init(data:)`, `init(fileURL:)`, or `init(length:chunks:)` over any async sequence) and is streamed;
+  `length: nil` is sent chunked and reports no progress. A `GLDownload` exposes an `AsyncThrowingStream<Data, Error>`.
 - Keys of nested objects in query strings, forms and multipart parts are written in alphabetical order, and floats print as `3.0`.
 
 ## Go
@@ -234,7 +236,7 @@ err = client.Mutations.Avatar(ctx, "p1", generated.GLUploadFromBytes(data, "p1.p
   `RestAdapter`). A schema with only REST operations needs no GraphQL adapter.
 - Errors are returned, never panicked: `*RestError` (`Status`, `Headers`, `Body`) for non-2xx; an empty body for a non-null result is a
   plain error, and a missing non-null field is an error from the type's `UnmarshalJSON` (`Type.field is missing or null in the response`).
-- A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked. A `*GLDownload` wraps the response body: read it or call `Close()`.
+- A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked and reports no progress. A `*GLDownload` wraps the response body: read it or call `Close()`.
 - Floats print as Go does (`3`, not `3.0`); `nil` results are returned as nil pointers or nil slices.
 
 ## Known limitations
