@@ -28,6 +28,7 @@ extension GLGrammarRestExtension on GLParser {
 
   void resolveRestOperations() {
     restOperations.clear();
+    rejectRestNullableOnInterfaces();
     final rootNames = {
       for (final type in GLQueryType.values) schema.getByQueryType(type): type,
     };
@@ -35,7 +36,10 @@ extension GLGrammarRestExtension on GLParser {
       final operationType = rootNames[entry.key];
       for (final field in entry.value.fields) {
         final isRest = field.hasDirective(glRest) || field.hasDirective(glRestPrefix);
-        if (!isRest) continue;
+        if (!isRest) {
+          _rejectRestNullable(field, "has no $glRest");
+          continue;
+        }
         if (operationType == null) {
           throw ParseException(
               "${field.hasDirective(glRest) ? glRest : glRestPrefix} is only allowed on fields of the Query or Mutation type",
@@ -50,6 +54,20 @@ extension GLGrammarRestExtension on GLParser {
         restOperations[operation.key] = operation;
       }
     }
+  }
+
+  void rejectRestNullableOnInterfaces() {
+    for (final iface in interfaces.values) {
+      for (final field in iface.fields) {
+        _rejectRestNullable(field, "is a field of the interface '${iface.token}'");
+      }
+    }
+  }
+
+  void _rejectRestNullable(GLField field, String reason) {
+    if (!field.hasDirective(glRestNullable)) return;
+    throw ParseException("$glRestNullable is only allowed on a REST operation, but '${field.name.token}' $reason",
+        info: field.name);
   }
 
   GLRestOperation _resolveRestOperation(GLField field, GLQueryType type) {
@@ -112,6 +130,14 @@ extension GLGrammarRestExtension on GLParser {
     _requireDiscriminators(roots);
   }
 
+  bool isRestImportableType(String name) =>
+      isEnum(name) ||
+      isInput(name) ||
+      types.containsKey(name) ||
+      interfaces.containsKey(name) ||
+      projectedTypes.containsKey(name) ||
+      projectedInterfaces.containsKey(name);
+
   GLTypeDefinition? _declaredTypeNamed(String name) => interfaces[name] ?? types[name];
 
   Set<String> get restReachableTypeNames {
@@ -119,9 +145,11 @@ extension GLGrammarRestExtension on GLParser {
     return _reachableCache[this] ??= _computeReachable();
   }
 
-  Set<String> _computeReachable() {
+  Set<String> _computeReachable() => restReachableTypeNamesFrom(restOperations.values);
+
+  Set<String> restReachableTypeNamesFrom(Iterable<GLRestOperation> operations) {
     final visited = <String>{};
-    final pending = restOperations.values
+    final pending = operations
         .map((op) => _declaredTypeNamed(op.field.type.firstType.token))
         .whereType<GLTypeDefinition>()
         .toList();

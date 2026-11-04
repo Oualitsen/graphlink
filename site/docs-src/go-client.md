@@ -173,8 +173,9 @@ res, err := client.Mutations.UploadAvatar(ctx, "user-1", file, graphql.UploadAva
 })
 ```
 
-`GLUploadFromBytes` builds one from memory. The default adapter buffers the request body to know its total size, so
-progress is exact; for very large files provide your own `GLMultipartAdapter`.
+`GLUploadFromBytes` builds one from memory and `NewGLUpload(reader, filename)` wraps any `io.Reader`. The default adapter
+streams the request body, so a file is never read into memory. A file with a known `Length` is sent with a `Content-Length`
+and reports exact progress; a `Length` of `-1` is sent with chunked transfer encoding and `OnProgress` is not called.
 
 ## Persisted queries
 
@@ -200,5 +201,4 @@ building the client yourself set `GetAdapter` in `GraphLinkClientOptions`.
 - **Unknown `__typename` fails the response.** Unlike enums, there is no fallback for an interface or union member
   added to the server after the client was generated.
 - **Encoding `<Enum>UnknownValue__` is an error.** The fallback is for reading only; see [Enums](#enums).
-- **Large uploads are buffered by the default adapter.** Provide your own `GLMultipartAdapter` to stream them.
 - **Ignored options.** `nullableFieldsRequired` and `immutableTypeFields` have no effect.

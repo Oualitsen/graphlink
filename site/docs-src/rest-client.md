@@ -10,7 +10,7 @@ types and the client are the same, so you can move an API from REST to GraphQL o
 and the call site does not change.
 
 !!! note
-    REST operations are generated for the **Dart**, **TypeScript**, **Kotlin**, **Python** and **Swift** and **Go** clients. Other client targets ignore them for now.
+    REST operations are generated for the **Dart**, **TypeScript**, **Java** (blocking and reactive), **Kotlin**, **Python**, **Swift** and **Go** clients. Other client targets ignore them for now.
 
 ```graphql
 scalar Void @glVoid
@@ -91,6 +91,41 @@ union Hit @glRestDiscriminator(field: "type", values: {Dog: "dog", Cat: "cat"}) 
 
 `Void` and `Download` are valid only as the return type of a REST operation.
 
+## Lenient responses: `@glRestNullable`
+
+The schema is often the *target* contract: fields are non-null because the GraphQL server will guarantee them, while the REST API
+you call today omits them or sends `null`. Such a response fails to decode (`Product.name is missing or null in the response`).
+
+Put `@glRestNullable` on the operation to decode it into a **copy** of the response type in which every field is nullable:
+
+```graphql
+type Owner { name: String! }
+type Product { id: ID! name: String! tags: [String!]! owner: Owner! }
+
+extend type Query @glRestPrefix(path: "/products") {
+  product(id: ID!): Product! @glRest(path: "/{id}") @glRestNullable
+}
+```
+
+```dart
+final ProductRest product = await client.queries.product(id: 'p1'); // name, tags and owner may be null
+```
+
+- The copy is named `<Type>Rest` (`Product` gives `ProductRest`). The suffix is the project-wide `restNullableSuffix` option, never per
+  operation. Another type already using the copy's name is an error.
+- The copy is deep: every object type reachable from the response is copied (`OwnerRest`), and shared between the operations that
+  need it. Enums and scalars are reused.
+- Interfaces and unions are copied too: `PetRest` is implemented by `DogRest` and `CatRest`, and the discriminator keeps the original
+  wire values (`"dog"` stays `"dog"`).
+- Only the outermost level of each field becomes nullable; list elements follow the schema: `[Product!]!` gives `[ProductRest!]`,
+  `[Product]!` gives `[ProductRest]`. A `null` element in a list that forbids it still fails.
+- The operation's own return type is not touched: `Product!` becomes `ProductRest!`, so an empty body is still an error for it.
+- GraphQL operations, and REST operations without the directive, keep returning the original type. When an operation moves to
+  GraphQL, its result type goes back from `ProductRest` to `Product`; there is no conversion between the two.
+- The directive is only valid on a REST operation that returns an object, interface or union. It is an error on a text, binary or
+  `Void` response, on a scalar or enum result, and on a field that is not a REST operation. `@glTypeName` does not apply to REST
+  operations either.
+
 ## Caching
 
 `@glCache`, `@glNoCache` and `@glCacheInvalidate` work on REST operations and share the cache store and the tag space with
@@ -140,8 +175,9 @@ await client.mutations.avatar({ id: 'p1', file: glUploadFromBlob(blob) }, (sent,
   (`createRestFetchAdapter` or `createRestAxiosAdapter(baseUrl, axios)`), or `"none"` to supply your own. A schema with only
   REST operations takes just the REST adapter: `new GraphLinkClient(restAdapter)`.
 - Errors: `RestError` (`status`, `headers`, `body`); a missing non-null field or an empty body for a non-null result is a plain `Error`.
-- Downloads return a `GLDownload` whose `stream` is a web `ReadableStream`. The axios adapter buffers request and response bodies,
-  so it reports upload progress but does not stream; the fetch adapter streams.
+- Downloads return a `GLDownload` whose `stream` is a web `ReadableStream`. The fetch adapter streams uploads and downloads. The axios
+  adapter buffers responses but streams uploads on Node (a `Readable` body); in the browser XHR cannot stream, so it passes a `Blob`
+  or `FormData` through and a `ReadableStream` upload throws. Upload progress is only reported when the total size is known.
 - Floats are formatted by JavaScript (`3`, not `3.0`).
 
 ## Kotlin
@@ -166,6 +202,51 @@ client.mutations.avatar(id = "p1", file = GLUpload(stream, "image/png", length, 
 - `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
 - JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder`, so they must handle nested maps and lists.
 
+## Java
+
+Methods are plain positional methods; pass `null` for an omitted optional argument (a declared default is applied when it is `null`).
+Operations that upload get an overload with a trailing `UploadProgressCallback`, and downloads one with a `DownloadProgressCallback`:
+
+```java
+GraphLinkClient client = new GraphLinkClient(
+    "https://api.example.com/graphql",
+    "https://api.example.com",
+    () -> Map.of("Authorization", "Bearer " + token),
+    encoder, decoder);
+Product product = client.queries.product("p1", null);
+client.mutations.avatar("p1", GLUpload.fromFile(new File("p1.png")), (sent, total) -> {});
+```
+
+- The generated `DefaultGraphLinkRestAdapter` uses the JDK `HttpClient` (`restHttpAdapter: "none"` skips it and the factories take a
+  `GLRestAdapter`). It streams uploads and downloads; a `GLUpload` with a negative `length` is sent chunked and reports no progress.
+- Errors: `RestError` (`getStatus()`, `getHeaders()`, `getBody()`); an empty body for a non-null result is an `IllegalStateException`,
+  a missing non-null field an `IllegalArgumentException` naming the type and field. A transport failure is never a `RestError`.
+- `void` operations (`Void`) return nothing. `GLDownload` wraps an `InputStream`; close it or call `bytes()`.
+- JSON goes through your `GraphLinkJsonEncoder` / `GraphLinkJsonDecoder` (the Jackson codec is generated with `jsonCodec: "jackson"`).
+- Nested object keys in a query string come out in alphabetical order (`groups.0.ids` before `groups.0.name`).
+
+### Reactive
+
+With `asyncStyle` set (see [Java client](java-client.md#reactive-client-v500)), REST operations return the library's deferred
+type instead and `GLRestAdapter.execute` returns the same type wrapping `RestResponse`. The request is built identically to the
+blocking client.
+
+| `asyncStyle` | Result | Nullable result | `Void` result |
+|---|---|---|---|
+| `"reactor"` | `Mono<T>` | `Mono<T>`, empty when there is no value | `Mono<Void>` |
+| `"rxjava3"` | `Single<T>` | `Maybe<T>` | `Completable` |
+| `"mutiny"` | `Uni<T>` | `Uni<T>`, `null` item when there is no value | `Uni<Void>` |
+
+- Nothing is sent until you subscribe.
+- A nullable result that comes back empty (`204`, or an empty body) completes without a value (`null` with Mutiny); for a non-null
+  result it is an `IllegalStateException` error signal. `RestError` is an error signal too, and `staleIfOffline` is served on a
+  transport error signal only. A cached nullable query that comes back empty is not cached.
+- By default the generated adapter uses the JDK `HttpClient.sendAsync`, for every `asyncStyle`.
+- With `reactiveHttpClient: "webclient"` (`asyncStyle: "reactor"` only) the REST adapter uses Spring `WebClient` too. It streams
+  uploads (a `GLUpload` with a negative `length` is sent chunked) and downloads, follows redirects and decodes `gzip` and `deflate`
+  like the JDK adapter. It needs `spring-webflux` and `reactor-netty-http` on the classpath. Pass your own `WebClient` to the
+  three-argument constructor to configure timeouts, a proxy or another connector (then redirects are up to that `WebClient`).
+
 ## Python
 
 Methods are `async` with keyword-only arguments:
@@ -186,8 +267,8 @@ await client.mutations.avatar(id="p1", file=GLUpload.from_file("p1.png"), on_pro
 - Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `ValueError`, a missing non-null field
   a pydantic `ValidationError` naming the model and field, an unknown discriminator a `ValidationError` naming the parent and value.
 - Uploads stream in 64 KB chunks: `GLUpload.from_file(path)` reads from disk as it sends and `GLUpload.from_stream(source, length=...)` takes any
-  (async) iterable of bytes. With a known length the request carries `Content-Length`; without one it is sent chunked and progress reports
-  `-1` as the total. Raw and multipart REST bodies both stream. GraphQL multipart uploads still need bytes or a file, which they read into memory.
+  (async) iterable of bytes. With a known length the request carries `Content-Length`; without one it is sent chunked and no progress is reported.
+  Raw and multipart REST bodies stream, and so do GraphQL multipart uploads.
   A `GLDownload` exposes an async `stream` of chunks and `bytes()`.
 
 ## Swift
@@ -209,7 +290,8 @@ try await client.mutations.avatar(id: "p1", file: GLUpload(data: data, mimeType:
 - Errors: `RestError` (`status`, `headers`, `body`); an empty body for a non-null result is a `RestDecodeError`. Decoding uses the
   regular generated `fromJson`, so a response that breaks the schema (a missing non-null field, an unknown discriminator value) traps,
   exactly as it does for GraphQL: declare a field nullable if the server may omit it.
-- `GLUpload` holds its `Data` in memory (known length, no chunked streaming); a `GLDownload` exposes an `AsyncThrowingStream<Data, Error>`.
+- A `GLUpload` pulls its bytes lazily (`init(data:)`, `init(fileURL:)`, or `init(length:chunks:)` over any async sequence) and is streamed;
+  `length: nil` is sent chunked and reports no progress. A `GLDownload` exposes an `AsyncThrowingStream<Data, Error>`.
 - Keys of nested objects in query strings, forms and multipart parts are written in alphabetical order, and floats print as `3.0`.
 
 ## Go
@@ -234,12 +316,12 @@ err = client.Mutations.Avatar(ctx, "p1", generated.GLUploadFromBytes(data, "p1.p
   `RestAdapter`). A schema with only REST operations needs no GraphQL adapter.
 - Errors are returned, never panicked: `*RestError` (`Status`, `Headers`, `Body`) for non-2xx; an empty body for a non-null result is a
   plain error, and a missing non-null field is an error from the type's `UnmarshalJSON` (`Type.field is missing or null in the response`).
-- A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked. A `*GLDownload` wraps the response body: read it or call `Close()`.
+- A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked and reports no progress. A `*GLDownload` wraps the response body: read it or call `Close()`.
 - Floats print as Go does (`3`, not `3.0`); `nil` results are returned as nil pointers or nil slices.
 
 ## Known limitations
 
-- Dart, TypeScript, Kotlin, Python, Swift and Go clients only.
+- Dart, TypeScript, Java, Kotlin, Python, Swift and Go clients only.
 - An empty list and an absent list are indistinguishable on the wire.
 - Subscriptions are always GraphQL.
 - Void is not yet supported by the server generators.

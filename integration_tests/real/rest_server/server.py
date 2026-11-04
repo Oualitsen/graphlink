@@ -119,6 +119,33 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             self.send_json(500, {'error': f'server failure: {e!r}'})
 
+    def lenient(self, s):
+        product = {
+            'id': 'p1',
+            'name': None,
+            'tags': None,
+            'related': [{'id': 'p2'}, {'id': 'p3', 'name': 'Three', 'price': 3.5, 'related': None}],
+        }
+        pets = [
+            {'kind': 'dog', 'id': 'd1'},
+            {'kind': 'cat', 'id': 'c1', 'name': None},
+            {'kind': 'dog', 'name': 'Rex', 'barks': True},
+        ]
+        routes = {
+            'product': product,
+            'strict-product': product,
+            'cached': product,
+            'products': [{'id': 'a'}, {'id': 'b', 'name': 'B'}],
+            'pets': pets,
+            'strict-pets': pets,
+            'hits': [{'type': 'product', 'id': 'p1'}, {'type': 'owner', 'id': 'o1'}],
+        }
+        if s == ['lenient', 'nothing']:
+            return self.send(204, b'', 'application/json')
+        if len(s) == 2 and s[1] in routes:
+            return self.send_json(200, routes[s[1]])
+        return self.send_json(404, {'error': 'no lenient route'})
+
     def route(self, s, raw_path, raw_query, body):
         method = self.command
         head = s[0] if s else ''
@@ -189,6 +216,8 @@ class Handler(BaseHTTPRequestHandler):
                 {'type': 'product', 'id': 'p1', 'name': 'Pen', 'tags': []},
                 {'type': 'owner', 'id': 'o1', 'name': 'Ann'},
             ])
+        if head == 'lenient':
+            return self.lenient(s)
         if s == ['auth', 'check']:
             if self.headers.get('Authorization') != 'Bearer secret':
                 return self.send_json(401, {'error': 'unauthorized'}, {'WWW-Authenticate': 'Bearer'})

@@ -1,0 +1,42 @@
+scalar Upload @glUpload
+scalar Void @glVoid
+scalar Download @glDownload
+
+enum Status { ACTIVE ARCHIVED }
+
+type Product { id: ID! name: String! price: Float status: Status tags: [String!] }
+type Page { total: Int! items: [Product!]! }
+
+input Filter { tag: String minPrice: Float }
+input Group { name: String! ids: [Int!] }
+input ProductIn { name: String! price: Float }
+input Auth { token: String requestId: String @glRestHeader(name: "X-Request-Id") }
+
+type Query {
+  ping: String
+}
+
+extend type Query @glRestPrefix(path: "/products") {
+  products(filter: Filter @glRestParam, page: Int = 1 @glRestParam, auth: Auth @glRestHeader, ids: [ID!] @glRestParam): [Product!]! @glRest(path: "")
+  product(id: ID!, status: Status @glRestParam): Product @glRest(path: "/{id}")
+  search(q: String! @glRestParam, groups: [Group!] @glRestParam(encoding: FLAT), tags: [String!] @glRestParam): Page! @glRest(path: "/search", responsePath: "data")
+  count: Int! @glRest(path: "/count")
+  cached(id: ID!): Product @glRest(path: "/cached/{id}") @glCache(ttl: 60, tags: ["cached"])
+  cachedOffline(id: ID!): Product @glRest(path: "/offline/{id}") @glCache(ttl: 1, tags: ["offline"], staleIfOffline: true)
+  export(id: ID!): Download! @glRest(path: "/{id}/export")
+  maybeExport(id: ID!): Download @glRest(path: "/{id}/maybe")
+  note(id: ID!): String @glRest(path: "/{id}/note", response: TEXT)
+}
+
+type Mutation {
+  pong: String
+}
+
+extend type Mutation @glRestPrefix(path: "/products") {
+  createProduct(input: ProductIn! @glRestBody): Product! @glRest(path: "", method: POST)
+  updateCached(id: ID!, input: ProductIn! @glRestBody): Product! @glRest(path: "/cached/{id}", method: PUT) @glCacheInvalidate(tags: ["cached"])
+  deleteProduct(id: ID!): Void @glRest(path: "/{id}", method: DELETE)
+  rename(id: ID!, name: String! @glRestField, note: String @glRestField): Product! @glRest(path: "/{id}/rename", method: POST)
+  avatar(id: ID!, file: Upload! @glRestBody): Void @glRest(path: "/{id}/avatar", method: PUT)
+  gallery(id: ID!, title: String @glRestPart, files: [Upload!]! @glRestPart): Product @glRest(path: "/{id}/gallery", method: POST)
+}

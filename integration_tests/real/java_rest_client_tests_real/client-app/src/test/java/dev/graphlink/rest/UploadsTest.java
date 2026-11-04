@@ -32,7 +32,7 @@ class UploadsTest {
     @Test
     void multipartHasABoundaryAndTextPartsWithoutFilename() {
         Echo e = multipart("Hello é", null, null, null, null);
-        assertTrue(e.getContentType().startsWith("multipart/form-data; boundary="));
+        assertTrue(e.getContentType().matches("multipart/form-data;\\s*boundary=.+"));
         Part title = part(e, "title");
         assertNull(title.getFilename());
         assertEquals("Hello é", title.getText());

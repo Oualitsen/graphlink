@@ -52,6 +52,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
 | `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. Existing files are overwritten on every run. |
 | `identityFields` | `string[]` | `[]` | Field names treated as identity fields when generating `==` / `hashCode` methods (Dart and Java). Fields listed here are always included in equality regardless of `@glEqualsHashcode`. |
 | `disableCache` | `boolean` | `false` | When `true`, strips all `@glCache` and `@glCacheInvalidate` directives from the generated client — useful for debugging or environments where caching is handled externally. |
+| `restNullableSuffix` | `string` | `"Rest"` | Suffix of the nullable copy generated for a REST operation marked [`@glRestNullable`](rest-client.md#lenient-responses-glrestnullable) (`Product` gives `ProductRest`). Letters, digits and `_`, not starting with a digit. |
 
 ---
 
@@ -322,7 +323,10 @@ Used when `mode` is `"client"` and you want a Java client.
 | `typeAsRecord` | `boolean` | `false` | Generates response types as Java records. Affects how `fromJson` and mapping methods access fields. Requires Java 16+. |
 | `jspecify` | `boolean` | `false` | Adds `@NonNull` / `@Nullable` from `org.jspecify.annotations` to all generated type, input, and interface fields. Imports are only emitted when enabled. |
 | `asyncStyle` | `"blocking"` \| `"reactor"` \| `"rxjava3"` \| `"mutiny"` | `"blocking"` | Wraps query/mutation results in the library's deferred-single type (`Mono`/`Single`/`Uni`) and subscriptions in the deferred-many type (`Flux`/`Observable`/`Multi`). `"blocking"` keeps the pre-v5.0.0 direct-return / listener-callback client. See [Reactive client](java-client.md#reactive-client-v500). |
-| `reactiveHttpClient` | `"jdk"` \| `"webclient"` | `"jdk"` | Transport used by the default adapter under a non-blocking `asyncStyle`. `"jdk"` uses `HttpClient.sendAsync` (works with every `asyncStyle`). `"webclient"` uses Spring `WebClient` (`asyncStyle: "reactor"` only). |
+| `reactiveHttpClient` | `"jdk"` \| `"webclient"` | `"jdk"` | Transport used by the default adapter under a non-blocking `asyncStyle`. `"jdk"` uses `HttpClient.sendAsync` (works with every `asyncStyle`). `"webclient"` uses Spring `WebClient` (`asyncStyle: "reactor"` only). It applies to the REST adapter as well as the GraphQL one. |
+| `restHttpAdapter` | `"jdk"` \| `"none"` | `"jdk"` | Whether to generate the JDK `HttpClient` adapter for [REST operations](rest-client.md#java). `"none"` skips it and the factories take a `GLRestAdapter` instead of `restBaseUrl`. |
+| `queryListStyle` | `"REPEAT"` \| `"COMMA"` | `"REPEAT"` | How a list of scalars is sent in a REST query string: repeated keys (`a=1&a=2`) or one comma-joined value. |
+| `formNesting` | `"DOT"` \| `"BRACKET"` | `"DOT"` | How nested input objects are keyed in REST query strings, forms and multipart: `a.b` or `a[b]`. |
 | `captureErrors` | `boolean` | `false` | When `true`, applies `@glCaptureErrors` behaviour to every query and mutation. Each method returns a `{OperationName}FullResponse` holding nullable `data` and nullable `errors` instead of throwing on GraphQL errors. Equivalent to annotating every query and mutation field with `@glCaptureErrors` in the schema. |
 | `strictEnums` | `boolean` | `false` | When `false`, every generated enum gets an extra `unknownValue__` member, and a value the schema did not declare (for example one added to the server after this client shipped) decodes to it instead of throwing. Encoding it back to the server throws. Set to `true` to throw on unknown values instead. |
 | `persistedQueries` | `false` \| `"apq"` | `false` | `"apq"` sends a SHA-256 hash instead of long queries and retries once with the text on `PersistedQueryNotFound`. See [Persisted Queries](persisted-queries.md). |

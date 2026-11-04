@@ -18,6 +18,7 @@ import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_imports.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 
 class KotlinClientSerializer extends GLClientSerializer {
   final GLParser _grammar;
@@ -69,10 +70,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         ...operation.arguments.map((a) => a.argument.type.firstType.token),
       ];
       for (final name in names) {
-        if (_grammar.isEnum(name) ||
-            _grammar.isInput(name) ||
-            _grammar.types.containsKey(name) ||
-            _grammar.interfaces.containsKey(name)) {
+        if (_grammar.isRestImportableType(name)) {
           final token = _grammar.getTokenByKey(name);
           if (token != null) tokens.add(token);
         }

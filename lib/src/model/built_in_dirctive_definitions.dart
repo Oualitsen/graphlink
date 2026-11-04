@@ -129,6 +129,7 @@ const glRestBody = "@glRestBody";
 const glRestField = "@glRestField";
 const glRestPart = "@glRestPart";
 const glRestDiscriminator = "@glRestDiscriminator";
+const glRestNullable = "@glRestNullable";
 const glDownload = "@glDownload";
 const glVoid = "@glVoid";
 

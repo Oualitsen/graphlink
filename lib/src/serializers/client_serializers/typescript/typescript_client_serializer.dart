@@ -17,6 +17,7 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 
 const _adapterType = 'GraphLinkAdapter';
 const _cacheStoreType = 'GraphLinkCacheStore';
@@ -74,10 +75,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         ...operation.arguments.map((a) => a.argument.type.firstType.token),
       ];
       for (final name in names) {
-        if (_parser.isEnum(name) ||
-            _parser.isInput(name) ||
-            _parser.types.containsKey(name) ||
-            _parser.interfaces.containsKey(name)) {
+        if (_parser.isRestImportableType(name)) {
           final token = _parser.getTokenByKey(name);
           if (token != null) tokens.add(token);
         }

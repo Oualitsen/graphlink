@@ -1,0 +1,13 @@
+{
+  "schemaPaths": ["../schema_real/upload.gql"],
+  "mode": "client",
+  "outputDir": "generated",
+  "clientConfig": {
+    "go": {
+      "packageName": "generated",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "captureErrors": false
+    }
+  }
+}

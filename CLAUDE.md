@@ -301,12 +301,36 @@ don't confuse them:
   `schema_real/`) runs them against a hand-written, trusted Spring Boot server
   (`real/spring_server/`, `real/spring_upload_server/`) JAR. This validates **generated
   client code** — most cross-language parity bugs have been caught here.
-  `real/java_client_tests_reactor_real` shares `schema_real/` and derives most of its tests from
-  `java_client_tests_real` (`.block()` appended) via `real/generate_reactor_tests.dart` into a
-  git-ignored `src/test/generated/`; only the reactive-specific tests (adapters, subscriptions,
-  default values) are hand-written there. Edit the blocking test, not the derived copy.
+  The reactive GraphQL suites `real/java_client_tests_{reactor,rxjava3,mutiny}_real` share `schema_real/` and derive most of their tests
+  from `java_client_tests_real` via `real/generate_reactor_tests.dart` into a git-ignored `src/test/generated/` (`.block()` appended for
+  Reactor, each call wrapped in the package's `Rx.block(...)` for RxJava 3 and Mutiny). The flavor-neutral hand-written tests
+  (`SubscriptionsTest`, the mock adapter core and the multipart adapter core) live once in `real/java_reactive_shared/`; each package
+  adds only its `Rx` helper and thin `MockAdapter` / `RealMultipartAdapter` wrappers. `SubscriptionReconnectTest` is blocking/Reactor only.
+  Edit the blocking test, not the derived copy.
 - **REST operations** (`@glRest*`, Kotlin client): `mock/kotlin_rest_tests` and `real/kotlin_rest_client_tests_real` (OkHttp, port 9994,
   Gradle `--offline` works with a warm cache). Run with `make -C integration_tests kotlin-rest kotlin-rest-real`.
+- **REST operations** (`@glRest*`, Java client): one mock and one real package per flavor, all against `real/schema_rest/`.
+  Blocking: `mock/java_rest_tests` (canned `GLRestAdapter`) and `real/java_rest_client_tests_real` (JDK `HttpClient`, port 9987).
+  Reactive: `mock/java_rest_{reactor,rxjava3,mutiny}_tests` and `real/java_rest_{reactor,rxjava3,mutiny}_client_tests_real`
+  (ports 9980, 9979, 9978; the real ones use `real/rest_server/server.py`). The three mock packages compile one shared
+  `mock/java_rest_reactive_shared` test source, and the three real ones share `real/java_rest_reactive_shared`; each package only
+  adds a small `Rx` helper (`block`, `failure`) and, for the mocks, a `MockRest`. The reactive real packages derive the rest of
+  their tests from the blocking package via `real/generate_reactor_tests.dart` (`.block()` for Reactor, `Rx.block(...)` for RxJava 3
+  and Mutiny, which return `Maybe`/`Completable`/`Uni`). Edit the blocking test, not the derived copy. `java_rest_reactor_client_tests_real`
+  also reruns its tests against the Spring `WebClient` REST adapter (`webclient/` variant, `make variants`). Run with
+  `make -C integration_tests java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny` and the same names with `-real`.
+- **`@glRestNullable`** (lenient REST responses): every REST real package has a lenient test (`LenientTest` / `lenient_test` / `LenientTests`) against the
+  `/lenient/*` routes of `real/rest_server/server.py` and the `lenient*` / `strict*` operations of `real/schema_rest/rest.graphql`: partial payloads
+  decoded into the `*Rest` copies, a polymorphic list, a union, a cached call, and the strict twins on the same payload that must fail.
+  Swift has no strict twins: its strict types decode with force unwraps, so a missing non-null field traps instead of throwing. The Java reactive
+  packages derive `LenientTest` from the blocking one.
+- **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
+  (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
+  `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known
+  lengths, chunked for unknown, progress ends at the total, no read-ahead, no progress when the length is unknown, two-file list) and,
+  when `UPLOAD_SERVER_URL` is set, against `real/spring_upload_server` (ports 9998/9991). Swift uses `recording_server.py` (port 9970).
+  Run with `make -C integration_tests <lang>-upload-real` (e.g. `go-upload-real`). When changing an upload runtime, change every target's
+  rules together and rerun these.
 - **REST operations** (`@glRest*`, Go client): `mock/go_rest_tests` and `real/go_rest_client_tests_real` (net/http, port 9981;
   `comma/` output reruns the same tests on 9982). Run with `make -C integration_tests go-rest go-rest-real`.
 - **REST operations** (`@glRest*`, Swift client): `mock/swift_rest_tests` and `real/swift_rest_client_tests_real` (URLSession, port 9983;

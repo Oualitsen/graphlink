@@ -360,7 +360,7 @@ class JavaRestOperationSerializer {
     return [
       'Map<String, Object> glVariables__ = new HashMap<>();',
       ...variables,
-      'return ${_cg.callExpression('restCached', [
+      'return ${_cg.callExpression(_flavor.isReactive && op.allowsEmptyBody ? 'restCachedOrNull' : 'restCached', [
         '"${op.name}"',
         'glVariables__',
         '${op.cacheTtl}L',

@@ -137,6 +137,14 @@ extend type Query @glRestPrefix(path: "") {
   blob(size: Int!): Download! @glRest(path: "/blob/{size}")
   cachedStatus(code: Int!): Product @glRest(path: "/status/{code}/cached") @glCache(ttl: 60)
   cachedBad: Product! @glRest(path: "/missing-field/cached") @glCache(ttl: 60)
+  lenientProduct: Product! @glRest(path: "/lenient/product") @glRestNullable
+  strictProduct: Product! @glRest(path: "/lenient/strict-product")
+  lenientProducts: [Product!]! @glRest(path: "/lenient/products") @glRestNullable
+  lenientNothing: Product @glRest(path: "/lenient/nothing") @glRestNullable
+  lenientPets: [Pet!]! @glRest(path: "/lenient/pets") @glRestNullable
+  strictPets: [Pet!]! @glRest(path: "/lenient/strict-pets")
+  lenientHits: [Hit!]! @glRest(path: "/lenient/hits") @glRestNullable
+  lenientCached: Product! @glRest(path: "/lenient/cached") @glRestNullable @glCache(ttl: 60)
   gzipped: [Product!]! @glRest(path: "/gzip")
   redirected: Int! @glRest(path: "/redirect")
   big(n: Int! @glRestParam): [Product!]! @glRest(path: "/big")

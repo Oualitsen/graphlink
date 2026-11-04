@@ -682,7 +682,7 @@ func restUploadReader(reader io.Reader, total int64, onProgress UploadProgressCa
 	if reader == nil {
 		return bytes.NewReader(nil)
 	}
-	if onProgress == nil {
+	if onProgress == nil || total <= 0 {
 		return reader
 	}
 	return &restSendReader{reader: reader, total: total, notify: onProgress}

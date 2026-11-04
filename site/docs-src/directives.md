@@ -68,6 +68,7 @@ directive @glRestBody on ARGUMENT_DEFINITION
 directive @glRestField(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 directive @glRestPart(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 directive @glRestDiscriminator(field: String!, values: GLMap) on INTERFACE | UNION
+directive @glRestNullable on FIELD_DEFINITION
 directive @glDownload on SCALAR
 directive @glVoid on SCALAR
 ```
@@ -366,21 +367,34 @@ scalar BigDecimal @glExternal(
 
 ## @glTypeName
 
-**Target:** CLIENT · **Placement:** `OBJECT`, `INPUT_OBJECT`, `ENUM`
+**Target:** CLIENT · **Placement:** a query/mutation/subscription, a field in a selection, or an `input` type
 
-Overrides the name of the generated class for a type. By default, GraphLink uses the GraphQL type name.
+Overrides the name of a generated class. Without it GraphLink derives the name: the response class of an operation is named after the operation (`getUser` gives `GetUserResponse`), and an input class keeps its GraphQL name.
 
 | Argument | Type | Description |
 |---|---|---|
 | `name` | `String!` | The class name to use in generated code. |
 
 ```graphql title="Example"
-# GraphQL type is "GQLVehicle", but generated class will be named "Vehicle"
-type GQLVehicle @glTypeName(name: "Vehicle") {
-  id: ID!
-  brand: String!
+# the generated input class is MyProductInput
+input ProductInput @glTypeName(name: "MyProductInput") {
+  name: String!
+  price: Float!
+}
+
+# the operation's response class is ProductsResponse, the class for the selection is ProductSummary
+query getAllProducts @glTypeName(name: "ProductsResponse") {
+  getAllProducts @glTypeName(name: "ProductSummary") {
+    id
+    name
+  }
 }
 ```
+
+!!! note
+    The directive is also accepted on inline fragments, fragment definitions and on fields that return an interface or union, but the name is not applied there today: those types keep the name GraphLink derives.
+
+It is rejected on `type`, `interface` and `enum` definitions, and on the fields of a [REST operation](rest-client.md): a REST operation has no selection set, so its result is the schema type itself.
 
 ---
 
