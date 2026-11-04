@@ -52,6 +52,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
 | `outputDir` | `string` | `"src/main/java"` | Directory where generated files are written. Existing files are overwritten on every run. |
 | `identityFields` | `string[]` | `[]` | Field names treated as identity fields when generating `==` / `hashCode` methods (Dart and Java). Fields listed here are always included in equality regardless of `@glEqualsHashcode`. |
 | `disableCache` | `boolean` | `false` | When `true`, strips all `@glCache` and `@glCacheInvalidate` directives from the generated client — useful for debugging or environments where caching is handled externally. |
+| `restNullableSuffix` | `string` | `"Rest"` | Suffix of the nullable copy generated for a REST operation marked [`@glRestNullable`](rest-client.md#lenient-responses-glrestnullable) (`Product` gives `ProductRest`). Letters, digits and `_`, not starting with a digit. |
 
 ---
 

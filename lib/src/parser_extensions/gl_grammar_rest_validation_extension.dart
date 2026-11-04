@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
@@ -15,6 +16,7 @@ extension GLGrammarRestValidationExtension on GLParser {
     final routes = <String, GLRestOperation>{};
     _rejectGraphQLDocumentsSelectingRestFields();
     for (final op in restOperations.values) {
+      _checkRestNullable(op);
       _checkRoute(op, routes);
       _checkCaptureErrors(op);
       _checkCacheDirectives(op);
@@ -23,6 +25,38 @@ extension GLGrammarRestValidationExtension on GLParser {
         _checkUploadDepth(arg);
         _checkListDepth(arg);
       }
+    }
+  }
+
+  void rejectTypeNameOnRestOperations() {
+    final blocks = extensibleTokens.values.expand((list) => list.data).whereType<GLTypeDefinition>();
+    for (final type in blocks) {
+      for (final field in type.fields) {
+        if (!field.hasDirective(glTypeNameDirective)) continue;
+        if (!field.hasDirective(glRest) && !field.hasDirective(glRestPrefix)) continue;
+        throw ParseException(
+            "$glTypeNameDirective does not apply to the REST operation '${field.name.token}': its result type is named by the schema type, and a $glRestNullable copy by the restNullableSuffix option",
+            info: field.name);
+      }
+    }
+  }
+
+  void _checkRestNullable(GLRestOperation op) {
+    if (!op.field.hasDirective(glRestNullable)) return;
+    const withoutFields = {
+      RestResponseKind.text: 'text',
+      RestResponseKind.binary: 'binary',
+      RestResponseKind.none: 'void',
+    };
+    final kind = withoutFields[op.responseKind];
+    if (kind != null) {
+      throw ParseException("$glRestNullable on '${op.name}': a $kind response has no fields to make nullable",
+          info: op.field.name);
+    }
+    final target = op.field.type.firstType.token;
+    if (!types.containsKey(target) && !interfaces.containsKey(target)) {
+      throw ParseException("$glRestNullable on '${op.name}': it returns a scalar or enum, there is nothing to copy",
+          info: op.field.name);
     }
   }
 

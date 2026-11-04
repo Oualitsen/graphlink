@@ -95,6 +95,19 @@ class GLRestOperation {
     required this.contentType,
   });
 
+  GLRestOperation withField(GLField newField) => GLRestOperation(
+        field: newField,
+        type: type,
+        method: method,
+        path: path,
+        placeholders: placeholders,
+        arguments: arguments,
+        bodyKind: bodyKind,
+        bodyIsOptional: bodyIsOptional,
+        response: response,
+        contentType: contentType,
+      );
+
   String get name => field.name.token;
 
   RestResponseKind get responseKind => response.kind;

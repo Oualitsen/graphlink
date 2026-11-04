@@ -91,6 +91,41 @@ union Hit @glRestDiscriminator(field: "type", values: {Dog: "dog", Cat: "cat"}) 
 
 `Void` and `Download` are valid only as the return type of a REST operation.
 
+## Lenient responses: `@glRestNullable`
+
+The schema is often the *target* contract: fields are non-null because the GraphQL server will guarantee them, while the REST API
+you call today omits them or sends `null`. Such a response fails to decode (`Product.name is missing or null in the response`).
+
+Put `@glRestNullable` on the operation to decode it into a **copy** of the response type in which every field is nullable:
+
+```graphql
+type Owner { name: String! }
+type Product { id: ID! name: String! tags: [String!]! owner: Owner! }
+
+extend type Query @glRestPrefix(path: "/products") {
+  product(id: ID!): Product! @glRest(path: "/{id}") @glRestNullable
+}
+```
+
+```dart
+final ProductRest product = await client.queries.product(id: 'p1'); // name, tags and owner may be null
+```
+
+- The copy is named `<Type>Rest` (`Product` gives `ProductRest`). The suffix is the project-wide `restNullableSuffix` option, never per
+  operation. Another type already using the copy's name is an error.
+- The copy is deep: every object type reachable from the response is copied (`OwnerRest`), and shared between the operations that
+  need it. Enums and scalars are reused.
+- Interfaces and unions are copied too: `PetRest` is implemented by `DogRest` and `CatRest`, and the discriminator keeps the original
+  wire values (`"dog"` stays `"dog"`).
+- Only the outermost level of each field becomes nullable; list elements follow the schema: `[Product!]!` gives `[ProductRest!]`,
+  `[Product]!` gives `[ProductRest]`. A `null` element in a list that forbids it still fails.
+- The operation's own return type is not touched: `Product!` becomes `ProductRest!`, so an empty body is still an error for it.
+- GraphQL operations, and REST operations without the directive, keep returning the original type. When an operation moves to
+  GraphQL, its result type goes back from `ProductRest` to `Product`; there is no conversion between the two.
+- The directive is only valid on a REST operation that returns an object, interface or union. It is an error on a text, binary or
+  `Void` response, on a scalar or enum result, and on a field that is not a REST operation. `@glTypeName` does not apply to REST
+  operations either.
+
 ## Caching
 
 `@glCache`, `@glNoCache` and `@glCacheInvalidate` work on REST operations and share the cache store and the tag space with
