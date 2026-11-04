@@ -7,6 +7,10 @@ import 'package:test/test.dart';
 void main() {
   final sdl = directiveDeclarationsForIde();
 
+  test('@glRestNullable is declared on fields and on objects', () {
+    expect(sdl, contains('directive @glRestNullable on FIELD_DEFINITION | OBJECT'));
+  });
+
   test('declares every GraphLink directive', () {
     final declared = RegExp(r'^directive (@\w+)', multiLine: true).allMatches(sdl).map((m) => m.group(1)).toSet();
     expect(declared, containsAll(InternalDirectives.instance.definitions.keys.where((k) => k.startsWith('@gl'))));

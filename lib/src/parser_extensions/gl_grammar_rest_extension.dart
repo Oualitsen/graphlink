@@ -8,6 +8,7 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_arguments_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_nullable_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 
 extension GLGrammarRestExtension on GLParser {
@@ -32,6 +33,10 @@ extension GLGrammarRestExtension on GLParser {
     final rootNames = {
       for (final type in GLQueryType.values) schema.getByQueryType(type): type,
     };
+    rejectRestNullableOnNonRootTypes({
+      for (final root in rootNames.entries)
+        if (root.value != GLQueryType.subscription) root.key,
+    });
     for (final entry in types.entries) {
       final operationType = rootNames[entry.key];
       for (final field in entry.value.fields) {

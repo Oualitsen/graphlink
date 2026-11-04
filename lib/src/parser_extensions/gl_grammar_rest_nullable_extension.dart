@@ -1,15 +1,71 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/model/gl_directive.dart';
+import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/token_info.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 
 extension GLGrammarRestNullableExtension on GLParser {
+  List<GLDirectiveValue> pushRestNullableToFields(
+      TokenInfo typeName, List<GLDirectiveValue> typeDirectives, List<GLField> fields) {
+    final directive = typeDirectives.where((d) => d.token == glRestNullable).firstOrNull;
+    if (directive == null) return typeDirectives;
+    restNullableTypes.putIfAbsent(typeName.token, () => directive.tokenInfo);
+    for (final field in fields) {
+      final isRest = field.hasDirective(glRest) || field.hasDirective(glRestPrefix);
+      if (isRest && !field.hasDirective(glRestNullable)) field.addDirective(_restNullableDirective());
+    }
+    return typeDirectives.where((d) => d.token != glRestNullable).toList();
+  }
+
+  void rejectRestNullableOnNonRootTypes(Set<String> operationRoots) {
+    for (final entry in restNullableTypes.entries) {
+      if (operationRoots.contains(entry.key)) continue;
+      throw ParseException(
+          "$glRestNullable is only allowed on the Query or Mutation type, but it is on '${entry.key}'",
+          info: entry.value);
+    }
+  }
+
+  GLDirectiveValue _restNullableDirective() =>
+      GLDirectiveValue(glRestNullable.toToken(), [GLDirectiveScope.FIELD_DEFINITION], [], generated: true);
+
+  void settleRestNullableDefaults() {
+    for (final op in restOperations.values) {
+      final inherited = op.field.getDirectiveByName(glRestNullable)?.generated ?? false;
+      final obstructed = restNullableObstacle(op) != null;
+      if (inherited && obstructed) {
+        op.field.removeDirectiveByName(glRestNullable);
+      } else if (restNullable && !obstructed && !op.field.hasDirective(glRestNullable)) {
+        op.field.addDirective(_restNullableDirective());
+      }
+    }
+  }
+
+  String? restNullableObstacle(GLRestOperation op) {
+    const withoutFields = {
+      RestResponseKind.text: 'text',
+      RestResponseKind.binary: 'binary',
+      RestResponseKind.none: 'void',
+    };
+    final kind = withoutFields[op.responseKind];
+    if (kind != null) return 'a $kind response has no fields to make nullable';
+    final target = op.field.type.firstType.token;
+    if (!types.containsKey(target) && !interfaces.containsKey(target)) {
+      return 'it returns a scalar or enum, there is nothing to copy';
+    }
+    return null;
+  }
+
   void createRestNullableCopies() {
     final optedIn = restOperations.values.where((op) => op.field.hasDirective(glRestNullable)).toList();
     if (optedIn.isEmpty) return;

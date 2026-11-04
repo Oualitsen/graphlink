@@ -53,6 +53,7 @@ Full reference for every option in `glink.json` / `glink.yaml`.
 | `identityFields` | `string[]` | `[]` | Field names treated as identity fields when generating `==` / `hashCode` methods (Dart and Java). Fields listed here are always included in equality regardless of `@glEqualsHashcode`. |
 | `disableCache` | `boolean` | `false` | When `true`, strips all `@glCache` and `@glCacheInvalidate` directives from the generated client — useful for debugging or environments where caching is handled externally. |
 | `restNullableSuffix` | `string` | `"Rest"` | Suffix of the nullable copy generated for a REST operation marked [`@glRestNullable`](rest-client.md#lenient-responses-glrestnullable) (`Product` gives `ProductRest`). Letters, digits and `_`, not starting with a digit. |
+| `restNullable` | `boolean` | `false` | When `true`, every REST operation behaves as if it carried [`@glRestNullable`](rest-client.md#lenient-responses-glrestnullable): it returns the nullable copy of its response type. Operations that cannot be copied (text, binary, void, scalar or enum results) are left alone. Turning it on renames result types at call sites (`Product` gives `ProductRest`). |
 
 ---
 

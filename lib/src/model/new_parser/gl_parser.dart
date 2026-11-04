@@ -219,6 +219,7 @@ class GLParser {
   final Map<String, GLRepository> repositories = {};
   final Map<GLOperationKey, GLQueryDefinition> queries = {};
   final Map<GLOperationKey, GLRestOperation> restOperations = {};
+  final Map<String, TokenInfo> restNullableTypes = {};
   final Map<String, GLRestDiscriminator> restDiscriminators = {};
   final Map<String, GLEnumDefinition> enums = {};
   final Map<String, GLTypeDefinition> projectedTypes = {};
@@ -247,6 +248,7 @@ class GLParser {
   final int? defaultCacheTTL;
   final bool disableCache;
   final String restNullableSuffix;
+  final bool restNullable;
   final int defaultExpandDepth;
   final bool captureErrors;
 
@@ -342,6 +344,7 @@ class GLParser {
     this.defaultCacheTTL,
     this.disableCache = false,
     this.restNullableSuffix = 'Rest',
+    this.restNullable = false,
     this.defaultExpandDepth = 1,
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
@@ -412,6 +415,7 @@ class GLParser {
       handleRepositories(false);
       checkGLExpandDirectives();
       resolveRestOperations();
+      settleRestNullableDefaults();
       validateRestOperations();
       resolveRestDiscriminators();
       if (generateAllFieldsFragments || restOperations.isNotEmpty) {
@@ -692,12 +696,14 @@ class GLParser {
             fieldScope: GLDirectiveScope.FIELD_DEFINITION));
       }
     }
+    final typeName = TokenInfo.ofLexer(name, _lexer);
+    final typeDirectives = pushRestNullableToFields(typeName, pushRestPrefixToFields(directives, fields), fields);
     addTypeDefinition(GLTypeDefinition(
-      name: TokenInfo.ofLexer(name, _lexer),
+      name: typeName,
       nameDeclared: false,
       fields: fields,
       interfaceNames: interfaceNames,
-      directives: pushRestPrefixToFields(directives, fields),
+      directives: typeDirectives,
       derivedFromType: null,
       extension: isExtension,
       documentation: documentation,

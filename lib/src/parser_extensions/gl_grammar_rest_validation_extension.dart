@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_nullable_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 
@@ -43,20 +44,9 @@ extension GLGrammarRestValidationExtension on GLParser {
 
   void _checkRestNullable(GLRestOperation op) {
     if (!op.field.hasDirective(glRestNullable)) return;
-    const withoutFields = {
-      RestResponseKind.text: 'text',
-      RestResponseKind.binary: 'binary',
-      RestResponseKind.none: 'void',
-    };
-    final kind = withoutFields[op.responseKind];
-    if (kind != null) {
-      throw ParseException("$glRestNullable on '${op.name}': a $kind response has no fields to make nullable",
-          info: op.field.name);
-    }
-    final target = op.field.type.firstType.token;
-    if (!types.containsKey(target) && !interfaces.containsKey(target)) {
-      throw ParseException("$glRestNullable on '${op.name}': it returns a scalar or enum, there is nothing to copy",
-          info: op.field.name);
+    final obstacle = restNullableObstacle(op);
+    if (obstacle != null) {
+      throw ParseException("$glRestNullable on '${op.name}': $obstacle", info: op.field.name);
     }
   }
 
