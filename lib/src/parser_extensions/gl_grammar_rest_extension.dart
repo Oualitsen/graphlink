@@ -28,6 +28,7 @@ extension GLGrammarRestExtension on GLParser {
 
   void resolveRestOperations() {
     restOperations.clear();
+    rejectRestNullableOnInterfaces();
     final rootNames = {
       for (final type in GLQueryType.values) schema.getByQueryType(type): type,
     };
@@ -36,11 +37,7 @@ extension GLGrammarRestExtension on GLParser {
       for (final field in entry.value.fields) {
         final isRest = field.hasDirective(glRest) || field.hasDirective(glRestPrefix);
         if (!isRest) {
-          if (field.hasDirective(glRestNullable)) {
-            throw ParseException(
-                "$glRestNullable is only allowed on a REST operation, but '${field.name.token}' has no $glRest",
-                info: field.name);
-          }
+          _rejectRestNullable(field, "has no $glRest");
           continue;
         }
         if (operationType == null) {
@@ -57,6 +54,20 @@ extension GLGrammarRestExtension on GLParser {
         restOperations[operation.key] = operation;
       }
     }
+  }
+
+  void rejectRestNullableOnInterfaces() {
+    for (final iface in interfaces.values) {
+      for (final field in iface.fields) {
+        _rejectRestNullable(field, "is a field of the interface '${iface.token}'");
+      }
+    }
+  }
+
+  void _rejectRestNullable(GLField field, String reason) {
+    if (!field.hasDirective(glRestNullable)) return;
+    throw ParseException("$glRestNullable is only allowed on a REST operation, but '${field.name.token}' $reason",
+        info: field.name);
   }
 
   GLRestOperation _resolveRestOperation(GLField field, GLQueryType type) {
