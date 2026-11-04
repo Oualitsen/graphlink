@@ -68,7 +68,7 @@ directive @glRestBody on ARGUMENT_DEFINITION
 directive @glRestField(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 directive @glRestPart(name: String, encoding: GLRestEncoding) on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 directive @glRestDiscriminator(field: String!, values: GLMap) on INTERFACE | UNION
-directive @glRestNullable on FIELD_DEFINITION
+directive @glRestNullable on FIELD_DEFINITION | OBJECT
 directive @glDownload on SCALAR
 directive @glVoid on SCALAR
 ```

@@ -122,6 +122,10 @@ final ProductRest product = await client.queries.product(id: 'p1'); // name, tag
 - The operation's own return type is not touched: `Product!` becomes `ProductRest!`, so an empty body is still an error for it.
 - GraphQL operations, and REST operations without the directive, keep returning the original type. When an operation moves to
   GraphQL, its result type goes back from `ProductRest` to `Product`; there is no conversion between the two.
+- To make every operation lenient, set the project-wide `restNullable` option, or put `@glRestNullable` on the `Query` or `Mutation`
+  type (on an `extend type` block it covers that block's fields). Operations that cannot be copied (text, binary, void, scalar or
+  enum results) and GraphQL fields of the same type are skipped without an error; the directive on such a single operation is still
+  an error. On any other type it is an error.
 - The directive is only valid on a REST operation that returns an object, interface or union. It is an error on a text, binary or
   `Void` response, on a scalar or enum result, and on a field that is not a REST operation. `@glTypeName` does not apply to REST
   operations either.

@@ -99,7 +99,17 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - **Reactive Java client (`asyncStyle`).** `clientConfig.java.asyncStyle` generates a client
   returning `Mono`/`Single`/`Uni` (Reactor/RxJava3/Mutiny) instead of blocking calls.
 
-## Supported targets (as of v5.6.0)
+- **REST operations (`@glRest*`, v6.0.0+, all seven clients).** Fields of `Query`/`Mutation` annotated with
+  `@glRest(path, method, ...)` are served over HTTP/JSON instead of GraphQL, from the same schema and generated
+  client. Arguments get explicit roles (`@glRestPath`, `@glRestParam`, `@glRestHeader`, `@glRestBody`,
+  `@glRestField`, `@glRestPart`). `@glRestNullable` (on an operation, on the `Query`/`Mutation` type, or for the
+  whole project with the top-level `restNullable` option) decodes into a copy of the response type with every
+  field nullable (`Product` gives `ProductRest`).
+- **Directives are validated (v6.0.0+, breaking).** Every directive must be built in or declared with
+  `directive @name ... on ...`; unknown or misspelled arguments, wrong value kinds and wrong locations fail
+  generation. `glink --print-directives` prints the declarations of GraphLink's own directives for your IDE.
+
+## Supported targets (as of v6.0.0)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)

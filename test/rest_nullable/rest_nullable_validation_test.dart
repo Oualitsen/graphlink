@@ -122,4 +122,36 @@ void main() {
       expect(() => _parse('type Unrelated { id: ID }\ntype OwnerRest { id: ID }\ntype Query { name: Owner! @glRest(path: "/p") }'), returnsNormally);
     });
   });
+
+  group('on a type', () {
+    test('an ordinary type', () {
+      expectError('''
+        type Wrapper @glRestNullable { product: Product }
+        type Query { w: Wrapper! @glRest(path: "/w") }
+      ''', ['@glRestNullable', 'Query or Mutation', 'Wrapper']);
+    });
+
+    test('an interface', () {
+      expectError('''
+        interface Pet @glRestNullable { id: ID! }
+        type Dog implements Pet { id: ID! }
+        type Query { dog: Dog! @glRest(path: "/d") }
+      ''', ['@glRestNullable']);
+    });
+
+    test('the Subscription type', () {
+      expectError('''
+        type Query { product: Product! @glRest(path: "/p") }
+        type Subscription @glRestNullable { changed: Product! }
+      ''', ['@glRestNullable', 'Query or Mutation', 'Subscription']);
+    });
+
+    test('on both a type and its extension', () {
+      final g = _parse('''
+        type Query @glRestNullable { product: Product! @glRest(path: "/p") }
+        extend type Query @glRestNullable { owner: Owner! @glRest(path: "/o") }
+      ''');
+      expect(g.projectedTypes.keys, containsAll(['ProductRest', 'OwnerRest']));
+    });
+  });
 }

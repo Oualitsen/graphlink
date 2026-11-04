@@ -153,6 +153,12 @@ String _restNullableSuffix(Object? value) {
   return value;
 }
 
+bool _restNullable(Object? value) {
+  if (value == null) return false;
+  if (value is! bool) throw ArgumentError('restNullable must be a boolean, got $value.');
+  return value;
+}
+
 class GeneratorConfig {
   final List<String> schemaPaths;
   final String mode;
@@ -168,6 +174,9 @@ class GeneratorConfig {
 
   /// Suffix of the nullable copy generated for REST operations marked `@glRestNullable`.
   final String restNullableSuffix;
+
+  /// Treats every REST operation as if it carried `@glRestNullable`.
+  final bool restNullable;
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
@@ -184,6 +193,7 @@ class GeneratorConfig {
     this.unknownScalarType,
     this.disableCache = false,
     this.restNullableSuffix = defaultRestNullableSuffix,
+    this.restNullable = false,
     this.serverConfig,
     this.clientConfig,
   });
@@ -197,6 +207,7 @@ class GeneratorConfig {
       unknownScalarType: json['unknownScalarType'] as String?,
       disableCache: (json['disableCache'] as bool?) ?? false,
       restNullableSuffix: _restNullableSuffix(json['restNullableSuffix']),
+      restNullable: _restNullable(json['restNullable']),
       outputDir: json['outputDir'] ?? 'src/main/java',
       serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig'] as Map<String, dynamic>) : null,
       clientConfig: json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig'] as Map<String, dynamic>) : null,
