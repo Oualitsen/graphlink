@@ -32,6 +32,23 @@ void main() {
       ''', ['@glRestNullable', 'REST operation', 'product']);
     });
 
+    test('a field of an interface', () {
+      expectError('''
+        interface Pet @glRestDiscriminator(field: "kind") { id: ID! name: String @glRestNullable }
+        type Dog implements Pet { id: ID! name: String }
+        type Query { pets: [Pet!]! @glRest(path: "/p") }
+      ''', ['@glRestNullable', 'REST operation', 'name', 'Pet']);
+    });
+
+    test('a field added to an interface by an extension', () {
+      expectError('''
+        interface Pet @glRestDiscriminator(field: "kind") { id: ID! }
+        extend interface Pet { name: String @glRestNullable }
+        type Dog implements Pet { id: ID! name: String }
+        type Query { pets: [Pet!]! @glRest(path: "/p") }
+      ''', ['@glRestNullable', 'REST operation', 'name']);
+    });
+
     test('a GraphQL mutation', () {
       expectError('''
         type Query { ping: String }
