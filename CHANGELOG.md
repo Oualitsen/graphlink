@@ -696,6 +696,8 @@
 
 - **REST operations (Java, WebClient)** — with `reactiveHttpClient: "webclient"` the generated `DefaultGraphLinkRestAdapter` now uses Spring `WebClient` (it used to be the JDK `HttpClient` whatever the setting). Uploads and downloads stream, redirects are followed, `gzip`/`deflate` responses are decoded, and non-2xx responses reach the client as `RestError`.
 
+- **`@glRestNullable`** — a REST operation marked `@glRestNullable` decodes into a generated copy of its response type (`Product` gives `ProductRest`) in which every field is nullable, so an API that omits fields or sends `null` for fields the schema declares non-null no longer fails the call. The copy is deep and includes the members of interfaces and unions, whose discriminator keeps the original wire values. List elements follow the schema. GraphQL operations and operations without the directive keep the original type. The suffix is the new top-level option `restNullableSuffix` (default `Rest`). The directive is rejected on text, binary and `Void` responses, on scalar or enum results and on fields that are not REST operations; `@glTypeName` on a REST operation now says so instead of the generic placement error.
+
 - **`glink --print-directives`** writes the declarations of every GraphLink directive (generated from the same table the validator uses) so your IDE stops flagging them. The hand-written "copy-paste declarations" block in `directives.md` had wrong locations for several directives and is replaced by this output.
 
 ### Breaking changes

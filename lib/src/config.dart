@@ -141,6 +141,18 @@ abstract class ServerLanguageConfig {
 
 // ── Top-level config ─────────────────────────────────────────────────────────
 
+const defaultRestNullableSuffix = 'Rest';
+
+final _identifierFragment = RegExp(r'^[A-Za-z][A-Za-z0-9_]*$');
+
+String _restNullableSuffix(Object? value) {
+  if (value == null) return defaultRestNullableSuffix;
+  if (value is! String || !_identifierFragment.hasMatch(value)) {
+    throw ArgumentError('restNullableSuffix must be a non-empty identifier (letters, digits, "_", not starting with a digit), got $value.');
+  }
+  return value;
+}
+
 class GeneratorConfig {
   final List<String> schemaPaths;
   final String mode;
@@ -153,6 +165,9 @@ class GeneratorConfig {
   /// e.g. `"String"` for Dart, `"string"` for TypeScript, `"Object"` for Java.
   final String? unknownScalarType;
   final bool disableCache;
+
+  /// Suffix of the nullable copy generated for REST operations marked `@glRestNullable`.
+  final String restNullableSuffix;
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
@@ -168,6 +183,7 @@ class GeneratorConfig {
     required this.outputDir,
     this.unknownScalarType,
     this.disableCache = false,
+    this.restNullableSuffix = defaultRestNullableSuffix,
     this.serverConfig,
     this.clientConfig,
   });
@@ -180,6 +196,7 @@ class GeneratorConfig {
       typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
       unknownScalarType: json['unknownScalarType'] as String?,
       disableCache: (json['disableCache'] as bool?) ?? false,
+      restNullableSuffix: _restNullableSuffix(json['restNullableSuffix']),
       outputDir: json['outputDir'] ?? 'src/main/java',
       serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig'] as Map<String, dynamic>) : null,
       clientConfig: json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig'] as Map<String, dynamic>) : null,

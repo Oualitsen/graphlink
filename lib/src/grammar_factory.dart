@@ -95,6 +95,7 @@ GLParser createGrammar(GeneratorConfig config) {
     parameterReservedWords: _parameterReservedWordsFor(config),
     identityFields: config.identityFields,
     disableCache: config.disableCache,
+    restNullableSuffix: config.restNullableSuffix,
     collectionImports: _collectionImportsFor(config),
     generateAllFieldsFragments: lang.generateAllFieldsFragments,
     nullableFieldsRequired: lang.nullableFieldsRequired,

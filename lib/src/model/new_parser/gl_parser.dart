@@ -34,6 +34,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart'
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_directive_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_nullable_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_discriminator_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
@@ -245,6 +246,7 @@ class GLParser {
   final List<String> identityFields;
   final int? defaultCacheTTL;
   final bool disableCache;
+  final String restNullableSuffix;
   final int defaultExpandDepth;
   final bool captureErrors;
 
@@ -339,6 +341,7 @@ class GLParser {
     this.mode = CodeGenerationMode.client,
     this.defaultCacheTTL,
     this.disableCache = false,
+    this.restNullableSuffix = 'Rest',
     this.defaultExpandDepth = 1,
     this.captureErrors = false,
     this.autoQueryArgumentLimit = 200,
@@ -379,6 +382,7 @@ class GLParser {
 
   void validateSemantics() {
     if (!_validate) return;
+    rejectTypeNameOnRestOperations();
     validateDirectives();
     validateInputReferences();
     validateDefaultValues();
@@ -448,6 +452,7 @@ class GLParser {
       assignQueryCodeNamesEarly();
       createProjectedTypes();
       registerRestResponseTypes();
+      createRestNullableCopies();
       cleanProjectedInterfacesImplementations();
       fixProjectedInterfaceConflicts();
       addClientTypesToProjectedTypes();

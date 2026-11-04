@@ -22,6 +22,7 @@ import 'package:graphlink/src/serializers/client_serializers/java/java_rest_cons
 import 'package:graphlink/src/serializers/client_serializers/java/java_rest_operation_serializer.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 
 
 
@@ -103,10 +104,7 @@ class JavaClientSerializer extends GLClientSerializer {
         ...operation.arguments.map((a) => a.argument.type.firstType.token),
       ];
       for (final name in names) {
-        if (_grammar.isEnum(name) ||
-            _grammar.isInput(name) ||
-            _grammar.types.containsKey(name) ||
-            _grammar.interfaces.containsKey(name)) {
+        if (_grammar.isRestImportableType(name)) {
           final token = _grammar.getTokenByKey(name);
           if (token != null) tokens.add(token);
         }

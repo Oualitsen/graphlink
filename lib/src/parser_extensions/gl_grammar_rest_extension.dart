@@ -35,7 +35,14 @@ extension GLGrammarRestExtension on GLParser {
       final operationType = rootNames[entry.key];
       for (final field in entry.value.fields) {
         final isRest = field.hasDirective(glRest) || field.hasDirective(glRestPrefix);
-        if (!isRest) continue;
+        if (!isRest) {
+          if (field.hasDirective(glRestNullable)) {
+            throw ParseException(
+                "$glRestNullable is only allowed on a REST operation, but '${field.name.token}' has no $glRest",
+                info: field.name);
+          }
+          continue;
+        }
         if (operationType == null) {
           throw ParseException(
               "${field.hasDirective(glRest) ? glRest : glRestPrefix} is only allowed on fields of the Query or Mutation type",
@@ -112,6 +119,14 @@ extension GLGrammarRestExtension on GLParser {
     _requireDiscriminators(roots);
   }
 
+  bool isRestImportableType(String name) =>
+      isEnum(name) ||
+      isInput(name) ||
+      types.containsKey(name) ||
+      interfaces.containsKey(name) ||
+      projectedTypes.containsKey(name) ||
+      projectedInterfaces.containsKey(name);
+
   GLTypeDefinition? _declaredTypeNamed(String name) => interfaces[name] ?? types[name];
 
   Set<String> get restReachableTypeNames {
@@ -119,9 +134,11 @@ extension GLGrammarRestExtension on GLParser {
     return _reachableCache[this] ??= _computeReachable();
   }
 
-  Set<String> _computeReachable() {
+  Set<String> _computeReachable() => restReachableTypeNamesFrom(restOperations.values);
+
+  Set<String> restReachableTypeNamesFrom(Iterable<GLRestOperation> operations) {
     final visited = <String>{};
-    final pending = restOperations.values
+    final pending = operations
         .map((op) => _declaredTypeNamed(op.field.type.firstType.token))
         .whereType<GLTypeDefinition>()
         .toList();

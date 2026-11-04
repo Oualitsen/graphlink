@@ -319,6 +319,11 @@ don't confuse them:
   and Mutiny, which return `Maybe`/`Completable`/`Uni`). Edit the blocking test, not the derived copy. `java_rest_reactor_client_tests_real`
   also reruns its tests against the Spring `WebClient` REST adapter (`webclient/` variant, `make variants`). Run with
   `make -C integration_tests java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny` and the same names with `-real`.
+- **`@glRestNullable`** (lenient REST responses): every REST real package has a lenient test (`LenientTest` / `lenient_test` / `LenientTests`) against the
+  `/lenient/*` routes of `real/rest_server/server.py` and the `lenient*` / `strict*` operations of `real/schema_rest/rest.graphql`: partial payloads
+  decoded into the `*Rest` copies, a polymorphic list, a union, a cached call, and the strict twins on the same payload that must fail.
+  Swift has no strict twins: its strict types decode with force unwraps, so a missing non-null field traps instead of throwing. The Java reactive
+  packages derive `LenientTest` from the blocking one.
 - **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
   (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
   `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known
