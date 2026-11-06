@@ -4,6 +4,9 @@ import dev.graphlink.test.Fixtures.newRealClient
 import dev.graphlink.test.generated.client.GraphLinkClient
 import dev.graphlink.test.generated.interfaces.*
 import dev.graphlink.test.generated.types.*
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
@@ -142,5 +145,84 @@ class PolymorphismTest {
         assertIs<Video>(c.queries.getCachedAttachment("v1").getCachedAttachment)
         assertIs<Video>(c.queries.getCachedAttachment("v1").getCachedAttachment)
         assertEquals(1, calls)
+    }
+
+    @Test
+    fun inlineFragmentsOnEveryMemberOfAUnion() = runBlocking<Unit> {
+        val photo = client.queries.fetchAttachment("ph1").attachment
+        val video = client.queries.fetchAttachment("v1").attachment
+        val document = client.queries.fetchAttachment("d1").attachment
+        assertEquals(640, assertIs<Photo>(photo).width)
+        assertEquals(30, assertIs<Video>(video).seconds)
+        assertEquals(12, assertIs<Document>(document).pages)
+        assertNull(client.queries.fetchAttachment("nope").attachment)
+    }
+
+    @Test
+    fun oneFragmentSharedByTwoRootFields() = runBlocking<Unit> {
+        val res = client.queries.fetchArticleAndAttachment("a1", "v1")
+        assertEquals("ph1", res.article.cover!!.id)
+        assertEquals("v1", res.attachment!!.id)
+        assertEquals(30, assertIs<Video_IdSeconds>(res.attachment).seconds)
+    }
+
+    @Test
+    fun anInterfaceSelectionWithInlineFragmentsAndASharedFragment() = runBlocking<Unit> {
+        val feed = client.queries.fetchFeed().feed
+        assertEquals(4, feed.size)
+        val article = assertIs<Article_AttachmentsCoverCreatedBy_pztuu6>(feed[0])
+        assertEquals("Hello", article.title)
+        assertEquals("http://cdn/1.png", assertIs<Photo_IdUrl>(article.cover).url)
+        assertEquals(listOf("ph1", "v1", "d1"), article.attachments.map { it.id })
+        assertEquals("Nice", assertIs<Comment>(feed[1]).text)
+        assertNull(assertIs<Article_AttachmentsCoverCreatedBy_pztuu6>(feed[2]).cover)
+    }
+
+    @Test
+    fun anInterfaceSelectionThatNamesOnlySomeImplementers() = runBlocking<Unit> {
+        val article = assertIs<Article_CreatedByIdTitle>(client.queries.fetchNode("a1").node)
+        assertEquals("Hello", article.title)
+        assertEquals("alice", article.createdBy)
+        val comment = assertIs<Comment_CreatedById>(client.queries.fetchNode("c1").node)
+        assertEquals("bob", comment.createdBy)
+        assertNull(client.queries.fetchNode("nope").node)
+    }
+
+    @Test
+    fun twoQueriesSelectDifferentShapesOfTheSameUnion() = runBlocking<Unit> {
+        val photo = assertIs<Photo>(client.queries.fetchPhotoParts("ph1").attachment)
+        assertEquals(640, photo.width)
+        assertEquals("http://cdn/1.png", photo.url)
+        assertEquals("v1", assertIs<Video_Id>(client.queries.fetchPhotoParts("v1").attachment).id)
+        assertEquals(640, assertIs<Photo>(client.queries.fetchAttachment("ph1").attachment).width)
+    }
+
+    @Test
+    fun aUnionStreamEmitsEachMember() = runBlocking<Unit> {
+        val ws = dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter(Fixtures.WS_URL)
+        try {
+            val codec = dev.graphlink.test.generated.client.KotlinxSerializationGraphLinkJsonCodec()
+            val streaming = GraphLinkClient(OkHttpGraphLinkClientAdapter(Fixtures.SERVER_URL), ws, MockMultipartAdapter(), codec, codec)
+            val events = streaming.subscriptions.attachmentAdded().take(3).toList()
+            assertIs<Photo>(events[0].attachmentAdded)
+            assertIs<Video>(events[1].attachmentAdded)
+            assertIs<Document>(events[2].attachmentAdded)
+        } finally {
+            ws.close()
+        }
+    }
+
+    @Test
+    fun anInterfaceStreamEmitsEachImplementer() = runBlocking<Unit> {
+        val ws = dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter(Fixtures.WS_URL)
+        try {
+            val codec = dev.graphlink.test.generated.client.KotlinxSerializationGraphLinkJsonCodec()
+            val streaming = GraphLinkClient(OkHttpGraphLinkClientAdapter(Fixtures.SERVER_URL), ws, MockMultipartAdapter(), codec, codec)
+            val events = streaming.subscriptions.entityPublished().take(2).toList()
+            assertIs<Article>(events[0].entityPublished)
+            assertIs<Comment>(events[1].entityPublished)
+        } finally {
+            ws.close()
+        }
     }
 }

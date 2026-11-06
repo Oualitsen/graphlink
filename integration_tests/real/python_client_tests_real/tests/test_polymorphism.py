@@ -1,3 +1,4 @@
+import asyncio
 import unittest
 
 from generated import (
@@ -11,7 +12,7 @@ from generated import (
     Video,
 )
 
-from .real_server import DEFAULT_PORT, http_url, new_client, ws_url
+from .real_server import DEFAULT_PORT, http_url, new_client, new_ws_adapter, ws_url
 
 
 class RealTestCase(unittest.IsolatedAsyncioTestCase):
@@ -118,3 +119,75 @@ class ErrorsAndCaching(RealTestCase):
         self.assertIsInstance(first, Video)
         self.assertIsInstance(second, Video)
         self.assertEqual(calls, 1)
+
+
+class CustomQueries(RealTestCase):
+    async def test_inline_fragments_on_every_member_of_a_union(self) -> None:
+        photo = (await self.client.queries.fetch_attachment(id="ph1")).attachment
+        video = (await self.client.queries.fetch_attachment(id="v1")).attachment
+        document = (await self.client.queries.fetch_attachment(id="d1")).attachment
+        self.assertEqual(photo.width, 640)
+        self.assertEqual(video.seconds, 30)
+        self.assertEqual(document.pages, 12)
+        self.assertIsNone((await self.client.queries.fetch_attachment(id="nope")).attachment)
+
+    async def test_one_fragment_shared_by_two_root_fields(self) -> None:
+        res = await self.client.queries.fetch_article_and_attachment(article_id="a1", attachment_id="v1")
+        self.assertEqual(res.article.cover.id, "ph1")
+        self.assertEqual(res.attachment.id, "v1")
+        self.assertEqual(res.attachment.seconds, 30)
+
+
+class DifferentShapesOfOneAbstractType(RealTestCase):
+    async def test_an_interface_selection_with_inline_fragments_and_a_shared_fragment(self) -> None:
+        feed = (await self.client.queries.fetch_feed()).feed
+        self.assertEqual([getattr(e, "title", None) for e in feed], ["Hello", None, "Second", None])
+        self.assertEqual([getattr(e, "text", None) for e in feed], [None, "Nice", None, "Thanks"])
+        self.assertEqual(feed[0].cover.url, "http://cdn/1.png")
+        self.assertEqual([a.id for a in feed[0].attachments], ["ph1", "v1", "d1"])
+        self.assertIsNone(feed[2].cover)
+
+    async def test_an_interface_selection_that_names_only_some_implementers(self) -> None:
+        article = (await self.client.queries.fetch_node(id="a1")).node
+        self.assertEqual(article.title, "Hello")
+        self.assertEqual(article.created_by, "alice")
+        comment = (await self.client.queries.fetch_node(id="c1")).node
+        self.assertEqual(comment.created_by, "bob")
+        self.assertFalse(hasattr(comment, "title"))
+        self.assertIsNone((await self.client.queries.fetch_node(id="nope")).node)
+
+    async def test_two_queries_select_different_shapes_of_the_same_union(self) -> None:
+        photo = (await self.client.queries.fetch_photo_parts(id="ph1")).attachment
+        self.assertEqual(photo.width, 640)
+        self.assertEqual(photo.url, "http://cdn/1.png")
+        video = (await self.client.queries.fetch_photo_parts(id="v1")).attachment
+        self.assertEqual(video.id, "v1")
+        self.assertFalse(hasattr(video, "seconds"))
+        full = (await self.client.queries.fetch_attachment(id="ph1")).attachment
+        self.assertEqual(full.width, 640)
+
+
+class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        self.ws = new_ws_adapter()
+        self.client = new_client(ws_adapter=self.ws)
+
+    async def asyncTearDown(self) -> None:
+        await self.ws.close()
+
+    async def _take(self, stream, count):
+        events = []
+        try:
+            while len(events) < count:
+                events.append(await asyncio.wait_for(stream.__anext__(), 10))
+        finally:
+            await stream.aclose()
+        return events
+
+    async def test_a_union_stream_emits_each_member(self) -> None:
+        events = await self._take(self.client.subscriptions.attachment_added(), 3)
+        self.assertEqual([type(e.attachment_added) for e in events], [Photo, Video, Document])
+
+    async def test_an_interface_stream_emits_each_implementer(self) -> None:
+        events = await self._take(self.client.subscriptions.entity_published(), 2)
+        self.assertEqual([type(e.entity_published) for e in events], [Article, Comment])

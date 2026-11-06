@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import type { Article, Comment, Document, Photo, Video } from '../lib/generated/graphlink.js';
-import { httpAdapterForPort, newClient, newWsAdapterForPort } from './real-server-adapter.ts';
+import { httpAdapterForPort, newClient, newWsAdapterForPort, realHttpAdapter, WS_URL } from './real-server-adapter.ts';
+import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.ts';
 
 let client: GraphLinkClient;
 beforeEach(() => { client = newClient(); });
@@ -109,4 +110,92 @@ describe('errors and caching', () => {
     expect(second!.__typename).toBe('Video');
     expect(calls).toBe(1);
   });
+});
+
+type Json = Record<string, any>;
+
+describe('custom queries', () => {
+  it('inline fragments on every member of a union', async () => {
+    const photo = (await client.queries.fetchAttachment({ id: 'ph1' })).attachment;
+    const video = (await client.queries.fetchAttachment({ id: 'v1' })).attachment;
+    const document = (await client.queries.fetchAttachment({ id: 'd1' })).attachment;
+    expect((photo as Photo).width).toBe(640);
+    expect((video as Video).seconds).toBe(30);
+    expect((document as Document).pages).toBe(12);
+    expect((await client.queries.fetchAttachment({ id: 'nope' })).attachment).toBeNull();
+  });
+
+  it('one fragment shared by two root fields', async () => {
+    const res = await client.queries.fetchArticleAndAttachment({ articleId: 'a1', attachmentId: 'v1' });
+    expect(res.article.cover!.__typename).toBe('Photo');
+    expect(res.attachment!.__typename).toBe('Video');
+  });
+});
+
+describe('selections of one abstract type that differ between queries', () => {
+  it('an interface selection with inline fragments and a shared fragment', async () => {
+    const feed = (await client.queries.fetchFeed()).feed as Json[];
+    expect(feed.map((e) => e.__typename)).toEqual(['Article', 'Comment', 'Article', 'Comment']);
+    expect(feed[0].title).toBe('Hello');
+    expect(feed[0].cover.url).toBe('http://cdn/1.png');
+    expect(feed[0].attachments.map((a: Json) => a.id)).toEqual(['ph1', 'v1', 'd1']);
+    expect(feed[1].text).toBe('Nice');
+    expect(feed[2].cover).toBeNull();
+  });
+
+  it('an interface selection that names only some implementers', async () => {
+    const article = (await client.queries.fetchNode({ id: 'a1' })).node as Json;
+    expect(article.title).toBe('Hello');
+    expect(article.createdBy).toBe('alice');
+    const comment = (await client.queries.fetchNode({ id: 'c1' })).node as Json;
+    expect(comment.createdBy).toBe('bob');
+    expect('title' in comment).toBe(false);
+    expect((await client.queries.fetchNode({ id: 'nope' })).node).toBeNull();
+  });
+
+  it('two queries select different shapes of the same union', async () => {
+    const photo = (await client.queries.fetchPhotoParts({ id: 'ph1' })).attachment as Json;
+    expect(photo.width).toBe(640);
+    expect(photo.url).toBe('http://cdn/1.png');
+    const video = (await client.queries.fetchPhotoParts({ id: 'v1' })).attachment as Json;
+    expect(video.id).toBe('v1');
+    expect('seconds' in video).toBe(false);
+    const full = (await client.queries.fetchAttachment({ id: 'ph1' })).attachment;
+    expect((full as Photo).width).toBe(640);
+  });
+});
+
+function collect<T>(n: number, subscribe: (onData: (e: T) => void, onError: (e: unknown) => void) => () => void): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const events: T[] = [];
+    const timer = setTimeout(() => reject(new Error(`timeout: got ${events.length}/${n} events`)), 10000);
+    subscribe(
+      (e) => { events.push(e); if (events.length >= n) { clearTimeout(timer); resolve(events); } },
+      (err) => { clearTimeout(timer); reject(err); },
+    );
+  });
+}
+
+describe('subscriptions', () => {
+  it('a union stream emits each member', async () => {
+    const ws = new DefaultGraphLinkWsAdapter(WS_URL);
+    try {
+      const sub = new GraphLinkClient(realHttpAdapter, ws);
+      const events = await collect<Json>(3, (onData, onErr) => sub.subscriptions.attachmentAdded(onData, onErr));
+      expect(events.map((e) => e.attachmentAdded.__typename)).toEqual(['Photo', 'Video', 'Document']);
+    } finally {
+      await ws.close();
+    }
+  }, 15000);
+
+  it('an interface stream emits each implementer', async () => {
+    const ws = new DefaultGraphLinkWsAdapter(WS_URL);
+    try {
+      const sub = new GraphLinkClient(realHttpAdapter, ws);
+      const events = await collect<Json>(2, (onData, onErr) => sub.subscriptions.entityPublished(onData, onErr));
+      expect(events.map((e) => e.entityPublished.__typename)).toEqual(['Article', 'Comment']);
+    } finally {
+      await ws.close();
+    }
+  }, 15000);
 });
