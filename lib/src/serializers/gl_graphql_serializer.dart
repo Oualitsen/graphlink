@@ -330,9 +330,8 @@ ${field.name}${serializeArgs(field.arguments.where((e) => !e.skipOnGraphqlSerial
     if (proj.alias != null) {
       buffer.write(proj.alias);
       buffer.write(":");
-    } else {
-      buffer.write(proj.targetToken);
     }
+    buffer.write(proj.targetToken);
     buffer.write(serializeListText(
         proj.arguments.map(serializeArgumentValue).toList(),
         join: ","));

@@ -687,6 +687,7 @@
   - a type whose nested selection was partial (`post { cover { id } }`) took the schema name (`Post`) and replaced the real type, so another query selecting `cover` in full decoded into a class that needed fields the first query never fetched;
   - two selections of the same interface or union with different members or fields shared one interface, whose `fromJson` dispatched a `__typename` to one fixed class, so one of the queries lost fields or failed to decode.
   - the TypeScript client tagged a projected type with its own generated name (`Photo_IdWidth`) and dispatched on it, so a union member selected partially never matched the `__typename` sent by the server and failed with `Unknown Attachment_Id: Photo`. Projected types now carry, write and dispatch on the wire `__typename` (`Photo`);
+  - an alias on a field below the root of an operation (`gallery { t: title }`) produced `t:` without the field name, so the server rejected the query; aliases inside inline fragments (`... on Video { videoSize: size }`) were broken the same way;
 
 ### New features
 
@@ -725,5 +726,11 @@
   GraphLink's own directives, the standard ones (`@include`, `@skip`, `@deprecated`, `@specifiedBy`) and `@oneOf` are built in and need no declaration. A hand-written declaration of a built-in one is still accepted as long as it only uses arguments the built-in has (plus the annotation arguments `glClass`, `glImport`, `glOnClient`, `glOnServer`, `glAnnotation`).
 
   **Migration:** declare every custom or third-party directive your schemas use (for example federation's `@key` and `@link`, or your own `@auth`), and fix the typos and wrong values the new errors point to. See `plans/directive-validation.md` for the inventory.
+
+- **Conflicting fields in unions and interfaces** — GraphQL rejects a selection where a field with the same response name has a different type on two members (`... on Photo { size } ... on Video { size }` with `size` an `Int!` on one and a `String!` on the other, `Int` against `Int!`, or a list against a scalar). GraphLink used to generate such selections, so the server rejected the operation at runtime.
+  - A hand-written selection or named fragment that does this now fails generation with the field and both types. **Migration:** select one of them under an alias (`... on Video { videoSize: size }`).
+  - `..._all_fields` on a type that reaches such a union or interface now fails the same way.
+  - Auto-generated queries, mutations and subscriptions that reach one are no longer generated. The CLI prints one warning per cause, with the operations skipped and how to fix it: write a custom operation with an alias, or give the fields the same type in the schema. On GitHub's schema this removes 67 operations, all reaching five unions and interfaces whose members disagree (`descriptionHTML` is `HTML!` on `Enterprise` but `String` on `Organization`).
+  - Operations that spread GraphLink's generated `_all_fields_` fragments by name are not checked.
 
 - **Projected interface and union names** — a selection on an interface or union no longer takes the schema name unless it selects every implementer in full. It is named after the declared type and the fields it declares (`Entity_CreatedById`), with a short hash suffix when the same fields are selected over different members (`Entity_CreatedById_199d2ij`); a union with no common fields is named `Animal_<hash>` instead of `Animal`. Types that implement them are renamed accordingly. **Migration:** regenerate and update the references to the old interface names (for example `Animal` becomes `Animal_<hash>`); the generated response types already carry the right type, so code that only reads `response.field` keeps compiling.

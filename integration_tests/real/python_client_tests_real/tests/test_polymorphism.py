@@ -167,6 +167,33 @@ class DifferentShapesOfOneAbstractType(RealTestCase):
         self.assertEqual(full.width, 640)
 
 
+class SameFieldDifferentTypes(RealTestCase):
+    async def test_an_alias_keeps_both_types_readable(self) -> None:
+        phone = (await self.client.queries.fetch_gadget(id="p1")).gadget
+        laptop = (await self.client.queries.fetch_gadget(id="l1")).gadget
+        self.assertEqual(phone.size, 6)
+        self.assertEqual(laptop.laptop_size, "15 inch")
+        self.assertIsNone((await self.client.queries.fetch_gadget(id="nope")).gadget)
+
+    async def test_a_list_of_both_members(self) -> None:
+        gadgets = (await self.client.queries.fetch_gadgets()).gadgets
+        self.assertEqual([g.id for g in gadgets], ["p1", "l1"])
+        self.assertEqual(gadgets[0].size, 6)
+        self.assertEqual(gadgets[1].laptop_size, "15 inch")
+
+
+class TypeInTwoUnions(RealTestCase):
+    async def test_photo_decodes_through_shareable_and_through_attachment(self) -> None:
+        self.assertIsInstance((await self.client.queries.shareable(id="ph1")).shareable, Photo)
+        self.assertIsInstance((await self.client.queries.attachment(id="ph1")).attachment, Photo)
+
+    async def test_phone_decodes_through_shareable(self) -> None:
+        shareable = (await self.client.queries.shareable(id="p1")).shareable
+        self.assertEqual(shareable.model, "Pixel")
+        self.assertEqual(shareable.size, 6)
+        self.assertIsNone((await self.client.queries.shareable(id="nope")).shareable)
+
+
 class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.ws = new_ws_adapter()

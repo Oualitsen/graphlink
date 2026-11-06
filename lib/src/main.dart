@@ -19,6 +19,7 @@ import 'package:graphlink/src/gl_grammar_io.dart' as grammar_io;
 import 'package:graphlink/src/grammar_factory.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/internal_directive_declarations.dart';
+import 'package:graphlink/src/model/skipped_auto_query.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:yaml/yaml.dart';
@@ -274,12 +275,30 @@ Future<void> handleGeneration(GeneratorConfig config, {bool watching = false}) a
         await Future.wait(filePaths.map((p) => grammar_io.readLogicalFile(p)));
     grammar_io.parseFiles(grammar, logicalFiles, extraGql: extra);
 
+    final skippedByConflict = <String, List<SkippedAutoQuery>>{};
     for (final skipped in grammar.skippedAutoQueries) {
+      final conflict = skipped.conflict;
+      if (conflict != null) {
+        skippedByConflict.putIfAbsent(conflict.abstractType, () => []).add(skipped);
+        continue;
+      }
       stderr.writeln(
         '⚠ Auto-generated ${skipped.type.name} "${skipped.name}" skipped: '
         '${skipped.count} propagated args exceed the limit of ${skipped.cap}. '
         'Write a custom query with a narrower selection, or raise '
         'autoGenerateQueriesArgumentLimit in your config.',
+      );
+    }
+    for (final entry in skippedByConflict.entries) {
+      final conflict = entry.value.first.conflict!;
+      final names = entry.value.map((s) => s.name).toList();
+      final shown = names.take(5).join(', ');
+      final more = names.length > 5 ? ' and ${names.length - 5} more' : '';
+      stderr.writeln(
+        '⚠ ${names.length} auto-generated operation(s) skipped ($shown$more): they reach '
+        '"${entry.key}", where ${conflict.description}, and GraphQL servers reject a selection of both. '
+        'Write a custom operation that selects the fields you need and gives one of them an alias '
+        '(... on ${conflict.secondMember} { other: ${conflict.field} }), or give the fields the same type in the schema.',
       );
     }
 

@@ -92,4 +92,27 @@ final class PolymorphismCustomQueryTest: XCTestCase {
         XCTAssertTrue(events[0].entityPublished is Article)
         XCTAssertTrue(events[1].entityPublished is Comment)
     }
+
+    func test_anAliasKeepsBothTypesOfASharedFieldReadable() async throws {
+        let phone = try await client.queries.fetchGadget(id: "p1").gadget
+        XCTAssertEqual((phone as? Phone_IdSize)?.size, 6)
+        let laptop = try await client.queries.fetchGadget(id: "l1").gadget
+        XCTAssertEqual((laptop as? Laptop_IdSize)?.laptopSize, "15 inch")
+        let missing = try await client.queries.fetchGadget(id: "nope").gadget
+        XCTAssertNil(missing)
+        let gadgets = try await client.queries.fetchGadgets().gadgets
+        XCTAssertTrue(gadgets[0] is Phone_IdSize)
+        XCTAssertTrue(gadgets[1] is Laptop_IdSize)
+    }
+
+    func test_aTypeInTwoUnionsDecodesThroughBoth() async throws {
+        let photo = try await client.queries.shareable(id: "ph1").shareable
+        XCTAssertTrue(photo is Photo)
+        let attachment = try await client.queries.attachment(id: "ph1").attachment
+        XCTAssertTrue(attachment is Photo)
+        let phone = try await client.queries.shareable(id: "p1").shareable
+        XCTAssertEqual((phone as? Phone)?.model, "Pixel")
+        let missing = try await client.queries.shareable(id: "nope").shareable
+        XCTAssertNil(missing)
+    }
 }

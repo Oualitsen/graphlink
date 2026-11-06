@@ -120,6 +120,11 @@ type Driver {
 
 union Attachment = Photo | Video | Document
 
+type Phone  { id: ID! size: Int! model: String! }
+type Laptop { id: ID! size: String! cpu: String! }
+union Gadget = Phone | Laptop
+union Shareable = Photo | Phone
+
 type Photo    { id: ID! url: String! width: Int! }
 type Video    { id: ID! url: String! seconds: Int! }
 type Document { id: ID! url: String! pages: Int! }
@@ -277,6 +282,9 @@ type Query {
   article(id: ID!): Article!
   getCachedAttachment(id: ID!): Attachment
   attachmentOrErrors(id: ID!): Attachment
+  gadget(id: ID!): Gadget
+  gadgets: [Gadget!]!
+  shareable(id: ID!): Shareable
 }
 
 type Mutation {

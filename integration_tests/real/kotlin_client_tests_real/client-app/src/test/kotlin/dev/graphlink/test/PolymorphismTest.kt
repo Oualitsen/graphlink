@@ -198,6 +198,24 @@ class PolymorphismTest {
     }
 
     @Test
+    fun anAliasKeepsBothTypesOfASharedFieldReadable() = runBlocking<Unit> {
+        assertEquals(6, assertIs<Phone_IdSize>(client.queries.fetchGadget("p1").gadget).size)
+        assertEquals("15 inch", assertIs<Laptop_IdSize>(client.queries.fetchGadget("l1").gadget).laptopSize)
+        assertNull(client.queries.fetchGadget("nope").gadget)
+        val gadgets = client.queries.fetchGadgets().gadgets
+        assertIs<Phone_IdSize>(gadgets[0])
+        assertIs<Laptop_IdSize>(gadgets[1])
+    }
+
+    @Test
+    fun aTypeInTwoUnionsDecodesThroughBoth() = runBlocking<Unit> {
+        assertIs<Photo>(client.queries.shareable("ph1").shareable)
+        assertIs<Photo>(client.queries.attachment("ph1").attachment)
+        assertEquals("Pixel", assertIs<Phone>(client.queries.shareable("p1").shareable).model)
+        assertNull(client.queries.shareable("nope").shareable)
+    }
+
+    @Test
     fun aUnionStreamEmitsEachMember() = runBlocking<Unit> {
         val ws = dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter(Fixtures.WS_URL)
         try {

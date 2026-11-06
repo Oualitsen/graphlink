@@ -45,6 +45,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_service_extension.dar
 import 'package:graphlink/src/parser_extensions/gl_grammar_fragment_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_hoist_args_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_member_conflict_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/model/skipped_auto_query.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_strict_extension.dart';
@@ -435,6 +436,7 @@ class GLParser {
       propagateFieldArgumentVariables();
       groupHoistedArgsIntoInputs();
       pruneOverloadedAutoQueries();
+      pruneQueriesReachingMemberConflicts();
       fixTagListValues();
       validateTagValues();
       checkCacheAndNoCacheConflict();

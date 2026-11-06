@@ -189,4 +189,22 @@ class PolymorphismTest {
         assertEquals("v1", ((Video_Id) client.queries.fetchPhotoParts("v1").getAttachment()).getId());
         assertEquals(640, ((Photo) client.queries.fetchAttachment("ph1").getAttachment()).getWidth());
     }
+
+    @Test
+    void anAliasKeepsBothTypesOfASharedFieldReadable() {
+        assertEquals(6, ((Phone_IdSize) client.queries.fetchGadget("p1").getGadget()).getSize());
+        assertEquals("15 inch", ((Laptop_IdSize) client.queries.fetchGadget("l1").getGadget()).getLaptopSize());
+        assertNull(client.queries.fetchGadget("nope").getGadget());
+        var gadgets = client.queries.fetchGadgets().getGadgets();
+        assertInstanceOf(Phone_IdSize.class, gadgets.get(0));
+        assertInstanceOf(Laptop_IdSize.class, gadgets.get(1));
+    }
+
+    @Test
+    void aTypeInTwoUnionsDecodesThroughBoth() {
+        assertInstanceOf(Photo.class, client.queries.shareable("ph1").getShareable());
+        assertInstanceOf(Photo.class, client.queries.attachment("ph1").getAttachment());
+        assertEquals("Pixel", ((Phone) client.queries.shareable("p1").getShareable()).getModel());
+        assertNull(client.queries.shareable("nope").getShareable());
+    }
 }
