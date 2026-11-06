@@ -36,3 +36,28 @@ fragment AttachmentParts on Attachment {
   ... on Video { id seconds }
   ... on Document { id pages }
 }
+
+query fetchFeed {
+  feed {
+    __typename id createdBy
+    ... on Article { title cover { ... on Photo { id url } } attachments { ...AttachmentParts } }
+    ... on Comment { text }
+  }
+}
+
+query fetchNode($id: ID!) {
+  node(id: $id) {
+    id
+    ... on Entity { createdBy }
+    ... on Article { title }
+  }
+}
+
+query fetchPhotoParts($id: ID!) {
+  attachment(id: $id) {
+    ... on Photo { ...PhotoParts }
+    ... on Video { id }
+  }
+}
+
+fragment PhotoParts on Photo { id url width }

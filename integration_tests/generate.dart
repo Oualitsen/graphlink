@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -9,6 +10,7 @@ import 'package:graphlink/src/main.dart' as graphlink;
 // config.json), which just generates that one target.
 Future<void> main(List<String> args) async {
   if (File('config.json').existsSync()) {
+    _deleteOutputDir();
     await graphlink.main(['--config', 'config.json']);
     return;
   }
@@ -22,6 +24,7 @@ Future<void> main(List<String> args) async {
     // otherwise leak between directories in a shared process.
     await Isolate.run(() async {
       Directory.current = dirPath;
+      _deleteOutputDir();
       await graphlink.main(['--config', 'config.json']);
     });
   }
@@ -40,4 +43,14 @@ List<String> _configDirs(Directory root, {required int depth}) {
     }
   }
   return found;
+}
+
+// The generator never removes files it stopped producing, and stale ones
+// break compilation, so every run starts from an empty output directory.
+void _deleteOutputDir() {
+  final config = jsonDecode(File('config.json').readAsStringSync());
+  final outputDir = config is Map ? config['outputDir'] : null;
+  if (outputDir is! String || outputDir.isEmpty) return;
+  final dir = Directory(outputDir);
+  if (dir.existsSync()) dir.deleteSync(recursive: true);
 }

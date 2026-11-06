@@ -66,8 +66,11 @@ query getData {
         .where((i) => i.getDirectiveByName(glInternal) == null)
         .toList();
 
-    // Animal and User each appear twice → 2 extra interfaces created, 3 total
-    expect(userInterfaces.length, 3);
+    // the concrete selections share one interface; the abstract selection owns another with its own members
+    expect(userInterfaces.length, 2);
+    final entityElement = g.queries.values.expand((q) => q.elements).firstWhere((e) => e.tokenInfo.token == 'getEntity');
+    final dispatchMembers = g.projectedInterfaces[entityElement.projectedType!.token]!.implementations.map((e) => e.token);
+    expect(dispatchMembers, unorderedEquals(['Animal_IdName', 'User_FirstNameId']));
 
     // no interface may have two implementations from the same original schema type
     for (var iface in userInterfaces) {
