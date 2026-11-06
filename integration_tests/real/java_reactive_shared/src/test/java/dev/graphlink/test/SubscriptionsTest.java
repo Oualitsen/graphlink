@@ -5,6 +5,7 @@ import dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter;
 import dev.graphlink.test.generated.client.GraphLinkClient;
 import dev.graphlink.test.generated.client.JacksonGraphLinkJsonCodec;
 import dev.graphlink.test.generated.enums.UserStatus;
+import dev.graphlink.test.generated.types.*;
 import dev.graphlink.test.generated.types.UserCreatedResponse;
 import dev.graphlink.test.generated.types.UserCreatedsResponse;
 import dev.graphlink.test.generated.types.UserStatusChangedResponse;
@@ -266,6 +267,37 @@ class SubscriptionsTest {
                     () -> { completed.set(true); latch.countDown(); }));
             assertTrue(latch.await(10, TimeUnit.SECONDS));
             assertTrue(completed.get());
+        }
+    }
+
+    @Nested
+    class PolymorphicStreams {
+
+        @Test
+        void aUnionStreamEmitsEachMember() throws InterruptedException {
+            CountDownLatch latch = new CountDownLatch(3);
+            List<AttachmentAddedResponse> events = new CopyOnWriteArrayList<>();
+            track(Rx.subscribe(client.subscriptions.attachmentAdded(), r -> {
+                events.add(r);
+                latch.countDown();
+            }));
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Timed out waiting for events");
+            assertInstanceOf(Photo.class, events.get(0).getAttachmentAdded());
+            assertInstanceOf(Video.class, events.get(1).getAttachmentAdded());
+            assertInstanceOf(Document.class, events.get(2).getAttachmentAdded());
+        }
+
+        @Test
+        void anInterfaceStreamEmitsEachImplementer() throws InterruptedException {
+            CountDownLatch latch = new CountDownLatch(2);
+            List<EntityPublishedResponse> events = new CopyOnWriteArrayList<>();
+            track(Rx.subscribe(client.subscriptions.entityPublished(), r -> {
+                events.add(r);
+                latch.countDown();
+            }));
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Timed out waiting for events");
+            assertInstanceOf(Article.class, events.get(0).getEntityPublished());
+            assertInstanceOf(Comment.class, events.get(1).getEntityPublished());
         }
     }
 }

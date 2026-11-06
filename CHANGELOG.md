@@ -686,6 +686,7 @@
   - the Go client emitted the getter of an interface field twice for a type implementing two interfaces (`Article implements Entity & Node`), which did not compile;
   - a type whose nested selection was partial (`post { cover { id } }`) took the schema name (`Post`) and replaced the real type, so another query selecting `cover` in full decoded into a class that needed fields the first query never fetched;
   - two selections of the same interface or union with different members or fields shared one interface, whose `fromJson` dispatched a `__typename` to one fixed class, so one of the queries lost fields or failed to decode.
+  - the TypeScript client tagged a projected type with its own generated name (`Photo_IdWidth`) and dispatched on it, so a union member selected partially never matched the `__typename` sent by the server and failed with `Unknown Attachment_Id: Photo`. Projected types now carry, write and dispatch on the wire `__typename` (`Photo`);
 
 ### New features
 

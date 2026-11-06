@@ -139,4 +139,54 @@ class PolymorphismTest {
         assertInstanceOf(Video.class, first);
         assertInstanceOf(Video.class, second);
     }
+
+    @Test
+    void inlineFragmentsOnEveryMemberOfAUnion() {
+        Attachment photo = client.queries.fetchAttachment("ph1").getAttachment();
+        Attachment video = client.queries.fetchAttachment("v1").getAttachment();
+        Attachment document = client.queries.fetchAttachment("d1").getAttachment();
+        assertEquals(640, ((Photo) photo).getWidth());
+        assertEquals(30, ((Video) video).getSeconds());
+        assertEquals(12, ((Document) document).getPages());
+        assertNull(client.queries.fetchAttachment("nope").getAttachment());
+    }
+
+    @Test
+    void oneFragmentSharedByTwoRootFields() {
+        FetchArticleAndAttachmentResponse res = client.queries.fetchArticleAndAttachment("a1", "v1");
+        assertEquals("ph1", res.getArticle().getCover().getId());
+        assertEquals("v1", res.getAttachment().getId());
+        assertEquals(30, ((Video_IdSeconds) res.getAttachment()).getSeconds());
+    }
+
+    @Test
+    void anInterfaceSelectionWithInlineFragmentsAndASharedFragment() {
+        List<? extends Object> feed = client.queries.fetchFeed().getFeed();
+        assertEquals(4, feed.size());
+        Article_AttachmentsCoverCreatedBy_pztuu6 article = (Article_AttachmentsCoverCreatedBy_pztuu6) feed.get(0);
+        assertEquals("Hello", article.getTitle());
+        assertEquals("http://cdn/1.png", ((Photo_IdUrl) article.getCover()).getUrl());
+        assertEquals(List.of("ph1", "v1", "d1"), article.getAttachments().stream().map(a -> a.getId()).toList());
+        assertEquals("Nice", ((Comment) feed.get(1)).getText());
+        assertNull(((Article_AttachmentsCoverCreatedBy_pztuu6) feed.get(2)).getCover());
+    }
+
+    @Test
+    void anInterfaceSelectionThatNamesOnlySomeImplementers() {
+        Article_CreatedByIdTitle article = (Article_CreatedByIdTitle) client.queries.fetchNode("a1").getNode();
+        assertEquals("Hello", article.getTitle());
+        assertEquals("alice", article.getCreatedBy());
+        Comment_CreatedById comment = (Comment_CreatedById) client.queries.fetchNode("c1").getNode();
+        assertEquals("bob", comment.getCreatedBy());
+        assertNull(client.queries.fetchNode("nope").getNode());
+    }
+
+    @Test
+    void twoQueriesSelectDifferentShapesOfTheSameUnion() {
+        Photo photo = (Photo) client.queries.fetchPhotoParts("ph1").getAttachment();
+        assertEquals(640, photo.getWidth());
+        assertEquals("http://cdn/1.png", photo.getUrl());
+        assertEquals("v1", ((Video_Id) client.queries.fetchPhotoParts("v1").getAttachment()).getId());
+        assertEquals(640, ((Photo) client.queries.fetchAttachment("ph1").getAttachment()).getWidth());
+    }
 }

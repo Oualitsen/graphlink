@@ -268,12 +268,12 @@ class TypeScriptSerializer extends GLSerializer {
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final hasRealInterface = def.interfaces.isNotEmpty;
-    final wireTypeName = hasRealInterface ? def.token : null;
+    final wireTypeName = hasRealInterface ? (def.jsonTypeName ?? def.token) : null;
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
       interfaceName: def.codeName,
       fields: [
-        if (hasRealInterface) "readonly __typename: '${def.token}';",
+        if (wireTypeName != null) "readonly __typename: '$wireTypeName';",
         ...fields.map((f) => serializeField(f, true, true)),
       ],
     ));
@@ -453,7 +453,7 @@ class TypeScriptSerializer extends GLSerializer {
   String _serializeUnionToJson(GLInterfaceDefinition def) {
     final impls = def.getSerializableImplementations(mode).toList();
     final cases = impls.map((t) => TypeScriptCaseStatement(
-      caseValue: '"${t.token}"',
+      caseValue: '"${t.jsonTypeName ?? t.token}"',
       statement: 'return ${t.codeName}.toJson(obj as ${t.codeName});',
     )).toList();
     final switchStmt = codeGenUtils.switchStatement(
@@ -515,7 +515,7 @@ class TypeScriptSerializer extends GLSerializer {
       )}';
     }
     final cases = impls.map((t) => TypeScriptCaseStatement(
-      caseValue: '"${t.token}"',
+      caseValue: '"${t.jsonTypeName ?? t.token}"',
       statement: 'return ${t.codeName}.fromJson(json);',
     )).toList();
     final switchStmt = codeGenUtils.switchStatement(
