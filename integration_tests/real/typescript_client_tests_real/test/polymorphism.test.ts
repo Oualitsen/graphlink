@@ -165,6 +165,37 @@ describe('selections of one abstract type that differ between queries', () => {
   });
 });
 
+describe('members with the same field under different types', () => {
+  it('an alias keeps both types readable', async () => {
+    const phone = (await client.queries.fetchGadget({ id: 'p1' })).gadget as Json;
+    const laptop = (await client.queries.fetchGadget({ id: 'l1' })).gadget as Json;
+    expect(phone.__typename).toBe('Phone');
+    expect(phone.size).toBe(6);
+    expect(laptop.__typename).toBe('Laptop');
+    expect(laptop.laptopSize).toBe('15 inch');
+    expect((await client.queries.fetchGadget({ id: 'nope' })).gadget).toBeNull();
+  });
+
+  it('a list of both members', async () => {
+    const gadgets = (await client.queries.fetchGadgets()).gadgets as Json[];
+    expect(gadgets.map((g) => g.__typename)).toEqual(['Phone', 'Laptop']);
+  });
+});
+
+describe('a type that belongs to two unions', () => {
+  it('Photo decodes through Shareable and through Attachment', async () => {
+    expect((await client.queries.shareable({ id: 'ph1' })).shareable!.__typename).toBe('Photo');
+    expect((await client.queries.attachment({ id: 'ph1' })).attachment!.__typename).toBe('Photo');
+  });
+
+  it('Phone decodes through Shareable', async () => {
+    const shareable = (await client.queries.shareable({ id: 'p1' })).shareable as Json;
+    expect(shareable.__typename).toBe('Phone');
+    expect(shareable.model).toBe('Pixel');
+    expect((await client.queries.shareable({ id: 'nope' })).shareable).toBeNull();
+  });
+});
+
 function collect<T>(n: number, subscribe: (onData: (e: T) => void, onError: (e: unknown) => void) => () => void): Promise<T[]> {
   return new Promise((resolve, reject) => {
     const events: T[] = [];

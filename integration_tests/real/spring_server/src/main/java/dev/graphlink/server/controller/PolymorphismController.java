@@ -34,6 +34,32 @@ public class PolymorphismController {
         return feed().stream().filter(e -> e.id().equals(id)).findFirst().orElse(null);
     }
 
+    private static final Phone PHONE = new Phone("p1", 6, "Pixel");
+    private static final Laptop LAPTOP = new Laptop("l1", "15 inch", "M3");
+
+    @QueryMapping
+    public Gadget gadget(@Argument String id) {
+        return switch (id) {
+            case "p1" -> PHONE;
+            case "l1" -> LAPTOP;
+            default -> null;
+        };
+    }
+
+    @QueryMapping
+    public List<Gadget> gadgets() {
+        return List.of(PHONE, LAPTOP);
+    }
+
+    @QueryMapping
+    public Shareable shareable(@Argument String id) {
+        return switch (id) {
+            case "ph1" -> PHOTO;
+            case "p1" -> PHONE;
+            default -> null;
+        };
+    }
+
     @QueryMapping
     public Attachment attachment(@Argument String id) {
         return switch (id) {

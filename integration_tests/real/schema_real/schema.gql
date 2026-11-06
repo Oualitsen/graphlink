@@ -206,6 +206,12 @@ type Photo    { id: ID! url: String! width: Int! }
 type Video    { id: ID! url: String! seconds: Int! }
 type Document { id: ID! url: String! pages: Int! }
 
+# Members that give the same field different types, and types that belong to two unions.
+type Phone  { id: ID! size: Int! model: String! }
+type Laptop { id: ID! size: String! cpu: String! }
+union Gadget = Phone | Laptop
+union Shareable = Photo | Phone
+
 interface Node { id: ID! }
 interface Entity implements Node { id: ID! createdBy: String! }
 
@@ -420,6 +426,9 @@ type Query {
   article(id: ID!): Article!
   getCachedAttachment(id: ID!): Attachment @glCache(ttl: "1m", tags: ["attachments"])
   attachmentOrErrors(id: ID!): Attachment @glCaptureErrors
+  gadget(id: ID!): Gadget
+  gadgets: [Gadget!]!
+  shareable(id: ID!): Shareable
 }
 
 

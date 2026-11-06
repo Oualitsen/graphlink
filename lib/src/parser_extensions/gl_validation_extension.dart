@@ -17,6 +17,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_union.dart';
 import 'package:graphlink/src/model/token_info.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_member_conflict_extension.dart';
 
 extension GLValidationExtension on GLParser {
   void validateInputReferences() {
@@ -175,13 +176,15 @@ extension GLValidationExtension on GLParser {
     fragments.forEach((key, fragment) {
       if (fragment.block.validated) return;
       fragment.block.projections.forEach((key, projection) {
-        validateProjection(projection, fragment.onTypeName, fragment.token);
+        validateProjection(projection, fragment.onTypeName, fragment.token,
+            checkMemberFields:
+                fragment is GLFragmentDefinition && !fragment.token.startsWith(allFields));
       });
     });
   }
 
   void validateProjection(GLProjection projection, TokenInfo onTypeNameToken,
-      String? fragmentName) {
+      String? fragmentName, {bool checkMemberFields = true}) {
     final typeName = onTypeNameToken.token;
     var type = getType(onTypeNameToken);
     if (projection is GLInlineFragmentsProjection) {
@@ -199,9 +202,11 @@ extension GLValidationExtension on GLParser {
 
       for (var inlineFrag in projection.inlineFragments) {
         inlineFrag.block.projections.forEach((key, proj) {
-          validateProjection(proj, inlineFrag.onTypeName, null);
+          validateProjection(proj, inlineFrag.onTypeName, null,
+              checkMemberFields: checkMemberFields);
         });
       }
+      if (checkMemberFields) _rejectConflictingMemberFields(projection);
       return;
     }
     if (projection.isFragmentReference) {
@@ -213,6 +218,7 @@ extension GLValidationExtension on GLParser {
             info: fragment.tokenInfo);
       }
       if (projection.token == allFields) {
+        _rejectAllFieldsOnConflictingType(typeName, projection);
         projection.fragmentName = '${allFields}_$typeName';
       }
     } else {
@@ -235,7 +241,44 @@ extension GLValidationExtension on GLParser {
       var myType = getTypeFromFieldName(
           projection.actualName, typeName, projection.tokenInfo);
       for (var p in projection.block!.projections.values) {
-        validateProjection(p, myType.tokenInfo, null);
+        validateProjection(p, myType.tokenInfo, null,
+            checkMemberFields: checkMemberFields);
+      }
+    }
+  }
+
+  void _rejectAllFieldsOnConflictingType(String typeName, GLProjection projection) {
+    final conflict = typesReachingMemberConflicts[typeName];
+    if (conflict == null) return;
+    throw ParseException(
+        "$allFields on '$typeName' reaches '${conflict.abstractType}', where ${conflict.description}, "
+        "so the generated selection is rejected by GraphQL servers. Select the fields explicitly and give "
+        "one of them an alias (for example '... on ${conflict.secondMember} { other: ${conflict.field} }'), "
+        "or give the fields the same type in the schema",
+        info: projection.tokenInfo);
+  }
+
+  void _rejectConflictingMemberFields(GLInlineFragmentsProjection projection) {
+    final seen = <String, _SeenField>{};
+    for (final inline in projection.inlineFragments) {
+      final typeName = inline.onTypeName.token;
+      for (final field in inline.block.projections.values) {
+        if (field.isFragmentReference ||
+            field is GLInlineFragmentsProjection ||
+            field.tokenInfo.token == GLParser.typename) {
+          continue;
+        }
+        final type = getFieldType(field.tokenInfo, typeName);
+        final shape = responseShape(type);
+        final previous = seen[field.actualName];
+        if (previous != null && previous.typeName != typeName && previous.shape != shape) {
+          throw ParseException(
+              "Field '${field.actualName}' is '${serializer.serializeType(previous.type)}' on '${previous.typeName}' "
+              "but '${serializer.serializeType(type)}' on '$typeName'. Select one of them under an alias, for example "
+              "'other: ${field.tokenInfo}'",
+              info: field.tokenInfo);
+        }
+        seen.putIfAbsent(field.actualName, () => _SeenField(typeName, shape, type));
       }
     }
   }
@@ -817,4 +860,12 @@ extension GLValidationExtension on GLParser {
   Never _throwInvalid(String context, Object value, String expected, TokenInfo info) {
     throw ParseException("${_capitalized(context)} $value is not valid for $expected", info: info);
   }
+}
+
+class _SeenField {
+  final String typeName;
+  final String shape;
+  final GLType type;
+
+  _SeenField(this.typeName, this.shape, this.type);
 }

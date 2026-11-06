@@ -61,3 +61,17 @@ query fetchPhotoParts($id: ID!) {
 }
 
 fragment PhotoParts on Photo { id url width }
+
+query fetchGadget($id: ID!) {
+  gadget(id: $id) {
+    ... on Phone { id size }
+    ... on Laptop { id laptopSize: size }
+  }
+}
+
+query fetchGadgets {
+  gadgets {
+    ... on Phone { id size }
+    ... on Laptop { id laptopSize: size }
+  }
+}

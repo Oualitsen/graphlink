@@ -173,6 +173,35 @@ void main() {
     });
   });
 
+  group('members with the same field under different types', () {
+    test('an alias keeps both types readable', () async {
+      final phone = (await client.queries.fetchGadget(id: 'p1')).gadget as Phone_IdSize;
+      final laptop = (await client.queries.fetchGadget(id: 'l1')).gadget as Laptop_IdSize;
+      expect(phone.size, 6);
+      expect(laptop.laptopSize, '15 inch');
+      expect((await client.queries.fetchGadget(id: 'nope')).gadget, isNull);
+    });
+
+    test('a list of both members', () async {
+      final gadgets = (await client.queries.fetchGadgets()).gadgets;
+      expect(gadgets.map((g) => g.runtimeType), [Phone_IdSize, Laptop_IdSize]);
+    });
+  });
+
+  group('a type that belongs to two unions', () {
+    test('Photo decodes through Shareable and through Attachment', () async {
+      expect((await client.queries.shareable(id: 'ph1')).shareable, isA<Photo>());
+      expect((await client.queries.attachment(id: 'ph1')).attachment, isA<Photo>());
+    });
+
+    test('Phone decodes through Shareable', () async {
+      final shareable = (await client.queries.shareable(id: 'p1')).shareable;
+      expect(shareable, isA<Phone>());
+      expect((shareable as Phone).model, 'Pixel');
+      expect((await client.queries.shareable(id: 'nope')).shareable, isNull);
+    });
+  });
+
   group('subscriptions', () {
     test('a union stream emits each member', () async {
       final events = await client.subscriptions.attachmentAdded().take(3).toList().timeout(const Duration(seconds: 10));

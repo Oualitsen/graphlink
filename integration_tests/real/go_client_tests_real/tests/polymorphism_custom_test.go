@@ -104,3 +104,44 @@ func TestSubscriptionInterfaceStreamEmitsEachImplementer(t *testing.T) {
 	}
 	expectKinds(t, kinds(got), "Article", "Comment")
 }
+
+func TestSameFieldDifferentTypesAnAliasKeepsBothTypesReadable(t *testing.T) {
+	c := newClient(t)
+	phone := asMap(t, must(c.Queries.FetchGadget(ctx(t), "p1")).Gadget)
+	laptop := asMap(t, must(c.Queries.FetchGadget(ctx(t), "l1")).Gadget)
+	expectEqual(t, phone["size"], any(float64(6)), "phone size")
+	expectEqual(t, laptop["laptopSize"], any("15 inch"), "laptop size")
+	if must(c.Queries.FetchGadget(ctx(t), "nope")).Gadget != nil {
+		t.Fatal("an unknown gadget must decode to nil")
+	}
+}
+
+func TestSameFieldDifferentTypesAListOfBothMembers(t *testing.T) {
+	c := newClient(t)
+	gadgets := must(c.Queries.FetchGadgets(ctx(t))).Gadgets
+	expectEqual(t, len(gadgets), 2, "size")
+	expectEqual(t, asMap(t, gadgets[0])["size"], any(float64(6)), "phone size")
+	expectEqual(t, asMap(t, gadgets[1])["laptopSize"], any("15 inch"), "laptop size")
+}
+
+func TestTypeInTwoUnionsPhotoDecodesThroughShareableAndAttachment(t *testing.T) {
+	c := newClient(t)
+	if _, ok := must(c.Queries.Shareable(ctx(t), "ph1")).Shareable.(gl.Photo); !ok {
+		t.Fatal("ph1 through Shareable is not a Photo")
+	}
+	if _, ok := must(c.Queries.Attachment(ctx(t), "ph1")).Attachment.(gl.Photo); !ok {
+		t.Fatal("ph1 through Attachment is not a Photo")
+	}
+}
+
+func TestTypeInTwoUnionsPhoneDecodesThroughShareable(t *testing.T) {
+	c := newClient(t)
+	phone, ok := must(c.Queries.Shareable(ctx(t), "p1")).Shareable.(gl.Phone)
+	if !ok {
+		t.Fatal("p1 through Shareable is not a Phone")
+	}
+	expectEqual(t, phone.Model, "Pixel", "model")
+	if must(c.Queries.Shareable(ctx(t), "nope")).Shareable != nil {
+		t.Fatal("an unknown shareable must decode to nil")
+	}
+}

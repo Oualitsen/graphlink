@@ -87,4 +87,30 @@ void main() {
       expectError('type Plain @glRestDiscriminator(field: "t") { id: ID }\ntype Query { p: Plain }', 'cannot be used on OBJECT (allowed: INTERFACE, UNION)');
     });
   });
+
+  group('a REST operation needs a discriminator on every polymorphic type it can return', () {
+    test('a list of an interface', () {
+      expectError('type Query { pets: [Pet!]! @glRest(path: "/pets") }', "'Pet'");
+    });
+
+    test('a union', () {
+      expectError('union Hit = Dog | Cat\ntype Query { hit: Hit @glRest(path: "/hit") }', "'Hit'");
+    });
+
+    test('a union reached through a list field of a returned object', () {
+      expectError(
+          'union Hit = Dog | Cat\ntype Page { hits: [Hit] }\ntype Query { page: Page @glRest(path: "/page") }', "'Hit'");
+    });
+
+    test('a discriminator makes the same operation valid', () {
+      final g = GLParser()
+        ..parse('''
+          interface Pet @glRestDiscriminator(field: "kind") { id: ID! }
+          type Dog implements Pet { id: ID! barks: Boolean }
+          type Cat implements Pet { id: ID! lives: Int }
+          type Query { pet: Pet @glRest(path: "/pet") }
+        ''');
+      expect(g.restDiscriminators.keys, ['Pet']);
+    });
+  });
 }
