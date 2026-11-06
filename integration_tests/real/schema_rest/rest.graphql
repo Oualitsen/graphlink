@@ -33,6 +33,9 @@ type Dog implements Pet { id: ID! name: String! barks: Boolean! }
 type Cat implements Pet { id: ID! name: String! lives: Int! }
 union Hit @glRestDiscriminator(field: "type", values: {Product: "product", Owner: "owner"}) = Product | Owner
 
+type Kennel { id: ID! name: String! resident: Pet featured: [Pet!]! mixed: [Pet] hit: Hit hits: [Hit!] }
+type Shelter { id: ID! kennels: [Kennel!]! }
+
 input Geo { lat: Float lng: Float }
 input Address { city: String street: String geo: Geo }
 input Meta { name: String! tags: [String!] address: Address }
@@ -133,6 +136,16 @@ extend type Query @glRestPrefix(path: "") {
   pet(id: ID!): Pet @glRest(path: "/pets/{id}")
   petsUnknown: [Pet!]! @glRest(path: "/pets-unknown")
   hits: [Hit!]! @glRest(path: "/hits")
+  kennel: Kennel! @glRest(path: "/kennel")
+  shelter: Shelter! @glRest(path: "/shelter")
+  petsNullable: [Pet]! @glRest(path: "/poly/nullable")
+  petsOptional: [Pet!] @glRest(path: "/poly/optional")
+  petsWrapped: [Pet!]! @glRest(path: "/poly/wrapped", responsePath: "data.pets")
+  petNoKind: Pet @glRest(path: "/poly/no-kind")
+  petNullKind: Pet @glRest(path: "/poly/null-kind")
+  petExtraKeys: Pet! @glRest(path: "/poly/extra")
+  petMissingField: Pet! @glRest(path: "/poly/missing")
+  cachedPet(id: ID!): Pet @glRest(path: "/pets/{id}/cached") @glCache(ttl: 60)
   authCheck(tenant: ID @glRestHeader(name: "X-Tenant")): Who! @glRest(path: "/auth/check")
   blob(size: Int!): Download! @glRest(path: "/blob/{size}")
   cachedStatus(code: Int!): Product @glRest(path: "/status/{code}/cached") @glCache(ttl: 60)
@@ -184,5 +197,6 @@ extend type Mutation @glRestPrefix(path: "/counter") {
 }
 
 extend type Mutation @glRestPrefix(path: "") {
+  adoptPet(id: ID!): Pet! @glRest(path: "/pets/{id}/adopt", method: POST)
   bumpFails(code: Int!): Product @glRest(path: "/status/{code}", method: POST) @glCacheInvalidate(tags: ["counters"])
 }

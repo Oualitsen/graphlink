@@ -198,6 +198,33 @@ type Driver {
   lastUsedFuel(liters: Int! = 4): Int!
 }
 
+# ── Polymorphism coverage ─────────────────────────────────────────────────────
+
+union Attachment = Photo | Video | Document
+
+type Photo    { id: ID! url: String! width: Int! }
+type Video    { id: ID! url: String! seconds: Int! }
+type Document { id: ID! url: String! pages: Int! }
+
+interface Node { id: ID! }
+interface Entity implements Node { id: ID! createdBy: String! }
+
+type Article implements Entity & Node {
+  id:          ID!
+  createdBy:   String!
+  title:       String!
+  cover:       Attachment
+  attachments: [Attachment!]!
+  related:     [Entity]
+}
+
+type Comment implements Entity & Node {
+  id:        ID!
+  createdBy: String!
+  text:      String!
+  parent:    Entity
+}
+
 # ── Identifier normalization coverage ─────────────────────────────────────────
 # Fields deliberately use non-canonical casing (PascalCase, snake_case,
 # SCREAMING_SNAKE) so that normalization is exercised end-to-end.  Wire names
@@ -383,6 +410,16 @@ type Query {
 
   # Normalization: fields on the return type use non-canonical casing.
   getNormalizedRecord(id: ID!): NormalizedFields!
+
+  # Polymorphism coverage.
+  feed: [Entity!]!
+  node(id: ID!): Node
+  attachment(id: ID!): Attachment
+  attachments: [Attachment!]!
+  attachmentsNullable: [Attachment]
+  article(id: ID!): Article!
+  getCachedAttachment(id: ID!): Attachment @glCache(ttl: "1m", tags: ["attachments"])
+  attachmentOrErrors(id: ID!): Attachment @glCaptureErrors
 }
 
 
@@ -441,6 +478,9 @@ type Mutation {
 
   # Normalization: input fields use non-canonical casing; echoes them back.
   createNormalizedRecord(input: NormalizedInput!): NormalizedFields!
+
+  # Polymorphism coverage: kind is photo, video or document.
+  addAttachment(articleId: ID!, url: String!, kind: String!): Attachment!
 }
 
 
@@ -456,6 +496,12 @@ type Subscription {
 
   # Emits an incrementing counter every 1 s.
   counterTick: Int!
+
+  # Polymorphism coverage: emits a Photo, a Video, then a Document.
+  attachmentAdded: Attachment!
+
+  # Polymorphism coverage: emits an Article, then a Comment.
+  entityPublished: Entity!
 
   # Like counterTick but the server self-restarts after emitting tick stopAt.
   counterTickRestart(stopAt: Int!): Int!

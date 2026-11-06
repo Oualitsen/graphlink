@@ -81,12 +81,14 @@ extension GLGrammarFragmentExtension on GLParser {
   }
 
   void handleFragmentDepenecy(
-      GLFragmentDefinitionBase fragment, GLProjection projection) {
+      GLFragmentDefinitionBase fragment, GLProjection projection,
+      {TokenInfo? onType}) {
     if (projection is GLInlineFragmentsProjection) {
       for (var inlineFrag in projection.inlineFragments) {
         inlineFrag.block.projections.forEach((k, proj) {
           if (projection.block == null) {
-            handleFragmentDepenecy(fragment, proj);
+            handleFragmentDepenecy(fragment, proj,
+                onType: inlineFrag.onTypeName);
           }
         });
       }
@@ -96,7 +98,7 @@ extension GLGrammarFragmentExtension on GLParser {
 
       fragment.addDependecy(fragmentRef);
     } else {
-      var type = getType(fragment.onTypeName);
+      var type = getType(onType ?? fragment.onTypeName);
       var field = type.findFieldByName(projection.token, this);
       if (types.containsKey(field.type.token)) {
         fragment.addDependecy(fragments[field.type.token]!);

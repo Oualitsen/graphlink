@@ -59,6 +59,15 @@ extension GLGrammarExtension on GLParser {
     return result;
   }
 
+  Set<String> possibleTypeTokens(String token) {
+    final iface = interfaces[token];
+    if (iface == null) return {token};
+    return getTypesImplementing(iface).map((t) => t.token).toSet();
+  }
+
+  bool typesOverlap(String a, String b) =>
+      possibleTypeTokens(a).intersection(possibleTypeTokens(b)).isNotEmpty;
+
   void handleGLExternal() {
     [
       ...inputs.values,

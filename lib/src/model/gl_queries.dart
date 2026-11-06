@@ -92,7 +92,7 @@ class GLQueryDefinition extends GLToken with GLDirectivesMixin {
           .where((e) => e != null)
           .map((e) => e!)
           .toSet();
-      _allFrags = {...frags, ...frags.expand((e) => e.dependecies)};
+      _allFrags = {...frags, ...frags.expand((e) => e.transitiveDependecies)};
     }
     return _allFrags!;
   }

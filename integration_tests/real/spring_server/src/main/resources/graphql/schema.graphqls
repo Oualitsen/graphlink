@@ -116,6 +116,33 @@ type Driver {
   lastUsedFuel(liters: Int!): Int!
 }
 
+# ── Polymorphism coverage ─────────────────────────────────────────────────────
+
+union Attachment = Photo | Video | Document
+
+type Photo    { id: ID! url: String! width: Int! }
+type Video    { id: ID! url: String! seconds: Int! }
+type Document { id: ID! url: String! pages: Int! }
+
+interface Node { id: ID! }
+interface Entity implements Node { id: ID! createdBy: String! }
+
+type Article implements Entity & Node {
+  id:          ID!
+  createdBy:   String!
+  title:       String!
+  cover:       Attachment
+  attachments: [Attachment!]!
+  related:     [Entity]
+}
+
+type Comment implements Entity & Node {
+  id:        ID!
+  createdBy: String!
+  text:      String!
+  parent:    Entity
+}
+
 # ── Identifier normalization coverage ────────────────────────────────────────
 type NormalizedFields {
   id:         ID!
@@ -240,6 +267,16 @@ type Query {
   getVehicleDriver(id: ID!): VehicleDriver!
   class(class: ID!): ClassResult!
   getNormalizedRecord(id: ID!): NormalizedFields!
+
+  # Polymorphism coverage.
+  feed: [Entity!]!
+  node(id: ID!): Node
+  attachment(id: ID!): Attachment
+  attachments: [Attachment!]!
+  attachmentsNullable: [Attachment]
+  article(id: ID!): Article!
+  getCachedAttachment(id: ID!): Attachment
+  attachmentOrErrors(id: ID!): Attachment
 }
 
 type Mutation {
@@ -254,6 +291,9 @@ type Mutation {
   createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!
   makeClass(input: ClassInput!): ClassResult!
   createNormalizedRecord(input: NormalizedInput!): NormalizedFields!
+
+  # Polymorphism coverage: kind is photo, video or document.
+  addAttachment(articleId: ID!, url: String!, kind: String!): Attachment!
 }
 
 type Subscription {
@@ -261,4 +301,10 @@ type Subscription {
   userCreateds(ids: [ID!]!): [User!]
   userStatusChanged(userId: ID!): User!
   counterTick: Int!
+
+  # Polymorphism coverage: emits a Photo, a Video, then a Document.
+  attachmentAdded: Attachment!
+
+  # Polymorphism coverage: emits an Article, then a Comment.
+  entityPublished: Entity!
 }

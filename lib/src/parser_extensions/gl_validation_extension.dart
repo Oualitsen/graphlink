@@ -190,7 +190,7 @@ extension GLValidationExtension on GLParser {
           .map((e) => e.onTypeName)
           .map((e) => getType(e))
           .forEach((type) {
-        if (!type.containsInteface(typeName) && type.token != typeName) {
+        if (!typesOverlap(type.token, typeName)) {
           throw ParseException(
               "Type '${type.tokenInfo}' does not implement '${typeName}'",
               info: onTypeNameToken);
@@ -207,8 +207,7 @@ extension GLValidationExtension on GLParser {
     if (projection.isFragmentReference) {
       GLFragmentDefinitionBase fragment =
           getFragment(projection.token, projection.tokenInfo, typeName);
-      if (fragment.onTypeName.token != type.token &&
-          !type.containsInteface(fragment.onTypeName.token)) {
+      if (!typesOverlap(fragment.onTypeName.token, type.token)) {
         throw ParseException(
             "Fragment ${fragment.tokenInfo} cannot be applied to type ${type.tokenInfo}",
             info: fragment.tokenInfo);

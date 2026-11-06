@@ -36,7 +36,7 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
 
   Set<GLFragmentDefinitionBase> getFragmentsAndDependecies(GLParser g) {
     var frags = fragmentNames.map((e) => g.getFragmentByName(e)!).toSet();
-    return {...frags, ...frags.expand((e) => e.dependecies)};
+    return {...frags, ...frags.expand((e) => e.transitiveDependecies)};
   }
 
   List<String> get cacheTags {
@@ -64,17 +64,19 @@ class GLQueryElement extends GLToken with GLDirectivesMixin {
   }
 
   Set<String> _getFragmentNamesByBlock(GLFragmentBlockDefinition block) {
-    var set1 = block.projections.values
-        .where((element) => element.isFragmentReference)
-        .map((e) => e.fragmentName!)
-        .toSet();
-    var set2 = block.projections.values
-        .where(
-            (element) => !element.isFragmentReference && element.block != null)
-        .map((e) => e.block!)
-        .expand((element) => _getFragmentNamesByBlock(element))
-        .toSet();
-    return {...set1, ...set2};
+    final names = <String>{};
+    for (final projection in block.projections.values) {
+      if (projection.isFragmentReference) {
+        names.add(projection.fragmentName!);
+      } else if (projection is GLInlineFragmentsProjection) {
+        for (final inline in projection.inlineFragments) {
+          names.addAll(_getFragmentNamesByBlock(inline.block));
+        }
+      } else if (projection.block != null) {
+        names.addAll(_getFragmentNamesByBlock(projection.block!));
+      }
+    }
+    return names;
   }
 
   GLType _getReturnProjectedType(
