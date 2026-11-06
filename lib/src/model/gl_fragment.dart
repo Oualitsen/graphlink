@@ -66,6 +66,18 @@ abstract class GLFragmentDefinitionBase extends GLToken with GLDirectivesMixin {
 
   Set<GLFragmentDefinitionBase> get dependecies => _dependecies.toSet();
 
+  Set<GLFragmentDefinitionBase> get transitiveDependecies {
+    final result = _dependecies.toSet();
+    final pending = [..._dependecies];
+    while (pending.isNotEmpty) {
+      for (final next in pending.removeLast()._dependecies) {
+        if (result.add(next)) pending.add(next);
+      }
+    }
+    result.remove(this);
+    return result;
+  }
+
   List get deps => _dependecies;
 }
 

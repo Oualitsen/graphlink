@@ -260,6 +260,7 @@ class GoSerializer extends GLSerializer {
     final blocks = <String>[
       codeGenUtils.structDecl(name, [_fieldLines(fields)]),
     ];
+    final getters = <String>{};
     for (final token in allInterfaceTokens(def)) {
       final iface = _interfaceFor(token);
       final ifaceName = iface?.codeName ?? resolveCodeName(token);
@@ -267,7 +268,7 @@ class GoSerializer extends GLSerializer {
       if (iface == null) continue;
       for (final f in serializableFields(iface)) {
         final own = fields.where((o) => o.name.token == f.name.token).firstOrNullGl;
-        if (own == null) continue;
+        if (own == null || !getters.add(f.name.token)) continue;
         blocks.add(_getter(name, own, f));
       }
     }

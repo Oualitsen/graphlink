@@ -119,6 +119,41 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:  # noqa: BLE001
             self.send_json(500, {'error': f'server failure: {e!r}'})
 
+    def polymorphic(self, s, method):
+        dog = {'kind': 'dog', 'id': 'd1', 'name': 'Rex', 'barks': True}
+        cat = {'kind': 'cat', 'id': 'c1', 'name': 'Tom', 'lives': 9}
+        product = {'type': 'product', 'id': 'p1', 'name': 'Pen', 'tags': []}
+        owner = {'type': 'owner', 'id': 'o1', 'name': 'Ann'}
+        kennel = {'id': 'k1', 'name': 'North', 'resident': dog, 'featured': [dog, cat], 'mixed': [dog, None, cat],
+                  'hit': product, 'hits': [product, owner]}
+        empty = {'id': 'k2', 'name': 'South', 'resident': None, 'featured': [], 'mixed': None, 'hit': None, 'hits': None}
+        if s == ['kennel']:
+            return self.send_json(200, kennel)
+        if s == ['shelter']:
+            return self.send_json(200, {'id': 's1', 'kennels': [kennel, empty]})
+        if s == ['poly', 'nullable']:
+            return self.send_json(200, [dog, None, cat])
+        if s == ['poly', 'optional']:
+            return self.send(200, b'null', 'application/json')
+        if s == ['poly', 'wrapped']:
+            return self.send_json(200, {'data': {'pets': [dog, cat]}})
+        if s == ['poly', 'no-kind']:
+            return self.send_json(200, {key: value for key, value in dog.items() if key != 'kind'})
+        if s == ['poly', 'null-kind']:
+            return self.send_json(200, {**dog, 'kind': None})
+        if s == ['poly', 'extra']:
+            return self.send_json(200, {**dog, 'unknown': {'a': 1}, 'tail': [1, 2]})
+        if s == ['poly', 'missing']:
+            return self.send_json(200, {key: value for key, value in dog.items() if key != 'barks'})
+        if len(s) == 3 and s[0] == 'pets' and s[2] == 'cached' and method == 'GET':
+            counters = STATE['counters']
+            key = f'pet:{s[1]}'
+            counters[key] = counters.get(key, 0) + 1
+            return self.send_json(200, {**dog, 'id': s[1], 'name': f'Rex{counters[key]}'})
+        if len(s) == 3 and s[0] == 'pets' and s[2] == 'adopt' and method == 'POST':
+            return self.send_json(200, {**cat, 'id': s[1], 'name': 'Adopted'})
+        return self.send_json(404, {'error': 'no polymorphic route'})
+
     def lenient(self, s):
         product = {
             'id': 'p1',
@@ -211,6 +246,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(200, pets[s[1]]) if s[1] in pets else self.send_json(404, {'error': 'no pet'})
         if s == ['pets-unknown']:
             return self.send_json(200, [{'kind': 'bird', 'id': 'b1', 'name': 'Tweety'}])
+        if head in ('pets', 'poly') or s in (['kennel'], ['shelter']):
+            return self.polymorphic(s, method)
         if s == ['hits']:
             return self.send_json(200, [
                 {'type': 'product', 'id': 'p1', 'name': 'Pen', 'tags': []},

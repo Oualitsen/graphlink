@@ -929,17 +929,21 @@ extension GLGrammarProjectionExtension on GLParser {
     return GLType(a.tokenInfo, a.nullable && b.nullable);
   }
 
+  bool _appliesTo(String conditionTypeToken, String memberToken) =>
+      possibleTypeTokens(conditionTypeToken).contains(memberToken);
+
   Map<String, GLProjection> _collectProjection(
       Map<String, GLProjection> projections, String onTypeName) {
     var result = <String, GLProjection>{};
     projections.forEach((k, v) {
       if (v.isFragmentReference) {
         var fragment = getFragmentByName(v.fragmentName!)!;
+        if (!_appliesTo(fragment.onTypeName.token, onTypeName)) return;
         var r = _collectProjection(fragment.block.projections, onTypeName);
         result.addAll(r);
       } else if (v is GLInlineFragmentsProjection) {
         v.inlineFragments
-            .where((inline) => inline.onTypeName.token == onTypeName)
+            .where((inline) => _appliesTo(inline.onTypeName.token, onTypeName))
             .forEach((inline) {
           var r = _collectProjection(inline.block.projections, onTypeName);
           result.addAll(r);

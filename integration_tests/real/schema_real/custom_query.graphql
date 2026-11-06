@@ -17,3 +17,22 @@ query searchWithFixedLimit($name: String!) {
 query searchPrice {
   searchUsers(name: "cost $5 or $6", limit: 1) { id name }
 }
+
+query fetchAttachment($id: ID!) {
+  attachment(id: $id) {
+    ... on Photo { id url width }
+    ... on Video { id url seconds }
+    ... on Document { id url pages }
+  }
+}
+
+query fetchArticleAndAttachment($articleId: ID!, $attachmentId: ID!) {
+  article(id: $articleId) { id title cover { ...AttachmentParts } }
+  attachment(id: $attachmentId) { ...AttachmentParts }
+}
+
+fragment AttachmentParts on Attachment {
+  ... on Photo { id width }
+  ... on Video { id seconds }
+  ... on Document { id pages }
+}

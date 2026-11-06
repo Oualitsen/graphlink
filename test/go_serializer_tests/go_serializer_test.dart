@@ -131,6 +131,20 @@ void main() {
         'return &copied',
       ]));
     });
+
+    test('a field declared by several implemented interfaces gets one getter', () {
+      final g = _parser('''
+        type Query { e: Entity }
+        interface Node { id: ID! }
+        interface Entity implements Node { id: ID! createdBy: String! }
+        type Article implements Entity & Node { id: ID! createdBy: String! title: String! }
+      ''');
+      final out = _serializer(g).doSerializeTypeDefinition(g.types['Article']!);
+      expect(out, contains('func (v Article) IsEntity() {'));
+      expect(out, contains('func (v Article) IsNode() {'));
+      expect(RegExp(r'func \(v Article\) GetId\(\)').allMatches(out), hasLength(1));
+      expect(RegExp(r'func \(v Article\) GetCreatedBy\(\)').allMatches(out), hasLength(1));
+    });
   });
 
   group('interface', () {
