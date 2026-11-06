@@ -27,6 +27,7 @@ int _djb2(String s) {
 
 final Map<String, List<GLTypeDefinition>> _typeHashIndex = {};
 final Map<String, List<GLTypeDefinition>> _interfaceHashIndex = {};
+final Expando<bool> _dispatchTargets = Expando<bool>();
 
 /// A single field-argument `$variable` reference discovered while walking an
 /// operation's selection set, carrying everything [_addGeneratedArgument] needs
@@ -90,7 +91,10 @@ extension GLGrammarProjectionExtension on GLParser {
     }
   }
 
-  void _fillProjectedInterfaces(List<GLInterfaceDefinition> interfaces) {
+  List<GLInterfaceDefinition> _fillProjectedInterfaces(
+      List<GLInterfaceDefinition> interfaces,
+      {required bool dispatchTarget}) {
+    final registered = <GLInterfaceDefinition>[];
     for (var iface in interfaces) {
       var projections = iface.fields.map((field) => GLProjection(
           fragmentName: null,
@@ -98,22 +102,66 @@ extension GLGrammarProjectionExtension on GLParser {
           alias: null,
           block: null,
           directives: []));
-      var newName = _generateName(iface.derivedFromType!.token, projections, []);
-      var newIface = GLInterfaceDefinition(
-        name: iface.tokenInfo.ofNewName(newName.value),
-        nameDeclared: newName.declared,
+      final newIface = GLInterfaceDefinition(
+        name: iface.tokenInfo.ofNewName(
+            _projectedInterfaceName(iface.derivedFromType!.token, projections, iface, dispatchTarget)),
+        nameDeclared: false,
         fields: iface.fields,
         directives: iface.getDirectives(),
         interfaceNames: iface.interfaceNames,
         extension: false,
       );
       iface.implementations.forEach(newIface.addImplementation);
-      var added = addToProjectedTypes(newIface) as GLInterfaceDefinition;
+      var added = addToProjectedTypes(newIface,
+          requireSameMembers: dispatchTarget, mergeIntoSharedInterfaces: dispatchTarget)
+          as GLInterfaceDefinition;
+      if (dispatchTarget) _dispatchTargets[added] = true;
       iface.implementations.forEach(added.addImplementation);
       for (var impl in added.implementations) {
         impl.addInterface(added);
       }
+      registered.add(added);
     }
+    return registered;
+  }
+
+  String _projectedInterfaceName(String declaredToken,
+      Iterable<GLProjection> fields, GLInterfaceDefinition projected, bool dispatchTarget) {
+    final memberHash = _djb2(_memberTokens(projected).toList().join('_')).toRadixString(36);
+    final fieldsPart = getUniqueName(fields);
+    final base = fieldsPart.isEmpty
+        ? '${declaredToken}_$memberHash'
+        : '${declaredToken}_$fieldsPart';
+    final holder = projectedInterfaces[base];
+    if (holder == null) return base;
+    if (dispatchTarget) {
+      return _hasSameMembers(holder, projected) ? base : '${base}_$memberHash';
+    }
+    return _isSharedInterface(holder) ? _uniqueProjectedInterfaceName(base) : base;
+  }
+
+  bool _isSharedInterface(GLTypeDefinition i) =>
+      _dispatchTargets[i] == true || identical(i, interfaces[i.token]);
+
+  List<String> _memberTokens(GLInterfaceDefinition i) =>
+      (i.implementations.map((m) => m.token).toList()..sort());
+
+  bool _hasSameMembers(GLTypeDefinition a, GLTypeDefinition b) =>
+      a is GLInterfaceDefinition &&
+      b is GLInterfaceDefinition &&
+      _memberTokens(a).join(',') == _memberTokens(b).join(',');
+
+  List<GLInterfaceDefinition> _oneInterfacePerDeclared(
+      List<TypeWithInterface> couples) {
+    final byDeclared = <String, GLInterfaceDefinition>{};
+    for (final iface in couples.expand((c) => c.interfaces)) {
+      final first =
+          byDeclared.putIfAbsent(iface.derivedFromType!.token, () => iface);
+      if (!identical(first, iface)) {
+        iface.implementations.forEach(first.addImplementation);
+      }
+    }
+    return byDeclared.values.toList();
   }
 
   /// need to remove all implementations from interfaces that has been replaced by similar objects
@@ -379,7 +427,9 @@ extension GLGrammarProjectionExtension on GLParser {
   }
 
   GLTypeDefinition addToProjectedTypes(GLTypeDefinition definition,
-      {bool similarityCheck = true}) {
+      {bool similarityCheck = true,
+      bool requireSameMembers = false,
+      bool mergeIntoSharedInterfaces = true}) {
     var targetStore = definition is GLInterfaceDefinition
         ? projectedInterfaces
         : projectedTypes;
@@ -431,6 +481,15 @@ extension GLGrammarProjectionExtension on GLParser {
 
     if (similarityCheck) {
       var similarDefinitions = findSimilarTo(definition);
+      if (requireSameMembers) {
+        similarDefinitions = similarDefinitions
+            .where((candidate) => _hasSameMembers(candidate, definition))
+            .toList();
+      }
+      if (!mergeIntoSharedInterfaces && definition is GLInterfaceDefinition) {
+        similarDefinitions =
+            similarDefinitions.where((c) => !_isSharedInterface(c)).toList();
+      }
 
       if (similarDefinitions.isNotEmpty) {
         var first = similarDefinitions.first;
@@ -512,10 +571,15 @@ extension GLGrammarProjectionExtension on GLParser {
             isFieldCyclic(realType.token, f.type.inlineType.token)))) {
       return false;
     }
-    return result.where((f) => typeRequiresProjection(f.type)).every((f) {
+    final declaredFields = {
+      for (final f in realType.getSerializableFields(mode)) f.name.token: f
+    };
+    return result.every((f) {
+      final declared = declaredFields[f.name.token];
+      if (declared == null || !typeRequiresProjection(declared.type)) return true;
       final sub = projectedTypes[f.type.firstType.token]
                ?? projectedInterfaces[f.type.firstType.token];
-      return sub != null;
+      return sub != null && declared.type.firstType.token == f.type.firstType.token;
     });
   }
 
@@ -591,11 +655,11 @@ extension GLGrammarProjectionExtension on GLParser {
         }
       }
       if (result != null) {
-        final interfaces = couples.expand((e) => e.interfaces).toList();
+        final interfaces = _oneInterfacePerDeclared(couples);
         _updateInterfaceCommonFields(interfaces);
-        _fillProjectedInterfaces(interfaces);
-        var interface =  result.type.interfaces.first;
-        return interface;
+        final registered = _fillProjectedInterfaces(interfaces, dispatchTarget: true);
+        return registered[interfaces.indexWhere(
+            (i) => i.derivedFromType!.token == type.token)];
       }
     }
 
@@ -607,7 +671,7 @@ extension GLGrammarProjectionExtension on GLParser {
     );
     if(result.interfaces.isNotEmpty ) {
        _updateInterfaceCommonFields(result.interfaces);
-      _fillProjectedInterfaces(result.interfaces);
+      _fillProjectedInterfaces(result.interfaces, dispatchTarget: false);
     }
     return result.type;
   }

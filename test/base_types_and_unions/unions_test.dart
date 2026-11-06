@@ -12,6 +12,6 @@ void main() {
     g.parse(text);
 
     expect(g.projectedTypes.keys, containsAll(["Cat", "Dog_AgeOwnerName"]));
-    expect(g.projectedInterfaces.keys, containsAll(["Animal"]));
+    expect(g.projectedInterfaces.keys.where((k) => k.startsWith("Animal_")), hasLength(1));
   });
 }

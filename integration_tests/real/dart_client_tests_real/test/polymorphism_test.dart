@@ -140,6 +140,39 @@ void main() {
     });
   });
 
+  group('selections of one abstract type that differ between queries', () {
+    test('an interface selection with inline fragments and a shared fragment', () async {
+      final feed = (await client.queries.fetchFeed()).feed.map((e) => e.toJson()).toList();
+      expect(feed.map((e) => e['__typename']), ['Article', 'Comment', 'Article', 'Comment']);
+      expect(feed[0]['title'], 'Hello');
+      expect((feed[0]['cover'] as Map)['url'], 'http://cdn/1.png');
+      expect((feed[0]['attachments'] as List).map((a) => (a as Map)['id']), ['ph1', 'v1', 'd1']);
+      expect(feed[1]['text'], 'Nice');
+      expect(feed[2]['cover'], isNull);
+    });
+
+    test('an interface selection that names only some implementers', () async {
+      final article = (await client.queries.fetchNode(id: 'a1')).node!.toJson();
+      expect(article['title'], 'Hello');
+      expect(article['createdBy'], 'alice');
+      final comment = (await client.queries.fetchNode(id: 'c1')).node!.toJson();
+      expect(comment['createdBy'], 'bob');
+      expect(comment.containsKey('title'), isFalse);
+      expect((await client.queries.fetchNode(id: 'nope')).node, isNull);
+    });
+
+    test('two queries select different shapes of the same union', () async {
+      final photo = (await client.queries.fetchPhotoParts(id: 'ph1')).attachment!.toJson();
+      expect(photo['width'], 640);
+      expect(photo['url'], 'http://cdn/1.png');
+      final video = (await client.queries.fetchPhotoParts(id: 'v1')).attachment!.toJson();
+      expect(video['id'], 'v1');
+      expect(video.containsKey('seconds'), isFalse);
+      final full = (await client.queries.fetchAttachment(id: 'ph1')).attachment;
+      expect((full as Photo).width, 640);
+    });
+  });
+
   group('subscriptions', () {
     test('a union stream emits each member', () async {
       final events = await client.subscriptions.attachmentAdded().take(3).toList().timeout(const Duration(seconds: 10));
