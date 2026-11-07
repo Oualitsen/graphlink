@@ -41,7 +41,7 @@ class SubscriptionReconnectTest {
         DefaultGraphLinkWebSocketAdapter ws =
                 new DefaultGraphLinkWebSocketAdapter(wsUrl(PORT_HALT));
         GraphLinkClient client = new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(httpUrl(PORT_HALT)),
+                new DefaultGraphLinkClientAdapter(httpUrl(PORT_HALT), codec),
                 null, codec, codec, ws);
 
         CountDownLatch firstTick  = new CountDownLatch(1);
@@ -102,7 +102,7 @@ class SubscriptionReconnectTest {
         DefaultGraphLinkWebSocketAdapter ws =
                 new DefaultGraphLinkWebSocketAdapter(wsUrl(PORT_BEFORE));
         GraphLinkClient client = new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(httpUrl(PORT_BEFORE)),
+                new DefaultGraphLinkClientAdapter(httpUrl(PORT_BEFORE), codec),
                 null, codec, codec, ws);
 
         CountDownLatch firstTick = new CountDownLatch(1);
@@ -155,7 +155,7 @@ class SubscriptionReconnectTest {
         DefaultGraphLinkWebSocketAdapter ws =
                 new DefaultGraphLinkWebSocketAdapter(wsUrl(port), null, 2_000L);
         GraphLinkClient client = new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(httpUrl(port)),
+                new DefaultGraphLinkClientAdapter(httpUrl(port), codec),
                 null, codec, codec, ws);
 
         try {

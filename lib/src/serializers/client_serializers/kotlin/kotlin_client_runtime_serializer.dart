@@ -267,7 +267,7 @@ class KotlinClientRuntimeSerializer {
         _client.codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
         _client.codeGenUtils.constDecl('payload', _client.codeGenUtils.callExpression('GraphLinkPayload', ['query = fullQuery', 'operationName = operationName', 'variables = variables'])),
         _client.codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
-        'return fromJson(decoder.decode(responseText))',
+        'return fromJson(glRequireData(decoder.decode(responseText), responseText))',
       ],
     );
   }
@@ -685,8 +685,8 @@ class KotlinClientRuntimeSerializer {
       params: [],
     );
     return GLClassModel(
-      importDepencies: [if (errorToken != null) errorToken],
-      body: body,
+      importDepencies: [if (errorToken != null) errorToken, _client.grammar.getTokenByKey('GraphLinkJsonDecoder')!],
+      body: '$body\n\n$kotlinHttpStatusHelpers',
     );
   }
 

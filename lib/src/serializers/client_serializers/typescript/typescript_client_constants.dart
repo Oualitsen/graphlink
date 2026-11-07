@@ -639,10 +639,7 @@ export function createFetchAdapter(
       headers: { 'Content-Type': 'application/json', ...extraHeaders },
       body: payload,
     });
-    if (!response.ok) {
-      throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
-    }
-    return response.text();
+    return _checkHttpStatus(response.status, await response.text());
   };
 }
 ''';
@@ -669,10 +666,7 @@ export function createMultipartFetchAdapter(
     };
     if (multipart.duplex !== undefined) init.duplex = multipart.duplex;
     const response = await fn(url, init as never);
-    if (!response.ok) {
-      throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
-    }
-    return response.text();
+    return _checkHttpStatus(response.status, await response.text());
   };
 }
 ''';
@@ -686,8 +680,8 @@ interface _AxiosLike {
   post(
     url: string,
     data?: unknown,
-    config?: { headers?: Record<string, string>; responseType?: string },
-  ): Promise<{ data: unknown }>;
+    config?: { headers?: Record<string, string>; responseType?: string; validateStatus?: () => boolean },
+  ): Promise<{ data: unknown; status: number }>;
 }
 
 interface _AxiosAdapterOptions {
@@ -704,8 +698,9 @@ export function createAxiosAdapter(
     const response = await axiosInstance.post(''' + urlExpr + r''', payload, {
       headers: { 'Content-Type': 'application/json', ...extraHeaders },
       responseType: 'text',
+      validateStatus: () => true,
     });
-    return response.data as string;
+    return _checkHttpStatus(response.status, response.data as string);
   };
 }
 ''';
@@ -935,10 +930,7 @@ export function createFetchGetAdapter(
     if (response.status === 405) {
       throw new GraphLinkGetNotSupported('GET is not allowed');
     }
-    if (!response.ok) {
-      throw new Error(`GraphLink: HTTP ${response.status} ${response.statusText}`);
-    }
-    return response.text();
+    return _checkHttpStatus(response.status, await response.text());
   };
 }
 """;
@@ -950,8 +942,8 @@ String tsAxiosGetAdapter(bool withParam) {
 interface _AxiosGetLike {
   get(
     url: string,
-    config?: { headers?: Record<string, string>; responseType?: string },
-  ): Promise<{ data: unknown }>;
+    config?: { headers?: Record<string, string>; responseType?: string; validateStatus?: () => boolean },
+  ): Promise<{ data: unknown; status: number }>;
 }
 
 export function createAxiosGetAdapter(
@@ -965,8 +957,12 @@ export function createAxiosGetAdapter(
       const response = await axiosInstance.get(url + '?' + GraphLinkGetRequest.queryString(payload), {
         headers: { ...extraHeaders },
         responseType: 'text',
+        validateStatus: () => true,
       });
-      return response.data as string;
+      if (response.status === 405) {
+        throw new GraphLinkGetNotSupported('GET is not allowed');
+      }
+      return _checkHttpStatus(response.status, response.data as string);
     } catch (e) {
       if ((e as { response?: { status?: number } }).response?.status === 405) {
         throw new GraphLinkGetNotSupported('GET is not allowed');
@@ -977,3 +973,18 @@ export function createAxiosGetAdapter(
 }
 """;
 }
+
+
+const tsCheckHttpStatus = r'''
+function _checkHttpStatus(status: number, body: string): string {
+  if (status >= 200 && status < 300) return body;
+  try {
+    const json = JSON.parse(body);
+    if (json !== null && typeof json === 'object' && ('errors' in json || 'data' in json)) return body;
+  } catch {
+    // not JSON
+  }
+  const error: GraphLinkError = { message: `HTTP ${status}: ${body}`, path: null, extensions: null, locations: null, status, body };
+  throw [error];
+}
+''';

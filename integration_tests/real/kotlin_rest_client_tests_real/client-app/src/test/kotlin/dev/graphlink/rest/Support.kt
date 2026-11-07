@@ -20,7 +20,7 @@ fun newClient(
     headers: (() -> Map<String, String>)? = null,
     store: GraphLinkCacheStore = InMemoryGraphLinkCacheStore(),
 ): GraphLinkClient {
-    val adapter = DefaultGraphLinkClientAdapter("$baseUrl/graphql", headers)
+    val adapter = DefaultGraphLinkClientAdapter("$baseUrl/graphql", codec, headers)
     val rest = DefaultGraphLinkRestAdapter(baseUrl, headers)
     return GraphLinkClient(adapter, rest, codec, codec, store)
 }

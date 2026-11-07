@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_constants.dart';
@@ -7,6 +8,8 @@ class DartClientAdaptersSerializer {
   final DartClientSerializer _client;
   DartClientAdaptersSerializer(this._client);
 
+  String get _errorImport => _client.serializer.serializeImportToken(_client.parser.getTokenByKey('GraphLinkError')!);
+
   String get _operationNameArg => _client.parser.operationNameAsParameter ? ', String operationName' : '';
 
   String get _postUrlExpr => _client.parser.operationNameAsParameter ? "'\$url?operationName=\$operationName'" : 'url';
@@ -15,13 +18,16 @@ class DartClientAdaptersSerializer {
     return GLClassModel(
       imports: [
         "import 'dart:async';",
+        "import 'dart:convert';",
         "import 'package:http/http.dart' as http;",
         "import 'package:http_parser/http_parser.dart';",
+        _errorImport,
         if (_client.parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
         if (_client.parser.persistedQueriesUseGet) "import 'graph_link_persisted_queries.dart';",
       ],
       body: [
         _httpAdapterClass(),
+        dartCheckHttpStatus,
         if (_client.parser.hasUploadMutations) _httpStreamedRequestClass(),
       ].join('\n\n'),
     );
@@ -54,7 +60,7 @@ class DartClientAdaptersSerializer {
                 'body: payload',
                 'headers: requestHeaders',
               ])}'),
-              'return response.body;',
+              'return _checkHttpStatus(response.statusCode, response.body);',
             ],
           ),
           if (_client.parser.persistedQueriesUseGet) _httpGetMethod(),
@@ -80,7 +86,7 @@ class DartClientAdaptersSerializer {
           condition: 'response.statusCode == 405',
           ifBlockStatements: ["throw const GraphLinkGetNotSupported('GET is not allowed');"],
         ),
-        'return response.body;',
+        'return _checkHttpStatus(response.statusCode, response.body);',
       ],
     );
   }
@@ -99,7 +105,8 @@ class DartClientAdaptersSerializer {
         "request.headers['content-type'] = body.contentType;",
         'request.contentLength = body.length;',
         _client.codeGenUtils.constDecl('streamed', 'await request.send()'),
-        'return (await http.Response.fromStream(streamed)).body;',
+        _client.codeGenUtils.constDecl('response', 'await http.Response.fromStream(streamed)'),
+        'return _checkHttpStatus(response.statusCode, response.body);',
       ],
     );
   }
@@ -134,12 +141,14 @@ class DartClientAdaptersSerializer {
         "import 'dart:async';",
         "import 'dart:convert';",
         "import 'package:dio/dio.dart';",
+        _errorImport,
         if (_client.parser.hasUploadMutations) "import 'package:http_parser/http_parser.dart';",
         if (_client.parser.hasUploadMutations) "import 'graph_link_uploads.dart';",
         if (_client.parser.persistedQueriesUseGet) "import 'graph_link_persisted_queries.dart';",
       ],
       body: [
         _dioAdapterClass(),
+        dartCheckDioStatus,
         _dioHeadersInterceptorClass(),
       ].join('\n\n'),
     );
@@ -160,7 +169,7 @@ class DartClientAdaptersSerializer {
             'List<Interceptor> interceptors = const []',
             'BaseOptions? options',
           ],
-          initializers: ["dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json'))"],
+          initializers: ["dio = dio ?? Dio(options ?? BaseOptions(contentType: 'application/json', validateStatus: (_) => true))"],
           statements: [
             _client.codeGenUtils.ifStatement(
               condition: 'dio == null',
@@ -183,7 +192,7 @@ class DartClientAdaptersSerializer {
           statements: [
             _client.codeGenUtils.constDecl('response', 'await dio.post<dynamic>($_postUrlExpr, data: payload)'),
             _client.codeGenUtils.constDecl('data', 'response.data'),
-            'return data is String ? data : jsonEncode(data);',
+            'return _checkDioStatus(response.statusCode, data is String ? data : jsonEncode(data));',
           ],
         ),
         if (_client.parser.persistedQueriesUseGet) _dioGetMethod(),
@@ -205,7 +214,7 @@ class DartClientAdaptersSerializer {
             _client.codeGenUtils.constDecl('response',
                 'await dio.get<dynamic>(url, queryParameters: GraphLinkGetRequest.queryParameters(payload))'),
             _client.codeGenUtils.constDecl('data', 'response.data'),
-            'return data is String ? data : jsonEncode(data);',
+            'return _checkDioStatus(response.statusCode, data is String ? data : jsonEncode(data));',
           ],
           catchVariable: 'e',
           catchStatements: [
@@ -237,7 +246,7 @@ class DartClientAdaptersSerializer {
                   'options: Options(contentType: body.contentType, headers: {if (body.length != null) \'Content-Length\': \'\${body.length}\'})',
                 ])}'),
         _client.codeGenUtils.constDecl('data', 'response.data'),
-        'return data is String ? data : jsonEncode(data);',
+        'return _checkDioStatus(response.statusCode, data is String ? data : jsonEncode(data));',
       ],
     );
   }

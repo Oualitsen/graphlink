@@ -298,10 +298,10 @@ class JavaClientSerializer extends GLClientSerializer {
           arguments: ['String url', ..._restCtorParams, ...encoderDecoderArgs],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder'], headers: false))};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder'], headers: false))};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null'], headers: false))};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null'], headers: false))};'
                 ],
         ),
         codeGenUtils.createMethod(
@@ -315,10 +315,10 @@ class JavaClientSerializer extends GLClientSerializer {
           ],
           statements: _grammar.hasUploadMutations
               ? [
-                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder'], headers: true))};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder'], headers: true))};'
                 ]
               : [
-                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null'], headers: true))};'
+                  '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null'], headers: true))};'
                 ],
         ),
         if (defaultCodec != null)
@@ -355,10 +355,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', ..._restCtorParams, ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"))'], headers: false))};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -372,10 +372,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(url.replaceFirst("http", "ws"), headersProvider)'], headers: true))};'
               ],
       ),
       // Option B — explicit wsUrl
@@ -385,10 +385,10 @@ class JavaClientSerializer extends GLClientSerializer {
         arguments: ['String url', ..._restCtorParams, 'String wsUrl', ...encoderDecoderArgs],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, decoder)', ..._getAdapterExpr('url'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl)'], headers: false))};'
               ],
       ),
       codeGenUtils.createMethod(
@@ -403,10 +403,10 @@ class JavaClientSerializer extends GLClientSerializer {
         ],
         statements: _grammar.hasUploadMutations
             ? [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
               ]
             : [
-                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
+                '${codeGenUtils.callExpression('this', _withRest(['new DefaultGraphLinkClientAdapter(url, headersProvider, decoder)', ..._getAdapterExpr('url, headersProvider'), 'encoder', 'decoder', 'null', 'new DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)'], headers: true))};'
               ],
       ),
       if (defaultCodec != null) ...[

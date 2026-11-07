@@ -29,6 +29,7 @@ class TypeScriptClientAdaptersSerializer {
     buffer.writeln(
       "import type { $adapterType } from './graph-link-adapter.js';",
     );
+    buffer.writeln("import type { GraphLinkError } from '../types/graph-link-error.js';");
     if (hasUploads && httpAdapter == TypeScriptHttpAdapter.fetch) {
       buffer.writeln(
         "import { glFetchMultipart } from './graph-link-uploads.js';",
@@ -43,6 +44,7 @@ class TypeScriptClientAdaptersSerializer {
       );
     }
     buffer.writeln();
+    buffer.writeln(tsCheckHttpStatus);
     if (httpAdapter == TypeScriptHttpAdapter.fetch) {
       buffer.writeln(tsFetchAdapter(_client.parser.operationNameAsParameter));
       if (_client.parser.persistedQueriesUseGet) buffer.writeln(tsFetchGetAdapter(_client.parser.operationNameAsParameter));

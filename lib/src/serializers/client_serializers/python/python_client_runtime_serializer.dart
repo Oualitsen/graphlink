@@ -82,6 +82,7 @@ class PythonClientRuntimeSerializer {
         'from .graph_link_partial_query import GraphLinkPartialQuery',
         'from .graph_link_tag_entry import GraphLinkTagEntry',
         _tokenImport('GraphLinkPayload'),
+        _tokenImport('GraphLinkError'),
         ..._client.persistedImports(),
       ],
       body: [
@@ -170,7 +171,13 @@ class PythonClientRuntimeSerializer {
             cg.callExpression('GraphLinkPayload', ['query=full_query', 'operation_name=operation_name', 'variables=variables']),
           ),
           cg.constDecl(svResponse, 'await self.gl_call_adapter($svPayload)'),
-          'return from_json(json.loads($svResponse))',
+          cg.constDecl('decoded', 'json.loads($svResponse)'),
+          cg.ifStatement(
+            condition:
+                'not isinstance(decoded, dict) or (not isinstance(decoded.get("data"), dict) and not (isinstance(decoded.get("errors"), list) and len(decoded["errors"]) > 0))',
+            ifBlockStatements: ['raise GraphLinkException([GraphLinkError(message="GraphQL response has no data", body=$svResponse)])'],
+          ),
+          'return from_json(decoded)',
         ],
       ),
       '',

@@ -58,10 +58,10 @@ class OkHttpGetAdapterTest {
         val url = "http://127.0.0.1:${http.address.port}/graphql"
         val headers = { mapOf("Authorization" to "Bearer token") }
         client = GraphLinkClient(
-            DefaultGraphLinkClientAdapter(url, headers),
+            DefaultGraphLinkClientAdapter(url, codec, headers),
             DefaultGraphLinkGetAdapter(url, headers),
             MockWebSocketAdapter(),
-            DefaultGraphLinkClientAdapter(url, headers),
+            DefaultGraphLinkClientAdapter(url, codec, headers),
             codec,
             codec,
         )

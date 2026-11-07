@@ -82,6 +82,30 @@ Still open:
 Weak evidence (a few hits, check the file): partial `data` plus `errors` (3 to 5 hits in Dart, Java, TypeScript, Go; 1 in Python),
 `extensions`/`locations`/`path` on errors (1 hit each, none in Python and Go), HTTP 4xx/5xx (2 to 6 hits), offline (none in Go and Python).
 
+## 2a. Fault-injection suite (built 2026-11-07)
+
+`integration_tests/real/fault_server/server.py` (stdlib Python) arms one fault per request (`POST /_arm?fault=<name>`) and then answers
+normally. `fault_server/cases.json` is the single table of cases, read by every language: the same cases in every package, each asserting
+the expected outcome (`value`, `failure`, or `either`), no hang (8 s), and that the next call works. The tests live in the REST real
+packages because they hold both the GraphQL (`getCount`) and the REST (`count`, `status`) operations: Dart (http, dio), Java (blocking,
+Reactor, RxJava 3, Mutiny), Kotlin, TypeScript (fetch, axios), Python, Swift, Go (both variants each).
+
+Each test file has a `knownDefects` map: a skipped case with the reason. These are the open defects the suite found:
+
+| Defect | Languages |
+|---|---|
+| ~~GraphQL call with no `data` returns null / None / crashes~~ fixed: `GraphLinkError` carries nullable `status` and `body`, `executeFull` rejects a response without data or errors, the default adapters turn a non-2xx without a GraphQL body into a `GraphLinkException` | all |
+| Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
+| `Int` overflow wraps or clamps; fraction truncates | Java (wraps), Kotlin (clamps) |
+| Scalar types and shapes are not checked at run time | TypeScript (19 cases), Python (10) |
+| Empty `errors: []` next to `data` is raised as a failure | Dart, TypeScript, Python |
+| UTF-8 BOM rejected | Python, Go, Java, Kotlin (c, p) |
+| ~~GraphQL transport drops the HTTP status~~ fixed with the item above | all |
+
+Not yet covered by the suite: timeouts and cancellation (`slow`, `hang` faults exist in the server, no test uses a client timeout),
+cookies and repeated headers on the client side, dates, GraphQL-only behaviours that need the Spring schema (`@glCaptureErrors`
+with partial data, `staleIfOffline` on unions, `strictEnums`).
+
 ## 3. Behaviours with no evidence in any language (REST)
 
 The request side is strong; the gaps are on the response and transport side:

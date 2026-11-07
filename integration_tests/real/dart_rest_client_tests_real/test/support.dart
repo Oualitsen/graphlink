@@ -28,6 +28,22 @@ Future<void> resetServer() async {
   }
 }
 
+Future<void> postFaultServer(String path) async {
+  final client = HttpClient();
+  try {
+    final request = await client.postUrl(Uri.parse('http://127.0.0.1:${variant.faultPort}$path'));
+    final response = await request.close();
+    await response.drain<void>();
+  } finally {
+    client.close();
+  }
+}
+
+GraphLinkClient newFaultClient() {
+  final base = 'http://127.0.0.1:${variant.faultPort}';
+  return newClient(baseUrl: base);
+}
+
 String pair(Pair p) => '${p.name}=${p.value}';
 
 extension EchoX on Echo {

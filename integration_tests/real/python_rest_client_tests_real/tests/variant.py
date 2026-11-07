@@ -4,6 +4,7 @@ from typing import List, Sequence, Union
 COMMA = os.environ.get("REST_VARIANT") == "comma"
 BRACKET = COMMA
 PORT = 9986 if COMMA else 9985
+FAULT_PORT = 9967 if COMMA else 9966
 
 
 def key(base: str, path: Sequence[Union[str, int]] = ()) -> str:

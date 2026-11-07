@@ -213,6 +213,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 
 class DefaultGraphLinkClientAdapter(
     private val url: String,
+    private val decoder: GraphLinkJsonDecoder,
     private val headersProvider: (() -> Map<String, String>)? = null,
     private val httpClient: OkHttpClient = OkHttpClient(),
 ) : GraphLinkClientAdapter {
@@ -224,7 +225,7 @@ class DefaultGraphLinkClientAdapter(
                 .url(${withOperationName ? 'url + "?operationName=" + operationName' : 'url'})
                 .post(body)
             headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
-            httpClient.newCall(builder.build()).execute().use { it.body!!.string() }
+            httpClient.newCall(builder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
         }
 }
 ''';
@@ -244,6 +245,7 @@ import okio.source
 
 class DefaultGraphLinkClientAdapter(
     private val url: String,
+    private val decoder: GraphLinkJsonDecoder,
     private val headersProvider: (() -> Map<String, String>)? = null,
     private val httpClient: OkHttpClient = OkHttpClient(),
 ) : GraphLinkClientAdapter, GraphLinkMultipartAdapter {
@@ -255,7 +257,7 @@ class DefaultGraphLinkClientAdapter(
                 .url(${withOperationName ? 'url + "?operationName=" + operationName' : 'url'})
                 .post(body)
             headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
-            httpClient.newCall(builder.build()).execute().use { it.body!!.string() }
+            httpClient.newCall(builder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
         }
 
     override suspend fun executeMultipart(
@@ -282,7 +284,7 @@ class DefaultGraphLinkClientAdapter(
         if (onProgress != null && body.contentLength() > 0) body = ProgressRequestBody(body, onProgress)
         val reqBuilder = Request.Builder().url(url).post(body)
         headersProvider?.invoke()?.forEach { (k, v) -> reqBuilder.header(k, v) }
-        httpClient.newCall(reqBuilder.build()).execute().use { it.body!!.string() }
+        httpClient.newCall(reqBuilder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
     }
 
     private class ProgressRequestBody(
@@ -736,8 +738,24 @@ class DefaultGraphLinkGetAdapter(
                 if (response.code == 405) {
                     throw GraphLinkGetNotSupported("GET is not allowed")
                 }
-                response.body!!.string()
+                glCheckHttpStatus(response.code, response.body!!.string(), codec)
             }
         }
+}
+''';
+
+
+const kotlinHttpStatusHelpers = r'''
+fun glCheckHttpStatus(status: Int, body: String, decoder: GraphLinkJsonDecoder): String {
+    if (status in 200..299) return body
+    val json = try { decoder.decode(body) } catch (e: Exception) { null }
+    if (json != null && (json.containsKey("errors") || json.containsKey("data"))) return body
+    throw GraphLinkException(listOf(GraphLinkError(message = "HTTP $status: $body", status = status, body = body)))
+}
+
+fun glRequireData(decoded: Map<String, Any?>, text: String): Map<String, Any?> {
+    val errors = decoded["errors"]
+    if (decoded["data"] is Map<*, *> || (errors is List<*> && errors.isNotEmpty())) return decoded
+    throw GraphLinkException(listOf(GraphLinkError(message = "GraphQL response has no data", body = text)))
 }
 ''';

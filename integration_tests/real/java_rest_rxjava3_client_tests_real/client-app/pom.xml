@@ -49,6 +49,7 @@
                 <configuration>
                     <systemPropertyVariables>
                         <rest.port>9979</rest.port>
+                        <fault.port>9953</fault.port>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

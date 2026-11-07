@@ -141,6 +141,8 @@ type GraphLinkError ${glInternal} {
   path: [dynamicValue!]
   extensions: gqlMapStrObj
   locations: [GraphLinkErrorLocation!]
+  status: Int
+  body: String
 }
 
 type GraphLinkErrorLocation ${glInternal} {

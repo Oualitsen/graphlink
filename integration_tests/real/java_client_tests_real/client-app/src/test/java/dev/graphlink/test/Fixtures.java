@@ -28,7 +28,7 @@ public final class Fixtures {
     public static GraphLinkClient newRealClient() {
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
         return new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(SERVER_URL),
+                new DefaultGraphLinkClientAdapter(SERVER_URL, codec),
                 null, codec, codec,
                 new DefaultGraphLinkWebSocketAdapter(WS_URL));
     }
@@ -37,7 +37,7 @@ public final class Fixtures {
     public static GraphLinkClient newUploadClient() {
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
         return new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(SERVER_URL),
+                new DefaultGraphLinkClientAdapter(SERVER_URL, codec),
                 new RealMultipartAdapter(UPLOAD_URL),
                 codec, codec,
                 new DefaultGraphLinkWebSocketAdapter(WS_URL));

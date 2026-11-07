@@ -966,3 +966,27 @@ class GraphLinkRestDioAdapter {
   }
 }
 ''';
+
+
+const dartCheckHttpStatus = r'''
+String _checkHttpStatus(int status, String body) {
+  if (status >= 200 && status < 300) return body;
+  try {
+    final json = jsonDecode(body);
+    if (json is Map && (json.containsKey('errors') || json.containsKey('data'))) return body;
+  } catch (_) {}
+  throw [GraphLinkError(message: 'HTTP $status: $body', status: status, body: body)];
+}
+''';
+
+const dartCheckDioStatus = r'''
+String _checkDioStatus(int? status, String body) {
+  final code = status ?? 0;
+  if (code >= 200 && code < 300) return body;
+  try {
+    final json = jsonDecode(body);
+    if (json is Map && (json.containsKey('errors') || json.containsKey('data'))) return body;
+  } catch (_) {}
+  throw [GraphLinkError(message: 'HTTP $code: $body', status: code, body: body)];
+}
+''';

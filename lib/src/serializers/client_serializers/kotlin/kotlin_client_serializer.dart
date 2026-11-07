@@ -211,8 +211,8 @@ class KotlinClientSerializer extends GLClientSerializer {
 
     const codecArgs = ['encoder: GraphLinkJsonEncoder', 'decoder: GraphLinkJsonDecoder'];
     const headersArg = 'headersProvider: () -> Map<String, String>';
-    final adapterExpr = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url)' : '';
-    final adapterWithHeaders = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url, headersProvider)' : '';
+    final adapterExpr = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url, decoder)' : '';
+    final adapterWithHeaders = hasGraphQL ? 'DefaultGraphLinkClientAdapter(url, decoder, headersProvider)' : '';
     final wsExpr = hasSubs ? 'DefaultGraphLinkWebSocketAdapter(wsUrl)' : '';
     final wsWithHeaders = hasSubs ? 'DefaultGraphLinkWebSocketAdapter(wsUrl, headersProvider)' : '';
     final forwarded = [

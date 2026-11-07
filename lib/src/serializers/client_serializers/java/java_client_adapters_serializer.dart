@@ -79,7 +79,7 @@ class JavaClientAdaptersSerializer {
             if (_grammar.hasUploadMutations) JavaImports.ioException,
           ]),
         ],
-        importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+        importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!, _grammar.getTokenByKey('GraphLinkJsonDecoder')!],
         body: _grammar.hasUploadMutations
             ? (flavor == 'okhttp'
                 ? defaultClientAdapterOkHttpWithUpload(_grammar.operationNameAsParameter)
@@ -99,7 +99,7 @@ class JavaClientAdaptersSerializer {
         ? 'String payload, String operationName'
         : 'String payload';
     const future =
-        'httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
+        'httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> $clientExceptionName.checkStatus(response.statusCode(), response.body(), decoder))';
     final hasUploads = _grammar.hasUploadMutations;
     final body = codeGenUtils.createClass(
       className: 'DefaultGraphLinkClientAdapter',
@@ -111,21 +111,23 @@ class JavaClientAdaptersSerializer {
         'private final String url;',
         'private final HttpClient httpClient;',
         'private final Supplier<Map<String, String>> headersProvider;',
+        'private final GraphLinkJsonDecoder decoder;',
         '',
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: 'DefaultGraphLinkClientAdapter',
-          arguments: ['String url'],
-          statements: ['this(url, () -> null);'],
+          arguments: ['String url', 'GraphLinkJsonDecoder decoder'],
+          statements: ['this(url, () -> null, decoder);'],
         ),
         '',
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: 'DefaultGraphLinkClientAdapter',
-          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider'],
+          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', 'GraphLinkJsonDecoder decoder'],
           statements: [
             'this.url = url;',
             'this.headersProvider = headersProvider;',
+            'this.decoder = decoder;',
             'this.httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();',
           ],
         ),
@@ -167,7 +169,7 @@ class JavaClientAdaptersSerializer {
       ],
       // GraphLinkMultipartAdapter lives in the same `client` package, so it
       // needs no import dependency (it also has no grammar token).
-      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!, _grammar.getTokenByKey('GraphLinkJsonDecoder')!],
       body: body,
     );
   }
@@ -186,7 +188,7 @@ class JavaClientAdaptersSerializer {
         condition: 'response.statusCode() == 405',
         ifBlockStatements: ['throw new GraphLinkGetNotSupported("GET is not allowed");'],
       ),
-      'return response.body();',
+      'return $clientExceptionName.checkStatus(response.statusCode(), response.body(), decoder);',
     ].join('\n').ident()}\n})';
     final body = codeGenUtils.createClass(
       className: 'DefaultGraphLinkGetAdapter',
@@ -332,7 +334,7 @@ class JavaClientAdaptersSerializer {
               condition: 'headers != null',
               ifBlockStatements: ['request = request.headers(h -> headers.forEach(h::add));'],
             ),
-            'return request.retrieve()\n    .onStatus(status -> status.value() == 405, response -> Mono.error(new GraphLinkGetNotSupported("GET is not allowed")))\n    .bodyToMono(String.class);',
+            'return request.exchangeToMono(response -> response.statusCode().value() == 405\n    ? Mono.<String>error(new GraphLinkGetNotSupported("GET is not allowed"))\n    : response.bodyToMono(String.class).defaultIfEmpty("").map(glText -> $clientExceptionName.checkStatus(response.statusCode().value(), glText, decoder)));',
           ],
         )}',
       ],
@@ -375,19 +377,20 @@ class JavaClientAdaptersSerializer {
         'private final String url;',
         'private final WebClient webClient;',
         'private final Supplier<Map<String, String>> headersProvider;',
+        'private final GraphLinkJsonDecoder decoder;',
         '',
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: 'DefaultGraphLinkClientAdapter',
-          arguments: ['String url'],
-          statements: ['this(url, () -> null);'],
+          arguments: ['String url', 'GraphLinkJsonDecoder decoder'],
+          statements: ['this(url, () -> null, decoder);'],
         ),
         '',
         codeGenUtils.createMethod(
           returnType: 'public',
           methodName: 'DefaultGraphLinkClientAdapter',
-          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider'],
-          statements: ['${codeGenUtils.callExpression('this', ['url', 'headersProvider', 'WebClient.create()'])};'],
+          arguments: ['String url', 'Supplier<Map<String, String>> headersProvider', 'GraphLinkJsonDecoder decoder'],
+          statements: ['${codeGenUtils.callExpression('this', ['url', 'headersProvider', 'decoder', 'WebClient.create()'])};'],
         ),
         '',
         codeGenUtils.createMethod(
@@ -396,11 +399,13 @@ class JavaClientAdaptersSerializer {
           arguments: [
             'String url',
             'Supplier<Map<String, String>> headersProvider',
+            'GraphLinkJsonDecoder decoder',
             'WebClient webClient',
           ],
           statements: [
             'this.url = url;',
             'this.headersProvider = headersProvider;',
+            'this.decoder = decoder;',
             'this.webClient = webClient;',
           ],
         ),
@@ -416,7 +421,7 @@ class JavaClientAdaptersSerializer {
               condition: 'headers != null',
               ifBlockStatements: ['headers.forEach(request::header);'],
             ),
-            'return request.bodyValue(payload).retrieve().bodyToMono(String.class);',
+            'return request.bodyValue(payload).exchangeToMono(response -> response.bodyToMono(String.class).defaultIfEmpty("").map(glText -> $clientExceptionName.checkStatus(response.statusCode().value(), glText, decoder)));',
           ],
         )}',
         if (hasUploads) ..._webClientMultipartMembers(),
@@ -433,7 +438,7 @@ class JavaClientAdaptersSerializer {
         JavaImports.supplier,
         'reactor.core.publisher.Mono',
       ],
-      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!],
+      importDepencies: [_grammar.getTokenByKey('GraphLinkClientAdapter')!, _grammar.getTokenByKey('GraphLinkJsonDecoder')!],
       body: body,
     );
   }
@@ -461,7 +466,7 @@ class JavaClientAdaptersSerializer {
           condition: 'headers != null',
           ifBlockStatements: ['headers.forEach(request::header);'],
         ),
-        'return request.body(BodyInserters.fromResource(resource)).retrieve().bodyToMono(String.class);',
+        'return request.body(BodyInserters.fromResource(resource)).exchangeToMono(response -> response.bodyToMono(String.class).defaultIfEmpty("").map(glText -> $clientExceptionName.checkStatus(response.statusCode().value(), glText, decoder)));',
       ],
     )}';
 
@@ -472,7 +477,7 @@ class JavaClientAdaptersSerializer {
   /// `sendAsync`, bridged to the flavor single). The body is streamed lazily.
   List<String> _reactiveMultipartMembers(String ret) {
     const mpFuture =
-        'httpClient.sendAsync(mpRequest, HttpResponse.BodyHandlers.ofString()).thenApply(HttpResponse::body)';
+        'httpClient.sendAsync(mpRequest, HttpResponse.BodyHandlers.ofString()).thenApply(response -> $clientExceptionName.checkStatus(response.statusCode(), response.body(), decoder))';
 
     final executeMultipartMethod = '@Override\n${codeGenUtils.createMethod(
       returnType: 'public $ret',

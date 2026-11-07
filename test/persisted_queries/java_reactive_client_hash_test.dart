@@ -115,7 +115,7 @@ void main() {
     final file = _clientSerializer(_flavors.first, useGet: true).adapters.generateWebClientDefaultGetAdapterFile().toFileContent();
     expect(file, contains('public Mono<String> execute(String payload)'));
     expect(file, contains('webClient.get()'));
-    expect(file, contains('status.value() == 405'));
-    expect(file, contains('Mono.error(new GraphLinkGetNotSupported("GET is not allowed"))'));
+    expect(file, contains('response.statusCode().value() == 405'));
+    expect(file, contains('Mono.<String>error(new GraphLinkGetNotSupported("GET is not allowed"))'));
   });
 }

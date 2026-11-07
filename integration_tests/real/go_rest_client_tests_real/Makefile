@@ -1,5 +1,9 @@
 PORT = 9981
 COMMA_PORT = 9982
+FAULT_PORT = 9962
+COMMA_FAULT_PORT = 9963
+
+include ../fault_server/fault.mk
 
 .PHONY: generate generate-comma test test-comma clean ci ci-no-generate start-server stop-server start-comma-server stop-comma-server
 
@@ -27,12 +31,18 @@ start-comma-server:
 stop-comma-server:
 	curl -s -X POST http://127.0.0.1:$(COMMA_PORT)/_shutdown > /dev/null || true
 
+start-comma-fault-server:
+	$(MAKE) start-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
+stop-comma-fault-server:
+	$(MAKE) stop-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
 test:
 	go test -count=1 ./tests/...
 
 test-comma:
 	cd comma && REST_VARIANT=comma go test -count=1 ./tests/...
 
-ci: start-server start-comma-server generate test test-comma stop-server stop-comma-server
+ci: start-server start-comma-server start-fault-server start-comma-fault-server generate test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server
 
-ci-no-generate: start-server start-comma-server generate-comma test test-comma stop-server stop-comma-server
+ci-no-generate: start-server start-comma-server start-fault-server start-comma-fault-server generate-comma test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server

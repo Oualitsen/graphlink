@@ -40,7 +40,7 @@ class SubscriptionsTest {
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
         wsAdapter = new DefaultGraphLinkWebSocketAdapter(WS_URL);
         client = new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(SERVER_URL),
+                new DefaultGraphLinkClientAdapter(SERVER_URL, codec),
                 null, codec, codec, wsAdapter);
     }
 

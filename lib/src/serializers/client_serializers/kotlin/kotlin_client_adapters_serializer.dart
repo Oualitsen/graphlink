@@ -14,7 +14,10 @@ class KotlinClientAdaptersSerializer {
   // ── Boilerplate file models ─────────────────────────────────────────────────
 
   GLClassModel generateDefaultClientAdapterFile() => GLClassModel(
-        importDepencies: [_client.grammar.getTokenByKey('GraphLinkClientAdapter')!],
+        importDepencies: [
+          _client.grammar.getTokenByKey('GraphLinkClientAdapter')!,
+          _client.grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+        ],
         body: _client.grammar.hasUploadMutations
             ? kotlinDefaultGraphLinkClientAdapterWithUpload(_client.grammar.operationNameAsParameter)
             : kotlinDefaultGraphLinkClientAdapter(_client.grammar.operationNameAsParameter),
