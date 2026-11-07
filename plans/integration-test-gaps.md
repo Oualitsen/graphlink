@@ -96,7 +96,6 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 |---|---|
 | ~~GraphQL call with no `data` returns null / None / crashes~~ fixed: `GraphLinkError` carries nullable `status` and `body`, `executeFull` rejects a response without data or errors, the default adapters turn a non-2xx without a GraphQL body into a `GraphLinkException` | all |
 | Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
-| `Int` overflow wraps or clamps; fraction truncates | Java (wraps), Kotlin (clamps) |
 | Scalar types and shapes are not checked at run time | TypeScript (19 cases), Python (10) |
 | ~~Empty `errors: []` next to `data` is raised as a failure~~ fixed: an empty list counts as no errors | Dart, TypeScript, Python |
 | UTF-8 BOM rejected | Python, Go, Java, Kotlin (c, p) |

@@ -31,16 +31,16 @@ const _map = "Map";
 const _javaNumbers = {"Byte", "Short", "Integer", "Long", "Float", "Double", "byte", "short", "int", "long", "float", "double"};
 
 const _javaNumberMethods = {
-  "Byte": "byteValue()",
-  "Short": "shortValue()",
-  "Integer": "intValue()",
-  "Long": "longValue()",
+  "Byte": "byteValueExact()",
+  "Short": "shortValueExact()",
+  "Integer": "intValueExact()",
+  "Long": "longValueExact()",
   "Float": "floatValue()",
   "Double": "doubleValue()",
-  "byte": "byteValue()",
-  "short": "shortValue()",
-  "int": "intValue()",
-  "long": "longValue()",
+  "byte": "byteValueExact()",
+  "short": "shortValueExact()",
+  "int": "intValueExact()",
+  "long": "longValueExact()",
   "float": "floatValue()",
   "double": "doubleValue()"
 };
@@ -383,6 +383,11 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
     return _javaNumbers.contains(serializedType);
   }
 
+  String _numberCast(GLType type, String json) {
+    final method = _numberValueMethod(type);
+    return method.contains('Exact') ? 'new java.math.BigDecimal(((Number)$json).toString()).$method' : '((Number)$json).$method';
+  }
+
   String _numberValueMethod(GLType type) {
     if (type.isList) {
       return _numberValueMethod(type.inlineType);
@@ -407,7 +412,7 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String plainFromJson(GLType type, String json) {
-    final cast = _isNumber(type) ? '((Number)$json).${_numberValueMethod(type)}' : '(${serializeType(type)})$json';
+    final cast = _isNumber(type) ? _numberCast(type, json) : '(${serializeType(type)})$json';
     return JavaCodeGenUtils.nullSafeExpr(json, cast, type.nullable);
   }
 

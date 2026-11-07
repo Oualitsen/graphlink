@@ -279,7 +279,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((Number)json.get("age")).intValue()',
+          'new java.math.BigDecimal(((Number)json.get("age")).toString()).intValueExact()',
           ');',
           "}"
         ]));
@@ -304,7 +304,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((List<?>)json.get("age")).stream().map(e0 -> ((Number)e0).intValue()).collect(Collectors.toList())',
+          '((List<?>)json.get("age")).stream().map(e0 -> new java.math.BigDecimal(((Number)e0).toString()).intValueExact()).collect(Collectors.toList())',
           ');',
           "}"
         ]));

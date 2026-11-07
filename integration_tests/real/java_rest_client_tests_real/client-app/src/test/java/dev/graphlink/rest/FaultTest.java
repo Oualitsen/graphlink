@@ -22,15 +22,9 @@ import org.junit.jupiter.api.TestFactory;
 class FaultTest {
     private static final Map<Character, String> OP_NAMES = Map.of('g', "GraphQL getCount", 'c', "REST count", 'p', "REST status");
 
-    private static final String WRAPPED = "the number wraps around to an unrelated int instead of failing";
-    private static final String TRUNCATED = "the fraction is silently truncated to an int";
     private static final String BOM = "Jackson rejects a UTF-8 byte order mark";
 
     private static final Map<String, String> KNOWN_DEFECTS = Map.ofEntries(
-        Map.entry("int-overflow:g", WRAPPED),
-        Map.entry("int-overflow:c", WRAPPED),
-        Map.entry("int-fraction:g", TRUNCATED),
-        Map.entry("int-fraction:c", TRUNCATED),
         Map.entry("bom:g", BOM),
         Map.entry("bom:c", BOM),
         Map.entry("bom:p", BOM));
