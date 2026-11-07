@@ -1,5 +1,9 @@
 PORT = 9983
 COMMA_PORT = 9984
+FAULT_PORT = 9964
+COMMA_FAULT_PORT = 9965
+
+include ../fault_server/fault.mk
 XCODE_DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
 
 .PHONY: generate generate-comma test test-comma clean ci ci-no-generate start-server stop-server start-comma-server stop-comma-server
@@ -29,12 +33,18 @@ start-comma-server:
 stop-comma-server:
 	curl -s -X POST http://127.0.0.1:$(COMMA_PORT)/_shutdown > /dev/null || true
 
+start-comma-fault-server:
+	$(MAKE) start-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
+stop-comma-fault-server:
+	$(MAKE) stop-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
 test:
 	DEVELOPER_DIR=$(XCODE_DEVELOPER_DIR) swift test
 
 test-comma:
 	cd comma && REST_VARIANT=comma DEVELOPER_DIR=$(XCODE_DEVELOPER_DIR) swift test
 
-ci: start-server start-comma-server generate test test-comma stop-server stop-comma-server
+ci: start-server start-comma-server start-fault-server start-comma-fault-server generate test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server
 
-ci-no-generate: start-server start-comma-server generate-comma test test-comma stop-server stop-comma-server
+ci-no-generate: start-server start-comma-server start-fault-server start-comma-fault-server generate-comma test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server

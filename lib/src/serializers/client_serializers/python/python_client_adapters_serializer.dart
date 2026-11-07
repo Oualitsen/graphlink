@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_constants.dart';
@@ -42,14 +43,17 @@ class PythonClientAdaptersSerializer {
     return GLClassModel(
       imports: [
         'import inspect',
+        'import json',
         'from typing import Any, Awaitable, Callable, Dict, List, Optional',
         '',
         'import httpx',
         '',
+        'from .graph_link_exception import GraphLinkException',
+        _client.serializer.serializeImportToken(_client.parser.getTokenByKey('GraphLinkError')!),
         if (_client.parser.hasUploadMutations) 'from .graph_link_uploads import GLMultipartPart, GLUpload, UploadProgressCallback, gl_multipart_stream',
         if (_client.parser.persistedQueriesUseGet) 'from .graph_link_persisted_queries import GraphLinkGetNotSupported, GraphLinkGetRequest',
       ],
-      body: cg.createClass(className: 'GraphLinkHttpxAdapter', statements: [
+      body: '$pythonCheckHttpStatus\n\n\n${cg.createClass(className: 'GraphLinkHttpxAdapter', statements: [
         cg.createMethod(
           methodName: '__init__',
           arguments: [
@@ -88,7 +92,7 @@ class PythonClientAdaptersSerializer {
           statements: [
             cg.constDecl('headers', '{"Content-Type": "application/json", **await self._extra_headers()}'),
             cg.constDecl('response', 'await self.client.post($postUrl, content=payload, headers=headers)'),
-            'return response.text',
+            'return _check_http_status(response.status_code, response.text)',
           ],
         ),
         if (_client.parser.persistedQueriesUseGet) ...[
@@ -111,7 +115,7 @@ class PythonClientAdaptersSerializer {
                 condition: 'response.status_code == 405',
                 ifBlockStatements: ['raise GraphLinkGetNotSupported("GET is not allowed")'],
               ),
-              'return response.text',
+              'return _check_http_status(response.status_code, response.text)',
             ],
           ),
         ],
@@ -128,7 +132,7 @@ class PythonClientAdaptersSerializer {
               cg.constDecl('headers', '{**await self._extra_headers(), "Content-Type": content_type}'),
               cg.ifStatement(condition: 'total is not None', ifBlockStatements: ['headers["Content-Length"] = str(total)']),
               cg.constDecl('response', 'await self.client.post(self.url, content=content, headers=headers)'),
-              'return response.text',
+              'return _check_http_status(response.status_code, response.text)',
             ],
           ),
         ],
@@ -146,7 +150,7 @@ class PythonClientAdaptersSerializer {
         ],
         '',
         cg.createMethod(async: true, methodName: 'aclose', arguments: ['self'], returnType: 'None', statements: ['await self.client.aclose()']),
-      ]),
+      ])}',
     );
   }
 }

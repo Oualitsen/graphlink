@@ -324,6 +324,11 @@ don't confuse them:
   decoded into the `*Rest` copies, a polymorphic list, a union, a cached call, and the strict twins on the same payload that must fail.
   Swift has no strict twins: its strict types decode with force unwraps, so a missing non-null field traps instead of throwing. The Java reactive
   packages derive `LenientTest` from the blocking one.
+- **Fault injection** (bad responses): `real/fault_server/server.py` arms one fault per request (`POST /_arm?fault=<name>`); `fault_server/cases.json`
+  is the one table of cases every language reads. Each REST real package has a fault test (`fault_test.dart`, `FaultTest.java`, `FaultTest.kt`,
+  `fault.test.ts`, `test_faults.py`, `FaultTests.swift`, `fault_test.go`) on its own fault port (9950 to 9969, see each Makefile; shared recipe in
+  `fault_server/fault.mk`). A language's open defects are skipped in its `knownDefects` map with the reason; remove the entry when fixed.
+  Add a fault in `server.py` and a row in `cases.json`, then run every language.
 - **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
   (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
   `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known

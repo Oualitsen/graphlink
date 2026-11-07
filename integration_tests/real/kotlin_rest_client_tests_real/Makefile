@@ -1,4 +1,7 @@
 PORT = 9994
+FAULT_PORT = 9951
+
+include ../fault_server/fault.mk
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/kotlin/dev/graphlink/rest/generated
 
@@ -23,7 +26,7 @@ stop-server:
 test:
 	cd $(CLIENT_DIR) && ./gradlew test
 
-ci: start-server generate test stop-server
+ci: start-server start-fault-server generate test stop-server stop-fault-server
 
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
-ci-no-generate: start-server test stop-server
+ci-no-generate: start-server start-fault-server test stop-server stop-fault-server

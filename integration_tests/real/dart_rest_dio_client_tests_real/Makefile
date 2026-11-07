@@ -1,4 +1,7 @@
 PORT = 9996
+FAULT_PORT = 9961
+
+include ../fault_server/fault.mk
 
 .PHONY: install generate test clean ci ci-no-generate start-server stop-server
 
@@ -21,7 +24,7 @@ test:
 clean:
 	rm -rf lib/generated
 
-ci: start-server generate test stop-server
+ci: start-server start-fault-server generate test stop-server stop-fault-server
 
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
-ci-no-generate: start-server install test stop-server
+ci-no-generate: start-server start-fault-server install test stop-server stop-fault-server

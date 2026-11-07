@@ -71,11 +71,14 @@ class DartClientRuntimeSerializer {
   GLClassModel generateResolverBaseFile() {
     final payloadImport = _client.serializer.serializeImportToken(
         _client.parser.getTokenByKey('GraphLinkPayload')!);
+    final errorImport = _client.serializer.serializeImportToken(
+        _client.parser.getTokenByKey('GraphLinkError')!);
     return GLClassModel(
       imports: [
         "import 'dart:convert';",
         "import 'dart:async';",
         if (payloadImport.isNotEmpty) payloadImport,
+        if (errorImport.isNotEmpty) errorImport,
         "import 'graph_link_cache_entry.dart';",
         "import 'graph_link_lock.dart';",
         "import 'graph_link_tag_entry.dart';",
@@ -263,7 +266,11 @@ class DartClientRuntimeSerializer {
                 _client.codeGenUtils.constDecl('fullQuery', 'assembleQuery(query, fragmentNames)'),
                 _client.codeGenUtils.constDecl(svPayload, _client.codeGenUtils.callExpression('GraphLinkPayload', ['query: fullQuery', 'operationName: operationName', 'variables: variables'])),
                 _client.codeGenUtils.constDecl(svResponse, 'await glCallAdapter($svPayload)'),
-                'return fromJson(jsonDecode($svResponse));',
+                _client.codeGenUtils.constDecl('json', 'jsonDecode($svResponse)'),
+                _client.codeGenUtils.ifStatement(
+                    condition: "json is! Map<String, dynamic> || (json['data'] is! Map && !(json['errors'] is List && (json['errors'] as List).isNotEmpty))",
+                    ifBlockStatements: ["throw [GraphLinkError(message: 'GraphQL response has no data', body: $svResponse)];"]),
+                'return fromJson(json);',
               ]),
           _client.codeGenUtils.createMethod(
               returnType: 'Future<TFull>',

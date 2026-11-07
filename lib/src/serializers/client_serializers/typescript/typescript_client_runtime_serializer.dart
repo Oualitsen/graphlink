@@ -79,6 +79,7 @@ class TypeScriptClientRuntimeSerializer {
         if (payloadImport.isNotEmpty) payloadImport,
         "import type { $adapterType } from './graph-link-adapter.js';",
         "import type { GraphLinkCacheStore } from './graph-link-cache-store.js';",
+        "import type { GraphLinkError } from '../types/graph-link-error.js';",
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkTagEntry, __GL_TAG_KEY_PREFIX__ } from './graph-link-tag-entry.js';",
         "import { GraphLinkLock } from './graph-link-lock.js';",
@@ -182,7 +183,16 @@ class TypeScriptClientRuntimeSerializer {
             _client.cg.constDecl('fullQuery', 'this.assembleQuery(query, fragmentNames)'),
             _client.cg.constDecl('payload', '{ query: fullQuery, operationName, variables }', type: 'GraphLinkPayload'),
             _client.cg.constDecl('response', 'await this._glCallAdapter(payload)'),
-            'return JSON.parse(response) as T;',
+            _client.cg.constDecl('json', 'JSON.parse(response)'),
+            _client.cg.ifStatement(
+              condition:
+                  "json === null || typeof json !== 'object' || Array.isArray(json) || ((json.data === null || typeof json.data !== 'object') && !(Array.isArray(json.errors) && json.errors.length > 0))",
+              ifBlockStatements: [
+                "const error: GraphLinkError = { message: 'GraphQL response has no data', path: null, extensions: null, locations: null, status: null, body: response };",
+                'throw [error];',
+              ],
+            ),
+            'return json as T;',
           ],
         ),
         _client.cg.createMethod(

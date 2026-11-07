@@ -1,5 +1,9 @@
 PORT = 9985
 COMMA_PORT = 9986
+FAULT_PORT = 9966
+COMMA_FAULT_PORT = 9967
+
+include ../fault_server/fault.mk
 PY := .venv/bin/python
 
 .PHONY: install generate generate-comma test test-comma clean ci ci-no-generate start-server stop-server start-comma-server stop-comma-server
@@ -31,6 +35,12 @@ start-comma-server:
 stop-comma-server:
 	curl -s -X POST http://127.0.0.1:$(COMMA_PORT)/_shutdown > /dev/null || true
 
+start-comma-fault-server:
+	$(MAKE) start-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
+stop-comma-fault-server:
+	$(MAKE) stop-fault-server FAULT_PORT=$(COMMA_FAULT_PORT)
+
 test:
 	$(PY) -m unittest discover -s tests -t .
 
@@ -40,6 +50,6 @@ test-comma:
 clean:
 	rm -rf generated comma/generated
 
-ci: install start-server start-comma-server generate test test-comma stop-server stop-comma-server
+ci: install start-server start-comma-server start-fault-server start-comma-fault-server generate test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server
 
-ci-no-generate: install start-server start-comma-server generate-comma test test-comma stop-server stop-comma-server
+ci-no-generate: install start-server start-comma-server start-fault-server start-comma-fault-server generate-comma test test-comma stop-server stop-comma-server stop-fault-server stop-comma-fault-server

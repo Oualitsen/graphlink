@@ -1,5 +1,9 @@
 PORT = 9993
 AXIOS_PORT = 9989
+FAULT_PORT = 9968
+AXIOS_FAULT_PORT = 9969
+
+include ../fault_server/fault.mk
 
 .PHONY: install generate generate-axios typecheck test test-axios clean ci ci-no-generate start-server stop-server start-axios-server stop-axios-server
 
@@ -28,6 +32,12 @@ start-axios-server:
 stop-axios-server:
 	curl -s -X POST http://127.0.0.1:$(AXIOS_PORT)/_shutdown > /dev/null || true
 
+start-axios-fault-server:
+	$(MAKE) start-fault-server FAULT_PORT=$(AXIOS_FAULT_PORT)
+
+stop-axios-fault-server:
+	$(MAKE) stop-fault-server FAULT_PORT=$(AXIOS_FAULT_PORT)
+
 typecheck:
 	npx tsc --noEmit
 
@@ -40,7 +50,7 @@ test-axios:
 clean:
 	rm -rf lib/generated axios/lib/generated
 
-ci: start-server start-axios-server generate typecheck test test-axios stop-server stop-axios-server
+ci: start-server start-axios-server start-fault-server start-axios-fault-server generate typecheck test test-axios stop-server stop-axios-server stop-fault-server stop-axios-fault-server
 
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
-ci-no-generate: start-server start-axios-server install generate-axios typecheck test test-axios stop-server stop-axios-server
+ci-no-generate: start-server start-axios-server start-fault-server start-axios-fault-server install generate-axios typecheck test test-axios stop-server stop-axios-server stop-fault-server stop-axios-fault-server

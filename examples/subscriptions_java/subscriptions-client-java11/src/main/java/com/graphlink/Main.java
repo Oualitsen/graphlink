@@ -18,7 +18,7 @@ public class Main {
         final String wsurl = "ws://localhost:8080/graphql";
         final var httpClient = HttpClient.newHttpClient();
         final GraphLinkClient client = new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(url, null, httpClient),
+                new DefaultGraphLinkClientAdapter(url, null, new JacksonGraphLinkJsonCodec(), httpClient),
                 new JacksonGraphLinkJsonCodec(),
                 new JacksonGraphLinkJsonCodec(),
                 new DefaultGraphLinkWebSocketAdapter(wsurl, null, httpClient)

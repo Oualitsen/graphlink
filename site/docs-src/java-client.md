@@ -65,6 +65,8 @@ Both `DefaultGraphLinkClientAdapter` and `DefaultGraphLinkWebSocketAdapter` acce
     // Pass it to the adapter — all HTTP and WebSocket traffic uses this client
     DefaultGraphLinkClientAdapter adapter = new DefaultGraphLinkClientAdapter(
         "http://api.example.com/graphql",
+        null,
+        decoder,
         httpClient
     );
     DefaultGraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(
@@ -83,6 +85,8 @@ Both `DefaultGraphLinkClientAdapter` and `DefaultGraphLinkWebSocketAdapter` acce
 
     DefaultGraphLinkClientAdapter adapter = new DefaultGraphLinkClientAdapter(
         "http://api.example.com/graphql",
+        null,
+        decoder,
         okHttpClient
     );
     DefaultGraphLinkWebSocketAdapter wsAdapter = new DefaultGraphLinkWebSocketAdapter(

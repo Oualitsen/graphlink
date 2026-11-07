@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
 final class Support {
     static final int PORT = Integer.parseInt(System.getProperty("rest.port", "9987"));
     static final String SERVER_URL = "http://127.0.0.1:" + PORT;
+    static final int FAULT_PORT = Integer.parseInt(System.getProperty("fault.port", "9950"));
+    static final String FAULT_URL = "http://127.0.0.1:" + FAULT_PORT;
     static final java.util.concurrent.ExecutorService POOL = java.util.concurrent.Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r);
         t.setDaemon(true);
@@ -52,7 +54,7 @@ final class Support {
 
     static GraphLinkClient newClient(String baseUrl, Supplier<Map<String, String>> headers, GraphLinkCacheStore store) {
         return new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(baseUrl + "/graphql", headers),
+                new DefaultGraphLinkClientAdapter(baseUrl + "/graphql", headers, CODEC),
                 new DefaultGraphLinkRestAdapter(baseUrl, headers),
                 CODEC,
                 CODEC,
@@ -61,6 +63,15 @@ final class Support {
 
     static void resetServer() throws IOException {
         HttpURLConnection connection = (HttpURLConnection) URI.create(SERVER_URL + "/_reset").toURL().openConnection();
+        connection.setRequestMethod("POST");
+        connection.getResponseCode();
+        try (InputStream in = connection.getInputStream()) {
+            in.readAllBytes();
+        }
+    }
+
+    static void postFault(String path) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) URI.create(FAULT_URL + path).toURL().openConnection();
         connection.setRequestMethod("POST");
         connection.getResponseCode();
         try (InputStream in = connection.getInputStream()) {

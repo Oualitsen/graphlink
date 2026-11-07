@@ -1,4 +1,7 @@
 PORT = 9980
+FAULT_PORT = 9952
+
+include ../fault_server/fault.mk
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/rest/generated
 
@@ -34,7 +37,7 @@ variants:
 	cd webclient && dart run ../../../generate.dart
 	$(MAKE) test
 
-ci: start-server
-	status=0; $(MAKE) variants || status=$$?; $(MAKE) stop-server; exit $$status
+ci: start-server start-fault-server
+	status=0; $(MAKE) variants || status=$$?; $(MAKE) stop-server stop-fault-server; exit $$status
 
 ci-no-generate: ci

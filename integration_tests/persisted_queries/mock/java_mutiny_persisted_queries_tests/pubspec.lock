@@ -201,10 +201,10 @@ packages:
   graphlink:
     dependency: "direct main"
     description:
-      path: "../../.."
+      path: "../../../.."
       relative: true
     source: path
-    version: "5.5.0"
+    version: "6.0.0"
   graphs:
     dependency: transitive
     description:

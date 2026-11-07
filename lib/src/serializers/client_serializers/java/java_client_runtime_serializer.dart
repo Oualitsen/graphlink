@@ -339,9 +339,9 @@ class JavaClientRuntimeSerializer {
             'GraphLinkPayload $svPayload = GraphLinkPayload.builder().query($svFullQuery).operationName(operationName).variables(variables).build();',
             if (!flavor.isReactive) ...[
               'String $svResponseText = glCallAdapter($svPayload);',
-              'return fromJson.apply($svDecoder.decode($svResponseText));',
+              'return fromJson.apply($clientExceptionName.requireData($svDecoder.decode($svResponseText), $svResponseText));',
             ] else
-              'return ${flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> fromJson.apply($svDecoder.decode($svResponseText))')};',
+              'return ${flavor.mapTo('glCallAdapter($svPayload)', '$svResponseText -> fromJson.apply($clientExceptionName.requireData($svDecoder.decode($svResponseText), $svResponseText))')};',
           ],
         ),
         codeGenUtils.createMethod(
@@ -778,11 +778,48 @@ class JavaClientRuntimeSerializer {
               // `getErrors()`) — only re-parse elements that aren't already typed.
               'return new $clientExceptionName(errors.stream().map(e -> e instanceof GraphLinkError ? (GraphLinkError) e : GraphLinkError.fromJson((Map<String, Object>)e)).collect(Collectors.toList()));'
             ]),
+        codeGenUtils.createMethod(
+            returnType: 'static $clientExceptionName',
+            methodName: 'ofMessage',
+            arguments: ['String message', 'Integer status', 'String body'],
+            statements: [
+              'return new $clientExceptionName(Collections.singletonList(new GraphLinkError(message, null, null, null, status, body)));',
+            ]),
+        codeGenUtils.createMethod(
+            returnType: 'static String',
+            methodName: 'checkStatus',
+            arguments: ['int status', 'String body', 'GraphLinkJsonDecoder decoder'],
+            statements: [
+              codeGenUtils.ifStatement(condition: 'status >= 200 && status < 300', ifBlockStatements: ['return body;']),
+              codeGenUtils.tryCatchFinally(
+                tryStatements: [
+                  codeGenUtils.constDecl('json', 'decoder.decode(body)', type: 'Map<String, Object>'),
+                  codeGenUtils.ifStatement(
+                      condition: 'json != null && (json.containsKey("errors") || json.containsKey("data"))',
+                      ifBlockStatements: ['return body;']),
+                ],
+                catchVariable: 'ignored',
+                catchStatements: ['// not JSON'],
+              ),
+              'throw ofMessage("HTTP " + status + ": " + body, status, body);',
+            ]),
+        codeGenUtils.createMethod(
+            returnType: 'static Map<String, Object>',
+            methodName: 'requireData',
+            arguments: ['Map<String, Object> decoded', 'String text'],
+            statements: [
+              codeGenUtils.constDecl('data', 'decoded == null ? null : decoded.get("data")', type: 'Object'),
+              codeGenUtils.constDecl('errors', 'decoded == null ? null : decoded.get("errors")', type: 'Object'),
+              codeGenUtils.ifStatement(
+                  condition: 'data instanceof Map || (errors instanceof List && !((List<?>) errors).isEmpty())',
+                  ifBlockStatements: ['return decoded;']),
+              'throw ofMessage("GraphQL response has no data", null, text);',
+            ]),
       ],
     );
 
     return GLClassModel(
-      importDepencies: [if (errorToken != null) errorToken],
+      importDepencies: [if (errorToken != null) errorToken, _grammar.getTokenByKey('GraphLinkJsonDecoder')!],
       imports: [
         JavaImports.list,
         JavaImports.collections,

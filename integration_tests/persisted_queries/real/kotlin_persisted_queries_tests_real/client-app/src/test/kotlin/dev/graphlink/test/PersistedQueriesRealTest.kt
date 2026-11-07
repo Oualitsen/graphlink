@@ -37,10 +37,10 @@ class PersistedQueriesRealTest {
 
     private fun newClient(): GraphLinkClient =
         GraphLinkClient(
-            DefaultGraphLinkClientAdapter(GRAPHQL),
+            DefaultGraphLinkClientAdapter(GRAPHQL, codec),
             DefaultGraphLinkGetAdapter(GRAPHQL),
             MockWebSocketAdapter(),
-            DefaultGraphLinkClientAdapter(GRAPHQL),
+            DefaultGraphLinkClientAdapter(GRAPHQL, codec),
             codec,
             codec,
         )

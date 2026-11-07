@@ -1,4 +1,7 @@
 PORT = 9987
+FAULT_PORT = 9950
+
+include ../fault_server/fault.mk
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/rest/generated
 
@@ -23,6 +26,6 @@ stop-server:
 test:
 	cd $(CLIENT_DIR) && mvn -B -q test
 
-ci: start-server generate test stop-server
+ci: start-server start-fault-server generate test stop-server stop-fault-server
 
-ci-no-generate: start-server test stop-server
+ci-no-generate: start-server start-fault-server test stop-server stop-fault-server

@@ -660,6 +660,17 @@ func glExecuteFull[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkRes
 	if err != nil {
 		return result, err
 	}
+	var raw map[string]json.RawMessage
+	if err = json.Unmarshal([]byte(text), &raw); err != nil {
+		return result, err
+	}
+	var data map[string]json.RawMessage
+	var errs []json.RawMessage
+	if json.Unmarshal(raw["data"], &data) != nil || data == nil {
+		if json.Unmarshal(raw["errors"], &errs) != nil || len(errs) == 0 {
+			return result, &GraphLinkException{Errors: []GraphLinkError{{Message: "GraphQL response has no data", Body: &text}}}
+		}
+	}
 	err = json.Unmarshal([]byte(text), &result)
 	return result, err
 }
@@ -1767,8 +1778,21 @@ func (a *GraphLinkHttpAdapter) do(ctx context.Context, request *http.Request) (*
 
 func glReadBody(response *http.Response) (string, error) {
 	defer response.Body.Close()
-	body, err := io.ReadAll(response.Body)
-	return string(body), err
+	data, err := io.ReadAll(response.Body)
+	body := string(data)
+	if err != nil || (response.StatusCode >= 200 && response.StatusCode < 300) {
+		return body, err
+	}
+	var decoded map[string]json.RawMessage
+	if json.Unmarshal(data, &decoded) == nil {
+		_, hasErrors := decoded["errors"]
+		_, hasData := decoded["data"]
+		if hasErrors || hasData {
+			return body, nil
+		}
+	}
+	status := response.StatusCode
+	return "", &GraphLinkException{Errors: []GraphLinkError{{Message: fmt.Sprintf("HTTP %d: %s", status, body), Status: &status, Body: &body}}}
 }
 
 func (a *GraphLinkHttpAdapter) Call(ctx context.Context, payload string__OP_PARAM__) (string, error) {

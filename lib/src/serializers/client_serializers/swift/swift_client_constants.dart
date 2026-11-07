@@ -335,7 +335,12 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         let fullQuery = assembleQuery(query, fragmentNames: fragmentNames)
         let payload = GraphLinkPayload(query: fullQuery, operationName: operationName, variables: variables)
         let responseData = try await glCallAdapter(payload)
-        return try fromJson(GraphLinkJson.decode(responseData))
+        let decoded = try GraphLinkJson.decode(responseData)
+        let errors = decoded["errors"] as? [Any?]
+        if !(decoded["data"] is [String: Any?]) && (errors?.isEmpty ?? true) {
+            throw GraphLinkException(errors: [GraphLinkError(message: "GraphQL response has no data", body: String(decoding: responseData, as: UTF8.self))])
+        }
+        return try fromJson(decoded)
     }
 
     func executeData<T: GraphLinkFullResponse>(
@@ -835,8 +840,8 @@ public struct DefaultGraphLinkURLSessionMultipartAdapter: Sendable {
         request.setValue(body.contentType, forHTTPHeaderField: "Content-Type")
         headersProvider?().forEach { request.setValue($1, forHTTPHeaderField: $0) }
 
-        let (data, _) = try await GLStreamedUpload.send(request, chunks: body.chunks(), length: body.length, session: session, onProgress: onProgress)
-        return data
+        let (data, response) = try await GLStreamedUpload.send(request, chunks: body.chunks(), length: body.length, session: session, onProgress: onProgress)
+        return try glCheckHttpStatus(response, data)
     }
 }
 ''';
@@ -1203,9 +1208,18 @@ public struct DefaultGraphLinkURLSessionAdapter: Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         headersProvider?().forEach { request.setValue(\$1, forHTTPHeaderField: \$0) }
         request.httpBody = payload
-        let (data, _) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
+        return try glCheckHttpStatus(response, data)
+    }
+}
+
+func glCheckHttpStatus(_ response: URLResponse, _ data: Data) throws -> Data {
+    guard let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) else { return data }
+    if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any], json["errors"] != nil || json["data"] != nil {
         return data
     }
+    let body = String(decoding: data, as: UTF8.self)
+    throw GraphLinkException(errors: [GraphLinkError(message: "HTTP \\(http.statusCode): \\(body)", status: http.statusCode, body: body)])
 }
 ''';
 

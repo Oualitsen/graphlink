@@ -578,19 +578,21 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonDecoder decoder;
   private final HttpClient httpClient;
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
+  public DefaultGraphLinkClientAdapter(String url, GraphLinkJsonDecoder decoder) {
+    this(url, null, decoder);
   }
 
-  public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, decoder, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder, HttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
+    this.decoder = decoder;
     this.httpClient = httpClient;
   }
 
@@ -606,7 +608,9 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
         if (headers != null) headers.forEach(builder::header);
       }
       HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-      return response.body();
+      return GraphLinkException.checkStatus(response.statusCode(), response.body(), decoder);
+    } catch (GraphLinkException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -621,19 +625,21 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonDecoder decoder;
   private final OkHttpClient httpClient;
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, new OkHttpClient());
+  public DefaultGraphLinkClientAdapter(String url, GraphLinkJsonDecoder decoder) {
+    this(url, null, decoder);
   }
 
-  public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, new OkHttpClient());
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, decoder, new OkHttpClient());
   }
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder, OkHttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
+    this.decoder = decoder;
     this.httpClient = httpClient;
   }
 
@@ -648,8 +654,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter {
         if (headers != null) headers.forEach(builder::header);
       }
       try (Response response = httpClient.newCall(builder.build()).execute()) {
-        return response.body().string();
+        return GraphLinkException.checkStatus(response.code(), response.body().string(), decoder);
       }
+    } catch (GraphLinkException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -664,19 +672,21 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonDecoder decoder;
   private final OkHttpClient httpClient;
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, new OkHttpClient());
+  public DefaultGraphLinkClientAdapter(String url, GraphLinkJsonDecoder decoder) {
+    this(url, null, decoder);
   }
 
-  public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, new OkHttpClient());
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, decoder, new OkHttpClient());
   }
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, OkHttpClient httpClient) {
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder, OkHttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
+    this.decoder = decoder;
     this.httpClient = httpClient;
   }
 
@@ -691,8 +701,10 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
         if (headers != null) headers.forEach(builder::header);
       }
       try (Response response = httpClient.newCall(builder.build()).execute()) {
-        return response.body().string();
+        return GraphLinkException.checkStatus(response.code(), response.body().string(), decoder);
       }
+    } catch (GraphLinkException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -723,7 +735,7 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
       if (headers != null) headers.forEach(reqBuilder::header);
     }
     try (Response response = httpClient.newCall(reqBuilder.build()).execute()) {
-      return response.body().string();
+      return GraphLinkException.checkStatus(response.code(), response.body().string(), decoder);
     }
   }
 
@@ -762,19 +774,21 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
 
   private final String url;
   private final Supplier<Map<String, String>> headersProvider;
+  private final GraphLinkJsonDecoder decoder;
   private final HttpClient httpClient;
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider) {
-    this(url, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
+  public DefaultGraphLinkClientAdapter(String url, GraphLinkJsonDecoder decoder) {
+    this(url, null, decoder);
   }
 
-  public DefaultGraphLinkClientAdapter(String url) {
-    this(url, null, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder) {
+    this(url, headersProvider, decoder, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build());
   }
 
-  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, HttpClient httpClient) {
+  public DefaultGraphLinkClientAdapter(String url, Supplier<Map<String, String>> headersProvider, GraphLinkJsonDecoder decoder, HttpClient httpClient) {
     this.url = url;
     this.headersProvider = headersProvider;
+    this.decoder = decoder;
     this.httpClient = httpClient;
   }
 
@@ -790,7 +804,9 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
         if (headers != null) headers.forEach(builder::header);
       }
       HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-      return response.body();
+      return GraphLinkException.checkStatus(response.statusCode(), response.body(), decoder);
+    } catch (GraphLinkException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -812,7 +828,7 @@ public class DefaultGraphLinkClientAdapter implements GraphLinkClientAdapter, Gr
     }
     try {
       HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-      return response.body();
+      return GraphLinkException.checkStatus(response.statusCode(), response.body(), decoder);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new java.io.IOException(e);
@@ -1021,7 +1037,7 @@ public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
     if (response.statusCode() == 405) {
       throw new GraphLinkGetNotSupported("GET is not allowed");
     }
-    return response.body();
+    return GraphLinkException.checkStatus(response.statusCode(), response.body(), decoder);
   }
 }
 ''';
@@ -1066,9 +1082,9 @@ public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
         if (response.code() == 405) {
           throw new GraphLinkGetNotSupported("GET is not allowed");
         }
-        return response.body().string();
+        return GraphLinkException.checkStatus(response.code(), response.body().string(), decoder);
       }
-    } catch (GraphLinkGetNotSupported e) {
+    } catch (GraphLinkGetNotSupported | GraphLinkException e) {
       throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);

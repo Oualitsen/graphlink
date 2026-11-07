@@ -100,7 +100,7 @@ class JavaReactiveFlavor {
       case 'Mono':
         return 'Mono.fromFuture($futureExpr)';
       case 'Single':
-        return 'Single.fromCompletionStage($futureExpr)';
+        return 'Single.fromCompletionStage($futureExpr).onErrorResumeNext(t -> Single.error(t instanceof java.util.concurrent.CompletionException && t.getCause() != null ? t.getCause() : t))';
       case 'Uni':
         return 'Uni.createFrom().completionStage($futureExpr)';
       default:

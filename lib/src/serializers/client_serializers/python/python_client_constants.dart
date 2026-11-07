@@ -719,3 +719,17 @@ class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
         if self._reader is not None:
             self._reader.cancel()
 ''';
+
+
+const pythonCheckHttpStatus = r'''
+def _check_http_status(status: int, body: str) -> str:
+    if 200 <= status < 300:
+        return body
+    try:
+        decoded = json.loads(body)
+        if isinstance(decoded, dict) and ("errors" in decoded or "data" in decoded):
+            return body
+    except ValueError:
+        pass
+    raise GraphLinkException([GraphLinkError(message=f"HTTP {status}: {body}", status=status, body=body)])
+''';
