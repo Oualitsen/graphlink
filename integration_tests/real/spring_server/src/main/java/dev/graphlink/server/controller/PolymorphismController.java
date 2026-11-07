@@ -4,6 +4,7 @@ import dev.graphlink.server.model.*;
 import graphql.GraphqlErrorException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
@@ -129,9 +130,36 @@ public class PolymorphismController {
         };
     }
 
+    private static final AtomicInteger FETCHES = new AtomicInteger();
+
+    // Every call that reaches the server returns different data, so a client cache hit is a repeated value.
     @QueryMapping
     public Attachment getCachedAttachment(@Argument String id) {
-        return attachment(id);
+        Attachment found = attachment(id);
+        return found instanceof Video v ? new Video(v.id(), v.url(), v.seconds() + FETCHES.incrementAndGet()) : found;
+    }
+
+    @QueryMapping
+    public Node getCachedNode(@Argument String id) {
+        Node found = node(id);
+        int n = FETCHES.incrementAndGet();
+        if (found instanceof Article a) {
+            return new Article(a.id(), a.createdBy(), a.title() + " #" + n, a.cover(), a.attachments(), a.related());
+        }
+        if (found instanceof Comment c) {
+            return new Comment(c.id(), c.createdBy(), c.text() + " #" + n, c.parent());
+        }
+        return found;
+    }
+
+    @MutationMapping
+    public boolean evictAttachments() {
+        return true;
+    }
+
+    @MutationMapping
+    public boolean evictNodes() {
+        return true;
     }
 
     @QueryMapping

@@ -450,6 +450,7 @@ type Query {
   attachmentsNullable: [Attachment]
   article(id: ID!): Article!
   getCachedAttachment(id: ID!): Attachment @glCache(ttl: "1m", tags: ["attachments"])
+  getCachedNode(id: ID!): Node @glCache(ttl: "1m", tags: ["nodes"])
   attachmentOrErrors(id: ID!): Attachment @glCaptureErrors
   gadget(id: ID!): Gadget
   gadgets: [Gadget!]!
@@ -486,6 +487,12 @@ type Mutation {
 
   # Wipes the entire cache.
   resetAll: Boolean! @glCacheInvalidate(all: true)
+
+  # Evicts the cached union results.
+  evictAttachments: Boolean! @glCacheInvalidate(tags: ["attachments"])
+
+  # Evicts the cached interface results.
+  evictNodes: Boolean! @glCacheInvalidate(tags: ["nodes"])
 
 
 # ── 12. Mutations — error capture ─────────────────────────────────────────────

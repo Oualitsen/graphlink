@@ -314,3 +314,42 @@ func TestPolymorphismInterfaceFragmentMixedWithConcreteOnes(t *testing.T) {
 	expectEqual(t, user.Name, "Alice Smith", "name")
 	expectEqual(t, post.Title, "Hello World", "title")
 }
+
+func cachedNodeTitle(t *testing.T, c *gl.GraphLinkClient) string {
+	return must(c.Queries.GetCachedNode(ctx(t), "a1")).GetCachedNode.(gl.Article).Title
+}
+
+func cachedVideoSeconds(t *testing.T, c *gl.GraphLinkClient) int {
+	return must(c.Queries.GetCachedAttachment(ctx(t), "v1")).GetCachedAttachment.(gl.Video).Seconds
+}
+
+func TestPolymorphismCachedInterfaceResultIsServedFromTheCache(t *testing.T) {
+	c := newClient(t)
+	expectEqual(t, cachedNodeTitle(t, c), cachedNodeTitle(t, c), "title")
+}
+
+func TestPolymorphismInvalidatingTheTagOfACachedInterfaceFetchesItAgain(t *testing.T) {
+	c := newClient(t)
+	before := cachedNodeTitle(t, c)
+	must(c.Mutations.EvictNodes(ctx(t)))
+	if cachedNodeTitle(t, c) == before {
+		t.Fatal("expected a new fetch")
+	}
+}
+
+func TestPolymorphismInvalidatingTheTagOfACachedUnionFetchesItAgain(t *testing.T) {
+	c := newClient(t)
+	before := cachedVideoSeconds(t, c)
+	expectEqual(t, cachedVideoSeconds(t, c), before, "cached seconds")
+	must(c.Mutations.EvictAttachments(ctx(t)))
+	if cachedVideoSeconds(t, c) == before {
+		t.Fatal("expected a new fetch")
+	}
+}
+
+func TestPolymorphismInvalidatingAnotherTagLeavesTheCachedUnionAlone(t *testing.T) {
+	c := newClient(t)
+	before := cachedVideoSeconds(t, c)
+	must(c.Mutations.EvictNodes(ctx(t)))
+	expectEqual(t, cachedVideoSeconds(t, c), before, "cached seconds")
+}
