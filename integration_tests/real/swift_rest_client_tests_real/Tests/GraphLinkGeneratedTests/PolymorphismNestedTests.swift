@@ -88,6 +88,38 @@ final class PolymorphismResultTests: RestCase {
 }
 
 final class PolymorphismPayloadTests: RestCase {
+    private func failure(_ call: () async throws -> Void) async -> String {
+        do {
+            try await call()
+            XCTFail("expected the decode to fail")
+            return ""
+        } catch {
+            return String(describing: error)
+        }
+    }
+
+    func test_unknownDiscriminatorValueIsAnErrorNamingTheParentAndTheValue() async {
+        let message = await failure { _ = try await self.client.queries.petsUnknown() }
+        XCTAssertTrue(message.contains("Pet"), message)
+        XCTAssertTrue(message.contains("bird"), message)
+    }
+
+    func test_discriminatorKeyAbsentIsAnErrorNamingTheParentAndTheKey() async {
+        let message = await failure { _ = try await self.client.queries.petNoKind() }
+        XCTAssertTrue(message.contains("Pet") && message.contains("kind"), message)
+    }
+
+    func test_discriminatorNullIsAnErrorNamingTheParentAndTheKey() async {
+        let message = await failure { _ = try await self.client.queries.petNullKind() }
+        XCTAssertTrue(message.contains("Pet") && message.contains("kind"), message)
+    }
+
+    func test_aFailedDecodeDoesNotPoisonTheNextCall() async throws {
+        _ = await failure { _ = try await self.client.queries.petsUnknown() }
+        let pet = try await client.queries.petExtraKeys()
+        XCTAssertTrue(pet is Dog)
+    }
+
     func test_unknownKeysInsideAMemberAreIgnored() async throws {
         let pet = try await client.queries.petExtraKeys()
         XCTAssertTrue(pet is Dog)

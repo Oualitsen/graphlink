@@ -1,4 +1,5 @@
 import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_throwing_decode_extension.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -309,11 +310,13 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
   /// `when`-based dispatch.
   @override
   String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    final impl = interface.syntheticImplementation!;
     final fromJson = 'public static ${codeGenUtils.method(
       returnType: 'any ${interface.codeName}',
       methodName: 'fromJson',
       arguments: ['_ map: [String: Any?]'],
-      statements: ['return ${interface.syntheticImplementation!.codeName}.fromJson(map)'],
+      statements: ['return ${_tryIf(grammar.decodesWithThrows(impl.token))}${impl.codeName}.fromJson(map)'],
+      throws: grammar.decodesWithThrows(interface.token),
     )}';
     return codeGenUtils.enumNamespace(name: '${interface.codeName}Json', body: [fromJson]);
   }
@@ -322,14 +325,15 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
     final discriminator = wireToken == null ? null : grammar.restDiscriminators[wireToken];
     final cases = subTypes.map((st) {
       final typeName = st.derivedFromType?.tokenInfo.token ?? st.tokenInfo.token;
-      return SwiftCaseBranch(caseValue: '"$typeName"', statement: 'return ${st.codeName}.fromJson(map)');
+      return SwiftCaseBranch(
+          caseValue: '"$typeName"', statement: 'return ${_tryIf(grammar.decodesWithThrows(st.token))}${st.codeName}.fromJson(map)');
     }).toList();
     final byTypename = codeGenUtils.switchStatement(
       expression: 'map["__typename"] as? String',
       cases: cases,
       defaultStatements: [
         discriminator == null
-            ? 'fatalError("Unknown $token __typename: " + (map["__typename"] as? String ?? "nil"))'
+            ? 'throw GraphLinkDecodeError("Unknown $token __typename: " + (map["__typename"] as? String ?? "nil"))'
             : 'break',
       ],
     );
@@ -339,6 +343,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       methodName: 'fromJson',
       arguments: ['_ map: [String: Any?]'],
       statements: [dispatch],
+      throws: true,
     )}';
     return codeGenUtils.enumNamespace(name: '${token}Json', body: [fromJson]);
   }
@@ -351,10 +356,10 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
         for (final t in subTypes)
           SwiftCaseBranch(
               caseValue: '"${discriminator.valueByType[typeName(t)] ?? typeName(t)}"',
-              statement: 'return ${t.codeName}.fromJson(map)'),
+              statement: 'return ${_tryIf(grammar.decodesWithThrows(t.token))}${t.codeName}.fromJson(map)'),
       ],
       defaultStatements: [
-        'fatalError("Cannot decode $token: unknown or missing \\"${discriminator.field}\\" value (\\(discriminator ?? "nil"))")',
+        'throw GraphLinkDecodeError("Cannot decode $token: unknown or missing \\"${discriminator.field}\\" value (\\(discriminator ?? "nil"))")',
       ],
     );
     return [
@@ -391,7 +396,8 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
   String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
     final casted = list.nullable ? '($json as? [Any?])' : '($json as! [Any?])';
     if (element == body) return casted;
-    return SwiftCodeGenUtils.mapCall(receiver: casted, param: element, body: body, chainThroughOptional: list.nullable);
+    final mapped = SwiftCodeGenUtils.mapCall(receiver: casted, param: element, body: body, chainThroughOptional: list.nullable);
+    return '${_tryIf(grammar.decodesWithThrows(list.firstType.token))}$mapped';
   }
 
   @override
@@ -412,11 +418,15 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
     final codeName = resolveCodeName(type.token);
     final isInterface = grammar.interfaces.containsKey(type.token) || grammar.projectedInterfaces.containsKey(type.token);
     final target = isInterface ? '${codeName}Json' : codeName;
+    final tryKeyword = _tryIf(grammar.decodesWithThrows(type.token));
     if (type.nullable) {
-      return SwiftCodeGenUtils.mapCall(receiver: '($json as? [String: Any?])', body: '$target.fromJson(\$0)');
+      final mapped = SwiftCodeGenUtils.mapCall(receiver: '($json as? [String: Any?])', body: '$tryKeyword$target.fromJson(\$0)');
+      return '$tryKeyword$mapped';
     }
-    return '$target.fromJson($json as! [String: Any?])';
+    return '$tryKeyword$target.fromJson($json as! [String: Any?])';
   }
+
+  String _tryIf(bool throws) => throws ? 'try ' : '';
 
   @override
   String plainFromJson(GLType type, String json) {
@@ -447,6 +457,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       methodName: 'fromJson',
       arguments: ['_ map: [String: Any?]'],
       statements: ['return $token(\n$args\n)'],
+      throws: grammar.decodesWithThrows(context.token),
     );
   }
 

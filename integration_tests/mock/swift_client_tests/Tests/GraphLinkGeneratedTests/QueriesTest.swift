@@ -164,6 +164,40 @@ final class QueriesTest_RunSearch: XCTestCase {
         XCTAssertNotNil(results)
         XCTAssertTrue(results.isEmpty)
     }
+
+    private func failure(_ call: () async throws -> Void) async -> String {
+        do {
+            try await call()
+            XCTFail("expected the decode to fail")
+            return ""
+        } catch {
+            return String(describing: error)
+        }
+    }
+
+    func test_unknownTypename_throwsInsteadOfCrashing() async {
+        adapter.registerData("runSearch", n(("search", [n(("__typename", "CommentResult"), ("id", "c-1"))])))
+        let message = await failure { _ = try await self.client.queries.runSearch(term: "x") }
+        XCTAssertTrue(message.contains("SearchResult"), message)
+        XCTAssertTrue(message.contains("CommentResult"), message)
+    }
+
+    func test_absentTypename_throwsInsteadOfCrashing() async {
+        adapter.registerData("runSearch", n(("search", [n(("id", "u-1"), ("name", "Alice"))])))
+        let message = await failure { _ = try await self.client.queries.runSearch(term: "x") }
+        XCTAssertTrue(message.contains("SearchResult") && message.contains("__typename"), message)
+    }
+
+    func test_oneBadElementFailsTheWholeCall_andTheClientKeepsWorking() async throws {
+        adapter.registerData("runSearch", n(("search", [
+            n(("__typename", "UserResult"), ("id", "u-1"), ("name", "Alice"), ("email", "alice@test.com")),
+            n(("__typename", "Mystery"), ("id", "m-1")),
+        ])))
+        _ = await failure { _ = try await self.client.queries.runSearch(term: "x") }
+        adapter.registerData("runSearch", n(("search", [n(("__typename", "PostResult"), ("id", "p-1"), ("title", "Hello"))])))
+        let results = try await client.queries.runSearch(term: "x").search
+        XCTAssertTrue(results[0] is PostResult)
+    }
 }
 
 // ── fetchCachedPair ──────────────────────────────────────────────────────────

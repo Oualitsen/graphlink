@@ -112,13 +112,13 @@ void main() {
     test('paired NodeJson dispatch factory', () {
       expect(lines(out), containsAllInOrder([
         'public enum NodeJson {',
-        'public static func fromJson(_ map: [String: Any?]) -> any Node {',
+        'public static func fromJson(_ map: [String: Any?]) throws -> any Node {',
         'switch map["__typename"] as? String {',
         'case "User":',
         'return User.fromJson(map)',
         'default:',
       ]));
-      expect(out, contains('fatalError("Unknown Node __typename:'));
+      expect(out, contains('throw GraphLinkDecodeError("Unknown Node __typename:'));
     });
   });
 
@@ -183,9 +183,10 @@ void main() {
       expect(lines(out), contains('return Cat.fromJson(map)'));
     });
 
-    test('default branch calls fatalError', () {
+    test('default branch throws instead of crashing', () {
       expect(out, contains('default:'));
-      expect(out, contains('fatalError('));
+      expect(out, contains('throw GraphLinkDecodeError('));
+      expect(out, isNot(contains('fatalError')));
     });
   });
 }

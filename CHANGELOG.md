@@ -669,6 +669,7 @@
 
 - **Python and Go decode and encode explicitly.** Every generated type and input has `to_json` / `from_json` (Python) and `ToJson` / `<Type>FromJson` (Go), like the other languages, instead of leaving it to pydantic and `encoding/json`. Pydantic aliases and Go struct tags stay as a fallback. Go's `ToJson` returns an ordered `JsonObject` and `MarshalJSON` / `UnmarshalJSON` delegate to the explicit methods.
 - **A missing non-null field is an error in Go and Python** on every type (it was only checked for REST responses in Go). The message names the type and the field.
+- **Swift decodes interfaces and unions with `throws`.** An unknown or absent `__typename` (and, for REST, an unknown, absent or null discriminator) used to end in `fatalError`, which terminated the app and could not be caught. It now throws a `GraphLinkDecodeError` naming the type and the value. The generated `fromJson` of an interface or union dispatch, and of every type that holds one (directly, in a list, or through other types), is `throws`; call it with `try`. Client methods are unchanged (`client.queries.x()` was already `async throws`), a bad element of a subscription ends the stream with the error, and the `fromJson` of plain types and enums is unchanged. A missing non-null field still traps in Swift (force unwrap).
 
 ### Fixes
 

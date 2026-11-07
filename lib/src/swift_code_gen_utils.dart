@@ -35,10 +35,12 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
     required methodName,
     List<String>? arguments,
     required List<String> statements,
+    bool throws = false,
   }) {
     final buffer = StringBuffer();
     buffer.write('func $methodName');
     buffer.write(parentheses(arguments));
+    if (throws) buffer.write(' throws');
     if (returnType != 'Void') buffer.write(' -> $returnType');
     buffer.write(' ');
     buffer.write(block(statements));
@@ -87,10 +89,12 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
     required String methodName,
     List<String>? arguments,
     List<String>? statements,
+    bool throws = false,
   }) {
     final buffer = StringBuffer();
     buffer.write('func $methodName');
     buffer.write(parentheses(arguments));
+    if (throws) buffer.write(' throws');
     if (returnType != null && returnType != 'Void') buffer.write(' -> $returnType');
     if (statements != null) {
       buffer.write(' ');

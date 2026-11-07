@@ -106,9 +106,9 @@ union or interface without `@glRestDiscriminator` (belongs in `test/validation/`
 
 ## 4. Known defects that tests cannot cover yet
 
-- **Swift `fromJson` is not throwing.** An unknown or missing `__typename` or discriminator ends in `fatalError`; a missing
-  non-null field in a force unwrap. Plan only: `plans/swift-throwing-polymorphic-decode.md`. Swift therefore has no test for
-  those cases, in GraphQL and in REST.
+- **Swift missing non-null field** still traps (force unwrap), so Swift has no test for it. An unknown or absent `__typename` or
+  discriminator now throws and is tested (REST: `PolymorphismPayloadTests`; GraphQL, mock: `QueriesTest_RunSearch`).
+  See `plans/swift-throwing-polymorphic-decode.md`.
 - **Dart `subscription_reconnect` and Java `subscription_reconnect`** fail under plain `make test` and need the harness that
   restarts the server (`reconnect-test` targets). Never compared against `main`.
 - **Java `JSON` and `BigDecimal`** are plain `Object` (decided fine), so the Java scalar test asserts shape, not type.
@@ -141,4 +141,4 @@ Not confirmed from the workflow files: whether the `subscription_reconnect` test
 1. Fault-injection server (idea 4) with the GraphQL and REST response-side gaps of sections 2 and 3.
 2. Go REST and the Python/Go mock suites: compare by operation and value (section 1.2, 1.3).
 3. `strictEnums: true`, null propagation, `staleIfOffline` on unions.
-4. Swift throwing decode (section 4), which also unlocks the Swift tests missing from every polymorphism case.
+4. Swift: the missing-field force casts (`as!`), the last case Swift cannot test.
