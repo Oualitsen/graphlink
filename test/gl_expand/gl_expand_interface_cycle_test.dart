@@ -71,7 +71,7 @@ type VehicleDriver @glExpand(depth: 2) {
   name: String!
   vehicle: Vehicle
 }
-type Query { getVehicleDriver(id: ID!): VehicleDriver! }
+type Query { getCar(id: ID!): Car! }
 ''';
 
 // Same structure but depth:3.
@@ -101,7 +101,7 @@ type VehicleDriver @glExpand(depth: 3) {
   name: String!
   vehicle: Vehicle
 }
-type Query { getVehicleDriver(id: ID!): VehicleDriver! }
+type Query { getCar(id: ID!): Car! }
 ''';
 
 void main() {
@@ -133,9 +133,8 @@ void main() {
     test('VehicleDriver.vehicle is the abstract back-edge', () {
       final g = parseAuto(_abstractBackEdgeDepth2);
       expect(g.isBackEdgeField('VehicleDriver', 'vehicle'), isTrue,
-          reason: 'Car appears before VehicleDriver in the schema — the DFS '
-              'discovers Car while on VehicleDriver, so the abstract field '
-              'vehicle becomes the recorded break point');
+          reason: 'the only operation returns Car, so the traversal enters the '
+              'cycle at Car and the abstract field vehicle closes it');
     });
 
     test('VehicleDriver is cyclic', () {
@@ -239,7 +238,7 @@ type VehicleDriver @glExpand(depth: 2) {
   name: String!
   vehicle: Vehicle
 }
-type Query { getVehicleDriver(id: ID!): VehicleDriver! }
+type Query { getCar(id: ID!): Car! }
 ''';
 
     test('VehicleDriver.vehicle is the union back-edge', () {
@@ -269,7 +268,7 @@ type Car implements Vehicle { id: ID! model: String! owner: VehicleOwner! }
 interface Vehicle { id: ID! owner: VehicleOwner! }
 type VehicleOwner { id: ID! name: String! driver: VehicleDriver! }
 type VehicleDriver { id: ID! name: String! vehicle: Vehicle }
-type Query { getVehicleDriver(id: ID!): VehicleDriver! }
+type Query { getCar(id: ID!): Car! }
 ''';
 
     test('defaultExpandDepth:1 → owner absent (only layer-1 scalars)', () {
