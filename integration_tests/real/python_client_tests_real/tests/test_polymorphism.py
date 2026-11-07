@@ -273,6 +273,33 @@ class InterfaceFragmentMixedWithConcreteOnes(RealTestCase):
         self.assertEqual(results[1].title, "Hello World")
 
 
+class CachedPolymorphicOperations(RealTestCase):
+    async def node_title(self) -> str:
+        return (await self.client.queries.get_cached_node(id="a1")).get_cached_node.title
+
+    async def video_seconds(self) -> int:
+        return (await self.client.queries.get_cached_attachment(id="v1")).get_cached_attachment.seconds
+
+    async def test_a_cached_interface_result_is_served_from_the_cache(self) -> None:
+        self.assertEqual(await self.node_title(), await self.node_title())
+
+    async def test_invalidating_the_tag_of_a_cached_interface_fetches_it_again(self) -> None:
+        before = await self.node_title()
+        await self.client.mutations.evict_nodes()
+        self.assertNotEqual(await self.node_title(), before)
+
+    async def test_invalidating_the_tag_of_a_cached_union_fetches_it_again(self) -> None:
+        before = await self.video_seconds()
+        self.assertEqual(await self.video_seconds(), before)
+        await self.client.mutations.evict_attachments()
+        self.assertNotEqual(await self.video_seconds(), before)
+
+    async def test_invalidating_another_tag_leaves_the_cached_union_alone(self) -> None:
+        before = await self.video_seconds()
+        await self.client.mutations.evict_nodes()
+        self.assertEqual(await self.video_seconds(), before)
+
+
 class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.ws = new_ws_adapter()

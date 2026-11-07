@@ -292,6 +292,34 @@ describe('an inline fragment on the interface mixed with concrete ones', () => {
   });
 });
 
+describe('cached polymorphic operations and tag invalidation', () => {
+  const nodeTitle = async () => ((await client.queries.getCachedNode({ id: 'a1' })).getCachedNode as Article).title;
+  const videoSeconds = async () => ((await client.queries.getCachedAttachment({ id: 'v1' })).getCachedAttachment as Video).seconds;
+
+  it('a cached interface result is served from the cache', async () => {
+    expect(await nodeTitle()).toBe(await nodeTitle());
+  });
+
+  it('invalidating the tag of a cached interface fetches it again', async () => {
+    const before = await nodeTitle();
+    await client.mutations.evictNodes();
+    expect(await nodeTitle()).not.toBe(before);
+  });
+
+  it('invalidating the tag of a cached union fetches it again', async () => {
+    const before = await videoSeconds();
+    expect(await videoSeconds()).toBe(before);
+    await client.mutations.evictAttachments();
+    expect(await videoSeconds()).not.toBe(before);
+  });
+
+  it('invalidating another tag leaves the cached union alone', async () => {
+    const before = await videoSeconds();
+    await client.mutations.evictNodes();
+    expect(await videoSeconds()).toBe(before);
+  });
+});
+
 describe('subscriptions', () => {
   it('a union stream emits each member', async () => {
     const ws = new DefaultGraphLinkWsAdapter(WS_URL);

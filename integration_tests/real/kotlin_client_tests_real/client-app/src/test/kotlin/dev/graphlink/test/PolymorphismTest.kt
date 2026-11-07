@@ -325,4 +325,35 @@ class PolymorphismTest {
         assertEquals("Alice Smith", assertIs<UserResult_IdName>(results[0]).name)
         assertEquals("Hello World", assertIs<PostResult>(results[1]).title)
     }
+
+    private suspend fun nodeTitle() = assertIs<Article>(client.queries.getCachedNode("a1").getCachedNode).title
+
+    private suspend fun videoSeconds() = assertIs<Video>(client.queries.getCachedAttachment("v1").getCachedAttachment).seconds
+
+    @Test
+    fun aCachedInterfaceResultIsServedFromTheCache() = runTest {
+        assertEquals(nodeTitle(), nodeTitle())
+    }
+
+    @Test
+    fun invalidatingTheTagOfACachedInterfaceFetchesItAgain() = runTest {
+        val before = nodeTitle()
+        client.mutations.evictNodes()
+        assertNotEquals(before, nodeTitle())
+    }
+
+    @Test
+    fun invalidatingTheTagOfACachedUnionFetchesItAgain() = runTest {
+        val before = videoSeconds()
+        assertEquals(before, videoSeconds())
+        client.mutations.evictAttachments()
+        assertNotEquals(before, videoSeconds())
+    }
+
+    @Test
+    fun invalidatingAnotherTagLeavesTheCachedUnionAlone() = runTest {
+        val before = videoSeconds()
+        client.mutations.evictNodes()
+        assertEquals(before, videoSeconds())
+    }
 }

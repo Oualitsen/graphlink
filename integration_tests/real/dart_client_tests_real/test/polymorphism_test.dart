@@ -288,6 +288,34 @@ void main() {
     });
   });
 
+  group('cached polymorphic operations and tag invalidation', () {
+    Future<String> nodeTitle() async => ((await client.queries.getCachedNode(id: 'a1')).getCachedNode as Article).title;
+    Future<int> videoSeconds() async => ((await client.queries.getCachedAttachment(id: 'v1')).getCachedAttachment as Video).seconds;
+
+    test('a cached interface result is served from the cache', () async {
+      expect(await nodeTitle(), await nodeTitle());
+    });
+
+    test('invalidating the tag of a cached interface fetches it again', () async {
+      final before = await nodeTitle();
+      await client.mutations.evictNodes();
+      expect(await nodeTitle(), isNot(before));
+    });
+
+    test('invalidating the tag of a cached union fetches it again', () async {
+      final before = await videoSeconds();
+      expect(await videoSeconds(), before);
+      await client.mutations.evictAttachments();
+      expect(await videoSeconds(), isNot(before));
+    });
+
+    test('invalidating another tag leaves the cached union alone', () async {
+      final before = await videoSeconds();
+      await client.mutations.evictNodes();
+      expect(await videoSeconds(), before);
+    });
+  });
+
   group('subscriptions', () {
     test('a union stream emits each member', () async {
       final events = await client.subscriptions.attachmentAdded().take(3).toList().timeout(const Duration(seconds: 10));

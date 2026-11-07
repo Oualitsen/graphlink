@@ -294,4 +294,39 @@ class PolymorphismTest {
         assertEquals("Alice Smith", ((UserResult_IdName) results.get(0)).getName());
         assertEquals("Hello World", ((PostResult) results.get(1)).getTitle());
     }
+
+    private String nodeTitle() {
+        return ((Article) client.queries.getCachedNode("a1").getGetCachedNode()).getTitle();
+    }
+
+    private int videoSeconds() {
+        return ((Video) client.queries.getCachedAttachment("v1").getGetCachedAttachment()).getSeconds();
+    }
+
+    @Test
+    void aCachedInterfaceResultIsServedFromTheCache() {
+        assertEquals(nodeTitle(), nodeTitle());
+    }
+
+    @Test
+    void invalidatingTheTagOfACachedInterfaceFetchesItAgain() {
+        String before = nodeTitle();
+        client.mutations.evictNodes();
+        assertNotEquals(before, nodeTitle());
+    }
+
+    @Test
+    void invalidatingTheTagOfACachedUnionFetchesItAgain() {
+        int before = videoSeconds();
+        assertEquals(before, videoSeconds());
+        client.mutations.evictAttachments();
+        assertNotEquals(before, videoSeconds());
+    }
+
+    @Test
+    void invalidatingAnotherTagLeavesTheCachedUnionAlone() {
+        int before = videoSeconds();
+        client.mutations.evictNodes();
+        assertEquals(before, videoSeconds());
+    }
 }

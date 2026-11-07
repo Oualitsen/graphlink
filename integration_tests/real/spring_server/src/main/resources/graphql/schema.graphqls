@@ -306,6 +306,7 @@ type Query {
   attachmentsNullable: [Attachment]
   article(id: ID!): Article!
   getCachedAttachment(id: ID!): Attachment
+  getCachedNode(id: ID!): Node
   attachmentOrErrors(id: ID!): Attachment
   gadget(id: ID!): Gadget
   gadgets: [Gadget!]!
@@ -323,6 +324,8 @@ type Mutation {
   createCachedUser(input: CreateUserInput!): User!
   transferPost(postId: ID!, newAuthorId: ID!): Post!
   resetAll: Boolean!
+  evictAttachments: Boolean!
+  evictNodes: Boolean!
   createUserOrErrors(input: CreateUserInput!): User!
   createWithDefaults(input: CreateWithDefaultsInput!): DefaultsEcho!
   createWithNestedDefaults(input: NestedDefaultsInput!): NestedDefaultsEcho!

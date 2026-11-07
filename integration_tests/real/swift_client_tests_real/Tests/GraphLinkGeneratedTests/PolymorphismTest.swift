@@ -238,4 +238,44 @@ final class PolymorphismTest: XCTestCase {
         XCTAssertEqual((results[0] as? UserResult_IdName)?.name, "Alice Smith")
         XCTAssertEqual((results[1] as? PostResult)?.title, "Hello World")
     }
+
+    private func nodeTitle() async throws -> String? {
+        let node = try await client.queries.getCachedNode(id: "a1").getCachedNode
+        return (node as? Article)?.title
+    }
+
+    private func videoSeconds() async throws -> Int? {
+        let attachment = try await client.queries.getCachedAttachment(id: "v1").getCachedAttachment
+        return (attachment as? Video)?.seconds
+    }
+
+    func testACachedInterfaceResultIsServedFromTheCache() async throws {
+        let first = try await nodeTitle()
+        let second = try await nodeTitle()
+        XCTAssertNotNil(first)
+        XCTAssertEqual(first, second)
+    }
+
+    func testInvalidatingTheTagOfACachedInterfaceFetchesItAgain() async throws {
+        let before = try await nodeTitle()
+        _ = try await client.mutations.evictNodes()
+        let after = try await nodeTitle()
+        XCTAssertNotEqual(before, after)
+    }
+
+    func testInvalidatingTheTagOfACachedUnionFetchesItAgain() async throws {
+        let before = try await videoSeconds()
+        let cached = try await videoSeconds()
+        XCTAssertEqual(before, cached)
+        _ = try await client.mutations.evictAttachments()
+        let after = try await videoSeconds()
+        XCTAssertNotEqual(before, after)
+    }
+
+    func testInvalidatingAnotherTagLeavesTheCachedUnionAlone() async throws {
+        let before = try await videoSeconds()
+        _ = try await client.mutations.evictNodes()
+        let after = try await videoSeconds()
+        XCTAssertEqual(before, after)
+    }
 }
