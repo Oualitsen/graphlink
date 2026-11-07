@@ -73,6 +73,6 @@ void main() {
     // Every level of nesting uses a safe cast + safe call, so a null outer
     // list, a null inner list, and a null element all short-circuit cleanly.
     expect(result, contains('(itemsAsMap as? List<*>)?.map'));
-    expect(result, contains('(__gl_m0__ as? List<*>)?.map'));
+    expect(result, contains('(e0 as? List<*>)?.map'));
   });
 }

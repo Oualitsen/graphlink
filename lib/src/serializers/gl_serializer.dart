@@ -68,6 +68,17 @@ abstract class GLSerializer {
   /// Must be implemented by every language serializer.
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable});
 
+  /// The expression that turns [value], a code value of [type], into its JSON value:
+  /// codec, then the type's own `toJson`, null-safe at every list level.
+  /// [context] is the file being written, for languages that add imports.
+  /// Must be implemented by every language serializer.
+  String toJsonExpr(GLType type, String value, {int depth = 0, GLImportSink? context});
+
+  /// The expression that turns [json], a raw JSON value, into a code value of [type]:
+  /// codec, then the type's own `fromJson`, null-safe at every list level.
+  /// Must be implemented by every language serializer.
+  String fromJsonExpr(GLType type, String json, {int depth = 0, GLImportSink? context});
+
   /// The codec that decodes values of [type], or null when the scalar is a plain alias.
   GLScalarCodec? fromJsonCodecOf(GLType type) {
     final codec = grammar.scalarCodecOf(type.token);

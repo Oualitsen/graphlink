@@ -1,7 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
-import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
@@ -40,26 +39,7 @@ class SwiftRestOperationSerializer {
 
   bool _nullable(GLRestArgument a) => a.argument.type.nullable;
 
-  String _toJson(String variable, GLType type, int depth) {
-    if (type.isList) {
-      final inner = type.inlineType;
-      final name = 'e$depth';
-      final innerExpr = _toJson(name, inner, depth + 1);
-      if (name == innerExpr) return SwiftCodeGenUtils.safeCall(variable, 'map { \$0 as Any? }', type.nullable);
-      return SwiftCodeGenUtils.mapCall(
-        receiver: variable,
-        param: name,
-        body: innerExpr,
-        chainThroughOptional: type.nullable,
-      );
-    }
-    if (_grammar.isEnum(type.token) || _grammar.isInput(type.token)) {
-      return SwiftCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
-    }
-    return variable;
-  }
-
-  String _value(GLRestArgument a) => _toJson(_name(a), a.argument.type, 0);
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _name(a));
 
   String operationToMethod(GLRestOperation op) {
     final statements = [
@@ -264,7 +244,7 @@ class SwiftRestOperationSerializer {
     return 'restParts(${_entry(a)})';
   }
 
-  String _decode(GLRestOperation op, String value) => _serializer.fromJsonValueExpr(value, op.field.type);
+  String _decode(GLRestOperation op, String value) => _serializer.fromJsonExpr(op.field.type, value);
 
   List<String> _execution(GLRestOperation op) {
     final invalidation = _invalidation(op);

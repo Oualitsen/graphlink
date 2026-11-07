@@ -555,10 +555,10 @@ class TypeScriptClientOperationSerializer {
         // when the GraphQL type itself is non-null — so `args.$codeRef` can be
         // `undefined` at runtime. Force the toJson call to null-guard too.
         final jsonType = arg.type.nullable ? arg.type : GLType.makeNullable(arg.type);
-        final jsonExpr = _serializer.callToJson('args.$codeRef', jsonType);
+        final jsonExpr = _serializer.toJsonExpr(jsonType, 'args.$codeRef');
         entries.add("'$wireKey': ($jsonExpr) ?? $lit,");
       } else {
-        entries.add("'$wireKey': ${_serializer.callToJson('args.$codeRef', arg.type)},");
+        entries.add("'$wireKey': ${_serializer.toJsonExpr(arg.type, 'args.$codeRef')},");
       }
     }
     return _cg.constDecl(svVariables, _cg.block(entries), type: 'Record<string, unknown>');

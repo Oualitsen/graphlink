@@ -5,7 +5,6 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
-import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
 const _request = 'glRequest__';
@@ -19,7 +18,6 @@ class DartRestOperationSerializer {
   final GLParser _grammar;
   final DartCodeGenUtils _cg;
   final GLSerializer _serializer;
-  final String Function(String name, GLType type) _toJson;
   final bool commaLists;
   final bool bracketNesting;
 
@@ -27,12 +25,10 @@ class DartRestOperationSerializer {
     this._grammar,
     this._cg,
     this._serializer,
-    this._toJson, {
+    {
     this.commaLists = false,
     this.bracketNesting = false,
   });
-
-  DartSerializer get _dart => _serializer as DartSerializer;
 
   String get _listOptions =>
       [if (bracketNesting) 'bracket: true', if (commaLists) 'comma: true'].map((e) => ', $e').join();
@@ -79,9 +75,9 @@ class DartRestOperationSerializer {
     return args;
   }
 
-  String _value(GLRestArgument a) => _toJson(a.argument.codeName, a.argument.type);
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, a.argument.codeName);
 
-  String _presentValue(GLRestArgument a) => _toJson(a.argument.codeName, _nonNull(a.argument.type));
+  String _presentValue(GLRestArgument a) => _serializer.toJsonExpr(_nonNull(a.argument.type), a.argument.codeName);
 
   GLType _nonNull(GLType type) => type is GLListType ? GLListType(type.type, false) : GLType(type.tokenInfo, false);
 
@@ -263,7 +259,7 @@ class DartRestOperationSerializer {
           ],
         ];
       case RestResponseKind.json:
-        final decode = _dart.callFromJson(_json, op.field, op.field.type, 0);
+        final decode = _serializer.fromJsonExpr(op.field.type, _json);
         if (op.cacheTtl > 0) {
           return [_cachedReturn(op, path, decode)];
         }

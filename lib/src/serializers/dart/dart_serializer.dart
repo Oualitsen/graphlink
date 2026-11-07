@@ -16,8 +16,9 @@ import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 
-class DartSerializer extends GLSerializer {
+class DartSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = DartCodeGenUtils();
 
   @override
@@ -422,85 +423,37 @@ class DartSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String fieldToJson(GLField field) {
-    // Wire key keeps the original GraphQL name; value reads the safe identifier.
-    var buffer = StringBuffer("'${field.name}': ");
-    buffer.write(toJsonExpr(field.codeName, field.type, 0));
-    return buffer.toString();
-  }
+  String fieldToJson(GLField field) => "'${field.name}': ${toJsonExpr(field.type, field.codeName)}";
 
-  String fieldFromJson(GLField field) {
-    // Constructor param uses the safe identifier; json lookup uses the wire key.
-    var buffer = StringBuffer('${field.codeName}: ');
-    var toJosnCall =
-        callFromJson("json['${field.name}']", field, field.type, 0);
-    buffer.write(toJosnCall);
-    return buffer.toString();
-  }
+  String fieldFromJson(GLField field) => "${field.codeName}: ${fromJsonExpr(field.type, "json['${field.name}']")}";
 
-  String castDynamicToType(String variable, GLType type) {
-    String dot = type.nullable ? "?." : ".";
-    String serializedType = serializeType(type);
-    String numSuffix = type.nullable ? "?" : "";
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) =>
+      element == body ? value : DartCodeGenUtils.mapToList(receiver: value, param: element, body: body, nullable: list.nullable);
 
-    if (type.isList) {
-      return "(${variable} as List<dynamic>${numSuffix})";
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) =>
+      DartCodeGenUtils.mapToList(
+          receiver: '($json as List<dynamic>${list.nullable ? '?' : ''})', param: element, body: body, nullable: list.nullable);
+
+  @override
+  String modelToJson(GLType type, String value) => '$value${type.nullable ? "?." : "."}toJson()';
+
+  @override
+  String enumFromJson(GLType type, String json) => DartCodeGenUtils.nullSafeExpr(
+      json, '${resolveCodeName(type.token)}.fromJson($json as String)', type.nullable);
+
+  @override
+  String modelFromJson(GLType type, String json) => DartCodeGenUtils.nullSafeExpr(
+      json, '${resolveCodeName(type.token)}.fromJson($json as Map<String, dynamic>)', type.nullable);
+
+  @override
+  String plainFromJson(GLType type, String json) {
+    final serialized = serializeType(type);
+    if (serialized == 'double' || serialized == 'double?') {
+      return '($json as num${type.nullable ? '?' : ''})${type.nullable ? '?.' : '.'}toDouble()';
     }
-    if (grammar.isEnum(type.token)) {
-      var enumFromJson = "${resolveCodeName(type.token)}.fromJson(${variable} as String)";
-      return DartCodeGenUtils.nullSafeExpr(variable, enumFromJson, type.nullable);
-    }
-    if (grammar.isProjectableType(type.token)) {
-      var typeFromJson =
-          "${resolveCodeName(type.token)}.fromJson(${variable} as Map<String, dynamic>)";
-      return DartCodeGenUtils.nullSafeExpr(variable, typeFromJson, type.nullable);
-    }
-
-    final codec = fromJsonCodecOf(type);
-    if (codec != null) return scalarFromJson(codec, variable, nullable: type.nullable);
-
-    if (serializedType == "double" || serializedType == "double?") {
-      return "(${variable} as num${numSuffix})${dot}toDouble()";
-    }
-
-    var result = "${variable} as ${serializedType}";
-
-    if (type is GLListType ||
-        grammar.isProjectableType(type.token) ||
-        grammar.isEnum(type.token)) {
-      return "(${result})";
-    }
-
-    return result;
-  }
-
-  String callFromJson(String variable, GLField field, GLType type, int index) {
-    String fromJsonCall = castDynamicToType(variable, type);
-    if (type.isList) {
-      String varName = "e${index}";
-      var inlneCallToJson =
-          callFromJson(varName, field, type.inlineType, index + 1);
-      return DartCodeGenUtils.mapToList(
-          receiver: fromJsonCall, param: varName, body: inlneCallToJson, nullable: type.nullable);
-    }
-    return fromJsonCall;
-  }
-
-  String toJsonExpr(String variable, GLType type, int index) {
-    if (type.isList) {
-      final varName = "e$index";
-      return DartCodeGenUtils.mapToList(
-          receiver: variable,
-          param: varName,
-          body: toJsonExpr(varName, type.inlineType, index + 1),
-          nullable: type.nullable);
-    }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
-    if (grammar.isProjectableType(type.token) || grammar.isEnum(type.token)) {
-      return '$variable${type.nullable ? "?." : "."}toJson()';
-    }
-    return variable;
+    return '$json as $serialized';
   }
 
   @override

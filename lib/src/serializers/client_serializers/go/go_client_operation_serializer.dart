@@ -171,7 +171,7 @@ class GoClientOperationSerializer {
       final codec = _serializer.toJsonCodecOf(arg.type);
       if (codec != null && !_isUploadArg(arg)) {
         final local = 'gl${_paramName(arg).firstUp}__';
-        conversions.add('$local, err := ${_serializer.encoderFor(arg.type)}(${_valueExpr(arg)})');
+        conversions.add('$local, err := ${_serializer.toJsonExpr(arg.type, _valueExpr(arg))}');
         conversions.add(_cg.ifStatement(condition: 'err != nil', ifBlockStatements: ['return $_zero, err']));
         plain.add('${_serializer.stringLiteral(arg.dartArgumentName)}: $local,');
         continue;

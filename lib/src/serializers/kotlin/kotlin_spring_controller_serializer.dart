@@ -348,7 +348,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       final origArg = arg.originalArg;
       if (origArg == null) continue;
       final declaredType = serializer.serializeType(origArg.type);
-      final fromJsonCall = _inputFromJsonConversion(origArg.type, arg.codeName);
+      final fromJsonCall = serializer.fromJsonExpr(origArg.type, arg.codeName);
       final importSource =
           grammar.inputs[origArg.type.firstType.token] ?? grammar.types[origArg.type.firstType.token];
       if (importSource != null) {
@@ -360,24 +360,6 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
     return ArgumentConversions(declarations, serviceArgs);
   }
 
-  /// Reconstructs an input/type argument from its wire map form, recursing
-  /// through list nesting. Mirrors [KotlinSerializer]'s `fromJson` cast style
-  /// (`as`/`as?` + `?.let`/`.map`).
-  String _inputFromJsonConversion(GLType type, String sourceExpr, [int depth = 0]) {
-    if (type is GLListType) {
-      final varName = codeGenUtils.safeLocalVar('m$depth');
-      final inner = _inputFromJsonConversion(type.inlineType, varName, depth + 1);
-      final casted = type.nullable ? '($sourceExpr as? List<*>)' : '($sourceExpr as List<*>)';
-      return KotlinCodeGenUtils.mapCall(receiver: casted, param: varName, body: inner, nullable: type.nullable);
-    }
-    final typeToken = serializer.resolveCodeName(type.token);
-    if (type.nullable) {
-      return KotlinCodeGenUtils.letCall(
-          receiver: '($sourceExpr as? Map<String, Any?>)', body: '$typeToken.fromJson(it)');
-    }
-    return '$typeToken.fromJson($sourceExpr as Map<String, Any?>)';
-  }
-
   /// Converts [expr] — an expression evaluating to the real domain value the
   /// service returned for [field] — into the wire shape the mappified
   /// signature promises (`.toJson()` for enum/projectable, recursing lists).
@@ -386,7 +368,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String _serviceResultToJson(GLField field, String expr) {
     final originalType = field.originalType;
     if (originalType == null) return expr;
-    return serializer.callToJson(field, originalType, expr, 0);
+    return serializer.toJsonExpr(originalType, expr);
   }
 
   /// Wraps a `Flow`-returning [flowExpr] with `.map { … }` to apply the

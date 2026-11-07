@@ -1,7 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
-import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -42,7 +41,6 @@ class JavaRestOperationSerializer {
 
   static const _primitives = {'boolean', 'byte', 'short', 'int', 'long', 'float', 'double', 'char'};
 
-  late GLField _current;
   late GLImportContainer _container;
   late _ImportSink _sink;
 
@@ -58,9 +56,9 @@ class JavaRestOperationSerializer {
 
   bool _nullable(GLRestArgument a) => a.argument.type.nullable;
 
-  String _value(GLRestArgument a) => _serializer.callToJson(_current, a.argument.type, _name(a), 0, _sink);
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _name(a), context: _sink);
 
-  String _presentValue(GLRestArgument a) => _serializer.callToJson(_current, _nonNull(a.argument.type), _name(a), 0, _sink);
+  String _presentValue(GLRestArgument a) => _serializer.toJsonExpr(_nonNull(a.argument.type), _name(a), context: _sink);
 
   String _argType(GLRestArgument a) {
     final type = a.argument.type;
@@ -69,7 +67,6 @@ class JavaRestOperationSerializer {
   }
 
   String operationToMethod(GLRestOperation op, GLImportContainer container) {
-    _current = op.field;
     _container = container;
     _sink = _ImportSink();
     container.imports.addAll([JavaImports.list, JavaImports.map, JavaImports.arrayList, JavaImports.objects, JavaImports.collections]);
@@ -342,7 +339,7 @@ class JavaRestOperationSerializer {
 
   String _decode(GLRestOperation op) {
     if (op.responseKind == RestResponseKind.text) return _json;
-    return _serializer.fromJsonValueExpr(_json, op.field.type, _sink);
+    return _serializer.fromJsonExpr(op.field.type, _json, context: _sink);
   }
 
   String _listOf(List<String> items) {

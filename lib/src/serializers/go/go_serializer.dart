@@ -496,7 +496,17 @@ class GoSerializer extends GLSerializer {
     return 'glViaJson[$goType]';
   }
 
-  String? encoderFor(GLType type) => _encoder(type);
+  // Go reports failures as values, so both expressions are calls returning `(value, error)`
+  // built from the same nullable-aware decoder/encoder combinators; a type that needs no
+  // conversion encodes to the bare value.
+  @override
+  String toJsonExpr(GLType type, String value, {int depth = 0, GLImportSink? context}) {
+    final encoder = _encoder(type);
+    return encoder == null ? value : '$encoder($value)';
+  }
+
+  @override
+  String fromJsonExpr(GLType type, String json, {int depth = 0, GLImportSink? context}) => '${_decoder(type)}($json)';
 
   String? _encoder(GLType type) {
     if (type is GLMapType) return null;

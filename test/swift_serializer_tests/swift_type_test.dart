@@ -55,7 +55,7 @@ void main() {
         '"email": email,',
         '"role": role.toJson(),',
         '"address": address?.toJson(),',
-        '"tags": tags,',
+        '"tags": tags.map { \$0 as Any? },',
       ]));
     });
 

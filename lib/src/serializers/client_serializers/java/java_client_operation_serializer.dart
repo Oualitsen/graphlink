@@ -2,8 +2,6 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_type.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_vars.dart';
@@ -561,29 +559,7 @@ class JavaClientOperationSerializer {
         return 'null';
       }
     }
-    return _callToJson(arg.codeName, arg.type, 0, container);
-  }
-
-  String _callToJson(String variableName, GLType type, int index,
-      GLImportContainer container) {
-    if (type.isList) {
-      var inlineType = type.inlineType;
-      String varName = "e${index}";
-      var inlineCallToJson =
-          _callToJson(varName, inlineType, index + 1, container);
-      container.imports.add(JavaImports.collectors);
-      if (varName == inlineCallToJson) {
-        return JavaCodeGenUtils.streamMapCollect(receiver: variableName, nullable: type.nullable);
-      }
-      return JavaCodeGenUtils.streamMapCollect(
-          receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
-    }
-    final codec = _ctx.serializer.toJsonCodecOf(type);
-    if (codec != null) return _ctx.serializer.scalarToJson(codec, variableName, nullable: type.nullable);
-    if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
-      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
-    }
-    return variableName;
+    return _ctx.serializer.toJsonExpr(arg.type, arg.codeName, context: container);
   }
 
   String _resolveArgType(arg) {

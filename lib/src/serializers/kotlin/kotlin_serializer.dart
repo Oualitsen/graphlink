@@ -16,6 +16,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_imports.dart';
 
@@ -33,7 +34,7 @@ const _kotlinNumberCasts = <String, String>{
 
 const _kotlinNumbers = {'Int', 'Long', 'Double', 'Float'};
 
-class KotlinSerializer extends GLSerializer {
+class KotlinSerializer extends GLSerializer with JsonExpressions {
   final bool inputsAsDataClass;
   final bool typesAsDataClass;
   final codeGenUtils = KotlinCodeGenUtils();
@@ -457,34 +458,44 @@ class KotlinSerializer extends GLSerializer {
     final typeName = context is GLTypeDefinition ? context.jsonTypeName : null;
     final entries = [
       if (typeName != null) '"__typename" to "$typeName"',
-      ...fields.map((f) => '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.codeName, 0)}'),
+      ...fields.map((f) => '"${f.name}" to ${toJsonExpr(f.type, f.codeName)}'),
     ];
     final omitNulls = context is GLInputDefinition && context.isOneOf;
     return 'fun toJson(): $_mapType = ${codeGenUtils.constructorCall('mapOf', entries)}${omitNulls ? '.filterValues { it != null }' : ''}';
   }
 
-  /// Public entry point for building the domain→wire JSON conversion of a
-  /// value expression (enum/projectable → `.toJson()`, recursing through list
-  /// nesting; scalar → identity). Used by the Spring controller serializer to
-  /// convert a service-layer result into the `Map<String, Any?>` wire shape.
-  String callToJson(GLField field, GLType type, String variable, int depth) =>
-      _fieldToJsonExpr(field, type, variable, depth);
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) =>
+      element == body ? value : KotlinCodeGenUtils.mapCall(receiver: value, param: element, body: body, nullable: list.nullable);
 
-  String _fieldToJsonExpr(GLField field, GLType type, String variable, int depth) {
-    if (type is GLListType) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _fieldToJsonExpr(field, inner, varName, depth + 1);
-      if (varName == innerExpr) return variable;
-      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
-    }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
-    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
-    }
-    return variable;
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
+    final casted = list.nullable ? '($json as? $_anyListType)' : '($json as $_anyListType)';
+    return element == body ? casted : KotlinCodeGenUtils.mapCall(receiver: casted, param: element, body: body, nullable: list.nullable);
   }
+
+  @override
+  String modelToJson(GLType type, String value) => KotlinCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+
+  @override
+  String enumFromJson(GLType type, String json) {
+    final codeName = resolveCodeName(type.token);
+    if (type.nullable) return KotlinCodeGenUtils.letCall(receiver: '($json as? String)', body: '$codeName.fromJson(it)');
+    return '$codeName.fromJson($json as String)!!';
+  }
+
+  @override
+  String modelFromJson(GLType type, String json) {
+    final codeName = resolveCodeName(type.token);
+    if (type.nullable) {
+      return KotlinCodeGenUtils.letCall(receiver: '($json as? Map<*, *>)', body: '$codeName.fromJson(it as $_mapType)');
+    }
+    return '$codeName.fromJson($json as $_mapType)';
+  }
+
+  @override
+  String plainFromJson(GLType type, String json) =>
+      _scalarCast(json, getTypeNameFromGQExternal(type.token) ?? type.token, type.nullable);
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
@@ -498,7 +509,7 @@ class KotlinSerializer extends GLSerializer {
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
     final assignments = fields
-        .map((f) => '${f.codeName} = ${_fromJsonExpr(f, f.type, 'map', 0, context)}')
+        .map((f) => '${f.codeName} = ${fromJsonExpr(f.type, 'map["${f.name}"]')}')
         .toList();
     final checks = _requiredFieldChecks(fields, context);
     final constructed = codeGenUtils.constructorCall(token, assignments);
@@ -521,45 +532,7 @@ class KotlinSerializer extends GLSerializer {
     ];
   }
 
-  String fromJsonValueExpr(String valueExpr, GLType type) =>
-      _fromJsonExpr(null, type, valueExpr, 0, null, valueAccess: valueExpr);
-
-  String _fromJsonExpr(GLField? field, GLType type, String mapVar, int depth, GLToken? context,
-      {String? valueAccess}) {
-    final key = depth == 0 ? '["${field?.name}"]' : '';
-    final access = valueAccess ?? '$mapVar$key';
-
-    if (type is GLListType) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _fromJsonExpr(field, inner, varName, depth + 1, context);
-      final castedList = type.nullable ? '($access as? $_anyListType)' : '($access as $_anyListType)';
-      if (varName == innerExpr) return castedList;
-      return KotlinCodeGenUtils.mapCall(receiver: castedList, param: varName, body: innerExpr, nullable: type.nullable);
-    }
-
-    final wireToken = type.token;
-    if (grammar.isNonProjectableType(wireToken) && !grammar.isEnum(wireToken) && !grammar.isInput(wireToken)) {
-      final codec = fromJsonCodecOf(type);
-      if (codec != null) return scalarFromJson(codec, access, nullable: type.nullable);
-      final mappedToken = getTypeNameFromGQExternal(wireToken) ?? wireToken;
-      return _scalarCast(access, mappedToken, type.nullable, depth);
-    }
-    final codeName = resolveCodeName(wireToken);
-    if (grammar.isEnum(wireToken)) {
-      if (type.nullable) {
-        return KotlinCodeGenUtils.letCall(receiver: '($access as? String)', body: '$codeName.fromJson(it)');
-      }
-      return '$codeName.fromJson($access as String)!!';
-    }
-    // projectable type or input
-    if (type.nullable) {
-      return KotlinCodeGenUtils.letCall(receiver: '($access as? Map<*, *>)', body: '$codeName.fromJson(it as $_mapType)');
-    }
-    return '$codeName.fromJson($access as $_mapType)';
-  }
-
-  String _scalarCast(String access, String token, bool nullable, int depth) {
+  String _scalarCast(String access, String token, bool nullable) {
     if (_kotlinNumbers.contains(token)) {
       final method = _kotlinNumberCasts[token]!;
       if (nullable) return '($access as? Number)?.$method';

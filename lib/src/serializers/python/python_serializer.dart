@@ -17,11 +17,12 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extensio
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 
 const pythonModelBaseName = 'GraphLinkModel';
 const pythonModelBaseModule = 'client/graph_link_model';
 
-class PythonSerializer extends GLSerializer {
+class PythonSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = PythonCodeGenUtils();
   final bool immutableTypeFields;
 
@@ -363,7 +364,7 @@ class PythonSerializer extends GLSerializer {
   String _toJsonMethod(List<GLField> fields, {String? typename, bool omitNulls = false}) {
     final entries = [
       if (typename != null) '"__typename": ${pythonStringLiteral(typename)}',
-      for (final f in fields) '${pythonStringLiteral(f.name.token)}: ${callToJsonValue('self.${f.codeName}', f.type)}',
+      for (final f in fields) '${pythonStringLiteral(f.name.token)}: ${toJsonExpr(f.type, 'self.${f.codeName}')}',
     ];
     final body = entries.isEmpty ? '' : '\n${entries.join(',\n').identPy()}\n';
     final dict = omitNulls ? 'return {k: v for k, v in {$body}.items() if v is not None}' : 'return {$body}';
@@ -376,7 +377,7 @@ class PythonSerializer extends GLSerializer {
   }
 
   String _fromJsonMethod(GLTokenWithFields def, List<GLField> fields, {List<String> dispatch = const []}) {
-    final args = fields.map((f) => '${f.codeName}=${callFromJsonValue(_jsonAccess(f), f.type)}');
+    final args = fields.map((f) => '${f.codeName}=${fromJsonExpr(f.type, _jsonAccess(f))}');
     return codeGenUtils.createMethod(
       decorators: ['@classmethod'],
       methodName: 'from_json',
@@ -427,46 +428,34 @@ class PythonSerializer extends GLSerializer {
     ];
   }
 
-  String callToJsonValue(String expr, GLType type, [int depth = 0]) {
-    if (type is GLListType) {
-      final variable = 'e$depth';
-      final inner = callToJsonValue(variable, type.inlineType, depth + 1);
-      if (inner == variable) return expr;
-      return codeGenUtils.nullSafe(
-        expr,
-        codeGenUtils.listComprehension(expression: inner, variable: variable, iterable: expr),
-        type.nullable,
-      );
-    }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, expr, nullable: type.nullable);
-    final token = type.token;
-    if (grammar.isEnum(token) || grammar.isProjectableType(token)) {
-      return codeGenUtils.nullSafe(expr, '$expr.to_json()', type.nullable);
-    }
-    return expr;
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) => _listComprehension(list, value, element, body);
+
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) => _listComprehension(list, json, element, body);
+
+  String _listComprehension(GLType list, String iterable, String element, String body) {
+    if (body == element) return iterable;
+    return codeGenUtils.nullSafe(
+      iterable,
+      codeGenUtils.listComprehension(expression: body, variable: element, iterable: iterable),
+      list.nullable,
+    );
   }
 
-  String callFromJsonValue(String expr, GLType type, [int depth = 0]) {
-    if (type is GLListType) {
-      final variable = 'e$depth';
-      final inner = callFromJsonValue(variable, type.inlineType, depth + 1);
-      if (inner == variable) return expr;
-      return codeGenUtils.nullSafe(
-        expr,
-        codeGenUtils.listComprehension(expression: inner, variable: variable, iterable: expr),
-        type.nullable,
-      );
-    }
-    final token = type.token;
-    if (grammar.isEnum(token) || grammar.isProjectableType(token)) {
-      return codeGenUtils.nullSafe(expr, '${resolveCodeName(token)}.from_json($expr)', type.nullable);
-    }
-    final codec = fromJsonCodecOf(type);
-    if (codec != null) return scalarFromJson(codec, expr, nullable: type.nullable);
-    if (token == 'Float') return codeGenUtils.nullSafe(expr, 'float($expr)', type.nullable);
-    return expr;
-  }
+  @override
+  String modelToJson(GLType type, String value) => codeGenUtils.nullSafe(value, '$value.to_json()', type.nullable);
+
+  @override
+  String enumFromJson(GLType type, String json) => modelFromJson(type, json);
+
+  @override
+  String modelFromJson(GLType type, String json) =>
+      codeGenUtils.nullSafe(json, '${resolveCodeName(type.token)}.from_json($json)', type.nullable);
+
+  @override
+  String plainFromJson(GLType type, String json) =>
+      type.token == 'Float' ? codeGenUtils.nullSafe(json, 'float($json)', type.nullable) : json;
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>

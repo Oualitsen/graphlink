@@ -46,7 +46,7 @@ class DartClientSerializer extends GLClientSerializer {
         super(dartSerializer, GLGraphqlSerializer(_parser, false)) {
     _opSer = DartClientOperationSerializer(
         _parser, codeGenUtils, gqlSerializer, serializer);
-    _restSer = DartRestOperationSerializer(_parser, codeGenUtils, serializer, _opSer.callToJson,
+    _restSer = DartRestOperationSerializer(_parser, codeGenUtils, serializer,
         commaLists: commaQueryLists, bracketNesting: bracketFormNesting);
   }
 
