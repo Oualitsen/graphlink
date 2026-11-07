@@ -23,6 +23,87 @@ enum Role {
   GUEST
 }
 
+# ── Enum spellings and list shapes ───────────────────────────────────────────
+
+enum Spelling {
+  A
+  B2
+  x__y
+  http2_ok
+  v1
+  snake_case_2
+}
+
+enum OnlyOne {
+  ONLY
+}
+
+enum ArgOnly {
+  P1
+  P2
+}
+
+enum RespOnly {
+  R1
+  R2
+}
+
+enum Phase {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+type PhaseProbe {
+  single: Phase!
+  maybe: Phase
+  list: [Phase!]!
+  nullableList: [Phase]
+}
+
+type Phased {
+  phase: Phase!
+}
+
+type Plain {
+  id: ID!
+}
+
+union PhaseHolder = Phased | Plain
+
+type ListShapes {
+  a: [Int!]!
+  b: [Int!]
+  c: [Int]!
+  d: [Int]
+  e: [[Int!]!]!
+  f: [[Int]]
+  g: [Spelling]!
+  h: [Photo]!
+  i: [Attachment]!
+  j: [Entity]!
+}
+
+type ListsEcho {
+  a: [Int!]!
+  b: [Int]
+  c: [[Int!]!]
+  e: [Spelling!]!
+  f: [Spelling]
+  g: [Spelling!]
+  one: OnlyOne!
+}
+
+input ListsInput {
+  a: [Int!]!
+  b: [Int]
+  c: [[Int!]!]
+  e: [Spelling!]!
+  f: [Spelling]
+  g: [Spelling!] = [A, B2]
+  one: OnlyOne = ONLY
+}
+
 type AllScalars {
   id:            ID!
   strVal:        String!
@@ -315,6 +396,15 @@ type Query {
   listing(id: ID!): Listing
   listings: [Listing!]!
   solo: Solo
+  listShapes(mode: String!): ListShapes!
+  bigInts(n: Int!): [Int!]!
+  bigPhotos(n: Int!): [Photo!]!
+  echoArgs(a: [Int!]!, b: [Int], c: [[Int!]!], e: [Spelling!]!, f: [Spelling], g: [Spelling!] = [A, B2], one: OnlyOne = ONLY): ListsEcho!
+  echoInput(input: ListsInput!): ListsEcho!
+  argOnly(v: ArgOnly!): String!
+  respOnly: RespOnly!
+  phaseProbe: PhaseProbe!
+  phaseHolder: PhaseHolder!
 }
 
 type Mutation {

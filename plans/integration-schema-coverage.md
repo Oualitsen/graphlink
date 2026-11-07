@@ -108,10 +108,10 @@ Done:
 Open:
 
 - [x] A union whose members share a field with the **same type** (`Attachment.id` / `url`, `Shareable.id`): readable on the union itself, in the full type and in a projection that shares only `id`.
-- [ ] A union member that is also returned directly elsewhere (type reuse vs. projected copy).
+- [x] A union member that is also returned directly elsewhere (`photo(id)` returns the full `Photo`, `fetchPhotoUrl` and `fetchPhotoWidth` project it partially, in the same client).
 - [x] An interface with no implementing type selected by the query (`node(id) { id }`): the response is the projected interface (`Node_Id`) with one synthetic implementation (`Node_Id_Impl`) that its `fromJson` returns directly, without reading `__typename`. Found because the generated decoder dispatched on a `__typename` the query never asked for. IR flag: `isSyntheticImplementation` / `GLInterfaceDefinition.syntheticImplementation`; every serializer implements `serializeSyntheticInterfaceFromJson`. Tests: `test/projections/interface_selection_without_members_test.dart` and `fetchNodeId` in the 7 GraphQL packages (run in isolation; the full suites were not re-run after the serializer change).
 - [x] Cached query returning an interface (`getCachedNode`) and invalidation by tag on a union (`evictAttachments`) and an interface (`evictNodes`); another tag leaves the cache alone. The server returns different data per real fetch, so a cache hit is a repeated value.
-- [ ] Custom queries: an inline fragment on the interface itself mixed with concrete ones (`... on SearchResult { id }`).
+- [x] Custom queries: an inline fragment on the interface itself mixed with concrete ones (`searchMixed`: `... on SearchResult { id }` next to `UserResult` and `PostResult` fields).
 - [ ] Unknown or missing `__typename`: out of scope (Swift bug 8, `swift-throwing-polymorphic-decode.md`).
 
 ### 1.2 REST (`schema_rest`)
@@ -152,11 +152,11 @@ Add:
 
 ## 3. Lists and nullability
 
-- [ ] All list shapes as response fields: `[T!]!`, `[T!]`, `[T]!`, `[T]`, `[[T!]!]!`, `[[T]]`, with the server really sending `null` elements.
-- [ ] The same shapes as arguments and as input fields.
-- [ ] Empty list vs. `null` list.
+- [x] All list shapes as response fields: `[T!]!`, `[T!]`, `[T]!`, `[T]`, `[[T!]!]!`, `[[T]]`, with the server really sending `null` elements (`ListShapes`, 7 languages).
+- [x] The same shapes as arguments and as input fields (`echoArgs`, `echoInput`).
+- [x] Empty list vs. `null` list.
 - [ ] List of enums, list of custom scalars, list of unions, list of interfaces.
-- [ ] Very large list (REST has `big`; add a GraphQL equivalent).
+- [x] Very large list (`bigInts` 50000, `bigPhotos` 20000).
 
 ## 4. Identifiers and naming
 
@@ -199,11 +199,12 @@ Add:
 
 ## 7. Enums
 
-- [ ] Unknown value from the server with `strictEnums` both `false` and `true`, in a field, a list element, a map-like position and a union member.
-- [ ] Enum value spelled in every casing style (exists: `pending`, `in_progress`); add digits, double underscores, single letter.
-- [ ] Enum with one value.
-- [ ] Enum used only as an argument, only in a response, only in a REST path segment.
-- [ ] Enum default on an argument and on an input field.
+- [x] Unknown value from the server with `strictEnums: false`, in a field, a list element and a union member (server schema has `Phase.ARCHIVED`, the client schema does not).
+- [ ] Same with `strictEnums: true` (needs a second generated output per language) and in a map-like position.
+- [x] Enum value spelled in every casing style (`Spelling`: `A`, `B2`, `x__y`, `http2_ok`, `v1`, `snake_case_2`).
+- [x] Enum with one value (`OnlyOne`).
+- [x] Enum used only as an argument and only in a response (`ArgOnly`, `RespOnly`); REST path segment still open.
+- [x] Enum default on an argument and on an input field (`one = ONLY`, `g = [A, B2]`).
 
 ## 8. Errors and partial results
 
