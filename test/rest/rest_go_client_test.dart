@@ -156,20 +156,21 @@ void main() {
   });
 
   group('decoding', () {
-    test('types validate required fields through UnmarshalJSON', () {
+    test('types validate required fields in their explicit decoder', () {
       final g = _parser(_polymorphic);
       final serializer = GoSerializer(g);
       final out = g.projectedTypes.values.map(serializer.serializeTypeDefinition).join('\n');
-      expect(out, contains('func (v *Dog) UnmarshalJSON'));
-      expect(out, contains('Dog.barks is missing or null in the response'));
-      expect(out, isNot(contains('Cat.lives is missing')));
+      expect(out, contains('func DogFromJson(m map[string]any) (Dog, error) {'));
+      expect(out, contains('v.Barks, err = glBool(m["barks"])'));
+      expect(out, contains('glFieldError("Dog", "barks", err)'));
+      expect(out, contains('v.Lives, err = glPtr(glInt)(m["lives"])'));
     });
 
     test('an interface decodes through its discriminator values', () {
       final g = _parser(_polymorphic);
       final serializer = GoSerializer(g);
       final out = g.projectedInterfaces.values.map(serializer.serializeTypeDefinition).join('\n');
-      expect(out, contains('probe["kind"]'));
+      expect(out, contains('glStringOf(m["kind"])'));
       expect(out, contains('case "dog":'));
       expect(out, contains('Cannot decode Pet: unknown or missing'));
     });

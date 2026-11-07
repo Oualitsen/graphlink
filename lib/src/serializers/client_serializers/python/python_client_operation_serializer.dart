@@ -202,14 +202,18 @@ class PythonClientOperationSerializer {
   }
 
   String _toJsonExpr(String expr, GLType type, int index) {
-    final convertible = _grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token);
-    if (!convertible) return expr;
     if (type.isList) {
       final variable = 'e$index';
       final inner = _toJsonExpr(variable, type.inlineType, index + 1);
+      if (inner == variable) return expr;
       return _cg.nullSafe(expr, _cg.listComprehension(expression: inner, variable: variable, iterable: expr), type.nullable);
     }
-    return _cg.nullSafe(expr, '$expr.to_json()', type.nullable);
+    final codec = _serializer.toJsonCodecOf(type);
+    if (codec != null) return _serializer.scalarToJson(codec, expr, nullable: type.nullable);
+    if (_grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token)) {
+      return _cg.nullSafe(expr, '$expr.to_json()', type.nullable);
+    }
+    return expr;
   }
 
   // ── Partial queries ────────────────────────────────────────────────────────

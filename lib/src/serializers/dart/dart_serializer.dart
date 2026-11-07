@@ -12,6 +12,7 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -424,8 +425,7 @@ class DartSerializer extends GLSerializer {
   String fieldToJson(GLField field) {
     // Wire key keeps the original GraphQL name; value reads the safe identifier.
     var buffer = StringBuffer("'${field.name}': ");
-    var toJosnCall = callToJson(field, field.type, 0);
-    buffer.write("${field.codeName}${toJosnCall}");
+    buffer.write(toJsonExpr(field.codeName, field.type, 0));
     return buffer.toString();
   }
 
@@ -456,6 +456,9 @@ class DartSerializer extends GLSerializer {
       return DartCodeGenUtils.nullSafeExpr(variable, typeFromJson, type.nullable);
     }
 
+    final codec = fromJsonCodecOf(type);
+    if (codec != null) return scalarFromJson(codec, variable, nullable: type.nullable);
+
     if (serializedType == "double" || serializedType == "double?") {
       return "(${variable} as num${numSuffix})${dot}toDouble()";
     }
@@ -483,25 +486,30 @@ class DartSerializer extends GLSerializer {
     return fromJsonCall;
   }
 
-  String callToJson(GLField field, GLType type, int index) {
-    var fieldType = field.type.inlineType;
-    String toJsonCall;
-    String dot = type.nullable ? "?." : ".";
-    //check if enum
-    if (grammar.isProjectableType(fieldType.token) ||
-        grammar.isEnum(fieldType.token)) {
-      toJsonCall = '${dot}toJson()';
-    } else {
-      toJsonCall = '';
-    }
+  String toJsonExpr(String variable, GLType type, int index) {
     if (type.isList) {
-      String varName = "e${index}";
-      var inlneCallToJson = callToJson(field, type.inlineType, index + 1);
+      final varName = "e$index";
       return DartCodeGenUtils.mapToList(
-          receiver: '', param: varName, body: '$varName$inlneCallToJson', nullable: type.nullable);
+          receiver: variable,
+          param: varName,
+          body: toJsonExpr(varName, type.inlineType, index + 1),
+          nullable: type.nullable);
     }
-    return toJsonCall;
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
+    if (grammar.isProjectableType(type.token) || grammar.isEnum(type.token)) {
+      return '$variable${type.nullable ? "?." : "."}toJson()';
+    }
+    return variable;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
+      DartCodeGenUtils.nullSafeExpr(json, codec.decode(json), nullable);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      DartCodeGenUtils.nullSafeExpr(value, codec.encode(nullable ? '$value!' : value), nullable);
 
   @override
   String doSerializeTypeDefinition(GLTypeDefinition def) {

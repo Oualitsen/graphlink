@@ -324,6 +324,8 @@ class KotlinClientOperationSerializer {
       }
       return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
     }
+    final codec = _ctx.serializer.toJsonCodecOf(type);
+    if (codec != null) return _ctx.serializer.scalarToJson(codec, variable, nullable: type.nullable);
     if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
       return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
     }

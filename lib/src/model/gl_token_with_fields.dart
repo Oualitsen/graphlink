@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -278,6 +279,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
       var token = g.getTokenByKey(field.type.token);
       result.addAll(extractImports(field, g.mode, skipOwnImports: false));
       result.addAll(collectionImportsOf(field.type));
+      result.addAll(g.scalarCodecOf(field.type.token)?.imports ?? const {});
 
       if (token != null && token is GLDirectivesMixin) {
         result.addAll(extractImports(token as GLDirectivesMixin, g.mode, skipOwnImports: true));
@@ -290,6 +292,7 @@ abstract class GLTokenWithFields extends GLExtensibleToken {
             arg.type.wrapperImport,
           ].whereType(),
         );
+        result.addAll(g.scalarCodecOf(arg.type.token)?.imports ?? const {});
         result.addAll(extractImports(arg as GLDirectivesMixin, g.mode, skipOwnImports: false));
         var argToken = g.getTokenByKey(arg.type.token);
         if (argToken != null && argToken is GLDirectivesMixin) {

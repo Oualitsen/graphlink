@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -589,12 +590,22 @@ class TypeScriptSerializer extends GLSerializer {
       // while an explicit null is preserved and correctly overrides it.
       return type.nullable ? '$varName != null ? $mapExpr : $varName' : mapExpr;
     }
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, varName, nullable: type.nullable);
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       final call = '${resolveCodeName(type.token)}.toJson($varName)';
       return type.nullable ? '$varName != null ? $call : $varName' : call;
     }
     return varName;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
+      nullable ? '$json != null ? ${codec.decode(json)} : null' : codec.decode(json);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      nullable ? '$value != null ? ${codec.encode(value)} : $value' : codec.encode(value);
 
   String _callFromJson(String jsonExpr, GLType type, int depth) {
     if (type is GLListType) {
@@ -611,6 +622,8 @@ class TypeScriptSerializer extends GLSerializer {
       final call = '${resolveCodeName(type.token)}.fromJson($jsonExpr as Record<string, unknown>)';
       return type.nullable ? '$jsonExpr != null ? $call : null' : call;
     }
+    final codec = fromJsonCodecOf(type);
+    if (codec != null) return scalarFromJson(codec, jsonExpr, nullable: type.nullable);
     // Scalar — pure type assertion, no runtime cost
     return '$jsonExpr as ${serializeType(type)}';
   }

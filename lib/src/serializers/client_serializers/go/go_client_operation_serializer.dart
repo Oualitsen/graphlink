@@ -162,14 +162,24 @@ class GoClientOperationSerializer {
   List<String> _variableStatements(GLQueryDefinition def) {
     final plain = <String>[];
     final hoisted = <String>[];
+    final conversions = <String>[];
     for (final arg in def.arguments) {
       if (arg.hoistArgsInput != null) {
         hoisted.add('glMergeVariables($svVariables, ${_valueExpr(arg)})');
         continue;
       }
+      final codec = _serializer.toJsonCodecOf(arg.type);
+      if (codec != null && !_isUploadArg(arg)) {
+        final local = 'gl${_paramName(arg).firstUp}__';
+        conversions.add('$local, err := ${_serializer.encoderFor(arg.type)}(${_valueExpr(arg)})');
+        conversions.add(_cg.ifStatement(condition: 'err != nil', ifBlockStatements: ['return $_zero, err']));
+        plain.add('${_serializer.stringLiteral(arg.dartArgumentName)}: $local,');
+        continue;
+      }
       plain.add('${_serializer.stringLiteral(arg.dartArgumentName)}: ${_variableValue(arg)},');
     }
     return [
+      ...conversions,
       '$svVariables := map[string]any{${plain.isEmpty ? '' : '\n${plain.join('\n').identGo()}\n'}}',
       ...hoisted,
     ];

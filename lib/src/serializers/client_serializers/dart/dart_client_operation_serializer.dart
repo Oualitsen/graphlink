@@ -333,16 +333,15 @@ class DartClientOperationSerializer {
   }
 
   String callToJson(String argName, GLType type) {
+    if (type.isList) {
+      final element = callToJson("e", type.inlineType);
+      if (element == "e") return argName;
+      return DartCodeGenUtils.mapToList(receiver: argName, param: 'e', body: element, nullable: type.nullable);
+    }
+    final codec = _serializer.toJsonCodecOf(type);
+    if (codec != null) return _serializer.scalarToJson(codec, argName, nullable: type.nullable);
     if (_grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token)) {
-      if (type.isList) {
-        return DartCodeGenUtils.mapToList(
-            receiver: argName,
-            param: 'e',
-            body: callToJson("e", type.inlineType),
-            nullable: type.nullable);
-      } else {
-        return "$argName${type.nullable ? '?' : ''}.toJson()";
-      }
+      return "$argName${type.nullable ? '?' : ''}.toJson()";
     }
     return argName;
   }

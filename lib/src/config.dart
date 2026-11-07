@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 enum DartHttpAdapter { http, dio, none }
@@ -164,6 +165,7 @@ class GeneratorConfig {
   final String mode;
   final List<String> identityFields;
   Map<String, String>? typeMappings;
+  final Map<String, GLScalarCodec> scalarCodecs;
 
   /// Target-language type used for any custom scalar that is not explicitly
   /// mapped (via [typeMappings] or `@glExternal`). When null, unmapped custom
@@ -189,6 +191,7 @@ class GeneratorConfig {
     required this.mode,
     required this.identityFields,
     required this.typeMappings,
+    this.scalarCodecs = const {},
     required this.outputDir,
     this.unknownScalarType,
     this.disableCache = false,
@@ -199,11 +202,16 @@ class GeneratorConfig {
   });
 
   factory GeneratorConfig.fromJson(Map<String, dynamic> json) {
+    final scalarCodecs = {
+      for (final e in ((json['typeMappings'] as Map?) ?? const {}).entries)
+        '${e.key}': GLScalarCodec.fromConfig('${e.key}', e.value),
+    };
     return GeneratorConfig(
       schemaPaths: List<String>.from(json['schemaPaths'] ?? []),
       mode: json['mode'] ?? 'server',
       identityFields: List<String>.from(json['identityFields'] ?? []),
-      typeMappings: Map<String, String>.from(json['typeMappings'] ?? {}),
+      typeMappings: {for (final e in scalarCodecs.entries) e.key: e.value.type},
+      scalarCodecs: scalarCodecs,
       unknownScalarType: json['unknownScalarType'] as String?,
       disableCache: (json['disableCache'] as bool?) ?? false,
       restNullableSuffix: _restNullableSuffix(json['restNullableSuffix']),

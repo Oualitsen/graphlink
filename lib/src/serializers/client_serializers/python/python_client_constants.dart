@@ -5,24 +5,11 @@ from __future__ import annotations
 
 from typing import Any, ClassVar, Dict, Optional
 
-from pydantic import BaseModel, ConfigDict, model_serializer
+from pydantic import BaseModel, ConfigDict
 
 
 class GraphLinkModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, protected_namespaces=())
-
-    GL_TYPENAME: ClassVar[Optional[str]] = None
-    GL_ONE_OF: ClassVar[bool] = False
-
-    @model_serializer(mode="wrap")
-    def _gl_serialize(self, handler: Any) -> Any:
-        data = handler(self)
-        if type(self).GL_ONE_OF and isinstance(data, dict):
-            data = {k: v for k, v in data.items() if v is not None}
-        typename = type(self).GL_TYPENAME
-        if typename is not None and isinstance(data, dict):
-            return {"__typename": typename, **data}
-        return data
 
     def to_json(self) -> Dict[str, Any]:
         return self.model_dump(mode="json", by_alias=True, serialize_as_any=True)

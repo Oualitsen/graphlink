@@ -28,6 +28,288 @@ func glDecodeList[T any](raw json.RawMessage, elem func(json.RawMessage) (T, err
 	return result, nil
 }
 
+// JsonObject is a JSON object that keeps the order its keys were set in.
+type JsonObject struct {
+	keys   []string
+	values map[string]any
+}
+
+func NewJsonObject() JsonObject {
+	return JsonObject{values: map[string]any{}}
+}
+
+func (o *JsonObject) Set(key string, value any) {
+	if _, exists := o.values[key]; !exists {
+		o.keys = append(o.keys, key)
+	}
+	o.values[key] = value
+}
+
+func (o JsonObject) Get(key string) any {
+	return o.values[key]
+}
+
+func (o JsonObject) Keys() []string {
+	return append([]string(nil), o.keys...)
+}
+
+func (o JsonObject) Map() map[string]any {
+	out := make(map[string]any, len(o.values))
+	for key, value := range o.values {
+		out[key] = value
+	}
+	return out
+}
+
+func (o JsonObject) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	buf.WriteByte('{')
+	for i, key := range o.keys {
+		if i > 0 {
+			buf.WriteByte(',')
+		}
+		name, err := json.Marshal(key)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(name)
+		buf.WriteByte(':')
+		value, err := json.Marshal(o.values[key])
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(value)
+	}
+	buf.WriteByte('}')
+	return buf.Bytes(), nil
+}
+
+var glErrNull = errors.New("null")
+
+func glParseJson(data []byte) (any, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func glFieldError(owner, key string, err error) error {
+	if errors.Is(err, glErrNull) {
+		return fmt.Errorf("%s.%s is missing or null in the response", owner, key)
+	}
+	return fmt.Errorf("%s.%s: %w", owner, key, err)
+}
+
+func glStringOf(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func glString(v any) (string, error) {
+	if v == nil {
+		return "", glErrNull
+	}
+	s, ok := v.(string)
+	if !ok {
+		return "", fmt.Errorf("expected a string, got %T", v)
+	}
+	return s, nil
+}
+
+func glBool(v any) (bool, error) {
+	if v == nil {
+		return false, glErrNull
+	}
+	b, ok := v.(bool)
+	if !ok {
+		return false, fmt.Errorf("expected a boolean, got %T", v)
+	}
+	return b, nil
+}
+
+func glInt64(v any) (int64, error) {
+	switch n := v.(type) {
+	case nil:
+		return 0, glErrNull
+	case json.Number:
+		return n.Int64()
+	case int64:
+		return n, nil
+	case int:
+		return int64(n), nil
+	case float64:
+		return int64(n), nil
+	}
+	return 0, fmt.Errorf("expected an integer, got %T", v)
+}
+
+func glInt(v any) (int, error) {
+	n, err := glInt64(v)
+	return int(n), err
+}
+
+func glFloat64(v any) (float64, error) {
+	switch n := v.(type) {
+	case nil:
+		return 0, glErrNull
+	case json.Number:
+		return n.Float64()
+	case float64:
+		return n, nil
+	case int64:
+		return float64(n), nil
+	case int:
+		return float64(n), nil
+	}
+	return 0, fmt.Errorf("expected a number, got %T", v)
+}
+
+func glPlain(v any) any {
+	switch t := v.(type) {
+	case json.Number:
+		f, _ := t.Float64()
+		return f
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for key, item := range t {
+			out[key] = glPlain(item)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, item := range t {
+			out[i] = glPlain(item)
+		}
+		return out
+	}
+	return v
+}
+
+func glAny(v any) (any, error) {
+	return glPlain(v), nil
+}
+
+func glViaJson[T any](v any) (T, error) {
+	var out T
+	if v == nil {
+		return out, glErrNull
+	}
+	raw, err := json.Marshal(v)
+	if err != nil {
+		return out, err
+	}
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return out, err
+	}
+	return out, nil
+}
+
+func glPtr[T any](decode func(any) (T, error)) func(any) (*T, error) {
+	return func(v any) (*T, error) {
+		if v == nil {
+			return nil, nil
+		}
+		out, err := decode(v)
+		if err != nil {
+			return nil, err
+		}
+		return &out, nil
+	}
+}
+
+func glNilable[T any](decode func(any) (T, error)) func(any) (T, error) {
+	return func(v any) (T, error) {
+		var zero T
+		if v == nil {
+			return zero, nil
+		}
+		return decode(v)
+	}
+}
+
+func glList[T any](decode func(any) (T, error)) func(any) ([]T, error) {
+	return func(v any) ([]T, error) {
+		if v == nil {
+			return nil, glErrNull
+		}
+		items, ok := v.([]any)
+		if !ok {
+			return nil, fmt.Errorf("expected a list, got %T", v)
+		}
+		out := make([]T, len(items))
+		for i, item := range items {
+			value, err := decode(item)
+			if err != nil {
+				return nil, fmt.Errorf("[%d]: %w", i, err)
+			}
+			out[i] = value
+		}
+		return out, nil
+	}
+}
+
+func glObject[T any](from func(map[string]any) (T, error)) func(any) (T, error) {
+	return func(v any) (T, error) {
+		var zero T
+		if v == nil {
+			return zero, glErrNull
+		}
+		m, ok := v.(map[string]any)
+		if !ok {
+			return zero, fmt.Errorf("expected an object, got %T", v)
+		}
+		return from(m)
+	}
+}
+
+func glEncObject[T interface{ ToJson() (JsonObject, error) }](v T) (any, error) {
+	if any(v) == nil {
+		return nil, nil
+	}
+	m, err := v.ToJson()
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func glEncEnum[T interface{ ToJson() (string, error) }](v T) (any, error) {
+	s, err := v.ToJson()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func glEncPtr[T any](encode func(T) (any, error)) func(*T) (any, error) {
+	return func(p *T) (any, error) {
+		if p == nil {
+			return nil, nil
+		}
+		return encode(*p)
+	}
+}
+
+func glEncList[T any](encode func(T) (any, error)) func([]T) (any, error) {
+	return func(items []T) (any, error) {
+		if items == nil {
+			return nil, nil
+		}
+		out := make([]any, len(items))
+		for i, item := range items {
+			value, err := encode(item)
+			if err != nil {
+				return nil, fmt.Errorf("[%d]: %w", i, err)
+			}
+			out[i] = value
+		}
+		return out, nil
+	}
+}
+
 func glMapSlice[A, B any](in []A, fn func(A) B) []B {
 	if in == nil {
 		return nil

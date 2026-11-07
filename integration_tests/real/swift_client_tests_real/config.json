@@ -6,7 +6,13 @@
     "String":  "String",
     "Float":   "Double",
     "Int":     "Int",
-    "Boolean": "Bool"
+    "Boolean": "Bool",
+    "Long": "Int",
+    "DateTime": "String",
+    "LocalDate": "String",
+    "BigDecimal": "Any",
+    "JSON": "Any",
+    "Opaque": {"type": "String", "fromJson": "\"opaque:\" + ({} as! String)", "toJson": "String({}.dropFirst(7))"}
   },
   "outputDir": "Sources/GraphLinkGenerated",
   "clientConfig": {

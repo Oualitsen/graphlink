@@ -99,6 +99,7 @@ GLParser createGrammar(GeneratorConfig config) {
       parameterReservedWords: _parameterReservedWordsFor(config),
       reservedTypeNames: _reservedTypeNamesFor(config),
       collectionImports: _collectionImportsFor(config),
+      scalarCodecs: config.scalarCodecs,
     )..unknownScalarType = config.unknownScalarType;
   }
   final lang = config.clientConfig!.language;
@@ -113,6 +114,7 @@ GLParser createGrammar(GeneratorConfig config) {
     restNullableSuffix: config.restNullableSuffix,
     restNullable: config.restNullable,
     collectionImports: _collectionImportsFor(config),
+    scalarCodecs: config.scalarCodecs,
     generateAllFieldsFragments: lang.generateAllFieldsFragments,
     nullableFieldsRequired: lang.nullableFieldsRequired,
     tolerantEnums: !lang.strictEnums,

@@ -848,6 +848,9 @@ type Query {
   pingLength(ping: Ping!): Int!
   describePet(pet: Pet!): String!
   legacy(withReason: String @deprecated(reason: "use plain"), plain: String @deprecated): Legacy!
+  scalarFixture: ScalarBag!
+  echoScalars(input: ScalarsInput!): ScalarBag!
+  echoScalarArgs(dt: DateTime!, date: LocalDate, long: Long! = 9007199254740993, big: BigDecimal, json: JSON, opaque: Opaque, dts: [DateTime!]!, longs: [Long]): ScalarBag!
 }
 
 
@@ -994,4 +997,35 @@ query fetchCachedPair($userId: ID!, $postId: ID!)
   post: getCachedPost(id: $postId) @glCache(ttl: "5m", tags: ["posts"]) {
     ... _all_fields
   }
+}
+
+# ── Custom scalars ───────────────────────────────────────────────────────────
+
+scalar DateTime
+scalar LocalDate
+scalar Long
+scalar BigDecimal
+scalar JSON
+scalar Opaque
+
+type ScalarBag {
+  dt: DateTime!
+  date: LocalDate
+  long: Long!
+  big: BigDecimal
+  json: JSON
+  opaque: Opaque
+  dts: [DateTime!]!
+  longs: [Long]
+}
+
+input ScalarsInput {
+  dt: DateTime!
+  date: LocalDate
+  long: Long!
+  big: BigDecimal
+  json: JSON
+  opaque: Opaque
+  dts: [DateTime!]!
+  longs: [Long]
 }

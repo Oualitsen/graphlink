@@ -29,7 +29,8 @@ void main() {
     test('strict enums reject unknown wire values', () {
       final g = _parser('enum Status { active }');
       final out = _serializer(g).doSerializeEnumDefinition(g.enums['Status']!);
-      expect(out, contains('return fmt.Errorf("invalid Status: %s", s)'));
+      expect(out, contains('func StatusFromJson(value any) (Status, error) {'));
+      expect(out, contains('return "", fmt.Errorf("invalid Status: %s", s)'));
       expect(out, isNot(contains('UnknownValue')));
     });
 
@@ -37,7 +38,8 @@ void main() {
       final g = _parser('enum Status { active }', tolerantEnums: true);
       final out = _serializer(g).doSerializeEnumDefinition(g.enums['Status']!);
       expect(out, contains('StatusUnknownValue__ Status = "unknownValue__"'));
-      expect(lines(out), containsAllInOrder(['*v = StatusUnknownValue__', 'return nil']));
+      expect(lines(out), containsAllInOrder(['func StatusFromJson(value any) (Status, error) {', 'return StatusUnknownValue__, nil']));
+      expect(out, contains('func (v Status) ToJson() (string, error) {'));
       expect(out, contains('cannot be serialized'));
     });
   });
@@ -112,10 +114,12 @@ void main() {
       expect(out, contains('func (v Circle) GetId() string {'));
       expect(out, contains('func (v Circle) GetKind() *string {'));
       expect(lines(out), containsAllInOrder([
-        'func (v Circle) MarshalJSON() ([]byte, error) {',
-        'type alias Circle',
-        'Typename string `json:"__typename"`',
+        'func (v Circle) ToJson() (JsonObject, error) {',
+        'm := NewJsonObject()',
+        'm.Set("__typename", "Circle")',
+        'm.Set("id", v.Id)',
       ]));
+      expect(out, contains('func (v Circle) MarshalJSON() ([]byte, error) {'));
     });
 
     test('a getter matches the interface signature when the type narrows nullability', () {
@@ -165,11 +169,14 @@ void main() {
 
     test('dispatches on __typename and rejects unknown types', () {
       expect(lines(out), containsAllInOrder([
-        'func unmarshalShape(data json.RawMessage) (Shape, error) {',
-        'switch probe.Typename {',
+        'func ShapeFromJson(value any) (Shape, error) {',
+        'switch glStringOf(m["__typename"]) {',
         'case "Circle":',
+        'return CircleFromJson(m)',
         'case "Square":',
+        'return SquareFromJson(m)',
       ]));
+      expect(out, contains('func unmarshalShape(data json.RawMessage) (Shape, error) {'));
       expect(out, contains('does not implement Shape or not defined'));
     });
   });
@@ -198,16 +205,21 @@ void main() {
       ''');
       final out = _serializer(g).doSerializeTypeDefinition(g.types['Box']!);
       expect(lines(out), containsAllInOrder([
-        'func (v *Box) UnmarshalJSON(data []byte) error {',
-        'type alias Box',
-        'v.Shape, err = unmarshalShape(aux.Shape)',
+        'func BoxFromJson(m map[string]any) (Box, error) {',
+        'if v.Shape, err = ShapeFromJson(m["shape"]); err != nil {',
+        'if v.Shapes, err = glList(ShapeFromJson)(m["shapes"]); err != nil {',
       ]));
-      expect(out, contains('glDecodeList(r, unmarshalShape)'));
     });
 
-    test('plain types need no custom decoder', () {
+    test('plain types decode through the same explicit function', () {
       final g = _parser('type Query { a: A } type A { id: ID! }');
-      expect(_serializer(g).doSerializeTypeDefinition(g.types['A']!), isNot(contains('UnmarshalJSON')));
+      final out = _serializer(g).doSerializeTypeDefinition(g.types['A']!);
+      expect(lines(out), containsAllInOrder([
+        'func AFromJson(m map[string]any) (A, error) {',
+        'if v.Id, err = glString(m["id"]); err != nil {',
+        'return A{}, glFieldError("A", "id", err)',
+      ]));
+      expect(out, contains('glObject(AFromJson)(value)'));
     });
   });
 

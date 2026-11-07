@@ -577,11 +577,13 @@ class JavaClientOperationSerializer {
       }
       return JavaCodeGenUtils.streamMapCollect(
           receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
-    } else if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
-      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
-    } else {
-      return variableName;
     }
+    final codec = _ctx.serializer.toJsonCodecOf(type);
+    if (codec != null) return _ctx.serializer.scalarToJson(codec, variableName, nullable: type.nullable);
+    if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
+      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
+    }
+    return variableName;
   }
 
   String _resolveArgType(arg) {

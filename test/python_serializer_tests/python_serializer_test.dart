@@ -114,7 +114,8 @@ void main() {
       final out = _serializer(g).doSerializeTypeDefinition(g.types['User']!);
       expect(lines(out), containsAllInOrder([
         'class User(Node):',
-        'GL_TYPENAME: ClassVar[Optional[str]] = "User"',
+        'def to_json(self) -> Dict[str, Any]:',
+        '"__typename": "User",',
       ]));
     });
 
@@ -137,14 +138,16 @@ void main() {
       out = _serializer(g).doSerializeTypeDefinition(g.interfaces['Node']!);
     });
 
-    test('dispatches on __typename through a wrap validator', () {
+    test('dispatches on __typename in from_json', () {
       expect(lines(out), containsAllInOrder([
         'class Node(GraphLinkModel):',
-        '@model_validator(mode="wrap")',
-        'def _dispatch_by_typename(cls, data: Any, handler: Any) -> Any:',
-        'if cls is Node and isinstance(data, dict) and "__typename" in data:',
+        '@classmethod',
+        'def from_json(cls, json: Dict[str, Any]) -> "Node":',
+        'if cls is Node and "__typename" in json:',
         'target = _node_implementations().get(typename)',
+        'return target.from_json(json)',
       ]));
+      expect(out, isNot(contains('model_validator')));
     });
 
     test('unknown typenames raise instead of silently building the abstract type', () {

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -7,9 +8,12 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -175,9 +179,9 @@ class PythonSerializer extends GLSerializer {
       baseClassNames: [pythonModelBaseName],
       statements: [
         _modelConfig(),
-        if (def.isOneOf) 'GL_ONE_OF: ClassVar[bool] = True',
         '',
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
+        ..._jsonMethods(def, fields, omitNulls: def.isOneOf),
         ...generateMappingMethods(def).expand((m) => ['', m]),
       ],
     );
@@ -196,10 +200,9 @@ class PythonSerializer extends GLSerializer {
       baseClassNames: bases.isEmpty ? [pythonModelBaseName] : bases,
       statements: [
         _modelConfig(),
-        if (!shouldSkipJsonMethods(def) && def.jsonTypeName != null)
-          'GL_TYPENAME: ClassVar[Optional[str]] = ${pythonStringLiteral(def.jsonTypeName!)}',
         '',
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
+        if (!shouldSkipJsonMethods(def)) ..._jsonMethods(def, fields, typename: def.jsonTypeName),
         if (identity.isNotEmpty) ..._equalsAndHash(def, identity),
       ],
     );
@@ -253,44 +256,14 @@ class PythonSerializer extends GLSerializer {
         _modelConfig(),
         '',
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
-        if (!skipJson && implementations.isNotEmpty && interface.syntheticImplementation != null) ...[
+        if (!skipJson) ...[
           '',
-          serializeSyntheticInterfaceFromJson(interface),
-        ] else if (!skipJson && implementations.isNotEmpty) ...[
+          _toJsonMethod(fields),
           '',
-          codeGenUtils.createMethod(
-            decorators: ['@model_validator(mode="wrap")', '@classmethod'],
-            methodName: '_dispatch_by_typename',
-            arguments: ['cls', 'data: Any', 'handler: Any'],
-            returnType: 'Any',
-            statements: [
-              if (discriminator == null)
-                codeGenUtils.ifStatement(
-                  condition: 'cls is $name and isinstance(data, dict) and "__typename" in data',
-                  ifBlockStatements: _typenameDispatch(name, resolver),
-                )
-              else
-                codeGenUtils.ifStatement(
-                  condition: 'cls is $name and isinstance(data, dict)',
-                  ifBlockStatements: [
-                    codeGenUtils.ifStatement(
-                      condition: '"__typename" in data',
-                      ifBlockStatements: _typenameDispatch(name, resolver),
-                    ),
-                    codeGenUtils.constDecl('discriminator', 'data.get(${pythonStringLiteral(discriminator.field)})'),
-                    codeGenUtils.constDecl('target', '$discriminatorResolver().get(discriminator)'),
-                    codeGenUtils.ifStatement(
-                      condition: 'target is None',
-                      ifBlockStatements: [
-                        'raise ValueError(f"Cannot decode $name: unknown or missing \\"${discriminator.field}\\" value ({discriminator})")',
-                      ],
-                    ),
-                    'return target.model_validate(data)',
-                  ],
-                ),
-              'return handler(data)',
-            ],
-          ),
+          if (implementations.isNotEmpty && interface.syntheticImplementation != null)
+            serializeSyntheticInterfaceFromJson(interface)
+          else
+            _fromJsonMethod(interface, fields, dispatch: implementations.isEmpty ? const [] : _dispatch(name, resolver, discriminatorResolver, discriminator)),
         ],
       ],
     );
@@ -321,28 +294,55 @@ class PythonSerializer extends GLSerializer {
 
   @override
   String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
-    final name = interface.codeName;
     final impl = interface.syntheticImplementation!;
-    return codeGenUtils.createMethod(
-      decorators: ['@model_validator(mode="wrap")', '@classmethod'],
-      methodName: '_decode_synthetic_implementation',
-      arguments: ['cls', 'data: Any', 'handler: Any'],
-      returnType: 'Any',
-      statements: [
+    return _fromJsonMethod(
+      interface,
+      interface.getSerializableFields(grammar.mode),
+      dispatch: [
         codeGenUtils.ifStatement(
-          condition: 'cls is $name and isinstance(data, dict)',
+          condition: 'cls is ${interface.codeName}',
           ifBlockStatements: [
             'from ..${_subdirFor(impl)}.${moduleNameFor(impl)} import ${impl.codeName}',
-            'return ${impl.codeName}.model_validate(data)',
+            'return ${impl.codeName}.from_json(json)',
           ],
         ),
-        'return handler(data)',
       ],
     );
   }
 
+  List<String> _dispatch(String name, String resolver, String discriminatorResolver, dynamic discriminator) {
+    if (discriminator == null) {
+      return [
+        codeGenUtils.ifStatement(
+          condition: 'cls is $name and "__typename" in json',
+          ifBlockStatements: _typenameDispatch(name, resolver),
+        ),
+      ];
+    }
+    return [
+      codeGenUtils.ifStatement(
+        condition: 'cls is $name',
+        ifBlockStatements: [
+          codeGenUtils.ifStatement(
+            condition: '"__typename" in json',
+            ifBlockStatements: _typenameDispatch(name, resolver),
+          ),
+          codeGenUtils.constDecl('discriminator', 'json.get(${pythonStringLiteral(discriminator.field)})'),
+          codeGenUtils.constDecl('target', '$discriminatorResolver().get(discriminator)'),
+          codeGenUtils.ifStatement(
+            condition: 'target is None',
+            ifBlockStatements: [
+              'raise ValueError(f"Cannot decode $name: unknown or missing \\"${discriminator.field}\\" value ({discriminator})")',
+            ],
+          ),
+          'return target.from_json(json)',
+        ],
+      ),
+    ];
+  }
+
   List<String> _typenameDispatch(String name, String resolver) => [
-        codeGenUtils.constDecl('typename', 'data["__typename"]'),
+        codeGenUtils.constDecl('typename', 'json["__typename"]'),
         codeGenUtils.constDecl('target', '$resolver().get(typename)'),
         codeGenUtils.ifStatement(
           condition: 'target is None',
@@ -350,8 +350,102 @@ class PythonSerializer extends GLSerializer {
             'raise ValueError(f"Invalid type {typename}. {typename} does not implement $name or not defined")',
           ],
         ),
-        'return target.model_validate(data)',
+        'return target.from_json(json)',
       ];
+
+  List<String> _jsonMethods(GLTokenWithFields def, List<GLField> fields, {String? typename, bool omitNulls = false}) => [
+        '',
+        _toJsonMethod(fields, typename: typename, omitNulls: omitNulls),
+        '',
+        _fromJsonMethod(def, fields),
+      ];
+
+  String _toJsonMethod(List<GLField> fields, {String? typename, bool omitNulls = false}) {
+    final entries = [
+      if (typename != null) '"__typename": ${pythonStringLiteral(typename)}',
+      for (final f in fields) '${pythonStringLiteral(f.name.token)}: ${callToJsonValue('self.${f.codeName}', f.type)}',
+    ];
+    final body = entries.isEmpty ? '' : '\n${entries.join(',\n').identPy()}\n';
+    final dict = omitNulls ? 'return {k: v for k, v in {$body}.items() if v is not None}' : 'return {$body}';
+    return codeGenUtils.createMethod(
+      methodName: 'to_json',
+      arguments: ['self'],
+      returnType: 'Dict[str, Any]',
+      statements: [dict],
+    );
+  }
+
+  String _fromJsonMethod(GLTokenWithFields def, List<GLField> fields, {List<String> dispatch = const []}) {
+    final args = fields.map((f) => '${f.codeName}=${callFromJsonValue(_jsonAccess(f), f.type)}');
+    return codeGenUtils.createMethod(
+      decorators: ['@classmethod'],
+      methodName: 'from_json',
+      arguments: ['cls', 'json: Dict[str, Any]'],
+      returnType: '"${resolveCodeName(def.token)}"',
+      statements: [
+        ..._lazyImports(def, fields),
+        ...dispatch,
+        ..._requiredKeyCheck(def, fields),
+        args.isEmpty ? 'return cls()' : 'return cls(\n${args.join(',\n').identPy()}\n)',
+      ],
+    );
+  }
+
+  List<String> _requiredKeyCheck(GLTokenWithFields def, List<GLField> fields) {
+    final keys = fields.where((f) => f.initialValue == null && !f.type.nullable).map((f) => pythonStringLiteral(f.name.token));
+    if (keys.isEmpty) return const [];
+    return [
+      codeGenUtils.forEachLoop(
+        variable: 'key',
+        iterable: '(${keys.join(', ')},)',
+        statements: [
+          codeGenUtils.ifStatement(
+            condition: 'key not in json',
+            ifBlockStatements: [
+              "raise ValueError(f'Cannot decode ${resolveCodeName(def.token)}: missing required field \"{key}\"')",
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+  String _jsonAccess(GLField f) {
+    final key = pythonStringLiteral(f.name.token);
+    if (f.initialValue != null) return 'json.get($key, ${serializeDefaultLiteral(f.type, f.initialValue)})';
+    return f.type.nullable ? 'json.get($key)' : 'json[$key]';
+  }
+
+  List<String> _lazyImports(GLTokenWithFields def, List<GLField> fields) {
+    final tokens = <String>{
+      for (final f in fields)
+        if (f.type.token != def.token && grammar.isProjectableType(f.type.token) && !grammar.isEnum(f.type.token)) f.type.token,
+    };
+    return [
+      for (final t in tokens)
+        if (grammar.getTokenByKey(t) != null) serializeImportToken(grammar.getTokenByKey(t)!),
+    ];
+  }
+
+  String callToJsonValue(String expr, GLType type, [int depth = 0]) {
+    if (type is GLListType) {
+      final variable = 'e$depth';
+      final inner = callToJsonValue(variable, type.inlineType, depth + 1);
+      if (inner == variable) return expr;
+      return codeGenUtils.nullSafe(
+        expr,
+        codeGenUtils.listComprehension(expression: inner, variable: variable, iterable: expr),
+        type.nullable,
+      );
+    }
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, expr, nullable: type.nullable);
+    final token = type.token;
+    if (grammar.isEnum(token) || grammar.isProjectableType(token)) {
+      return codeGenUtils.nullSafe(expr, '$expr.to_json()', type.nullable);
+    }
+    return expr;
+  }
 
   String callFromJsonValue(String expr, GLType type, [int depth = 0]) {
     if (type is GLListType) {
@@ -368,9 +462,19 @@ class PythonSerializer extends GLSerializer {
     if (grammar.isEnum(token) || grammar.isProjectableType(token)) {
       return codeGenUtils.nullSafe(expr, '${resolveCodeName(token)}.from_json($expr)', type.nullable);
     }
+    final codec = fromJsonCodecOf(type);
+    if (codec != null) return scalarFromJson(codec, expr, nullable: type.nullable);
     if (token == 'Float') return codeGenUtils.nullSafe(expr, 'float($expr)', type.nullable);
     return expr;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
+      codeGenUtils.nullSafe(json, codec.decode(json), nullable);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      codeGenUtils.nullSafe(value, codec.encode(value), nullable);
 
   // ── Default literals ───────────────────────────────────────────────────────
 
@@ -552,6 +656,7 @@ class PythonSerializer extends GLSerializer {
         typeChecking.add(line);
       }
     }
+    if (token is GLTokenWithFields) runtime.addAll(grammar.scalarImportsOfFields(token).map(serializeImport));
     return _assembleModule(
       body: data,
       runtimeImports: runtime,

@@ -319,6 +319,8 @@ class SwiftClientOperationSerializer {
         chainThroughOptional: type.nullable,
       );
     }
+    final codec = serializer.toJsonCodecOf(type);
+    if (codec != null) return serializer.scalarToJson(codec, variable, nullable: type.nullable);
     if (grammar.isEnum(type.token) || grammar.isInput(type.token)) {
       return SwiftCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
     }

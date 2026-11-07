@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
@@ -382,11 +383,24 @@ class SwiftSerializer extends GLSerializer {
       return SwiftCodeGenUtils.mapCall(
           receiver: variable, param: varName, body: innerExpr, chainThroughOptional: type.nullable);
     }
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       return SwiftCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
     }
     return variable;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    if (!nullable) return codec.decode(json);
+    final present = '($json ?? nil).flatMap { \$0 is NSNull ? nil : \$0 }';
+    return SwiftCodeGenUtils.mapCall(receiver: present, body: codec.decode('\$0'));
+  }
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      nullable ? SwiftCodeGenUtils.mapCall(receiver: value, body: codec.encode('\$0')) : codec.encode(value);
 
   // ── fromJson ────────────────────────────────────────────────────────────────
 
@@ -422,6 +436,8 @@ class SwiftSerializer extends GLSerializer {
 
     final wireToken = type.token;
     if (grammar.isNonProjectableType(wireToken) && !grammar.isEnum(wireToken) && !grammar.isInput(wireToken)) {
+      final codec = fromJsonCodecOf(type);
+      if (codec != null) return scalarFromJson(codec, access, nullable: type.nullable);
       final mappedToken = getTypeNameFromGQExternal(wireToken) ?? wireToken;
       return type.nullable ? '$access as? $mappedToken' : '$access as! $mappedToken';
     }
@@ -684,6 +700,14 @@ class SwiftSerializer extends GLSerializer {
   /// that isn't implicitly pulled in — the generated `Default*Adapter`
   /// files use `URLSession` and fail to compile there without this. Every
   /// other `Foundation`-only file pays nothing for the extra `#if`.
+  @override
+  String serializeImports(GLToken token) {
+    final imports = super.serializeImports(token);
+    final usesCodec = token is GLTokenWithFields && token.fields.any((f) => fromJsonCodecOf(f.type) != null);
+    if (!usesCodec || imports.contains('Foundation')) return imports;
+    return '${serializeImport('Foundation')}\n$imports';
+  }
+
   @override
   String serializeImport(String import) {
     if (import == 'Foundation') {

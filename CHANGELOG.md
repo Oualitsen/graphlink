@@ -661,8 +661,18 @@
 
 ## 6.0.0 - 2026-11-04
 
+### New features
+
+- **Scalar codecs** — a `typeMappings` entry can now be an object, `{"type": "Decimal", "import": "package:decimal/decimal.dart", "fromJson": "Decimal.parse({} as String)", "toJson": "{}.toString()"}`, so a custom scalar (`DateTime`, `Money`, ...) is converted when it is decoded and encoded, in fields, list elements, input fields and operation arguments. `{}` is the value; `import` is a string or a list and lands in every generated file that uses the scalar. A string value is still a plain type alias. Either side may be declared alone, and generation fails with a clear message when the schema uses a scalar on a side the codec does not cover (write `"toJson": "{}"` to pass a value through on purpose) and when a codec scalar has a default value.
+
+### Breaking changes
+
+- **Python and Go decode and encode explicitly.** Every generated type and input has `to_json` / `from_json` (Python) and `ToJson` / `<Type>FromJson` (Go), like the other languages, instead of leaving it to pydantic and `encoding/json`. Pydantic aliases and Go struct tags stay as a fallback. Go's `ToJson` returns an ordered `JsonObject` and `MarshalJSON` / `UnmarshalJSON` delegate to the explicit methods.
+- **A missing non-null field is an error in Go and Python** on every type (it was only checked for REST responses in Go). The message names the type and the field.
+
 ### Fixes
 
+- Java: a `Long` default beyond 32 bits (or any `Long` default) is emitted with the `L` suffix; `Long total = 9007199254740993;` did not compile.
 - **Kotlin subscriptions never ended** — a `Flow` stayed open after the server completed the subscription and ignored a server error; `collect` and `toList()` hung. The flow now completes on `complete` and fails with a `GraphLinkException` on `error` (and with the cause on a connection failure).
 - **TypeScript subscriptions can observe completion** — the callback form gets an optional `onComplete` after `onError`, called when the server completes the stream.
 - **Interface selections that mix shared fields with inline fragments** — `feed { ...EntityBits ... on Article { title } }` only asked for `__typename` inside `... on Article`, so every other implementor reached the generated decoder without one and decoding threw. The selection now requests `__typename` at its own level.
