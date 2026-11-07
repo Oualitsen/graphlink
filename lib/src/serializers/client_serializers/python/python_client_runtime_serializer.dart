@@ -177,6 +177,7 @@ class PythonClientRuntimeSerializer {
                 'not isinstance(decoded, dict) or (not isinstance(decoded.get("data"), dict) and not (isinstance(decoded.get("errors"), list) and len(decoded["errors"]) > 0))',
             ifBlockStatements: ['raise GraphLinkException([GraphLinkError(message="GraphQL response has no data", body=$svResponse)])'],
           ),
+          cg.ifStatement(condition: 'decoded.get("errors") == []', ifBlockStatements: ['decoded["errors"] = None']),
           'return from_json(decoded)',
         ],
       ),
@@ -419,7 +420,7 @@ class PythonClientRuntimeSerializer {
         'data_map.update(cached_response)',
         cg.constDecl('full_response', '{"data": data_map if raw_data is not None else None}', type: 'Dict[str, Any]'),
         cg.ifStatement(
-          condition: 'result.get("errors") is not None',
+          condition: 'result.get("errors")',
           ifBlockStatements: ['full_response["errors"] = result["errors"]'],
         ),
         cg.constDecl('parsed', 'parser(full_response)'),

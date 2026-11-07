@@ -192,6 +192,10 @@ class TypeScriptClientRuntimeSerializer {
                 'throw [error];',
               ],
             ),
+            _client.cg.ifStatement(
+              condition: 'Array.isArray(json.errors) && json.errors.length === 0',
+              ifBlockStatements: ['json.errors = null;'],
+            ),
             'return json as T;',
           ],
         ),

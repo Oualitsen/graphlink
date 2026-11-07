@@ -16,7 +16,6 @@ const cases: FaultCase[] = JSON.parse(readFileSync('../fault_server/cases.json',
 const uncheckedTypes = 'the generated decoder does not check scalar types or the shape of data at run time';
 
 const knownDefects: Record<string, string> = {
-  'gql-empty-errors:g': 'an empty errors list is thrown as a failure although data is present',
   'gql-missing-field:g': uncheckedTypes,
   'int-as-string:c': uncheckedTypes,
   'int-as-string:g': uncheckedTypes,
