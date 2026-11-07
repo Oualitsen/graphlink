@@ -17,6 +17,8 @@ const Set<String> dartReservedWords = {
   'factory', 'function', 'get', 'implements', 'import', 'interface', 'late',
   'library', 'mixin', 'operator', 'part', 'required', 'set', 'static',
   'typedef',
+  // Reserved inside async bodies, where generated operations live.
+  'await', 'yield',
   // Lowercase dart:core type names. Not reserved words, but a field/parameter
   // with one of these names shadows the type inside the enclosing class, so
   // every `int`/`double`/… type annotation there fails to resolve (`final int
@@ -62,7 +64,7 @@ const Set<String> swiftReservedWords = {
   'operator', 'typealias', 'associatedtype', 'public', 'private',
   'internal', 'fileprivate', 'static', 'final', 'lazy', 'weak', 'unowned',
   'mutating', 'nonmutating', 'convenience', 'required', 'override',
-  'true', 'false', 'nil', 'super', 'where', 'inout', 'any', 'some',
+  'true', 'false', 'nil', 'super', 'where', 'inout', 'any', 'some', 'await',
 };
 
 /// Python hard keywords plus the soft builtins a generated model field or
@@ -115,4 +117,48 @@ const Set<String> typescriptParameterReservedWords = {
   // Strict-mode reserved words (also illegal as binding identifiers in modules).
   'implements', 'interface', 'let', 'package', 'private', 'protected',
   'public', 'static', 'yield',
+};
+
+/// Type names that shadow a standard-library or runtime type the generated
+/// code refers to (`Map<String, dynamic>`, `throws Error`, ...). A schema type
+/// named like one of these keeps its wire name and gets a trailing underscore
+/// in the generated code. Fields are not affected: only declaration names.
+const Set<String> dartReservedTypeNames = {
+  'DateTime', 'Duration', 'Error', 'Function', 'Future', 'Iterable', 'List',
+  'Map', 'Object', 'Set', 'Stream', 'String', 'StringBuffer', 'Type', 'Uri',
+};
+
+const Set<String> javaReservedTypeNames = {
+  'Object', 'String', 'Integer', 'Long', 'Double', 'Float', 'Boolean',
+  'Byte', 'Short', 'Number', 'Math', 'System', 'Class', 'Enum', 'Record',
+  'Error', 'Exception', 'RuntimeException', 'Throwable', 'Void', 'Override',
+  'Thread', 'Runnable', 'StringBuilder', 'List', 'Map', 'Set', 'Optional',
+  'Objects', 'Arrays', 'Collections', 'HashMap', 'ArrayList', 'Collectors',
+  'Date', 'Function', 'Supplier', 'Consumer', 'UUID',
+};
+
+const Set<String> kotlinReservedTypeNames = {
+  'Any', 'Unit', 'String', 'Int', 'Long', 'Boolean', 'Number', 'List', 'Map',
+  'Set', 'MutableList', 'MutableMap', 'MutableSet', 'Result', 'Error',
+  'Exception', 'Throwable',
+};
+
+const Set<String> swiftReservedTypeNames = {
+  'Any', 'AnyObject', 'Array', 'Bool', 'Data', 'Date', 'Double', 'Error',
+  'Int', 'Never', 'Optional', 'Result', 'Sendable', 'Set', 'String', 'Task',
+  'Type', 'URL', 'URLRequest', 'URLResponse', 'URLSession', 'UUID', 'Void',
+  'Self', 'Protocol',
+};
+
+const Set<String> pythonReservedTypeNames = {
+  'Any', 'BaseModel', 'Callable', 'ClassVar', 'ConfigDict', 'Dict',
+  'Exception', 'List', 'Literal', 'Optional', 'Set', 'Tuple', 'Union',
+  'TypeError', 'Iterable', 'Awaitable', 'AsyncIterator', 'TypeVar',
+  'Protocol',
+};
+
+const Set<String> typescriptReservedTypeNames = {
+  'Array', 'Date', 'Error', 'JSON', 'Map', 'Math', 'Object', 'Promise',
+  'Record', 'Set', 'String', 'Symbol', 'Response', 'Request', 'Blob', 'File',
+  'FormData', 'WebSocket', 'AsyncIterable',
 };

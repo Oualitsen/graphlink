@@ -162,17 +162,17 @@ Add:
 
 `class` is the only keyword tested. Targets now include Python, Go and Swift.
 
-- [ ] Field, argument, input-field, operation and type names that collide with reserved words:
+- [x] Field, argument, input-field, operation and type names that collide with reserved words (GraphQL side; `Reserved`, `ReservedInput`, `reservedEcho`, operations `import`, `default`, `new`, `func`, `None`, `self`):
   `type`, `default`, `in`, `is`, `var`, `val`, `fun`, `new`, `import`, `return`, `object`, `from`, `None`, `True`,
   `func`, `range`, `self`, `Self`, `init`, `Type`, `Protocol`, `async`, `await`, `package`, `interface`, `enum`, `null`.
-- [ ] Enum values that are reserved words or look like literals: `null`, `true`, `false`, `default`, `class`.
-- [ ] Type names that clash with runtime or stdlib names: `Error`, `Response`, `Request`, `List`, `Map`, `Object`,
+- [x] Enum values that are reserved words or look like literals (`Literal`: `default`, `class`, `None`, `True`, `nil`, `undefined`, `NaN`, `self`; `null`/`true`/`false` are not legal GraphQL enum values).
+- [x] Type names that clash with runtime or stdlib names (found and fixed in 5 languages; `Upload` untested): `Error`, `Response`, `Request`, `List`, `Map`, `Object`,
   `Optional`, `Date`, `Result`, `Void`, `Upload`.
-- [ ] Names that differ only by case, and names that become equal after normalisation (`user_id` vs `userId`).
-- [ ] Leading underscore, trailing underscore, digits inside, all-caps acronyms (`URLValue`, `HTTPServer`).
+- [x] Names that become equal after normalisation (`user_id` vs `userId`). Names differing only by case: still open.
+- [x] Leading underscore, trailing underscore, digits inside, all-caps acronyms (`Odd`).
 - [ ] Non-canonical casing on the REST side: snake_case, kebab-case and `$`-prefixed JSON keys mapped to field names.
 - [ ] Keyword names as REST path/query/header/form/part parameter names.
-- [ ] Two fields whose generated accessors would clash (`isActive` and `active`, `getX` and `x`).
+- [x] Two fields whose generated accessors would clash (`isActive` and `active`, `getX` and `x`).
 
 ## 5. Literals, defaults and escaping
 

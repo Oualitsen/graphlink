@@ -663,6 +663,7 @@
 
 ### Fixes
 
+- **Generated code no longer breaks on a few names** — an operation argument or field named `await` or `yield` (Dart) and a field named `await` (Swift) now get a trailing underscore like the other reserved words. The Java `toJson()` local variable is no longer called `map`, so a field named `map` stays reachable.
 - **Dart uploads (GraphQL and REST)** — the `http` and Dio adapters stream multipart and raw uploads lazily (`GLMultipartBody` in `graph_link_uploads.dart`) instead of building them in memory, so progress is real on both. A `GLUpload` with no `length` used to fail on GraphQL with `Content size exceeds specified contentLength` and was read into memory on REST; it is now sent chunked. `onProgress` is no longer called when the total size is unknown (REST used to report a total of `-1`).
 - **Java uploads (GraphQL and REST, blocking and reactive)** — the JDK, OkHttp and WebClient adapters stream multipart and raw uploads (a new `GLMultipartBody`) instead of building the body in memory; the JDK GraphQL adapter used to copy every file into a `ByteArrayOutputStream`. A `GLUpload` with a negative `length` is sent chunked, and `onProgress` is no longer called when the total size is unknown. OkHttp now reports progress for the whole request body instead of per file, and the WebClient adapter reports progress at all.
 
@@ -719,6 +720,7 @@
 
 ### Breaking changes
 
+- **Type names that clash with the target language's standard library are renamed** — a schema type, input, enum, interface or union called like a type the generated code relies on (`Map`, `List`, `Object`, `Error`, `Result`, `Optional`, `Date`, ... depending on the language) used to produce code that did not compile (`Map<String, dynamic>` resolved to your type). It now gets a trailing underscore in the generated code (`Map_`); the schema name and the JSON `__typename` stay as declared. Go keeps every name. The sets are in `lib/src/model/reserved_words.dart` (`*ReservedTypeNames`).
 - **Directives are validated** — every directive in a schema is now checked, both GraphLink's own (`@glCache`, `@glMapsTo`, `@glRest`, ...) and the ones you declare. Generation fails, with the line and column, when:
   - a directive that is not built in has no `directive @name ... on ...` declaration in your schema;
   - an argument name is unknown or misspelled (`@glRest(path: "/p", methdo: PUT)` used to be accepted and silently ignored), or a required argument is missing;
