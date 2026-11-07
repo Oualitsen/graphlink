@@ -1,8 +1,17 @@
 import unittest
 
-from generated import Car, Bike, GraphLinkException, PostResult, Priority, UserResult, UserStatus
+from generated import AddressInput, Car, Bike, CreateUserInput, GraphLinkException, PostResult, Priority, UserResult, UserStatus
 
 from .real_server import new_client
+
+
+def _create_input(name: str) -> CreateUserInput:
+    return CreateUserInput(
+        name=name,
+        email="a@b.com",
+        status=UserStatus.ACTIVE,
+        address=AddressInput(street="1", city="C", country="US"),
+    )
 
 
 class RealTestCase(unittest.IsolatedAsyncioTestCase):
@@ -168,6 +177,16 @@ class ErrorCaptureTest(RealTestCase):
         res = await self.client.queries.find_user_or_errors(id="missing")
         self.assertIsNone(res.errors)
         self.assertIsNone(res.data.find_user_or_errors)
+
+    async def test_captured_mutation_error_response(self) -> None:
+        res = await self.client.mutations.create_user_or_errors(input=_create_input("error-user"))
+        self.assertIsNotNone(res.errors)
+        self.assertIsNone(res.data)
+
+    async def test_captured_mutation_success_response(self) -> None:
+        res = await self.client.mutations.create_user_or_errors(input=_create_input("Alice Smith"))
+        self.assertIsNone(res.errors)
+        self.assertEqual(res.data.create_user_or_errors.name, "Alice Smith")
 
     async def test_non_captured_operation_raises(self) -> None:
         with self.assertRaises(GraphLinkException) as raised:
