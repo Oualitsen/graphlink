@@ -329,4 +329,15 @@ class PolymorphismTest {
         client.mutations.evictNodes();
         assertEquals(before, videoSeconds());
     }
+
+    @Test
+    void anInterfaceSelectionWithoutImplementerDecodesEveryImplementer() {
+        assertEquals("a1", client.queries.fetchNodeId("a1").getNode().getId());
+        assertEquals("c1", client.queries.fetchNodeId("c1").getNode().getId());
+    }
+
+    @Test
+    void anInterfaceSelectionWithoutImplementerUnknownIdIsNull() {
+        assertNull(client.queries.fetchNodeId("nope").getNode());
+    }
 }

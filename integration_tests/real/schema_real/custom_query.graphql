@@ -94,3 +94,7 @@ query searchMixed($term: String!) {
     ... on PostResult { title }
   }
 }
+
+query fetchNodeId($id: ID!) {
+  node(id: $id) { id }
+}

@@ -257,8 +257,10 @@ class TypeScriptSerializer extends GLSerializer {
     buf.write(codeGenUtils.createNamespace(
       namespaceName: def.codeName,
       statements: [
-        if (!shouldSkipJsonMethods(def)) _serializeUnionToJson(def),
-        if (!shouldSkipJsonMethods(def)) _serializeUnionFromJson(def),
+        if (!shouldSkipJsonMethods(def))
+          def.syntheticImplementation != null ? _serializeSyntheticUnionToJson(def) : _serializeUnionToJson(def),
+        if (!shouldSkipJsonMethods(def))
+          def.syntheticImplementation != null ? serializeSyntheticInterfaceFromJson(def) : _serializeUnionFromJson(def),
       ],
     ));
     return buf.toString();
@@ -268,7 +270,7 @@ class TypeScriptSerializer extends GLSerializer {
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
     final hasRealInterface = def.interfaces.isNotEmpty;
-    final wireTypeName = hasRealInterface ? (def.jsonTypeName ?? def.token) : null;
+    final wireTypeName = hasRealInterface && !def.isSyntheticImplementation ? (def.jsonTypeName ?? def.token) : null;
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
       interfaceName: def.codeName,
@@ -446,6 +448,27 @@ class TypeScriptSerializer extends GLSerializer {
         ..._requiredFieldChecks(fields, requiredChecksFor),
         'return ${codeGenUtils.block(entries)};',
       ],
+    );
+    return 'export function $func';
+  }
+
+  String _serializeSyntheticUnionToJson(GLInterfaceDefinition def) {
+    final func = codeGenUtils.createMethod(
+      methodName: 'toJson',
+      arguments: ['obj: ${def.codeName}'],
+      returnType: 'Record<string, unknown>',
+      statements: ['return ${def.syntheticImplementation!.codeName}.toJson(obj);'],
+    );
+    return 'export function $func';
+  }
+
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    final func = codeGenUtils.createMethod(
+      methodName: 'fromJson',
+      arguments: ['json: Record<string, unknown>'],
+      returnType: interface.codeName,
+      statements: ['return ${interface.syntheticImplementation!.codeName}.fromJson(json);'],
     );
     return 'export function $func';
   }

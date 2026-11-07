@@ -320,6 +320,17 @@ describe('cached polymorphic operations and tag invalidation', () => {
   });
 });
 
+describe('an interface selection that names no implementer', () => {
+  it('decodes the interface fields of every implementer', async () => {
+    expect((await client.queries.fetchNodeId({ id: 'a1' })).node!.id).toBe('a1');
+    expect((await client.queries.fetchNodeId({ id: 'c1' })).node!.id).toBe('c1');
+  });
+
+  it('an unknown id decodes null', async () => {
+    expect((await client.queries.fetchNodeId({ id: 'nope' })).node).toBeNull();
+  });
+});
+
 describe('subscriptions', () => {
   it('a union stream emits each member', async () => {
     const ws = new DefaultGraphLinkWsAdapter(WS_URL);

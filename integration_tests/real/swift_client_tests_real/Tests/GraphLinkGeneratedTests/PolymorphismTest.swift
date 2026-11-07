@@ -278,4 +278,16 @@ final class PolymorphismTest: XCTestCase {
         let after = try await videoSeconds()
         XCTAssertEqual(before, after)
     }
+
+    func testAnInterfaceSelectionWithoutImplementerDecodesEveryImplementer() async throws {
+        let article = try await client.queries.fetchNodeId(id: "a1").node
+        XCTAssertEqual(article?.id, "a1")
+        let comment = try await client.queries.fetchNodeId(id: "c1").node
+        XCTAssertEqual(comment?.id, "c1")
+    }
+
+    func testAnInterfaceSelectionWithoutImplementerUnknownIdIsNil() async throws {
+        let missing = try await client.queries.fetchNodeId(id: "nope").node
+        XCTAssertNil(missing)
+    }
 }

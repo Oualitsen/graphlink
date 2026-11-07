@@ -614,6 +614,104 @@ extension GLGrammarProjectionExtension on GLParser {
     }).toList();
   }
 
+  bool _selectsNoImplementer(
+      GLInterfaceDefinition type, Map<String, GLProjection> projections) {
+    if (unions.containsKey(type.token)) return false;
+    final members = possibleTypeTokens(type.token);
+    if (members.isEmpty || projections.isEmpty) return false;
+    return _isInterfaceLevel(type, members, projections);
+  }
+
+  bool _isInterfaceLevel(GLInterfaceDefinition type, Set<String> members,
+      Map<String, GLProjection> projections) {
+    bool coversEveryMember(String condition) =>
+        possibleTypeTokens(condition).containsAll(members);
+
+    return projections.values.every((v) {
+      if (v.isFragmentReference) {
+        final fragment = getFragmentByName(v.fragmentName!)!;
+        return coversEveryMember(fragment.onTypeName.token) &&
+            _isInterfaceLevel(type, members, fragment.block.projections);
+      }
+      if (v is GLInlineFragmentsProjection) {
+        return v.inlineFragments.every((inline) =>
+            coversEveryMember(inline.onTypeName.token) &&
+            _isInterfaceLevel(type, members, inline.block.projections));
+      }
+      return v.token == GLParser.typename || type.hasField(v.token);
+    });
+  }
+
+  /// A selection that names no implementer reads the same fields from every
+  /// one of them: it becomes an interface with a single synthetic
+  /// implementation instead of one projected type per implementer.
+  GLTypeDefinition _createInterfaceLevelProjection(GLInterfaceDefinition type,
+      Map<String, GLProjection> projectionMap, List<GLDirectiveValue> directives) {
+    final member = getTypesImplementing(type).first.token;
+    final projections = _collectProjection(projectionMap, member);
+    final fields = <GLField>[];
+    for (final field in type.fields) {
+      final projection = projections[field.name.token];
+      if (projection == null) continue;
+      final forceNull = typeRequiresProjection(field.type) &&
+              isFieldCyclic(member, field.type.inlineType.token) ||
+          projection.hasInculeOrSkipDiretives;
+      fields.add(_applyProjectionToField(
+          field, projection, projection.getDirectives(), forceNull));
+    }
+
+    final signature = _fieldsSignature(fields);
+    for (final existing in projectedInterfaces.values) {
+      if (existing.derivedFromType?.token == type.token &&
+          existing.syntheticImplementation != null &&
+          _fieldsSignature(existing.fields) == signature) {
+        return existing;
+      }
+    }
+
+    final base = '${type.token}_${getUniqueName(projections.values)}';
+    final interfaceName = _freeProjectionName(base);
+    final implementation = _createNewType(
+        GeneratedTypeName(_freeProjectionName('${interfaceName}_Impl'), false),
+        fields,
+        directives,
+        type)
+      ..isSyntheticImplementation = true;
+    final newInterface = GLInterfaceDefinition(
+      name: type.tokenInfo.ofNewName(interfaceName),
+      nameDeclared: false,
+      fields: fields,
+      directives: type.getDirectives(),
+      interfaceNames: {},
+      extension: false,
+      derivedFromType: type,
+    );
+    newInterface.addImplementation(implementation);
+    implementation.addInterface(newInterface);
+    addToProjectedTypes(implementation, similarityCheck: false);
+    final added = addToProjectedTypes(newInterface, similarityCheck: false)
+        as GLInterfaceDefinition;
+    _dispatchTargets[added] = true;
+    return added;
+  }
+
+  String _fieldsSignature(List<GLField> fields) => fields
+      .map((f) => '${f.name.token}:${_argTypeSignature(f.type)}')
+      .join(',');
+
+  String _freeProjectionName(String base) {
+    bool taken(String n) =>
+        projectedTypes.containsKey(n) ||
+        projectedInterfaces.containsKey(n) ||
+        types.containsKey(n) ||
+        interfaces.containsKey(n);
+    var name = base;
+    for (var i = 1; taken(name); i++) {
+      name = '${base}_$i';
+    }
+    return name;
+  }
+
   GLTypeDefinition createProjectedType({
     required GLTypeDefinition type,
     required Map<String, GLProjection> projectionMap,
@@ -632,6 +730,10 @@ extension GLGrammarProjectionExtension on GLParser {
       return type is GLInterfaceDefinition
           ? (projectedInterfaces[type.token] ?? type)
           : (projectedTypes[type.token] ?? type);
+    }
+
+    if (type is GLInterfaceDefinition && _selectsNoImplementer(type, projectionMap)) {
+      return _createInterfaceLevelProjection(type, projectionMap, directives);
     }
 
     if (type is GLInterfaceDefinition) {

@@ -1101,7 +1101,9 @@ class JavaSerializer extends GLSerializer {
       if (generateJsonConverstionMethods && interface.getSerializableImplementations(mode).isNotEmpty) ...[
         "",
         "Map<String, Object> toJson();",
-        _serializeFromJsonForInterface(codeName, interface.getSerializableImplementations(mode))
+        interface.syntheticImplementation != null
+            ? serializeSyntheticInterfaceFromJson(interface)
+            : _serializeFromJsonForInterface(codeName, interface.getSerializableImplementations(mode))
       ]
     ]));
     return buffer.toString();
@@ -1144,6 +1146,16 @@ class JavaSerializer extends GLSerializer {
         'String value = discriminator.toString();',
         byValue,
       ],
+    );
+  }
+
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    return codeGenUtils.createMethod(
+      returnType: 'static ${interface.codeName}',
+      methodName: 'fromJson',
+      arguments: ['${_mapOf("String", "Object")} json'],
+      statements: ['return ${interface.syntheticImplementation!.codeName}.fromJson(json);'],
     );
   }
 

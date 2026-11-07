@@ -316,6 +316,21 @@ void main() {
     });
   });
 
+  group('an interface selection that names no implementer', () {
+    test('decodes the interface fields of every implementer', () async {
+      expect((await client.queries.fetchNodeId(id: 'a1')).node!.id, 'a1');
+      expect((await client.queries.fetchNodeId(id: 'c1')).node!.id, 'c1');
+    });
+
+    test('an unknown id decodes null', () async {
+      expect((await client.queries.fetchNodeId(id: 'nope')).node, isNull);
+    });
+
+    test('decodes a payload without __typename', () {
+      expect(FetchNodeIdResponse.fromJson({'node': {'id': 'x'}}).node!.id, 'x');
+    });
+  });
+
   group('subscriptions', () {
     test('a union stream emits each member', () async {
       final events = await client.subscriptions.attachmentAdded().take(3).toList().timeout(const Duration(seconds: 10));

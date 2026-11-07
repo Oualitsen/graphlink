@@ -62,6 +62,16 @@ class GLInterfaceDefinition extends GLTypeDefinition {
     return result;
   }
 
+  /// The only implementation of a selection that names no implementer: its
+  /// `fromJson` returns this type directly instead of dispatching on
+  /// `__typename`.
+  GLTypeDefinition? get syntheticImplementation {
+    for (final impl in _implementations) {
+      if (impl.isSyntheticImplementation) return impl;
+    }
+    return null;
+  }
+
   void addImplementation(GLTypeDefinition token) {
     _implementations.add(token);
   }

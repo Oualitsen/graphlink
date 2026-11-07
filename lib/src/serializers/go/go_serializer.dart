@@ -436,9 +436,30 @@ class GoSerializer extends GLSerializer {
     final blocks = <String>[codeGenUtils.interfaceDecl(name, members)];
     final implementations = interface.getSerializableImplementations(mode);
     if (!shouldSkipJsonMethods(interface) && implementations.isNotEmpty) {
-      blocks.add(_dispatchFunction(name, implementations, grammar.restDiscriminators[interface.token]));
+      blocks.add(interface.syntheticImplementation != null
+          ? serializeSyntheticInterfaceFromJson(interface)
+          : _dispatchFunction(name, implementations, grammar.restDiscriminators[interface.token]));
     }
     return blocks.join('\n\n');
+  }
+
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    final name = interface.codeName;
+    return codeGenUtils.createMethod(
+      methodName: 'unmarshal$name',
+      arguments: ['data json.RawMessage'],
+      returnType: '($name, error)',
+      statements: [
+        codeGenUtils.ifStatement(condition: 'glIsNull(data)', ifBlockStatements: ['return nil, nil']),
+        'var v ${interface.syntheticImplementation!.codeName}',
+        codeGenUtils.ifStatement(
+          condition: 'err := json.Unmarshal(data, &v); err != nil',
+          ifBlockStatements: ['return nil, err'],
+        ),
+        'return v, nil',
+      ],
+    );
   }
 
   String _dispatchFunction(String name, Set<GLTypeDefinition> implementations, [GLRestDiscriminator? discriminator]) {

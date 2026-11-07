@@ -300,6 +300,15 @@ class CachedPolymorphicOperations(RealTestCase):
         self.assertEqual(await self.video_seconds(), before)
 
 
+class InterfaceSelectionWithoutImplementer(RealTestCase):
+    async def test_decodes_the_interface_fields_of_every_implementer(self) -> None:
+        self.assertEqual((await self.client.queries.fetch_node_id(id="a1")).node.id, "a1")
+        self.assertEqual((await self.client.queries.fetch_node_id(id="c1")).node.id, "c1")
+
+    async def test_an_unknown_id_decodes_null(self) -> None:
+        self.assertIsNone((await self.client.queries.fetch_node_id(id="nope")).node)
+
+
 class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
         self.ws = new_ws_adapter()

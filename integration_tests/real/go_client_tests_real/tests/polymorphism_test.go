@@ -353,3 +353,16 @@ func TestPolymorphismInvalidatingAnotherTagLeavesTheCachedUnionAlone(t *testing.
 	must(c.Mutations.EvictNodes(ctx(t)))
 	expectEqual(t, cachedVideoSeconds(t, c), before, "cached seconds")
 }
+
+func TestPolymorphismInterfaceSelectionWithoutImplementerDecodesEveryImplementer(t *testing.T) {
+	c := newClient(t)
+	expectEqual(t, must(c.Queries.FetchNodeId(ctx(t), "a1")).Node.GetId(), "a1", "article id")
+	expectEqual(t, must(c.Queries.FetchNodeId(ctx(t), "c1")).Node.GetId(), "c1", "comment id")
+}
+
+func TestPolymorphismInterfaceSelectionWithoutImplementerUnknownIdIsNil(t *testing.T) {
+	c := newClient(t)
+	if must(c.Queries.FetchNodeId(ctx(t), "nope")).Node != nil {
+		t.Fatal("expected nil")
+	}
+}
