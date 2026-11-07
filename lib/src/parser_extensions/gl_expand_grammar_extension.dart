@@ -1,12 +1,20 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 
 /// A field that participates in a type-graph cycle, together with the type
 /// that declares it.
+class _CycleEdge {
+  final String key;
+  final bool concreteTarget;
+  final bool hasArguments;
+  _CycleEdge(this.key, this.concreteTarget, this.hasArguments);
+}
+
 class CyclicEdge {
   final GLField field;
   final GLTypeDefinition declaringType;
@@ -148,38 +156,80 @@ extension GLExpandGrammarExtension on GLParser {
   /// there [createAllFieldsFragment] inline-breaks the abstract edge via its
   /// concrete members instead of spreading the (would-be cyclic) fragment.
   Set<String> get _cyclicBackEdges => backEdgesCache.getOrCompute(() {
-        final result = <String>{};
-        final onStack = <String>{};
-        final visited = <String>{};
-
-        void dfs(String typeName) {
-          final typeDef = types[typeName];
-          if (typeDef == null) return;
-          visited.add(typeName);
-          onStack.add(typeName);
-          for (final field in typeDef.fields) {
-            if (!typeRequiresProjection(field.type)) continue;
-            final targetName = field.type.inlineType.token;
-            for (final ct in _resolveConcreteTypes(targetName)) {
-              if (onStack.contains(ct)) {
-                // This edge closes a cycle. Record it as the break point — for a
-                // concrete field this is the usual feedback edge; for an abstract
-                // field it only happens in an abstract-only cycle (no concrete
-                // back-edge exists), so the abstract edge must itself be broken.
-                result.add('$typeName.${field.name.token}');
-              } else if (!visited.contains(ct)) {
-                dfs(ct);
-              }
-            }
-          }
-          onStack.remove(typeName);
+        final cut = <String>{};
+        for (var cycle = _findCycle(cut);
+            cycle != null;
+            cycle = _findCycle(cut)) {
+          cut.add(_edgeToCut(cycle));
         }
-
-        for (final name in types.keys) {
-          if (!visited.contains(name)) dfs(name);
-        }
-        return result;
+        return cut;
       });
+
+  List<String> get _traversalStartTypes {
+    final roots = [
+      for (final t in GLQueryType.values)
+        if (types.containsKey(schema.getByQueryType(t)))
+          schema.getByQueryType(t)
+    ];
+    final rest = types.keys.where((n) => !roots.contains(n)).toList()..sort();
+    return [...roots, ...rest];
+  }
+
+  List<_CycleEdge>? _findCycle(Set<String> cut) {
+    final visited = <String>{};
+    final path = <String>[];
+    final pathEdges = <_CycleEdge>[];
+
+    List<_CycleEdge>? dfs(String typeName) {
+      final typeDef = types[typeName];
+      if (typeDef == null) return null;
+      visited.add(typeName);
+      path.add(typeName);
+      final fields = typeDef.fields.toList()
+        ..sort((a, b) => a.name.token.compareTo(b.name.token));
+      for (final field in fields) {
+        if (!typeRequiresProjection(field.type)) continue;
+        final key = '$typeName.${field.name.token}';
+        if (cut.contains(key)) continue;
+        final targetName = field.type.inlineType.token;
+        final edge = _CycleEdge(
+            key, types.containsKey(targetName), field.arguments.isNotEmpty);
+        final targets = _resolveConcreteTypes(targetName).toList()..sort();
+        for (final ct in targets) {
+          final onStackAt = path.indexOf(ct);
+          if (onStackAt >= 0) {
+            return [...pathEdges.sublist(onStackAt), edge];
+          }
+          if (visited.contains(ct)) continue;
+          pathEdges.add(edge);
+          final found = dfs(ct);
+          if (found != null) return found;
+          pathEdges.removeLast();
+        }
+      }
+      path.removeLast();
+      return null;
+    }
+
+    for (final name in _traversalStartTypes) {
+      if (visited.contains(name)) continue;
+      final found = dfs(name);
+      if (found != null) return found;
+    }
+    return null;
+  }
+
+  /// An edge carrying field arguments is cut in preference to the closing edge:
+  /// the cut edge keeps its field and arguments, while the inline block that
+  /// replaces a cut edge drops the cyclic fields below it.
+  String _edgeToCut(List<_CycleEdge> cycle) {
+    final withArguments = cycle
+        .where((e) => e.concreteTarget && e.hasArguments)
+        .map((e) => e.key)
+        .toList()
+      ..sort();
+    return withArguments.isNotEmpty ? withArguments.first : cycle.last.key;
+  }
 
   /// Lazily computed and cached per-parser SCC id map.
   Map<String, int> get _sccIds => sccIdsCache.getOrCompute(() {
