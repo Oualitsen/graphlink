@@ -20,7 +20,6 @@ final faultCases = [
 ];
 
 const knownDefects = <String, String>{
-  'gql-empty-errors:g': 'an empty errors list is thrown as a failure although data is present',
 };
 
 const opNames = {'g': 'GraphQL getCount', 'c': 'REST count', 'p': 'REST status'};

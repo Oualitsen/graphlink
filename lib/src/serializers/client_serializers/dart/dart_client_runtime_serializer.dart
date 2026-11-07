@@ -270,6 +270,9 @@ class DartClientRuntimeSerializer {
                 _client.codeGenUtils.ifStatement(
                     condition: "json is! Map<String, dynamic> || (json['data'] is! Map && !(json['errors'] is List && (json['errors'] as List).isNotEmpty))",
                     ifBlockStatements: ["throw [GraphLinkError(message: 'GraphQL response has no data', body: $svResponse)];"]),
+                _client.codeGenUtils.ifStatement(
+                    condition: "json['errors'] is List && (json['errors'] as List).isEmpty",
+                    ifBlockStatements: ["json['errors'] = null;"]),
                 'return fromJson(json);',
               ]),
           _client.codeGenUtils.createMethod(
@@ -419,7 +422,7 @@ class DartClientRuntimeSerializer {
                 'dataMap.addAll(cachedResponse);',
                 _client.codeGenUtils.constDecl("fullResponse", "<String, dynamic>{'data': rawData != null ? dataMap : null}"),
                 _client.codeGenUtils.ifStatement(
-                    condition: 'result["errors"] != null',
+                    condition: 'result["errors"] is List && (result["errors"] as List).isNotEmpty',
                     ifBlockStatements: [
                       'fullResponse["errors"] = result["errors"];',
                     ]),

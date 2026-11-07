@@ -390,7 +390,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           ],
         ),
         'Object.assign(dataMap, cachedResponse);',
-        _cg.constDecl("fullResponse", "{ 'data': result['data'] != null ? dataMap : null, 'errors': result['errors'] ?? null }", type: "Record<string, unknown>"),
+        _cg.constDecl("fullResponse", "{ 'data': result['data'] != null ? dataMap : null, 'errors': Array.isArray(result['errors']) && result['errors'].length > 0 ? result['errors'] : null }", type: "Record<string, unknown>"),
         _cg.ifStatement(
           condition: 'captureErrors',
           ifBlockStatements: ['return fullResponse;'],

@@ -281,7 +281,7 @@ type Mutation { deleteUser(id: ID!): Boolean! }
 
     test('constructs fullResponse map and returns it', () {
       print(queries);
-      expect(queries, contains("const fullResponse: Record<string, unknown> = { 'data': result['data'] != null ? dataMap : null, 'errors': result['errors'] ?? null };"));
+      expect(queries, contains("const fullResponse: Record<string, unknown> = { 'data': result['data'] != null ? dataMap : null, 'errors': Array.isArray(result['errors']) && result['errors'].length > 0 ? result['errors'] : null };"));
       expect(queries, contains('return fullResponse;'));
     });
   });

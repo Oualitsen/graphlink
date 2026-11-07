@@ -98,7 +98,7 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 | Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
 | `Int` overflow wraps or clamps; fraction truncates | Java (wraps), Kotlin (clamps) |
 | Scalar types and shapes are not checked at run time | TypeScript (19 cases), Python (10) |
-| Empty `errors: []` next to `data` is raised as a failure | Dart, TypeScript, Python |
+| ~~Empty `errors: []` next to `data` is raised as a failure~~ fixed: an empty list counts as no errors | Dart, TypeScript, Python |
 | UTF-8 BOM rejected | Python, Go, Java, Kotlin (c, p) |
 | ~~GraphQL transport drops the HTTP status~~ fixed with the item above | all |
 
