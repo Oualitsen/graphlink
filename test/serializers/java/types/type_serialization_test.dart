@@ -77,7 +77,7 @@ void main() {
 
     var ibase = g.interfaces["IBase"]!;
 
-    var ibaseText = javaSerialzer.serializeInterface(ibase, getters: true);
+    var ibaseText = javaSerialzer.interfaces.serializeInterface(ibase, getters: true);
     expect(ibaseText.trim(), startsWith("@Logger"));
 
     var gender = g.enums["Gender"]!;
@@ -169,10 +169,10 @@ void main() {
         user.fields.where((f) => f.name.token == "married").first;
 
     var getterWithoutModifier =
-        javaSerialzer.serializeGetterDeclaration(idField, skipModifier: true);
+        javaSerialzer.interfaces.serializeGetterDeclaration(idField, skipModifier: true);
     var getterWithModifier =
-        javaSerialzer.serializeGetterDeclaration(idField, skipModifier: false);
-    var marriedGetter = javaSerialzer.serializeGetterDeclaration(marriedField,
+        javaSerialzer.interfaces.serializeGetterDeclaration(idField, skipModifier: false);
+    var marriedGetter = javaSerialzer.interfaces.serializeGetterDeclaration(marriedField,
         skipModifier: false);
     expect(getterWithoutModifier, "String getId()");
     expect(getterWithModifier, "public String getId()");
@@ -194,8 +194,8 @@ void main() {
     var middleName =
         user.fields.where((f) => f.name.token == "middleName").first;
 
-    var setId = javaSerialzer.serializeSetter(idField, user);
-    var setMiddleName = javaSerialzer.serializeSetter(middleName, user);
+    var setId = javaSerialzer.accessors.serializeSetter(idField, user);
+    var setMiddleName = javaSerialzer.accessors.serializeSetter(middleName, user);
     print(setMiddleName);
 
     expect(
@@ -229,9 +229,9 @@ void main() {
     var middleName =
         user.fields.where((f) => f.name.token == "middleName").first;
 
-    var getId = javaSerialzer.serializeGetter(idField, user);
-    var isMarried = javaSerialzer.serializeGetter(married, user);
-    var middleNameText = javaSerialzer.serializeGetter(middleName, user);
+    var getId = javaSerialzer.accessors.serializeGetter(idField, user);
+    var isMarried = javaSerialzer.accessors.serializeGetter(married, user);
+    var middleNameText = javaSerialzer.accessors.serializeGetter(middleName, user);
     print(getId);
 
     expect(getId,
@@ -309,14 +309,14 @@ void main() {
 
     var entity = g.interfaces["Interface1"]!;
     var javaSerialzer = JavaSerializer(g, importPrefix: "");
-    var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
+    var class_ = javaSerialzer.interfaces.serializeInterface(entity, getters: true).trim();
     expect(class_, startsWith("public interface Interface1 {"));
     expect(class_, endsWith("}"));
     for (var e in entity.fields) {
       expect(
           class_,
           contains(
-              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+              javaSerialzer.interfaces.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 
@@ -330,7 +330,7 @@ void main() {
 
     var entity = g.interfaces["Interface2"]!;
     var javaSerialzer = JavaSerializer(g, importPrefix: "");
-    var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
+    var class_ = javaSerialzer.interfaces.serializeInterface(entity, getters: true).trim();
     print(class_);
     expect(class_, startsWith("public interface Interface2 extends IBase {"));
     expect(class_, endsWith("}"));
@@ -338,7 +338,7 @@ void main() {
       expect(
           class_,
           contains(
-              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+              javaSerialzer.interfaces.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 
@@ -352,7 +352,7 @@ void main() {
 
     var entity = g.interfaces["Interface3"]!;
     var javaSerialzer = JavaSerializer(g, importPrefix: "");
-    var class_ = javaSerialzer.serializeInterface(entity, getters: true).trim();
+    var class_ = javaSerialzer.interfaces.serializeInterface(entity, getters: true).trim();
     expect(class_,
         startsWith("public interface Interface3 extends IBase, IBase2 {"));
     expect(class_, endsWith("}"));
@@ -360,7 +360,7 @@ void main() {
       expect(
           class_,
           contains(
-              javaSerialzer.serializeGetterDeclaration(e, skipModifier: true)));
+              javaSerialzer.interfaces.serializeGetterDeclaration(e, skipModifier: true)));
     }
   });
 

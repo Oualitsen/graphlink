@@ -20,7 +20,7 @@ void main() {
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
     var agedDeclaration =
-        javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
+        javaSerialzer.interfaces.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "Boolean getAged()");
   });
 
@@ -38,7 +38,7 @@ void main() {
     var aged = person.fields.where((f) => f.name.token == "aged").first;
 
     var agedDeclaration =
-        javaSerialzer.serializeGetterDeclaration(aged, skipModifier: true);
+        javaSerialzer.interfaces.serializeGetterDeclaration(aged, skipModifier: true);
     expect(agedDeclaration, "boolean isAged()");
   });
 
@@ -56,7 +56,7 @@ void main() {
     var ids = person.fields.where((f) => f.name.token == "ids").first;
 
     var idsSerial =
-        javaSerialzer.serializeGetterDeclaration(ids, skipModifier: true);
+        javaSerialzer.interfaces.serializeGetterDeclaration(ids, skipModifier: true);
 
     expect(idsSerial, "java.util.List<Integer> getIds()");
   });

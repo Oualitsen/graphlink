@@ -1,3 +1,4 @@
+import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_defaults_extension.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
@@ -7,7 +8,6 @@ import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
-import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -15,6 +15,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/go/go_mapping_serializer.dart';
 
 const _importBySelector = {
   'json': 'encoding/json',
@@ -49,7 +50,11 @@ const _importBySelector = {
 };
 
 class GoSerializer extends GLSerializer {
+  @override
+  late final GLMappingSerializer mapping = GoMappingSerializer(this);
+
   final codeGenUtils = GoCodeGenUtils();
+
   final String packageName;
 
   @override
@@ -656,117 +661,6 @@ class GoSerializer extends GLSerializer {
 
   // ── @glMapsTo ──────────────────────────────────────────────────────────────
 
-  String _lowerFirst(String s) => s.firstLow;
-
-  @override
-  String generateToMethod(GLInputDefinition def, String targetType, ToMappingPlan plan) {
-    final params = [
-      ...plan.requiredParams
-          .map((f) => '${_lowerFirst(f.targetField.codeName)} ${serializeType(f.targetField.type)}'),
-      ...plan.defaultParams.map((f) => 'default${f.targetField.codeName.firstUp} ${serializeType(f.targetField.type)}'),
-    ];
-    final prelude = <String>[];
-    final assignments = [
-      ...plan.autoMapped.map((f) =>
-          '${f.targetField.codeName}: ${_mapToExpr('v.${f.sourceField!.codeName}', f.sourceField!.type, f.targetField.type, 0)},'),
-      ...plan.defaultParams.map((f) {
-        final local = 'resolved${f.targetField.codeName.firstUp}';
-        final source = 'v.${f.sourceField!.codeName}';
-        prelude.add(codeGenUtils.constDecl(local, 'default${f.targetField.codeName.firstUp}'));
-        prelude.add(codeGenUtils.ifStatement(
-          condition: '$source != nil',
-          ifBlockStatements: ['$local = ${usesPointer(f.sourceField!.type) ? '*$source' : source}'],
-        ));
-        return '${f.targetField.codeName}: $local,';
-      }),
-      ...plan.requiredParams
-          .map((f) => '${f.targetField.codeName}: ${_lowerFirst(f.targetField.codeName)},'),
-    ];
-    return codeGenUtils.createMethod(
-      receiver: 'v ${def.codeName}',
-      methodName: 'To${targetType.firstUp}',
-      arguments: params,
-      returnType: targetType,
-      statements: [...prelude, 'return $targetType{\n${assignments.join('\n').identGo()}\n}'],
-    );
-  }
-
-  @override
-  String generateFromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan) {
-    final targetVar = targetType.firstLow;
-    final preludes = <String>[];
-    final assignments = <String>[
-      ...plan.autoMapped.map((f) =>
-          '${f.sourceField!.codeName}: ${_mapFromExpr('$targetVar.${f.targetField.codeName}', f.sourceField!.type.firstType.token, f.targetField.type, 0)},'),
-      ...plan.nullableListDefaults.map((f) {
-        final expr = _mapFromExpr(
-            '$targetVar.${f.targetField.codeName}', f.sourceField!.type.firstType.token, f.targetField.type, 0);
-        final local = 'resolved${f.sourceField!.codeName.firstUp}';
-        preludes.add(codeGenUtils.constDecl(local, expr));
-        preludes.add(codeGenUtils.ifStatement(
-          condition: '$local == nil',
-          ifBlockStatements: ['$local = default${f.sourceField!.codeName.firstUp}'],
-        ));
-        return '${f.sourceField!.codeName}: $local,';
-      }),
-      ...plan.promoted.map((f) => '${f.sourceField!.codeName}: ${_lowerFirst(f.sourceField!.codeName)},'),
-      ...plan.inputOnly.map((f) => '${f.codeName}: ${_lowerFirst(f.codeName)},'),
-    ];
-    final params = [
-      '$targetVar $targetType',
-      ...plan.nullableListDefaults
-          .map((f) => 'default${f.sourceField!.codeName.firstUp} ${serializeType(f.sourceField!.type)}'),
-      ...plan.promoted.map((f) => '${_lowerFirst(f.sourceField!.codeName)} ${serializeType(f.sourceField!.type)}'),
-      ...plan.inputOnly.map((f) => '${_lowerFirst(f.codeName)} ${serializeType(f.type)}'),
-    ];
-    return codeGenUtils.createMethod(
-      methodName: '${def.codeName}From${targetType.firstUp}',
-      arguments: params,
-      returnType: def.codeName,
-      statements: [...preludes, 'return ${def.codeName}{\n${assignments.join('\n').identGo()}\n}'],
-    );
-  }
-
-  String _mapToExpr(String expr, GLType sourceType, GLType targetType, int index) {
-    if (sourceType.isList) {
-      if (sourceType.firstType.token == targetType.firstType.token) return expr;
-      final variable = 'e$index';
-      final inner = _mapToExpr(variable, sourceType.inlineType, targetType.inlineType, index + 1);
-      return 'glMapSlice($expr, func($variable ${serializeType(sourceType.inlineType)}) ${serializeType(targetType.inlineType)} { return $inner })';
-    }
-    final sourceInput = grammar.inputs[sourceType.token];
-    if (sourceInput?.mapsToType == targetType.token) {
-      final target = resolveCodeName(targetType.token).firstUp;
-      return sourceType.nullable
-          ? 'glMapPtr($expr, func(x ${sourceInput!.codeName}) ${serializeType(targetType)} { return x.To$target() })'
-          : '$expr.To$target()';
-    }
-    return expr;
-  }
-
-  String _mapFromExpr(String variable, String sourceElemToken, GLType targetType, int index) {
-    if (targetType.isList) {
-      if (sourceElemToken == targetType.firstType.token) return variable;
-      final element = 'e$index';
-      final inner = _mapFromExpr(element, sourceElemToken, targetType.inlineType, index + 1);
-      final sourceInput = grammar.inputs[sourceElemToken];
-      return 'glMapSlice($variable, func($element ${serializeType(targetType.inlineType)}) ${sourceInput?.codeName ?? serializeType(targetType.inlineType)} { return $inner })';
-    }
-    final sourceInput = grammar.inputs[sourceElemToken];
-    if (sourceInput?.mapsToType == targetType.token) {
-      final sourceCodeName = resolveCodeName(sourceElemToken);
-      final targetCodeName = resolveCodeName(targetType.token);
-      final call = '${sourceCodeName}From${targetCodeName.firstUp}';
-      if (targetType.nullable) {
-        return 'glMapPtr($variable, func(x $targetCodeName) $sourceCodeName { return $call(x) })';
-      }
-      return '$call($variable)';
-    }
-    return variable;
-  }
-
-  // ── Files & imports ────────────────────────────────────────────────────────
-
   static const _buildConstraintSuffixes = {
     'aix', 'android', 'darwin', 'dragonfly', 'freebsd', 'hurd', 'illumos', 'ios', 'js', 'linux', 'nacl', 'netbsd',
     'openbsd', 'plan9', 'solaris', 'wasip1', 'windows', 'zos', '386', 'amd64', 'arm', 'arm64', 'loong64', 'mips',
@@ -824,5 +718,6 @@ class GoSerializer extends GLSerializer {
 }
 
 extension _FirstOrNullGl<T> on Iterable<T> {
+
   T? get firstOrNullGl => isEmpty ? null : first;
 }

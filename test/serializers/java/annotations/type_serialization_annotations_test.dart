@@ -87,7 +87,7 @@ void main() {
     var javaSerialzer = JavaSerializer(g, importPrefix: "");
 
     var ibase = g.interfaces["IBase"]!;
-    var ibaseSerial = javaSerialzer.serializeInterface(ibase, getters: true);
+    var ibaseSerial = javaSerialzer.interfaces.serializeInterface(ibase, getters: true);
 
     expect(
         ibaseSerial,

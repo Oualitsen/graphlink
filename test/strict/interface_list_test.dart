@@ -27,7 +27,7 @@ void main() {
 
     final container = g.interfaces["Container"]!;
     final javaSerializer = JavaSerializer(g, importPrefix: "");
-    final out = javaSerializer.serializeInterface(container, getters: true);
+    final out = javaSerializer.interfaces.serializeInterface(container, getters: true);
     print(out);
 
     expect(out, contains("List<Item> getItems()"));
@@ -40,7 +40,7 @@ void main() {
 
     final container = g.interfaces["Container"]!;
     final javaSerializer = JavaSerializer(g, importPrefix: "", typesAsRecords: true);
-    final out = javaSerializer.serializeInterface(container, getters: true);
+    final out = javaSerializer.interfaces.serializeInterface(container, getters: true);
     print(out);
 
     expect(out, contains("List<Item> items()"));
