@@ -226,6 +226,16 @@ public struct GraphLinkException: Error, Sendable {
         self.errors = errors
     }
 }
+
+public struct GraphLinkDecodeError: Error, Sendable, CustomStringConvertible {
+    public let message: String
+
+    public init(_ message: String) {
+        self.message = message
+    }
+
+    public var description: String { message }
+}
 ''';
 
 // ── Resolver base ─────────────────────────────────────────────────────────────
@@ -285,7 +295,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
     func parseToObjectAndCache<T: GraphLinkFullResponse>(
         data: Data,
         cachedResponse: [String: Any?],
-        parser: ([String: Any?]) -> T,
+        parser: ([String: Any?]) throws -> T,
         remainingQueries: [GraphLinkPartialQuery],
         captureErrors: Bool
     ) async throws -> T {
@@ -306,7 +316,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         for (k, v) in cachedResponse { dataMap[k] = v }
         var fullResponse: [String: Any?] = ["data": rawData != nil ? dataMap : nil]
         if result.keys.contains("errors") { fullResponse["errors"] = result["errors"] }
-        let parsed = parser(fullResponse)
+        let parsed = try parser(fullResponse)
         if captureErrors { return parsed }
         let errors = result["errors"] as? [Any?]
         if let errors, !errors.isEmpty {
@@ -320,12 +330,12 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         fragmentNames: Set<String>,
         operationName: String,
         variables: [String: Any?],
-        fromJson: ([String: Any?]) -> T
+        fromJson: ([String: Any?]) throws -> T
     ) async throws -> T {
         let fullQuery = assembleQuery(query, fragmentNames: fragmentNames)
         let payload = GraphLinkPayload(query: fullQuery, operationName: operationName, variables: variables)
         let responseData = try await glCallAdapter(payload)
-        return fromJson(try GraphLinkJson.decode(responseData))
+        return try fromJson(GraphLinkJson.decode(responseData))
     }
 
     func executeData<T: GraphLinkFullResponse>(
@@ -333,7 +343,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         fragmentNames: Set<String>,
         operationName: String,
         variables: [String: Any?],
-        fromJson: ([String: Any?]) -> T
+        fromJson: ([String: Any?]) throws -> T
     ) async throws -> T {
         let decoded = try await executeFull(query: query, fragmentNames: fragmentNames, operationName: operationName, variables: variables, fromJson: fromJson)
         if let errors = decoded.errors, !errors.isEmpty {
@@ -346,7 +356,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         partialQueries: [GraphLinkPartialQuery],
         operationName: String,
         directives: String,
-        fromJson: ([String: Any?]) -> T,
+        fromJson: ([String: Any?]) throws -> T,
         captureErrors: Bool
     ) async throws -> T {
         var responseMap: [String: Any?] = [:]
@@ -366,7 +376,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         let remaining = partialQueries.filter { !responseMap.keys.contains(\$0.elementKey) }
         if remaining.isEmpty {
             let wrappedResponse: [String: Any?] = ["data": responseMap]
-            return fromJson(wrappedResponse)
+            return try fromJson(wrappedResponse)
         }
         let payload = buildPayload(remaining, operationName: operationName, directives: directives)
         do {
@@ -377,7 +387,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
             let remainingCount = partialQueries.filter { !responseMap.keys.contains(\$0.elementKey) }.count
             if remainingCount > 0 { throw error }
             let wrappedResponse: [String: Any?] = ["data": responseMap]
-            return fromJson(wrappedResponse)
+            return try fromJson(wrappedResponse)
         }
     }
 

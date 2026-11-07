@@ -7,6 +7,7 @@ import 'package:graphlink/src/serializers/client_serializers/swift/swift_client_
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_throwing_decode_extension.dart';
 
 const _clientException = 'GraphLinkException';
 
@@ -186,7 +187,7 @@ class SwiftClientOperationSerializer {
       codeGenUtils.constDecl(svOperations, 'try GraphLinkJson.encode($svOperationsMap)'),
       codeGenUtils.constDecl(svMapJson, 'try GraphLinkJson.encode($svFileMap)'),
       codeGenUtils.constDecl(svResponseData, 'try await ${codeGenUtils.callExpression('multipartAdapter', ['$svOperations', '$svMapJson', '$svFiles', 'onProgress'])}'),
-      codeGenUtils.constDecl(svDecodedResponse, '$fullResponseToken.fromJson(try GraphLinkJson.decode($svResponseData))'),
+      codeGenUtils.constDecl(svDecodedResponse, 'try $fullResponseToken.fromJson(GraphLinkJson.decode($svResponseData))'),
       ..._mutationReturnStatements(def, isCE),
     ]);
 
@@ -224,7 +225,7 @@ class SwiftClientOperationSerializer {
       _generateVariables(def),
       codeGenUtils.constDecl(svPayload, codeGenUtils.callExpression('GraphLinkPayload', ['query: $svFullQuery', 'operationName: "${def.tokenInfo}"', 'variables: ${_variablesExpr(def)}'])),
       codeGenUtils.constDecl('stream', 'handler.handle($svPayload)'),
-      _serializeSubscriptionStream(fromJsonTarget),
+      _serializeSubscriptionStream(fromJsonTarget, throwsOnDecode: rawToken != null && grammar.decodesWithThrows(rawToken)),
     ];
 
     return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(statements)}';
@@ -236,10 +237,10 @@ class SwiftClientOperationSerializer {
   /// [SwiftCodeGenUtils.block] (which always emits a bare `{`), so this
   /// composes [SwiftCodeGenUtils.tryCatchFinally]/[SwiftCodeGenUtils.block]
   /// for the nested pieces and splices them under that one manual header.
-  String _serializeSubscriptionStream(String fromJsonTarget) {
+  String _serializeSubscriptionStream(String fromJsonTarget, {required bool throwsOnDecode}) {
     final doCatch = codeGenUtils.tryCatchFinally(
       tryStatements: [
-        'for try await msg in stream { continuation.yield($fromJsonTarget.fromJson(msg)) }',
+        'for try await msg in stream { continuation.yield(${throwsOnDecode ? 'try ' : ''}$fromJsonTarget.fromJson(msg)) }',
         'continuation.finish()',
       ],
       catchStatements: ['continuation.finish(throwing: error)'],

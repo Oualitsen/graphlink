@@ -1,6 +1,7 @@
 # Swift: throwing `fromJson` for interfaces and unions
 
-Status: plan only, nothing implemented.
+Status: implemented (see CHANGELOG 6.0.0). `decodesWithThrows` in `gl_grammar_throwing_decode_extension.dart`, `throws` flag on `SwiftCodeGenUtils.method/createMethod`,
+`GraphLinkDecodeError` in `GraphLinkException.swift`, REST and mock Swift tests added. Missing-field force casts (`as!`) are still open.
 
 ## Problem
 
