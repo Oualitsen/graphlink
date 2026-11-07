@@ -202,6 +202,92 @@ void main() {
     });
   });
 
+  group('an interface with a field argument and a self reference', () {
+    test('the argument reaches every implementer and each keeps its own fields', () async {
+      final album = (await client.queries.listing(id: 'al1', fieldArgs: const ListingFieldArgs(itemsLimit: 2))).listing;
+      expect(album, isA<Album>());
+      expect((album as Album).year, 2020);
+      expect(album.items.map((a) => a.runtimeType), [Photo, Video]);
+      final playlist = (await client.queries.listing(id: 'pl1', fieldArgs: const ListingFieldArgs(itemsLimit: 5))).listing;
+      expect((playlist as Playlist).tracks, 12);
+      expect(playlist.items.map((a) => a.runtimeType), [Video, Document]);
+    });
+
+    test('a limit of zero yields empty lists', () async {
+      final album = (await client.queries.listing(id: 'al1', fieldArgs: const ListingFieldArgs(itemsLimit: 0))).listing!;
+      expect(album.items, isEmpty);
+    });
+
+    test('the interface field returns the other implementer, or null', () async {
+      final album = (await client.queries.listing(id: 'al1', fieldArgs: const ListingFieldArgs(itemsLimit: 1))).listing!;
+      expect(album.related, isA<Playlist>());
+      expect((album.related as Playlist).tracks, 12);
+      final winter = (await client.queries.listing(id: 'al2', fieldArgs: const ListingFieldArgs(itemsLimit: 1))).listing!;
+      expect(winter.related, isNull);
+    });
+
+    test('an unknown id decodes null', () async {
+      final response = await client.queries.listing(id: 'nope', fieldArgs: const ListingFieldArgs(itemsLimit: 1));
+      expect(response.listing, isNull);
+    });
+
+    test('a list of the interface decodes each implementer', () async {
+      final list = (await client.queries.listings(fieldArgs: const ListingsFieldArgs(itemsLimit: 1))).listings;
+      expect(list.map((l) => l.runtimeType), [Album, Playlist, Album]);
+      expect(list.map((l) => l.items.length), [1, 1, 1]);
+    });
+  });
+
+  group('a union with a single member', () {
+    test('decodes to the member', () async {
+      final solo = (await client.queries.solo(fieldArgs: const SoloFieldArgs(itemsLimit: 1))).solo;
+      expect(solo, isA<Album>());
+      expect((solo as Album).title, 'Summer');
+    });
+  });
+
+  group('members that share a field with the same type', () {
+    test('id and url are readable on the union itself', () async {
+      final list = (await client.queries.attachments()).attachments;
+      expect(list.map((a) => a.id), ['ph1', 'v1', 'd1']);
+      expect(list.map((a) => a.url), ['http://cdn/1.png', 'http://cdn/1.mp4', 'http://cdn/1.pdf']);
+    });
+
+    test('a selection that shares only some fields exposes just those', () async {
+      expect((await client.queries.fetchPhotoParts(id: 'ph1')).attachment!.id, 'ph1');
+      expect((await client.queries.fetchPhotoParts(id: 'v1')).attachment!.id, 'v1');
+    });
+
+    test('a union of two types shares only id', () async {
+      expect((await client.queries.shareable(id: 'ph1')).shareable!.id, 'ph1');
+      expect((await client.queries.shareable(id: 'p1')).shareable!.id, 'p1');
+    });
+  });
+
+  group('a member returned directly and projected in the same client', () {
+    test('the direct query keeps the full type', () async {
+      final photo = (await client.queries.photo(id: 'ph1')).photo!;
+      expect([photo.id, photo.url, photo.width], ['ph1', 'http://cdn/1.png', 640]);
+      expect((await client.queries.photo(id: 'nope')).photo, isNull);
+    });
+
+    test('a partial selection of the same type does not replace it', () async {
+      expect((await client.queries.fetchPhotoWidth(id: 'ph1')).photo!.width, 640);
+      final member = (await client.queries.fetchPhotoUrl(id: 'ph1')).attachment;
+      expect((member as Photo_Url).url, 'http://cdn/1.png');
+      expect((await client.queries.fetchPhotoUrl(id: 'v1')).attachment, isA<Video_Id>());
+    });
+  });
+
+  group('an inline fragment on the interface mixed with concrete ones', () {
+    test('the interface fields reach every member and the concrete ones their own', () async {
+      final list = (await client.queries.searchMixed(term: 'x')).search;
+      expect(list.map((r) => r.id), ['user-1', 'post-1']);
+      expect((list[0] as UserResult_IdName).name, 'Alice Smith');
+      expect((list[1] as PostResult).title, 'Hello World');
+    });
+  });
+
   group('subscriptions', () {
     test('a union stream emits each member', () async {
       final events = await client.subscriptions.attachmentAdded().take(3).toList().timeout(const Duration(seconds: 10));

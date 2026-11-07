@@ -9,6 +9,8 @@ private func kind(_ value: Any?) -> String {
     case is Document: return "Document"
     case is Article: return "Article"
     case is Comment: return "Comment"
+    case is Album: return "Album"
+    case is Playlist: return "Playlist"
     case nil: return "nil"
     default: return "other"
     }
@@ -147,5 +149,93 @@ final class PolymorphismTest: XCTestCase {
         XCTAssertTrue(first is Video)
         XCTAssertTrue(second is Video)
         XCTAssertEqual(calls.count, 1)
+    }
+
+    func testTheFieldArgumentReachesEveryImplementerAndEachKeepsItsOwnFields() async throws {
+        let albumResponse = try await client.queries.listing(id: "al1", fieldArgs: ListingFieldArgs(itemsLimit: 2))
+        let album = try XCTUnwrap(albumResponse.listing as? Album)
+        XCTAssertEqual(album.year, 2020)
+        XCTAssertEqual(kinds(album.items), ["Photo", "Video"])
+        let playlistResponse = try await client.queries.listing(id: "pl1", fieldArgs: ListingFieldArgs(itemsLimit: 5))
+        let playlist = try XCTUnwrap(playlistResponse.listing as? Playlist)
+        XCTAssertEqual(playlist.tracks, 12)
+        XCTAssertEqual(kinds(playlist.items), ["Video", "Document"])
+    }
+
+    func testALimitOfZeroYieldsEmptyLists() async throws {
+        let listingResponse = try await client.queries.listing(id: "al1", fieldArgs: ListingFieldArgs(itemsLimit: 0))
+        let listing = try XCTUnwrap(listingResponse.listing)
+        XCTAssertTrue(listing.items.isEmpty)
+    }
+
+    func testTheInterfaceFieldReturnsTheOtherImplementerOrNil() async throws {
+        let summerResponse = try await client.queries.listing(id: "al1", fieldArgs: ListingFieldArgs(itemsLimit: 1))
+        let summer = try XCTUnwrap(summerResponse.listing)
+        XCTAssertEqual((summer.related as? Playlist)?.tracks, 12)
+        let winterResponse = try await client.queries.listing(id: "al2", fieldArgs: ListingFieldArgs(itemsLimit: 1))
+        let winter = try XCTUnwrap(winterResponse.listing)
+        XCTAssertNil(winter.related)
+    }
+
+    func testAnUnknownListingIdDecodesNil() async throws {
+        let response = try await client.queries.listing(id: "nope", fieldArgs: ListingFieldArgs(itemsLimit: 1))
+        XCTAssertNil(response.listing)
+    }
+
+    func testAListOfTheInterfaceDecodesEachImplementer() async throws {
+        let listings = try await client.queries.listings(fieldArgs: ListingsFieldArgs(itemsLimit: 1)).listings
+        XCTAssertEqual(kinds(listings), ["Album", "Playlist", "Album"])
+        XCTAssertEqual(listings.map { $0.items.count }, [1, 1, 1])
+    }
+
+    func testASingleMemberUnionDecodesToTheMember() async throws {
+        let soloResponse = try await client.queries.solo(fieldArgs: SoloFieldArgs(itemsLimit: 1))
+        let solo = try XCTUnwrap(soloResponse.solo as? Album)
+        XCTAssertEqual(solo.title, "Summer")
+    }
+
+    func testIdAndUrlAreReadableOnTheUnionItself() async throws {
+        let list = try await client.queries.attachments().attachments
+        XCTAssertEqual(list.map { $0.id }, ["ph1", "v1", "d1"])
+        XCTAssertEqual(list.map { $0.url }, ["http://cdn/1.png", "http://cdn/1.mp4", "http://cdn/1.pdf"])
+    }
+
+    func testASelectionThatSharesOnlySomeFieldsExposesJustThose() async throws {
+        let photo = try await client.queries.fetchPhotoParts(id: "ph1").attachment
+        XCTAssertEqual(photo?.id, "ph1")
+        let video = try await client.queries.fetchPhotoParts(id: "v1").attachment
+        XCTAssertEqual(video?.id, "v1")
+    }
+
+    func testAUnionOfTwoTypesSharesOnlyId() async throws {
+        let photo = try await client.queries.shareable(id: "ph1").shareable
+        XCTAssertEqual(photo?.id, "ph1")
+        let phone = try await client.queries.shareable(id: "p1").shareable
+        XCTAssertEqual(phone?.id, "p1")
+    }
+
+    func testTheDirectQueryKeepsTheFullType() async throws {
+        let photo = try await client.queries.photo(id: "ph1").photo
+        XCTAssertEqual(photo?.id, "ph1")
+        XCTAssertEqual(photo?.url, "http://cdn/1.png")
+        XCTAssertEqual(photo?.width, 640)
+        let missing = try await client.queries.photo(id: "nope").photo
+        XCTAssertNil(missing)
+    }
+
+    func testAPartialSelectionOfTheSameTypeDoesNotReplaceIt() async throws {
+        let width = try await client.queries.fetchPhotoWidth(id: "ph1").photo
+        XCTAssertEqual(width?.width, 640)
+        let member = try await client.queries.fetchPhotoUrl(id: "ph1").attachment
+        XCTAssertEqual((member as? Photo_Url)?.url, "http://cdn/1.png")
+        let video = try await client.queries.fetchPhotoUrl(id: "v1").attachment
+        XCTAssertTrue(video is Video_Id)
+    }
+
+    func testAnInterfaceFragmentMixedWithConcreteOnes() async throws {
+        let results = try await client.queries.searchMixed(term: "x").search
+        XCTAssertEqual(results.map { $0.id }, ["user-1", "post-1"])
+        XCTAssertEqual((results[0] as? UserResult_IdName)?.name, "Alice Smith")
+        XCTAssertEqual((results[1] as? PostResult)?.title, "Hello World")
     }
 }

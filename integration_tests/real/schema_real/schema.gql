@@ -212,6 +212,31 @@ type Laptop { id: ID! size: String! cpu: String! }
 union Gadget = Phone | Laptop
 union Shareable = Photo | Phone
 
+interface Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+}
+
+type Album implements Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+  year:    Int!
+}
+
+type Playlist implements Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+  tracks:  Int!
+}
+
+union Solo = Album
+
 interface Node { id: ID! }
 interface Entity implements Node { id: ID! createdBy: String! }
 
@@ -429,6 +454,10 @@ type Query {
   gadget(id: ID!): Gadget
   gadgets: [Gadget!]!
   shareable(id: ID!): Shareable
+  photo(id: ID!): Photo
+  listing(id: ID!): Listing
+  listings: [Listing!]!
+  solo: Solo
 }
 
 

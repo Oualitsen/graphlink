@@ -2,13 +2,18 @@ import asyncio
 import unittest
 
 from generated import (
+    Album,
     Article,
     Comment,
     DefaultGraphLinkWebSocketAdapter,
     Document,
     GraphLinkClient,
     GraphLinkHttpxAdapter,
+    ListingFieldArgs,
+    ListingsFieldArgs,
     Photo,
+    Playlist,
+    SoloFieldArgs,
     Video,
 )
 
@@ -192,6 +197,80 @@ class TypeInTwoUnions(RealTestCase):
         self.assertEqual(shareable.model, "Pixel")
         self.assertEqual(shareable.size, 6)
         self.assertIsNone((await self.client.queries.shareable(id="nope")).shareable)
+
+
+class InterfaceWithFieldArgument(RealTestCase):
+    async def test_the_argument_reaches_every_implementer_and_each_keeps_its_own_fields(self) -> None:
+        album = (await self.client.queries.listing(id="al1", field_args=ListingFieldArgs(items_limit=2))).listing
+        self.assertIsInstance(album, Album)
+        self.assertEqual(album.year, 2020)
+        self.assertEqual([type(a) for a in album.items], [Photo, Video])
+        playlist = (await self.client.queries.listing(id="pl1", field_args=ListingFieldArgs(items_limit=5))).listing
+        self.assertEqual(playlist.tracks, 12)
+        self.assertEqual([type(a) for a in playlist.items], [Video, Document])
+
+    async def test_a_limit_of_zero_yields_empty_lists(self) -> None:
+        album = (await self.client.queries.listing(id="al1", field_args=ListingFieldArgs(items_limit=0))).listing
+        self.assertEqual(list(album.items), [])
+
+    async def test_the_interface_field_returns_the_other_implementer_or_null(self) -> None:
+        album = (await self.client.queries.listing(id="al1", field_args=ListingFieldArgs(items_limit=1))).listing
+        self.assertIsInstance(album.related, Playlist)
+        self.assertEqual(album.related.tracks, 12)
+        winter = (await self.client.queries.listing(id="al2", field_args=ListingFieldArgs(items_limit=1))).listing
+        self.assertIsNone(winter.related)
+
+    async def test_an_unknown_id_decodes_null(self) -> None:
+        response = await self.client.queries.listing(id="nope", field_args=ListingFieldArgs(items_limit=1))
+        self.assertIsNone(response.listing)
+
+    async def test_a_list_of_the_interface_decodes_each_implementer(self) -> None:
+        listings = (await self.client.queries.listings(field_args=ListingsFieldArgs(items_limit=1))).listings
+        self.assertEqual([type(l) for l in listings], [Album, Playlist, Album])
+        self.assertEqual([len(l.items) for l in listings], [1, 1, 1])
+
+
+class SingleMemberUnion(RealTestCase):
+    async def test_decodes_to_the_member(self) -> None:
+        solo = (await self.client.queries.solo(field_args=SoloFieldArgs(items_limit=1))).solo
+        self.assertIsInstance(solo, Album)
+        self.assertEqual(solo.title, "Summer")
+
+
+class SharedFieldSameType(RealTestCase):
+    async def test_id_and_url_are_readable_on_the_union_itself(self) -> None:
+        attachments = (await self.client.queries.attachments()).attachments
+        self.assertEqual([a.id for a in attachments], ["ph1", "v1", "d1"])
+        self.assertEqual([a.url for a in attachments], ["http://cdn/1.png", "http://cdn/1.mp4", "http://cdn/1.pdf"])
+
+    async def test_a_selection_that_shares_only_some_fields_exposes_just_those(self) -> None:
+        self.assertEqual((await self.client.queries.fetch_photo_parts(id="ph1")).attachment.id, "ph1")
+        self.assertEqual((await self.client.queries.fetch_photo_parts(id="v1")).attachment.id, "v1")
+
+    async def test_a_union_of_two_types_shares_only_id(self) -> None:
+        self.assertEqual((await self.client.queries.shareable(id="ph1")).shareable.id, "ph1")
+        self.assertEqual((await self.client.queries.shareable(id="p1")).shareable.id, "p1")
+
+
+class MemberReturnedDirectlyAndProjected(RealTestCase):
+    async def test_the_direct_query_keeps_the_full_type(self) -> None:
+        photo = (await self.client.queries.photo(id="ph1")).photo
+        self.assertEqual([photo.id, photo.url, photo.width], ["ph1", "http://cdn/1.png", 640])
+        self.assertIsNone((await self.client.queries.photo(id="nope")).photo)
+
+    async def test_a_partial_selection_of_the_same_type_does_not_replace_it(self) -> None:
+        self.assertEqual((await self.client.queries.fetch_photo_width(id="ph1")).photo.width, 640)
+        member = (await self.client.queries.fetch_photo_url(id="ph1")).attachment
+        self.assertEqual(member.url, "http://cdn/1.png")
+        self.assertEqual((await self.client.queries.fetch_photo_url(id="v1")).attachment.id, "v1")
+
+
+class InterfaceFragmentMixedWithConcreteOnes(RealTestCase):
+    async def test_the_interface_fields_reach_every_member_and_the_concrete_ones_their_own(self) -> None:
+        results = (await self.client.queries.search_mixed(term="x")).search
+        self.assertEqual([r.id for r in results], ["user-1", "post-1"])
+        self.assertEqual(results[0].name, "Alice Smith")
+        self.assertEqual(results[1].title, "Hello World")
 
 
 class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):

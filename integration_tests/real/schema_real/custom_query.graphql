@@ -75,3 +75,22 @@ query fetchGadgets {
     ... on Laptop { id laptopSize: size }
   }
 }
+
+query fetchPhotoUrl($id: ID!) {
+  attachment(id: $id) {
+    ... on Photo { url }
+    ... on Video { id }
+  }
+}
+
+query fetchPhotoWidth($id: ID!) {
+  photo(id: $id) { width }
+}
+
+query searchMixed($term: String!) {
+  search(term: $term) {
+    ... on SearchResult { id }
+    ... on UserResult { name }
+    ... on PostResult { title }
+  }
+}
