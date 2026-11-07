@@ -5,7 +5,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import dev.graphlink.test.generated.client.GraphLinkClient;
 import dev.graphlink.test.generated.interfaces.Attachment;
+import dev.graphlink.test.generated.inputs.ListingFieldArgs;
+import dev.graphlink.test.generated.inputs.ListingsFieldArgs;
+import dev.graphlink.test.generated.inputs.SoloFieldArgs;
 import dev.graphlink.test.generated.interfaces.Entity;
+import dev.graphlink.test.generated.interfaces.Listing;
 import dev.graphlink.test.generated.types.*;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -206,5 +210,88 @@ class PolymorphismTest {
         assertInstanceOf(Photo.class, client.queries.attachment("ph1").getAttachment());
         assertEquals("Pixel", ((Phone) client.queries.shareable("p1").getShareable()).getModel());
         assertNull(client.queries.shareable("nope").getShareable());
+    }
+
+    @Test
+    void theArgumentReachesEveryImplementerAndEachKeepsItsOwnFields() {
+        Listing album = client.queries.listing("al1", new ListingFieldArgs(2)).getListing();
+        assertInstanceOf(Album.class, album);
+        assertEquals(2020, ((Album) album).getYear());
+        assertEquals(List.of(Photo.class, Video.class), album.getItems().stream().<Class<?>>map(Object::getClass).toList());
+        Listing playlist = client.queries.listing("pl1", new ListingFieldArgs(5)).getListing();
+        assertEquals(12, ((Playlist) playlist).getTracks());
+        assertEquals(List.of(Video.class, Document.class), playlist.getItems().stream().<Class<?>>map(Object::getClass).toList());
+    }
+
+    @Test
+    void aLimitOfZeroYieldsEmptyLists() {
+        assertTrue(client.queries.listing("al1", new ListingFieldArgs(0)).getListing().getItems().isEmpty());
+    }
+
+    @Test
+    void theInterfaceFieldReturnsTheOtherImplementerOrNull() {
+        Listing summer = client.queries.listing("al1", new ListingFieldArgs(1)).getListing();
+        assertEquals(12, ((Playlist) summer.getRelated()).getTracks());
+        assertNull(client.queries.listing("al2", new ListingFieldArgs(1)).getListing().getRelated());
+    }
+
+    @Test
+    void anUnknownListingIdDecodesNull() {
+        assertNull(client.queries.listing("nope", new ListingFieldArgs(1)).getListing());
+    }
+
+    @Test
+    void aListOfTheInterfaceDecodesEachImplementer() {
+        List<Listing> listings = client.queries.listings(new ListingsFieldArgs(1)).getListings();
+        assertEquals(List.of(Album.class, Playlist.class, Album.class), listings.stream().<Class<?>>map(Object::getClass).toList());
+        assertEquals(List.of(1, 1, 1), listings.stream().map(l -> l.getItems().size()).toList());
+    }
+
+    @Test
+    void aSingleMemberUnionDecodesToTheMember() {
+        Object solo = client.queries.solo(new SoloFieldArgs(1)).getSolo();
+        assertInstanceOf(Album.class, solo);
+        assertEquals("Summer", ((Album) solo).getTitle());
+    }
+
+    @Test
+    void idAndUrlAreReadableOnTheUnionItself() {
+        List<Attachment> list = client.queries.attachments().getAttachments();
+        assertEquals(List.of("ph1", "v1", "d1"), list.stream().map(Attachment::getId).toList());
+        assertEquals(List.of("http://cdn/1.png", "http://cdn/1.mp4", "http://cdn/1.pdf"), list.stream().map(Attachment::getUrl).toList());
+    }
+
+    @Test
+    void aSelectionThatSharesOnlySomeFieldsExposesJustThose() {
+        assertEquals("ph1", client.queries.fetchPhotoParts("ph1").getAttachment().getId());
+        assertEquals("v1", client.queries.fetchPhotoParts("v1").getAttachment().getId());
+    }
+
+    @Test
+    void aUnionOfTwoTypesSharesOnlyId() {
+        assertEquals("ph1", client.queries.shareable("ph1").getShareable().getId());
+        assertEquals("p1", client.queries.shareable("p1").getShareable().getId());
+    }
+
+    @Test
+    void theDirectQueryKeepsTheFullType() {
+        Photo photo = client.queries.photo("ph1").getPhoto();
+        assertEquals(List.of("ph1", "http://cdn/1.png", 640), List.of(photo.getId(), photo.getUrl(), photo.getWidth()));
+        assertNull(client.queries.photo("nope").getPhoto());
+    }
+
+    @Test
+    void aPartialSelectionOfTheSameTypeDoesNotReplaceIt() {
+        assertEquals(640, client.queries.fetchPhotoWidth("ph1").getPhoto().getWidth());
+        assertEquals("http://cdn/1.png", ((Photo_Url) client.queries.fetchPhotoUrl("ph1").getAttachment()).getUrl());
+        assertInstanceOf(Video_Id.class, client.queries.fetchPhotoUrl("v1").getAttachment());
+    }
+
+    @Test
+    void anInterfaceFragmentMixedWithConcreteOnes() {
+        var results = client.queries.searchMixed("x").getSearch();
+        assertEquals(List.of("user-1", "post-1"), results.stream().map(r -> r.getId()).toList());
+        assertEquals("Alice Smith", ((UserResult_IdName) results.get(0)).getName());
+        assertEquals("Hello World", ((PostResult) results.get(1)).getTitle());
     }
 }

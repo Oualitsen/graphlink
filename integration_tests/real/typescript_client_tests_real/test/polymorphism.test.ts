@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
-import type { Article, Comment, Document, Photo, Video } from '../lib/generated/graphlink.js';
+import type { Album, Article, Comment, Document, Photo, Playlist, Video } from '../lib/generated/graphlink.js';
 import { httpAdapterForPort, newClient, newWsAdapterForPort, realHttpAdapter, WS_URL } from './real-server-adapter.ts';
 import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.ts';
 
@@ -206,6 +206,91 @@ function collect<T>(n: number, subscribe: (onData: (e: T) => void, onError: (e: 
     );
   });
 }
+
+describe('an interface with a field argument and a self reference', () => {
+  it('the argument reaches every implementer and each keeps its own fields', async () => {
+    const album = (await client.queries.listing({ id: 'al1', fieldArgs: { itemsLimit: 2 } })).listing as Album;
+    expect(album.__typename).toBe('Album');
+    expect(album.year).toBe(2020);
+    expect(kinds(album.items)).toEqual(['Photo', 'Video']);
+    const playlist = (await client.queries.listing({ id: 'pl1', fieldArgs: { itemsLimit: 5 } })).listing as Playlist;
+    expect(playlist.tracks).toBe(12);
+    expect(kinds(playlist.items)).toEqual(['Video', 'Document']);
+  });
+
+  it('a limit of zero yields empty lists', async () => {
+    const album = (await client.queries.listing({ id: 'al1', fieldArgs: { itemsLimit: 0 } })).listing;
+    expect(album!.items).toEqual([]);
+  });
+
+  it('the interface field returns the other implementer, or null', async () => {
+    const album = (await client.queries.listing({ id: 'al1', fieldArgs: { itemsLimit: 1 } })).listing;
+    expect(album!.related!.__typename).toBe('Playlist');
+    expect((album!.related as Playlist).tracks).toBe(12);
+    const winter = (await client.queries.listing({ id: 'al2', fieldArgs: { itemsLimit: 1 } })).listing;
+    expect(winter!.related).toBeNull();
+  });
+
+  it('an unknown id decodes null', async () => {
+    expect((await client.queries.listing({ id: 'nope', fieldArgs: { itemsLimit: 1 } })).listing).toBeNull();
+  });
+
+  it('a list of the interface decodes each implementer', async () => {
+    const list = (await client.queries.listings({ fieldArgs: { itemsLimit: 1 } })).listings;
+    expect(kinds(list)).toEqual(['Album', 'Playlist', 'Album']);
+    expect(list.map((l) => l.items.length)).toEqual([1, 1, 1]);
+  });
+});
+
+describe('a union with a single member', () => {
+  it('decodes to the member', async () => {
+    const solo = (await client.queries.solo({ fieldArgs: { itemsLimit: 1 } })).solo as Album;
+    expect(solo.__typename).toBe('Album');
+    expect(solo.title).toBe('Summer');
+  });
+});
+
+describe('members that share a field with the same type', () => {
+  it('id and url are readable on the union itself', async () => {
+    const list = (await client.queries.attachments()).attachments;
+    expect(list.map((a) => a.id)).toEqual(['ph1', 'v1', 'd1']);
+    expect(list.map((a) => a.url)).toEqual(['http://cdn/1.png', 'http://cdn/1.mp4', 'http://cdn/1.pdf']);
+  });
+
+  it('a selection that shares only some fields exposes just those', async () => {
+    expect((await client.queries.fetchPhotoParts({ id: 'ph1' })).attachment!.id).toBe('ph1');
+    expect((await client.queries.fetchPhotoParts({ id: 'v1' })).attachment!.id).toBe('v1');
+  });
+
+  it('a union of two types shares only id', async () => {
+    expect((await client.queries.shareable({ id: 'ph1' })).shareable!.id).toBe('ph1');
+    expect((await client.queries.shareable({ id: 'p1' })).shareable!.id).toBe('p1');
+  });
+});
+
+describe('a member returned directly and projected in the same client', () => {
+  it('the direct query keeps the full type', async () => {
+    const photo = (await client.queries.photo({ id: 'ph1' })).photo!;
+    expect([photo.id, photo.url, photo.width]).toEqual(['ph1', 'http://cdn/1.png', 640]);
+    expect((await client.queries.photo({ id: 'nope' })).photo).toBeNull();
+  });
+
+  it('a partial selection of the same type does not replace it', async () => {
+    expect((await client.queries.fetchPhotoWidth({ id: 'ph1' })).photo!.width).toBe(640);
+    const member = (await client.queries.fetchPhotoUrl({ id: 'ph1' })).attachment as Json;
+    expect(member).toMatchObject({ __typename: 'Photo', url: 'http://cdn/1.png' });
+    expect((await client.queries.fetchPhotoUrl({ id: 'v1' })).attachment).toMatchObject({ __typename: 'Video', id: 'v1' });
+  });
+});
+
+describe('an inline fragment on the interface mixed with concrete ones', () => {
+  it('the interface fields reach every member and the concrete ones their own', async () => {
+    const list = (await client.queries.searchMixed({ term: 'x' })).search as Json[];
+    expect(list.map((r) => r.id)).toEqual(['user-1', 'post-1']);
+    expect(list[0]).toMatchObject({ __typename: 'UserResult', name: 'Alice Smith' });
+    expect(list[1]).toMatchObject({ __typename: 'PostResult', title: 'Hello World' });
+  });
+});
 
 describe('subscriptions', () => {
   it('a union stream emits each member', async () => {

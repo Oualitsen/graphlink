@@ -22,6 +22,10 @@ func kinds[T any](values []T) []string {
 			out[i] = "Article"
 		case gl.Comment:
 			out[i] = "Comment"
+		case gl.Album:
+			out[i] = "Album"
+		case gl.Playlist:
+			out[i] = "Playlist"
 		case nil:
 			out[i] = "nil"
 		default:
@@ -184,4 +188,129 @@ func TestPolymorphismCachedUnionOperationIsServedOnce(t *testing.T) {
 	second := must(client.Queries.GetCachedAttachment(ctx(t), "v1")).GetCachedAttachment
 	expectKinds(t, kinds([]gl.Attachment{first, second}), "Video", "Video")
 	expectEqual(t, int(calls.Load()), 1, "adapter calls")
+}
+
+func TestPolymorphismInterfaceFieldArgumentReachesEveryImplementer(t *testing.T) {
+	c := newClient(t)
+	album, isAlbum := must(c.Queries.Listing(ctx(t), "al1", gl.ListingFieldArgs{ItemsLimit: 2})).Listing.(gl.Album)
+	if !isAlbum {
+		t.Fatal("expected an Album")
+	}
+	expectEqual(t, album.Year, 2020, "year")
+	expectKinds(t, kinds(album.Items), "Photo", "Video")
+	playlist, isPlaylist := must(c.Queries.Listing(ctx(t), "pl1", gl.ListingFieldArgs{ItemsLimit: 5})).Listing.(gl.Playlist)
+	if !isPlaylist {
+		t.Fatal("expected a Playlist")
+	}
+	expectEqual(t, playlist.Tracks, 12, "tracks")
+	expectKinds(t, kinds(playlist.Items), "Video", "Document")
+}
+
+func TestPolymorphismInterfaceFieldArgumentOfZeroYieldsEmptyLists(t *testing.T) {
+	c := newClient(t)
+	listing := must(c.Queries.Listing(ctx(t), "al1", gl.ListingFieldArgs{ItemsLimit: 0})).Listing
+	expectEqual(t, len(listing.GetItems()), 0, "items")
+}
+
+func TestPolymorphismInterfaceFieldReturnsTheOtherImplementerOrNil(t *testing.T) {
+	c := newClient(t)
+	summer := must(c.Queries.Listing(ctx(t), "al1", gl.ListingFieldArgs{ItemsLimit: 1})).Listing
+	related, isPlaylist := summer.GetRelated().(gl.Playlist)
+	if !isPlaylist {
+		t.Fatal("expected a Playlist")
+	}
+	expectEqual(t, related.Tracks, 12, "tracks")
+	winter := must(c.Queries.Listing(ctx(t), "al2", gl.ListingFieldArgs{ItemsLimit: 1})).Listing
+	if winter.GetRelated() != nil {
+		t.Fatal("expected nil")
+	}
+}
+
+func TestPolymorphismInterfaceWithUnknownIdDecodesNil(t *testing.T) {
+	c := newClient(t)
+	if must(c.Queries.Listing(ctx(t), "nope", gl.ListingFieldArgs{ItemsLimit: 1})).Listing != nil {
+		t.Fatal("expected nil")
+	}
+}
+
+func TestPolymorphismListOfTheInterfaceDecodesEachImplementer(t *testing.T) {
+	c := newClient(t)
+	listings := must(c.Queries.Listings(ctx(t), gl.ListingsFieldArgs{ItemsLimit: 1})).Listings
+	expectKinds(t, kinds(listings), "Album", "Playlist", "Album")
+	for _, l := range listings {
+		expectEqual(t, len(l.GetItems()), 1, "items")
+	}
+}
+
+func TestPolymorphismSingleMemberUnionDecodesToTheMember(t *testing.T) {
+	c := newClient(t)
+	solo, isAlbum := must(c.Queries.Solo(ctx(t), gl.SoloFieldArgs{ItemsLimit: 1})).Solo.(gl.Album)
+	if !isAlbum {
+		t.Fatal("expected an Album")
+	}
+	expectEqual(t, solo.Title, "Summer", "title")
+}
+
+func TestPolymorphismSharedFieldSameTypeIsReadableOnTheUnion(t *testing.T) {
+	c := newClient(t)
+	attachments := must(c.Queries.Attachments(ctx(t))).Attachments
+	ids := make([]string, len(attachments))
+	urls := make([]string, len(attachments))
+	for i, a := range attachments {
+		ids[i] = a.GetId()
+		urls[i] = a.GetUrl()
+	}
+	expectKinds(t, ids, "ph1", "v1", "d1")
+	expectKinds(t, urls, "http://cdn/1.png", "http://cdn/1.mp4", "http://cdn/1.pdf")
+}
+
+func TestPolymorphismSelectionSharingOnlySomeFieldsExposesJustThose(t *testing.T) {
+	c := newClient(t)
+	expectEqual(t, must(c.Queries.FetchPhotoParts(ctx(t), "ph1")).Attachment.GetId(), "ph1", "photo id")
+	expectEqual(t, must(c.Queries.FetchPhotoParts(ctx(t), "v1")).Attachment.GetId(), "v1", "video id")
+}
+
+func TestPolymorphismUnionOfTwoTypesSharesOnlyId(t *testing.T) {
+	c := newClient(t)
+	expectEqual(t, must(c.Queries.Shareable(ctx(t), "ph1")).Shareable.GetId(), "ph1", "photo id")
+	expectEqual(t, must(c.Queries.Shareable(ctx(t), "p1")).Shareable.GetId(), "p1", "phone id")
+}
+
+func TestPolymorphismMemberReturnedDirectlyKeepsTheFullType(t *testing.T) {
+	c := newClient(t)
+	photo := must(c.Queries.Photo(ctx(t), "ph1")).Photo
+	expectEqual(t, photo.Id, "ph1", "id")
+	expectEqual(t, photo.Url, "http://cdn/1.png", "url")
+	expectEqual(t, photo.Width, 640, "width")
+	if must(c.Queries.Photo(ctx(t), "nope")).Photo != nil {
+		t.Fatal("expected nil")
+	}
+}
+
+func TestPolymorphismPartialSelectionOfTheSameTypeDoesNotReplaceIt(t *testing.T) {
+	c := newClient(t)
+	expectEqual(t, must(c.Queries.FetchPhotoWidth(ctx(t), "ph1")).Photo.Width, 640, "width")
+	member, isPhoto := must(c.Queries.FetchPhotoUrl(ctx(t), "ph1")).Attachment.(gl.Photo_Url)
+	if !isPhoto {
+		t.Fatal("expected a Photo_Url")
+	}
+	expectEqual(t, member.Url, "http://cdn/1.png", "url")
+	if _, isVideo := must(c.Queries.FetchPhotoUrl(ctx(t), "v1")).Attachment.(gl.Video_Id); !isVideo {
+		t.Fatal("expected a Video_Id")
+	}
+}
+
+func TestPolymorphismInterfaceFragmentMixedWithConcreteOnes(t *testing.T) {
+	c := newClient(t)
+	results := must(c.Queries.SearchMixed(ctx(t), "x")).Search
+	expectEqual(t, len(results), 2, "length")
+	expectEqual(t, results[0].GetId(), "user-1", "first id")
+	expectEqual(t, results[1].GetId(), "post-1", "second id")
+	user, isUser := results[0].(gl.UserResult_IdName)
+	post, isPost := results[1].(gl.PostResult)
+	if !isUser || !isPost {
+		t.Fatalf("user=%v post=%v", isUser, isPost)
+	}
+	expectEqual(t, user.Name, "Alice Smith", "name")
+	expectEqual(t, post.Title, "Hello World", "title")
 }

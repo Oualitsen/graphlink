@@ -129,6 +129,31 @@ type Photo    { id: ID! url: String! width: Int! }
 type Video    { id: ID! url: String! seconds: Int! }
 type Document { id: ID! url: String! pages: Int! }
 
+interface Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+}
+
+type Album implements Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+  year:    Int!
+}
+
+type Playlist implements Listing {
+  id:      ID!
+  title:   String!
+  items(limit: Int!): [Attachment!]!
+  related: Listing
+  tracks:  Int!
+}
+
+union Solo = Album
+
 interface Node { id: ID! }
 interface Entity implements Node { id: ID! createdBy: String! }
 
@@ -285,6 +310,10 @@ type Query {
   gadget(id: ID!): Gadget
   gadgets: [Gadget!]!
   shareable(id: ID!): Shareable
+  photo(id: ID!): Photo
+  listing(id: ID!): Listing
+  listings: [Listing!]!
+  solo: Solo
 }
 
 type Mutation {

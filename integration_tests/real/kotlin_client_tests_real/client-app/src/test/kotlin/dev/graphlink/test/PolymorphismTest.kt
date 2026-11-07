@@ -2,6 +2,7 @@ package dev.graphlink.test
 
 import dev.graphlink.test.Fixtures.newRealClient
 import dev.graphlink.test.generated.client.GraphLinkClient
+import dev.graphlink.test.generated.inputs.*
 import dev.graphlink.test.generated.interfaces.*
 import dev.graphlink.test.generated.types.*
 import kotlinx.coroutines.flow.take
@@ -242,5 +243,86 @@ class PolymorphismTest {
         } finally {
             ws.close()
         }
+    }
+
+    @Test
+    fun theArgumentReachesEveryImplementerAndEachKeepsItsOwnFields() = runTest {
+        val album = assertIs<Album>(client.queries.listing("al1", ListingFieldArgs(itemsLimit = 2)).listing)
+        assertEquals(2020, album.year)
+        assertEquals(listOf("Photo", "Video"), album.items.map { it::class.simpleName })
+        val playlist = assertIs<Playlist>(client.queries.listing("pl1", ListingFieldArgs(itemsLimit = 5)).listing)
+        assertEquals(12, playlist.tracks)
+        assertEquals(listOf("Video", "Document"), playlist.items.map { it::class.simpleName })
+    }
+
+    @Test
+    fun aLimitOfZeroYieldsEmptyLists() = runTest {
+        assertTrue(client.queries.listing("al1", ListingFieldArgs(itemsLimit = 0)).listing!!.items.isEmpty())
+    }
+
+    @Test
+    fun theInterfaceFieldReturnsTheOtherImplementerOrNull() = runTest {
+        val summer = client.queries.listing("al1", ListingFieldArgs(itemsLimit = 1)).listing!!
+        assertEquals(12, assertIs<Playlist>(summer.related).tracks)
+        assertNull(client.queries.listing("al2", ListingFieldArgs(itemsLimit = 1)).listing!!.related)
+    }
+
+    @Test
+    fun anUnknownListingIdDecodesNull() = runTest {
+        assertNull(client.queries.listing("nope", ListingFieldArgs(itemsLimit = 1)).listing)
+    }
+
+    @Test
+    fun aListOfTheInterfaceDecodesEachImplementer() = runTest {
+        val listings = client.queries.listings(ListingsFieldArgs(itemsLimit = 1)).listings
+        assertEquals(listOf("Album", "Playlist", "Album"), listings.map { it::class.simpleName })
+        assertEquals(listOf(1, 1, 1), listings.map { it.items.size })
+    }
+
+    @Test
+    fun aSingleMemberUnionDecodesToTheMember() = runTest {
+        val solo = assertIs<Album>(client.queries.solo(SoloFieldArgs(itemsLimit = 1)).solo)
+        assertEquals("Summer", solo.title)
+    }
+
+    @Test
+    fun idAndUrlAreReadableOnTheUnionItself() = runTest {
+        val list = client.queries.attachments().attachments
+        assertEquals(listOf("ph1", "v1", "d1"), list.map { it.id })
+        assertEquals(listOf("http://cdn/1.png", "http://cdn/1.mp4", "http://cdn/1.pdf"), list.map { it.url })
+    }
+
+    @Test
+    fun aSelectionThatSharesOnlySomeFieldsExposesJustThose() = runTest {
+        assertEquals("ph1", client.queries.fetchPhotoParts("ph1").attachment!!.id)
+        assertEquals("v1", client.queries.fetchPhotoParts("v1").attachment!!.id)
+    }
+
+    @Test
+    fun aUnionOfTwoTypesSharesOnlyId() = runTest {
+        assertEquals("ph1", client.queries.shareable("ph1").shareable!!.id)
+        assertEquals("p1", client.queries.shareable("p1").shareable!!.id)
+    }
+
+    @Test
+    fun theDirectQueryKeepsTheFullType() = runTest {
+        val photo = client.queries.photo("ph1").photo!!
+        assertEquals(listOf<Any>("ph1", "http://cdn/1.png", 640), listOf(photo.id, photo.url, photo.width))
+        assertNull(client.queries.photo("nope").photo)
+    }
+
+    @Test
+    fun aPartialSelectionOfTheSameTypeDoesNotReplaceIt() = runTest {
+        assertEquals(640, client.queries.fetchPhotoWidth("ph1").photo!!.width)
+        assertEquals("http://cdn/1.png", assertIs<Photo_Url>(client.queries.fetchPhotoUrl("ph1").attachment).url)
+        assertIs<Video_Id>(client.queries.fetchPhotoUrl("v1").attachment)
+    }
+
+    @Test
+    fun anInterfaceFragmentMixedWithConcreteOnes() = runTest {
+        val results = client.queries.searchMixed("x").search
+        assertEquals(listOf("user-1", "post-1"), results.map { it.id })
+        assertEquals("Alice Smith", assertIs<UserResult_IdName>(results[0]).name)
+        assertEquals("Hello World", assertIs<PostResult>(results[1]).title)
     }
 }

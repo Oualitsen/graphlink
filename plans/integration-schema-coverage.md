@@ -86,39 +86,33 @@ Open, found by custom queries that were taken out of `custom_query.graphql` so t
 
 ### 1.1 GraphQL (`schema_real`)
 
-Current state: no `union` at all. `SearchResult` (2 implementations, only `id` shared) and `Vehicle`
-(reached only through the nullable single `VehicleDriver.vehicle`).
+Covered in all seven languages (Java reactive derived): `Attachment`, `Gadget`, `Shareable`, `Solo`, `Node`, `Entity implements Node`, `Listing` (interface with a field argument and a self reference), `Article`, `Comment`, `Album`, `Playlist`, plus `custom_query.graphql`.
 
-Add:
+Done:
 
-- [ ] A `union` returned as a single non-null, a nullable single, a list, and a list with nullable elements.
-- [ ] A union nested inside an object type (`Post.attachment: Attachment`) and inside a list field.
-- [ ] A union returned by a mutation and by a subscription.
-- [ ] A union whose members share a field name with **different types** (`Photo.size: Int`, `Video.size: String`).
-- [ ] A union whose members share a field name with the **same type** (shared accessor vs. per-member).
-- [ ] A type that is a member of two unions.
-- [ ] An interface returned as single non-null, nullable, list, and nested inside an object.
-- [ ] An interface that implements another interface (`interface Node`, `interface Entity implements Node`).
-- [ ] A type implementing several interfaces (`implements A & B`).
-- [ ] An interface with a field that itself returns an interface or union.
-- [ ] An interface with field arguments.
+- [x] A `union` returned as a nullable single, a list, and a list with nullable elements (`attachment`, `attachments`, `attachmentsNullable`).
+- [x] A union nested inside an object type (`Article.cover`) and inside a list field (`Article.attachments`).
+- [x] A union returned by a mutation (`addAttachment`) and by a subscription (`attachmentAdded`).
+- [x] A union whose members share a field name with **different types** (`Gadget`: `Phone.size` / `Laptop.size`, read with an alias).
+- [x] A type that is a member of two unions (`Photo`, `Phone` in `Shareable`).
+- [x] An interface returned as nullable, list, and nested inside an object.
+- [x] An interface that implements another interface (`Node`, `Entity implements Node`).
+- [x] A type implementing several interfaces (`implements Entity & Node`).
+- [x] An interface with a field that itself returns an interface (`Listing.related`, `Comment.parent`).
+- [x] An interface with field arguments (`Listing.items(limit)`), including a cycle through the argument.
+- [x] A union with a single member (`Solo = Album`).
+- [x] Cached (`@glCache`) query returning a union (`getCachedAttachment`), served once.
+- [x] `@glCaptureErrors` on an operation returning a union (`attachmentOrErrors`).
+- [x] Custom queries over polymorphic results: inline fragments on concrete types, explicit `__typename`, `_all_fields` through the auto-generated operations, named fragments on a union, on a union member and on the interface, nested polymorphism, the same field aliased on different members.
+
+Open:
+
+- [x] A union whose members share a field with the **same type** (`Attachment.id` / `url`, `Shareable.id`): readable on the union itself, in the full type and in a projection that shares only `id`.
+- [ ] A union member that is also returned directly elsewhere (type reuse vs. projected copy).
 - [ ] An interface with no implementing type selected by the query (projection yields only the base).
-- [ ] A union with a single member.
-- [ ] A union member that is a type also returned directly elsewhere (type reuse vs. projected copy).
-- [ ] Cached (`@glCache`) query returning a union and returning an interface; invalidation by tag.
-- [ ] `@glCaptureErrors` on an operation returning a union.
-- [ ] Custom queries over polymorphic results:
-  - inline fragments on concrete types only;
-  - inline fragment on the interface itself (`... on SearchResult { id }`) mixed with concrete ones;
-  - explicit `__typename` selection;
-  - `_all_fields` on an interface and on a union;
-  - named fragment on an interface, on a union member, and on the union itself;
-  - nested polymorphism (union inside a fragment inside a union member);
-  - the same field aliased on different members.
-- [ ] Unknown `__typename` from a newer server: define and test the behaviour per language
-  (throw, fallback member, or `unknown`), consistent with `strictEnums`.
-- [ ] Missing `__typename` in the payload.
-- [ ] A union/interface-typed field that is `null` inside a non-null list element (error path).
+- [ ] Cached query returning an interface; invalidation by tag on a union or interface.
+- [ ] Custom queries: an inline fragment on the interface itself mixed with concrete ones (`... on SearchResult { id }`).
+- [ ] Unknown or missing `__typename`: out of scope (Swift bug 8, `swift-throwing-polymorphic-decode.md`).
 
 ### 1.2 REST (`schema_rest`)
 

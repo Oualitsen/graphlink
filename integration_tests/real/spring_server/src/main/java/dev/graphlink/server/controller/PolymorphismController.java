@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.graphql.data.method.annotation.SubscriptionMapping;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
@@ -52,12 +53,51 @@ public class PolymorphismController {
     }
 
     @QueryMapping
+    public Photo photo(@Argument String id) {
+        return "ph1".equals(id) ? PHOTO : null;
+    }
+
+    @QueryMapping
     public Shareable shareable(@Argument String id) {
         return switch (id) {
             case "ph1" -> PHOTO;
             case "p1" -> PHONE;
             default -> null;
         };
+    }
+
+    private static final Playlist MIX = new Playlist("pl1", "Mix", 12, null);
+    private static final Album SUMMER = new Album("al1", "Summer", 2020, MIX);
+    private static final Album WINTER = new Album("al2", "Winter", 2021, null);
+    private static final List<Attachment> ITEMS = List.of(PHOTO, VIDEO, DOCUMENT);
+
+    @QueryMapping
+    public Listing listing(@Argument String id) {
+        return listings().stream().filter(l -> idOf(l).equals(id)).findFirst().orElse(null);
+    }
+
+    @QueryMapping
+    public List<Listing> listings() {
+        return List.of(SUMMER, MIX, WINTER);
+    }
+
+    @QueryMapping
+    public Solo solo() {
+        return SUMMER;
+    }
+
+    @SchemaMapping(typeName = "Album", field = "items")
+    public List<Attachment> albumItems(Album album, @Argument int limit) {
+        return ITEMS.stream().limit(limit).toList();
+    }
+
+    @SchemaMapping(typeName = "Playlist", field = "items")
+    public List<Attachment> playlistItems(Playlist playlist, @Argument int limit) {
+        return ITEMS.stream().skip(1).limit(limit).toList();
+    }
+
+    private static String idOf(Listing listing) {
+        return listing instanceof Album a ? a.id() : ((Playlist) listing).id();
     }
 
     @QueryMapping
