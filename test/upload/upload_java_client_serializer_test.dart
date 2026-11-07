@@ -68,7 +68,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateUploadProgressCallbackFile());
+      return out =  s.serializer.serializeGlClass( s.runtime.generateUploadProgressCallbackFile());
     });
 
     test('is FunctionalInterface', () => expect(out, contains('@FunctionalInterface')));
@@ -82,7 +82,7 @@ void main() {
     late String out;
     setUpAll(() {
       final s = _serializer(_schema);
-      return out =  s.serializer.serializeGlClass( s.generateMultipartAdapterFile('com.example.generated'));
+      return out =  s.serializer.serializeGlClass( s.runtime.generateMultipartAdapterFile('com.example.generated'));
     });
     test('declares executeMultipart', () => expect(out, contains('executeMultipart')));
     test('takes Map<String, GLUpload>', () => expect(out, contains('Map<String, GLUpload>')));
@@ -154,7 +154,7 @@ void main() {
     late String out;
     setUpAll(() {
       var s = _serializer(_schema);
-      return out = s.serializer.serializeGlClass(s.generateDefaultClientAdapterFile('okhttp', ''));
+      return out = s.serializer.serializeGlClass(s.adapters.generateDefaultClientAdapterFile('okhttp', ''));
     });
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
@@ -165,7 +165,7 @@ void main() {
 
   group('DefaultGraphLinkClientAdapter — java11 with upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_schema).generateDefaultClientAdapterFile('java11', '').toFileContent());
+    setUpAll(() => out = _serializer(_schema).adapters.generateDefaultClientAdapterFile('java11', '').toFileContent());
 
     test('implements GraphLinkMultipartAdapter', () => expect(out, contains('implements GraphLinkClientAdapter, GraphLinkMultipartAdapter')));
     test('has executeMultipart', () => expect(out, contains('executeMultipart')));
@@ -185,7 +185,7 @@ void main() {
 
   group('DefaultGraphLinkClientAdapter — no upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateDefaultClientAdapterFile('okhttp', '').toFileContent());
+    setUpAll(() => out = _serializer(_plainSchema).adapters.generateDefaultClientAdapterFile('okhttp', '').toFileContent());
 
     test('does not implement GraphLinkMultipartAdapter', () => expect(out, isNot(contains('GraphLinkMultipartAdapter'))));
     test('no executeMultipart', () => expect(out, isNot(contains('executeMultipart'))));
@@ -193,7 +193,7 @@ void main() {
 
   group('DefaultGraphLinkClientAdapter — java11 no upload', () {
     late String out;
-    setUpAll(() => out = _serializer(_plainSchema).generateDefaultClientAdapterFile('java11', '').toFileContent());
+    setUpAll(() => out = _serializer(_plainSchema).adapters.generateDefaultClientAdapterFile('java11', '').toFileContent());
 
     // Regression: same HTTP/1.1 pin must apply to the plain (non-upload) java11 adapter.
     test('pins HttpClient to HTTP/1.1', () => expect(out, isNot(contains('HttpClient.newHttpClient()'))));

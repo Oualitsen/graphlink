@@ -11,7 +11,7 @@ type Query { p: Product @glRest(path: "/p") }
 
 GLClassModel _runtime() {
   final g = GLParser()..parse(_schema);
-  return DartClientSerializer(g, DartSerializer(g, importPrefix: '')).generateRestFile();
+  return DartClientSerializer(g, DartSerializer(g, importPrefix: '')).runtime.generateRestFile();
 }
 
 void main() {

@@ -41,7 +41,7 @@ JavaClientSerializer _clientSerializer(_Flavor flavor, {bool useGet = false}) {
       flavor: JavaReactiveFlavor.of(flavor.style));
 }
 
-String _base(JavaClientSerializer s) => s.generateGraphLinkResolverBaseFile('com.example').toFileContent();
+String _base(JavaClientSerializer s) => s.runtime.generateGraphLinkResolverBaseFile('com.example').toFileContent();
 
 void main() {
   for (final flavor in _flavors) {
@@ -96,7 +96,7 @@ void main() {
       });
 
       test('the JDK GET adapter returns the deferred single and maps 405 to GraphLinkGetNotSupported', () {
-        final file = clientSerializer.generateReactiveDefaultGetAdapterFile().toFileContent();
+        final file = clientSerializer.adapters.generateReactiveDefaultGetAdapterFile().toFileContent();
         expect(file, contains('public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter'));
         expect(file, contains('public ${flavor.single}<String> execute(String payload)'));
         expect(file, contains('GraphLinkGetRequest.queryString(payload, decoder, encoder)'));
@@ -112,7 +112,7 @@ void main() {
   }
 
   test('the WebClient GET adapter maps 405 to GraphLinkGetNotSupported', () {
-    final file = _clientSerializer(_flavors.first, useGet: true).generateWebClientDefaultGetAdapterFile().toFileContent();
+    final file = _clientSerializer(_flavors.first, useGet: true).adapters.generateWebClientDefaultGetAdapterFile().toFileContent();
     expect(file, contains('public Mono<String> execute(String payload)'));
     expect(file, contains('webClient.get()'));
     expect(file, contains('status.value() == 405'));

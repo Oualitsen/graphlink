@@ -99,7 +99,7 @@ Future<Set<String>> generateKotlinClientClasses(
   ));
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateGraphLinkResolverBaseFile(packageName)),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateGraphLinkResolverBaseFile(packageName)),
     fileName: 'GraphLinkResolverBase.kt',
     subdir: 'client',
     imports: [],
@@ -132,9 +132,9 @@ Future<Set<String>> generateKotlinClientClasses(
 
   // Adapter/codec interfaces — written to interfaces/ so imports resolve correctly.
   for (final entry in {
-    'GraphLinkClientAdapter.kt': clientSerializer.generateClientAdapterFile(),
-    'GraphLinkJsonEncoder.kt': clientSerializer.generateJsonEncoderFile(),
-    'GraphLinkJsonDecoder.kt': clientSerializer.generateJsonDecoderFile(),
+    'GraphLinkClientAdapter.kt': clientSerializer.runtime.generateClientAdapterFile(),
+    'GraphLinkJsonEncoder.kt': clientSerializer.runtime.generateJsonEncoderFile(),
+    'GraphLinkJsonDecoder.kt': clientSerializer.runtime.generateJsonDecoderFile(),
   }.entries) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(entry.value),
@@ -148,11 +148,11 @@ Future<Set<String>> generateKotlinClientClasses(
 
   // Other client infrastructure — written to client/.
   for (final entry in {
-    'GraphLinkPartialQuery.kt': clientSerializer.generatePartialQueryFile(),
-    'GraphLinkCacheEntry.kt': clientSerializer.generateCacheEntryFile(),
-    'GraphLinkTagEntry.kt': clientSerializer.generateTagEntryFile(),
-    'GraphLinkCacheStore.kt': clientSerializer.generateCacheStoreFile(),
-    'InMemoryGraphLinkCacheStore.kt': clientSerializer.generateInMemoryCacheStoreFile(),
+    'GraphLinkPartialQuery.kt': clientSerializer.runtime.generatePartialQueryFile(),
+    'GraphLinkCacheEntry.kt': clientSerializer.runtime.generateCacheEntryFile(),
+    'GraphLinkTagEntry.kt': clientSerializer.runtime.generateTagEntryFile(),
+    'GraphLinkCacheStore.kt': clientSerializer.runtime.generateCacheStoreFile(),
+    'InMemoryGraphLinkCacheStore.kt': clientSerializer.runtime.generateInMemoryCacheStoreFile(),
   }.entries) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(entry.value),
@@ -165,7 +165,7 @@ Future<Set<String>> generateKotlinClientClasses(
   }
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateExceptionFile()),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateExceptionFile()),
     fileName: 'GraphLinkException.kt',
     subdir: 'client',
     imports: [],
@@ -176,7 +176,7 @@ Future<Set<String>> generateKotlinClientClasses(
   // ── Codec ──────────────────────────────────────────────────────────────────
 
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateCodecFile()),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateCodecFile()),
     fileName: 'KotlinxSerializationGraphLinkJsonCodec.kt',
     subdir: 'client',
     imports: [],
@@ -188,7 +188,7 @@ Future<Set<String>> generateKotlinClientClasses(
 
   if (kotlinConfig.wsAdapter != KotlinWsAdapter.none) {
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateDefaultClientAdapterFile()),
+      data: serializer.serializeGlClass(clientSerializer.adapters.generateDefaultClientAdapterFile()),
       fileName: 'DefaultGraphLinkClientAdapter.kt',
       subdir: 'client',
       imports: [],
@@ -199,8 +199,8 @@ Future<Set<String>> generateKotlinClientClasses(
 
   if (parser.persistedQueries) {
     for (final entry in {
-      'GraphLinkSha256.kt': clientSerializer.generateSha256File(),
-      'GraphLinkPersistedQueries.kt': clientSerializer.generatePersistedQueriesFile(),
+      'GraphLinkSha256.kt': clientSerializer.runtime.generateSha256File(),
+      'GraphLinkPersistedQueries.kt': clientSerializer.runtime.generatePersistedQueriesFile(),
     }.entries) {
       futures.add(writeToFile(
         data: serializer.serializeGlClass(entry.value),
@@ -213,7 +213,7 @@ Future<Set<String>> generateKotlinClientClasses(
     }
     if (parser.persistedQueriesUseGet && kotlinConfig.wsAdapter != KotlinWsAdapter.none) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultGetAdapterFile()),
+        data: serializer.serializeGlClass(clientSerializer.adapters.generateDefaultGetAdapterFile()),
         fileName: 'DefaultGraphLinkGetAdapter.kt',
         subdir: 'client',
         imports: [],
@@ -227,9 +227,9 @@ Future<Set<String>> generateKotlinClientClasses(
 
   if (clientSerializer.hasRest) {
     for (final entry in {
-      'GraphLinkRest.kt': clientSerializer.generateRestFile(),
-      'GraphLinkRestResolver.kt': clientSerializer.generateRestResolverFile(),
-      if (clientSerializer.generatesRestAdapter) 'DefaultGraphLinkRestAdapter.kt': clientSerializer.generateRestAdapterFile(),
+      'GraphLinkRest.kt': clientSerializer.runtime.generateRestFile(),
+      'GraphLinkRestResolver.kt': clientSerializer.runtime.generateRestResolverFile(),
+      if (clientSerializer.generatesRestAdapter) 'DefaultGraphLinkRestAdapter.kt': clientSerializer.adapters.generateRestAdapterFile(),
     }.entries) {
       futures.add(writeToFile(
         data: serializer.serializeGlClass(entry.value),
@@ -245,8 +245,8 @@ Future<Set<String>> generateKotlinClientClasses(
   if (parser.hasUploadMutations || clientSerializer.hasRest) {
     for (final entry in {
       'GLUpload.kt': clientSerializer.generateUploadsFile(),
-      'UploadProgressCallback.kt': clientSerializer.generateUploadProgressCallbackFile(),
-      'GraphLinkMultipartAdapter.kt': clientSerializer.generateMultipartAdapterFile(),
+      'UploadProgressCallback.kt': clientSerializer.runtime.generateUploadProgressCallbackFile(),
+      'GraphLinkMultipartAdapter.kt': clientSerializer.runtime.generateMultipartAdapterFile(),
     }.entries) {
       futures.add(writeToFile(
         data: serializer.serializeGlClass(entry.value),
@@ -263,10 +263,10 @@ Future<Set<String>> generateKotlinClientClasses(
 
   if (parser.hasSubscriptions) {
     for (final entry in {
-      'GraphLinkWebSocketAdapter.kt': clientSerializer.generateWebSocketAdapterFile(),
-      'GraphlinkWsMessageTypes.kt': clientSerializer.generateWsMessageTypesFile(),
-      'GraphLinkAckStatus.kt': clientSerializer.generateAckStatusFile(),
-      'GraphLinkSubscriptionHandler.kt': clientSerializer.generateSubscriptionHandlerFile(),
+      'GraphLinkWebSocketAdapter.kt': clientSerializer.runtime.generateWebSocketAdapterFile(),
+      'GraphlinkWsMessageTypes.kt': clientSerializer.runtime.generateWsMessageTypesFile(),
+      'GraphLinkAckStatus.kt': clientSerializer.runtime.generateAckStatusFile(),
+      'GraphLinkSubscriptionHandler.kt': clientSerializer.runtime.generateSubscriptionHandlerFile(),
     }.entries) {
       futures.add(writeToFile(
         data: serializer.serializeGlClass(entry.value),
@@ -279,7 +279,7 @@ Future<Set<String>> generateKotlinClientClasses(
     }
     if (kotlinConfig.wsAdapter != KotlinWsAdapter.none) {
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile()),
+        data: serializer.serializeGlClass(clientSerializer.adapters.generateDefaultWebSocketAdapterFile()),
         fileName: 'DefaultGraphLinkWebSocketAdapter.kt',
         subdir: 'client',
         imports: [],

@@ -228,7 +228,7 @@ Future<Set<String>> generateDartClientClasses(
   const cacheEntryFileName = 'graph_link_cache_entry.dart';
   clientFiles.add(cacheEntryFileName);
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateCacheEntryFile()),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateCacheEntryFile()),
     fileName: cacheEntryFileName,
     subdir: 'client',
     imports: [],
@@ -239,7 +239,7 @@ Future<Set<String>> generateDartClientClasses(
   const lockFileName = 'graph_link_lock.dart';
   clientFiles.add(lockFileName);
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateLockFile()),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateLockFile()),
     fileName: lockFileName,
     subdir: 'client',
     imports: [],
@@ -248,10 +248,10 @@ Future<Set<String>> generateDartClientClasses(
 
   // Remaining cache infra — each in its own file
   for (final entry in {
-    'graph_link_tag_entry.dart': clientSerializer.generateTagEntryFile(),
-    'graph_link_partial_query.dart': clientSerializer.generatePartialQueryFile(),
-    'graph_link_cache_store.dart': clientSerializer.generateCacheStoreFile(),
-    'graph_link_in_memory_cache_store.dart': clientSerializer.generateInMemoryCacheStoreFile(),
+    'graph_link_tag_entry.dart': clientSerializer.runtime.generateTagEntryFile(),
+    'graph_link_partial_query.dart': clientSerializer.runtime.generatePartialQueryFile(),
+    'graph_link_cache_store.dart': clientSerializer.runtime.generateCacheStoreFile(),
+    'graph_link_in_memory_cache_store.dart': clientSerializer.runtime.generateInMemoryCacheStoreFile(),
   }.entries) {
     clientFiles.add(entry.key);
     futures.add(writeToFile(
@@ -265,8 +265,8 @@ Future<Set<String>> generateDartClientClasses(
 
   if (parser.persistedQueries) {
     for (final entry in {
-      'graph_link_sha256.dart': clientSerializer.generateSha256File(),
-      'graph_link_persisted_queries.dart': clientSerializer.generatePersistedQueriesFile(),
+      'graph_link_sha256.dart': clientSerializer.runtime.generateSha256File(),
+      'graph_link_persisted_queries.dart': clientSerializer.runtime.generatePersistedQueriesFile(),
     }.entries) {
       clientFiles.add(entry.key);
       futures.add(writeToFile(
@@ -283,7 +283,7 @@ Future<Set<String>> generateDartClientClasses(
   const resolverBaseFileName = 'graph_link_resolver_base.dart';
   clientFiles.add(resolverBaseFileName);
   futures.add(writeToFile(
-    data: serializer.serializeGlClass(clientSerializer.generateResolverBaseFile()),
+    data: serializer.serializeGlClass(clientSerializer.runtime.generateResolverBaseFile()),
     fileName: resolverBaseFileName,
     subdir: 'client',
     imports: [],
@@ -321,8 +321,8 @@ Future<Set<String>> generateDartClientClasses(
 
   if (hasRest) {
     for (final entry in {
-      'graph_link_rest${clientSerializer.fileExtension}': clientSerializer.generateRestFile(),
-      'graph_link_rest_resolver${clientSerializer.fileExtension}': clientSerializer.generateRestResolverFile(),
+      'graph_link_rest${clientSerializer.fileExtension}': clientSerializer.runtime.generateRestFile(),
+      'graph_link_rest_resolver${clientSerializer.fileExtension}': clientSerializer.runtime.generateRestResolverFile(),
     }.entries) {
       clientFiles.add(entry.key);
       futures.add(writeToFile(
@@ -349,7 +349,7 @@ Future<Set<String>> generateDartClientClasses(
     const uploadConverterFileName = 'graph_link_upload_converter.dart';
     clientFiles.add(uploadConverterFileName);
     futures.add(writeToFile(
-      data: serializer.serializeGlClass(clientSerializer.generateUploadConverterFile()),
+      data: serializer.serializeGlClass(clientSerializer.runtime.generateUploadConverterFile()),
       fileName: uploadConverterFileName,
       subdir: 'client',
       imports: [],
@@ -367,8 +367,8 @@ Future<Set<String>> generateDartClientClasses(
       futures.add(writeToFile(
         data: serializer.serializeGlClass(
             httpAdapter == DartHttpAdapter.dio
-                ? clientSerializer.generateDioAdapterFile()
-                : clientSerializer.generateHttpAdapterFile(),
+                ? clientSerializer.adapters.generateDioAdapterFile()
+                : clientSerializer.adapters.generateHttpAdapterFile(),
            ),
         fileName: adapterFileName,
         subdir: 'client',
@@ -384,8 +384,8 @@ Future<Set<String>> generateDartClientClasses(
       clientFiles.add(restAdapterFileName);
       futures.add(writeToFile(
         data: serializer.serializeGlClass(restHttpAdapter == DartHttpAdapter.dio
-            ? clientSerializer.generateRestDioAdapterFile()
-            : clientSerializer.generateRestHttpAdapterFile()),
+            ? clientSerializer.adapters.generateRestDioAdapterFile()
+            : clientSerializer.adapters.generateRestHttpAdapterFile()),
         fileName: restAdapterFileName,
         subdir: 'client',
         imports: [],
@@ -394,11 +394,11 @@ Future<Set<String>> generateDartClientClasses(
     }
     if (parser.hasSubscriptions) {
       for (final entry in {
-        'graph_link_handshake_status.dart': clientSerializer.generateHandshakeStatusFile(),
-        'graph_link_stream_sink.dart': clientSerializer.generateStreamSinkFile(),
-        'graph_link_websocket_adapter.dart': clientSerializer.generateWsAdapterFile(),
-        'graph_link_ws_message_types.dart': clientSerializer.generateWsMessageTypesFile(),
-        'graph_link_subscription_handler.dart': clientSerializer.generateSubscriptionHandlerFile(),
+        'graph_link_handshake_status.dart': clientSerializer.runtime.generateHandshakeStatusFile(),
+        'graph_link_stream_sink.dart': clientSerializer.runtime.generateStreamSinkFile(),
+        'graph_link_websocket_adapter.dart': clientSerializer.runtime.generateWsAdapterFile(),
+        'graph_link_ws_message_types.dart': clientSerializer.runtime.generateWsMessageTypesFile(),
+        'graph_link_subscription_handler.dart': clientSerializer.runtime.generateSubscriptionHandlerFile(),
       }.entries) {
         clientFiles.add(entry.key);
         futures.add(writeToFile(
@@ -412,7 +412,7 @@ Future<Set<String>> generateDartClientClasses(
       final wsFileName = 'graph_link_default_websocket_adapter${clientSerializer.fileExtension}';
       clientFiles.add(wsFileName);
       futures.add(writeToFile(
-        data: serializer.serializeGlClass(clientSerializer.generateDefaultWebSocketAdapterFile()),
+        data: serializer.serializeGlClass(clientSerializer.runtime.generateDefaultWebSocketAdapterFile()),
         fileName: wsFileName,
         subdir: 'client',
         imports: [],
