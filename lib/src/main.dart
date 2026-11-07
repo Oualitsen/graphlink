@@ -282,6 +282,13 @@ Future<void> handleGeneration(GeneratorConfig config, {bool watching = false}) a
         skippedByConflict.putIfAbsent(conflict.abstractType, () => []).add(skipped);
         continue;
       }
+      if (skipped.shadowedByCustom) {
+        stderr.writeln(
+          '⚠ Auto-generated ${skipped.type.name} "${skipped.name}" skipped: '
+          'a custom ${skipped.type.name} with the same name exists.',
+        );
+        continue;
+      }
       stderr.writeln(
         '⚠ Auto-generated ${skipped.type.name} "${skipped.name}" skipped: '
         '${skipped.count} propagated args exceed the limit of ${skipped.cap}. '

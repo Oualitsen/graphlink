@@ -225,6 +225,13 @@ input OddInput {
   x: String!
 }
 
+# ── Nested field arguments ───────────────────────────────────────────────────
+
+type Shelf {
+  id: ID!
+  items(tags: [String!], kind: Spelling, filter: InnerInput, limit: Int = 2): [String!]!
+}
+
 # ── Literals, defaults and escaping ──────────────────────────────────────────
 
 input NastyInput {
@@ -685,6 +692,7 @@ type Query {
   func(value: String!): String!
   None(value: String!): String!
   self(value: String!): String!
+  shelf: Shelf!
   echoNastyArgs(dollar: String, quote: String, backslash: String, newline: String, percent: String, comments: String, triple: String, unicode: String, nonAscii: String): NastyEcho!
   echoNasty(input: NastyInput): NastyEcho!
   echoInner(inner: InnerInput): InnerEcho!

@@ -89,4 +89,18 @@ public class LiteralsController {
         out.put("mood", "CALM");
         return out;
     }
+
+    @QueryMapping
+    public Map<String, Object> shelf() {
+        return Map.of("id", "s1");
+    }
+
+    @org.springframework.graphql.data.method.annotation.SchemaMapping(typeName = "Shelf", field = "items")
+    public List<String> shelfItems(DataFetchingEnvironment env) {
+        return List.of(
+            "tags=" + env.getArgument("tags"),
+            "kind=" + env.getArgument("kind"),
+            "filter=" + env.getArgument("filter"),
+            "limit=" + env.getArgument("limit"));
+    }
 }

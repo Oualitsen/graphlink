@@ -1091,6 +1091,22 @@ class GLParser {
         projections.add(_parseFieldProjection());
       }
     }
+    // With fields selected beside the inline fragments, a member that no inline
+    // fragment names still gets a type of its own, and the generated decoder
+    // dispatches on __typename to find it.
+    final hasSharedFields = projections.any((p) => p is! GLInlineFragmentsProjection && p.token != typename);
+    if (hasSharedFields &&
+        projections.any((p) => p is GLInlineFragmentsProjection) &&
+        !projections.any((p) => p.token == typename)) {
+      projections.insert(
+          0,
+          GLProjection(
+              fragmentName: null,
+              token: TokenInfo.ofString(typename),
+              alias: null,
+              block: null,
+              directives: []));
+    }
     return GLFragmentBlockDefinition(projections);
   }
 

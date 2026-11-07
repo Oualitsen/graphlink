@@ -104,3 +104,153 @@ query nastyLiteral {
     dollar quote backslash newline unicode triple
   }
 }
+
+# ── Fragments ────────────────────────────────────────────────────────────────
+
+fragment UserBasics on User { id name }
+
+fragment UserWithStatus on User {
+  ...UserBasics
+  status
+}
+
+fragment EntityBits on Entity { id createdBy }
+
+query fragNested($id: ID!) {
+  getUser(id: $id) { ...UserWithStatus }
+}
+
+query fragReuseA {
+  listUsers { ...UserBasics }
+}
+
+query fragReuseB($id: ID!) {
+  getUser(id: $id) { ...UserBasics email }
+}
+
+query fragOnInterface {
+  feed {
+    ...EntityBits
+    ... on Article { title }
+  }
+}
+
+query multiRoot {
+  first: getUser(id: "user-1") { ...UserBasics }
+  second: getUser(id: "user-2") { ...UserBasics }
+  all: listUsers { ...UserBasics }
+}
+
+# ── Variables ────────────────────────────────────────────────────────────────
+
+query varsDefaults($limit: Int = 1, $name: String = "s") {
+  searchUsers(name: $name, limit: $limit) { id name }
+}
+
+query varsLists($a: [Int!]!, $b: [Int], $c: [[Int!]!], $e: [Spelling!]!, $f: [Spelling]) {
+  echoArgs(a: $a, b: $b, c: $c, e: $e, f: $f) { a b c e f g one }
+}
+
+query varsEnum($one: OnlyOne) {
+  echoArgs(a: [], e: [], one: $one) { one }
+}
+
+query varsInput($inner: InnerInput!) {
+  echoInner(inner: $inner) { n label tags }
+}
+
+query varsNullable($dollar: String, $quote: String!) {
+  echoNastyArgs(dollar: $dollar, quote: $quote) { dollar quote }
+}
+
+# ── Conditional fields ───────────────────────────────────────────────────────
+
+query conditionalVars($withEmail: Boolean!, $skipName: Boolean!) {
+  getUser(id: "user-1") {
+    id
+    name @skip(if: $skipName)
+    email @include(if: $withEmail)
+  }
+}
+
+query conditionalLiterals {
+  getUser(id: "user-1") {
+    id
+    name @include(if: true)
+    email @include(if: false)
+    status @skip(if: false)
+    priority @skip(if: true)
+  }
+}
+
+# ── Aliases ──────────────────────────────────────────────────────────────────
+
+query aliasesSameField {
+  a: getUser(id: "user-1") { id name }
+  b: getUser(id: "user-2") { id name }
+}
+
+query aliasKeywords {
+  class: getUser(id: "user-1") { default: name import: id }
+}
+
+query aliasEqualsOtherField {
+  getUser(id: "user-1") { id name: email }
+}
+
+# ── Operation names that collide with something ──────────────────────────────
+
+query User { getUser(id: "user-1") { id } }
+
+query Photo { photo(id: "ph1") { id } }
+
+query return { listUsers { id } }
+
+query shelf { shelf { id } }
+
+query getUserResponse { getUser(id: "user-1") { id } }
+
+# ── Nested field arguments ───────────────────────────────────────────────────
+
+query shelfItems {
+  shelf {
+    id
+    items(tags: ["a", "b"], kind: x__y, filter: {n: 3, label: "L"}, limit: 5)
+  }
+}
+
+query shelfItemsVars($tags: [String!], $kind: Spelling, $filter: InnerInput, $limit: Int) {
+  shelf {
+    items(tags: $tags, kind: $kind, filter: $filter, limit: $limit)
+  }
+}
+
+query shelfItemsDefaults {
+  shelf { items }
+}
+
+# ── Literal arguments of every kind ──────────────────────────────────────────
+
+query literalLists {
+  echoArgs(a: [1, 2, 3], b: [1, null], c: [[1], [2, 3]], e: [A, x__y], f: [null, v1], g: [snake_case_2], one: ONLY) {
+    a b c e f g one
+  }
+}
+
+query literalInput {
+  echoInput(input: {a: [4], b: [null, 5], c: [[6]], e: [B2], f: [null], g: [A], one: ONLY}) {
+    a b c e f g one
+  }
+}
+
+query literalScalars {
+  echoEverything(input: {i: 5, neg: -3, big: 9, f: 2.5, exp: 1e2, b: false, bf: true, s: "lit", id: "q", e: v1, ints: [9], nested: [[1]], inner: {n: 2, label: "L"}, nothing: null, emptyList: [], emptyObj: {}}) {
+    i neg big f exp b bf s id e ints nested nothing emptyList
+    inner { n label tags }
+    emptyObj { n label tags }
+  }
+}
+
+query literalsMixed($a: [Int!]!, $one: OnlyOne) {
+  echoArgs(a: $a, e: [A, B2], f: [v1], one: $one) { a e f one }
+}

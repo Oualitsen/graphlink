@@ -187,14 +187,14 @@ Add:
 
 ## 6. Custom operations (`schema_real`)
 
-- [ ] Named fragments: `fragment X on T`, fragment inside fragment, fragment reused across operations, fragment on interface/union.
-- [ ] Variables: with defaults, list variables, enum variables, input-object variables, nullable vs. non-null, unused variable.
-- [ ] `@include(if:)` / `@skip(if:)` with variable and literal.
-- [ ] Aliases: same field twice with different arguments, alias colliding with a keyword, alias equal to another field name.
-- [ ] Multiple root fields in one operation with a shared fragment.
-- [ ] Operation name colliding with a type, with a keyword, or with another generated name.
-- [ ] Field arguments on nested object fields (`Driver` covers two; add list, enum, input arguments).
-- [ ] Literal arguments (new in 6.0.0): every scalar kind, enum, list, input object, mixed with variables.
+- [x] Named fragments: `fragment X on T`, fragment inside fragment, fragment reused across operations, fragment on interface/union.
+- [x] Variables: with defaults, list variables, enum variables, input-object variables, nullable vs. non-null. (Unused variable: rejected by the server's validation, not a client case.)
+- [x] `@include(if:)` / `@skip(if:)` with variable and literal.
+- [x] Aliases: same field twice with different arguments, alias colliding with a keyword, alias equal to another field name.
+- [x] Multiple root fields in one operation with a shared fragment.
+- [x] Operation name colliding with a type, with a keyword, or with another generated name.
+- [x] Field arguments on nested object fields (`Driver` covers two; add list, enum, input arguments).
+- [x] Literal arguments (new in 6.0.0): every scalar kind, enum, list, input object, mixed with variables.
 - [ ] Subscription with a union result, with a list result, with arguments of every shape, error mid-stream, server-side completion.
 
 ## 7. Enums

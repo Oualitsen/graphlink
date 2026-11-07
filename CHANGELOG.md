@@ -663,6 +663,9 @@
 
 ### Fixes
 
+- **Interface selections that mix shared fields with inline fragments** — `feed { ...EntityBits ... on Article { title } }` only asked for `__typename` inside `... on Article`, so every other implementor reached the generated decoder without one and decoding threw. The selection now requests `__typename` at its own level.
+- **Operation names that collide after normalisation** — a hand-written `query Photo` and the generated `photo` both became the method `photo` (Dart, Kotlin, Swift, ...) and the code did not compile. Generated operations keep their name, the hand-written one gets a numeric suffix (`photo2`). Its wire name is unchanged.
+- **A custom operation named like a generated one** (`query listUsers` next to the schema field `listUsers`) failed generation with "has already been declared", pointing at the schema. The custom operation now wins and the generated one is skipped with a warning.
 - **String literals with special characters** — a string default or argument value containing `"`, `\`, `$`, `${x}`, a newline, `*/` or a unicode escape produced wrong or uncompilable code in every target (the value was pasted between the target's quotes with its GraphQL escapes, and the lexer dropped the backslash of `\"` and never closed a string ending in `\\`). The literal is now decoded once and each target writes it with its own escaping, in default values, operation text and `@deprecated` reasons.
 - **`@oneOf` inputs** — the unused members were sent as `null`, which the server rejects. They are now left out of the payload in every target.
 - **Default object values** — `= {}` or `= {n: 9}` on an argument whose input type declares its own field defaults left those defaults out in TypeScript and Go; they are now filled in.
