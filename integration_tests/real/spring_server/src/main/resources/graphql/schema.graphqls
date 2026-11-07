@@ -733,4 +733,14 @@ type Subscription {
 
   # Polymorphism coverage: emits an Article, then a Comment.
   entityPublished: Entity!
+
+  # Subscription argument shapes: echoes once, then the server completes the stream.
+  subEchoArgs(a: [Int!]!, b: [Int], c: [[Int!]!], e: [Spelling!]!, f: [Spelling], g: [Spelling!], one: OnlyOne): ListsEcho!
+  subEchoInput(input: ListsInput!): ListsEcho!
+
+  # Emits 1..count, then the server completes the stream.
+  finiteTicks(count: Int!): Int!
+
+  # Emits 1..failAfter, then the server fails the stream.
+  flakyTicks(failAfter: Int!): Int!
 }

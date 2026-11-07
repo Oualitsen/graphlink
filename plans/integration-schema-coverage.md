@@ -195,7 +195,7 @@ Add:
 - [x] Operation name colliding with a type, with a keyword, or with another generated name.
 - [x] Field arguments on nested object fields (`Driver` covers two; add list, enum, input arguments).
 - [x] Literal arguments (new in 6.0.0): every scalar kind, enum, list, input object, mixed with variables.
-- [ ] Subscription with a union result, with a list result, with arguments of every shape, error mid-stream, server-side completion.
+- [x] Subscription with a union result, with a list result, with arguments of every shape, error mid-stream, server-side completion. (`subEchoArgs`, `subEchoInput`, `finiteTicks`, `flakyTicks`; `SubscriptionStreamsTest` in all 7 languages and the three reactive Java flavors.)
 
 ## 7. Enums
 

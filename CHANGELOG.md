@@ -663,6 +663,8 @@
 
 ### Fixes
 
+- **Kotlin subscriptions never ended** — a `Flow` stayed open after the server completed the subscription and ignored a server error; `collect` and `toList()` hung. The flow now completes on `complete` and fails with a `GraphLinkException` on `error` (and with the cause on a connection failure).
+- **TypeScript subscriptions can observe completion** — the callback form gets an optional `onComplete` after `onError`, called when the server completes the stream.
 - **Interface selections that mix shared fields with inline fragments** — `feed { ...EntityBits ... on Article { title } }` only asked for `__typename` inside `... on Article`, so every other implementor reached the generated decoder without one and decoding threw. The selection now requests `__typename` at its own level.
 - **Operation names that collide after normalisation** — a hand-written `query Photo` and the generated `photo` both became the method `photo` (Dart, Kotlin, Swift, ...) and the code did not compile. Generated operations keep their name, the hand-written one gets a numeric suffix (`photo2`). Its wire name is unchanged.
 - **A custom operation named like a generated one** (`query listUsers` next to the schema field `listUsers`) failed generation with "has already been declared", pointing at the schema. The custom operation now wins and the generated one is skipped with a warning.

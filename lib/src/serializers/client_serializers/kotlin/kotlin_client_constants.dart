@@ -420,7 +420,13 @@ class GraphLinkSubscriptionHandler(
     private val decoder: GraphLinkJsonDecoder,
     private val encoder: GraphLinkJsonEncoder,
 ) {
-    private val listeners = ConcurrentHashMap<String, (Map<String, Any?>) -> Unit>()
+    private class Sink(
+        val onNext: (Map<String, Any?>) -> Unit,
+        val onComplete: () -> Unit,
+        val onError: (Throwable) -> Unit,
+    )
+
+    private val listeners = ConcurrentHashMap<String, Sink>()
     private val payloadsToHandle = mutableMapOf<String, GraphLinkPayload>()
     private val activePayloads = mutableMapOf<String, GraphLinkPayload>()
     @Volatile private var ackStatus = GraphLinkAckStatus.NONE
@@ -433,7 +439,7 @@ class GraphLinkSubscriptionHandler(
     fun handle(payload: GraphLinkPayload): Flow<Map<String, Any?>> = callbackFlow {
         val uuid = UUID.randomUUID().toString()
         synchronized(this@GraphLinkSubscriptionHandler) {
-            listeners[uuid] = { msg -> trySend(msg) }
+            listeners[uuid] = Sink({ msg -> trySend(msg) }, { close() }, { close(it) })
             activePayloads[uuid] = payload
         }
         initConnection(uuid, payload)
@@ -511,23 +517,30 @@ class GraphLinkSubscriptionHandler(
         @Suppress("UNCHECKED_CAST")
         val data = ((map["payload"] as? Map<*, *>) as? Map<String, Any?>)?.get("data")
                 as? Map<String, Any?> ?: return
-        listeners[id]?.invoke(data)
+        listeners[id]?.onNext(data)
     }
 
     private fun handleError(map: Map<String, Any?>) {
         val id = map["id"] as? String ?: return
-        listeners.remove(id)
+        @Suppress("UNCHECKED_CAST")
+        val errors = (map["payload"] as? List<*>)
+            ?.mapNotNull { it as? Map<String, Any?> }
+            ?.map { GraphLinkError.fromJson(it) }
+            ?: emptyList()
+        val sink = listeners.remove(id)
         activePayloads.remove(id)
+        sink?.onError(GraphLinkException(errors))
     }
 
     private fun handleComplete(id: String?) {
         if (id == null) return
-        listeners.remove(id)
+        val sink = listeners.remove(id)
         activePayloads.remove(id)
+        sink?.onComplete()
     }
 
     private fun notifyAllListenersOfError(t: Throwable) {
-        val snapshot: List<(Map<String, Any?>) -> Unit>
+        val snapshot: List<Sink>
         synchronized(this) {
             snapshot = listeners.values.toList()
             listeners.clear()
@@ -535,7 +548,7 @@ class GraphLinkSubscriptionHandler(
             payloadsToHandle.clear()
             ackStatus = GraphLinkAckStatus.NONE
         }
-        snapshot.forEach { it(mapOf("__gl_error__" to t.message)) }
+        snapshot.forEach { it.onError(t) }
     }
 
     private fun handleReconnect() {
