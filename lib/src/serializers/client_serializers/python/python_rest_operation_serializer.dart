@@ -46,20 +46,9 @@ class PythonRestOperationSerializer {
 
   bool _nullable(GLRestArgument a) => a.argument.type.nullable;
 
-  String _toJson(String expr, GLType type, int index) {
-    final convertible = _grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token);
-    if (!convertible) return expr;
-    if (type.isList) {
-      final variable = 'e$index';
-      final inner = _toJson(variable, type.inlineType, index + 1);
-      return _cg.nullSafe(expr, _cg.listComprehension(expression: inner, variable: variable, iterable: expr), type.nullable);
-    }
-    return _cg.nullSafe(expr, '$expr.to_json()', type.nullable);
-  }
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _name(a));
 
-  String _value(GLRestArgument a) => _toJson(_name(a), a.argument.type, 0);
-
-  String _presentValue(GLRestArgument a) => _toJson(_name(a), _nonNull(a.argument.type), 0);
+  String _presentValue(GLRestArgument a) => _serializer.toJsonExpr(_nonNull(a.argument.type), _name(a));
 
   String operationToMethod(GLRestOperation op) {
     return _cg.createMethod(
@@ -304,7 +293,7 @@ class PythonRestOperationSerializer {
           'return $_result',
         ];
       case RestResponseKind.json:
-        final decode = _serializer.callFromJsonValue(_json, op.field.type);
+        final decode = _serializer.fromJsonExpr(op.field.type, _json);
         if (op.cacheTtl > 0) return [_cachedReturn(op, path, decode)];
         return [
           _cg.constDecl(_json, 'await self.rest_json__($_request, $path, ${_bool(op.allowsEmptyBody)})'),

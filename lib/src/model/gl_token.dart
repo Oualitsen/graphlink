@@ -1,7 +1,12 @@
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
-abstract class GLToken {
+/// Where a serializer records the imports a generated expression needs.
+abstract class GLImportSink {
+  void addImport(String import);
+}
+
+abstract class GLToken implements GLImportSink {
   final TokenInfo tokenInfo;
   Set<GLToken>? _importDependecies;
   GLToken(this.tokenInfo);
@@ -15,6 +20,7 @@ abstract class GLToken {
   Set<String> get staticImports =>
       _staticImports == null ? const {} : Set.unmodifiable(_staticImports!);
 
+  @override
   void addImport(String import) {
     (_staticImports ??= {}).add(import);
   }

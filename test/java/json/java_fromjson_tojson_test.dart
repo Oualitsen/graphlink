@@ -253,7 +253,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((List<Object>)json.get("name")).stream().map(json0 -> (String)json0).collect(Collectors.toList())',
+          '((List<?>)json.get("name")).stream().map(e0 -> (String)e0).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -304,7 +304,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((List<Object>)json.get("age")).stream().map(json0 -> ((Number)json0).intValue()).collect(Collectors.toList())',
+          '((List<?>)json.get("age")).stream().map(e0 -> ((Number)e0).intValue()).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -356,7 +356,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((List<Object>)json.get("gender")).stream().map(json0 -> Gender.fromJson((String)json0)).collect(Collectors.toList())',
+          '((List<?>)json.get("gender")).stream().map(e0 -> Gender.fromJson((String)e0)).collect(Collectors.toList())',
           ');',
           "}"
         ]));
@@ -412,7 +412,7 @@ void main() {
         containsAllInOrder([
           'public static UserInput fromJson(Map<String, Object> json) {',
           'return new UserInput(',
-          '((List<Object>)json.get("age")).stream().map(json0 -> AgeInput.fromJson((Map<String, Object>)json0)).collect(Collectors.toList())',
+          '((List<?>)json.get("age")).stream().map(e0 -> AgeInput.fromJson((Map<String, Object>)e0)).collect(Collectors.toList())',
           ');',
           "}"
         ]));

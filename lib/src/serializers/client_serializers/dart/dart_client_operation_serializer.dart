@@ -5,7 +5,6 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
@@ -329,20 +328,6 @@ class DartClientOperationSerializer {
         return 'null';
       }
     }
-    return callToJson(arg.codeName, arg.type);
-  }
-
-  String callToJson(String argName, GLType type) {
-    if (type.isList) {
-      final element = callToJson("e", type.inlineType);
-      if (element == "e") return argName;
-      return DartCodeGenUtils.mapToList(receiver: argName, param: 'e', body: element, nullable: type.nullable);
-    }
-    final codec = _serializer.toJsonCodecOf(type);
-    if (codec != null) return _serializer.scalarToJson(codec, argName, nullable: type.nullable);
-    if (_grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token)) {
-      return "$argName${type.nullable ? '?' : ''}.toJson()";
-    }
-    return argName;
+    return _serializer.toJsonExpr(arg.type, arg.codeName);
   }
 }

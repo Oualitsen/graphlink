@@ -10,14 +10,13 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_projection_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 
 extension GLGrammarRestNullableExtension on GLParser {
   List<GLDirectiveValue> pushRestNullableToFields(
       TokenInfo typeName, List<GLDirectiveValue> typeDirectives, List<GLField> fields) {
-    final directive = typeDirectives.where((d) => d.token == glRestNullable).firstOrNull;
+    final directives = typeDirectives.where((d) => d.token == glRestNullable).toList();
+    final directive = directives.isEmpty ? null: directives.first;
     if (directive == null) return typeDirectives;
     restNullableTypes.putIfAbsent(typeName.token, () => directive.tokenInfo);
     for (final field in fields) {
@@ -79,7 +78,9 @@ extension GLGrammarRestNullableExtension on GLParser {
 
     final copies = {for (final original in originals) original.token: _copyOf(original, copied)};
     _linkInterfaces(originals, copies);
-    copies.values.forEach((copy) => addToProjectedTypes(copy, similarityCheck: false));
+    for (var copy in copies.values) {
+      addToProjectedTypes(copy, similarityCheck: false);
+    }
     _copyDiscriminators(originals, copied);
 
     for (final operation in optedIn) {

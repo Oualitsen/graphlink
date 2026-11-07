@@ -45,9 +45,9 @@ class TypeScriptRestOperationSerializer {
 
   GLType _nonNull(GLType type) => type is GLListType ? GLListType(type.type, false) : GLType(type.tokenInfo, false);
 
-  String _value(GLRestArgument a) => _serializer.callToJson(_ref(a), a.argument.type);
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _ref(a));
 
-  String _presentValue(GLRestArgument a) => _serializer.callToJson(_ref(a), _nonNull(a.argument.type));
+  String _presentValue(GLRestArgument a) => _serializer.toJsonExpr(_nonNull(a.argument.type), _ref(a));
 
   bool _nullable(GLRestArgument a) => a.argument.type.nullable && !_hasDefault(a);
 
@@ -317,7 +317,7 @@ class TypeScriptRestOperationSerializer {
           'return $_result;',
         ];
       case RestResponseKind.json:
-        final decode = _serializer.callFromJson(_json, op.field.type);
+        final decode = _serializer.fromJsonExpr(op.field.type, _json);
         if (op.cacheTtl > 0) {
           return [_cachedReturn(op, inlinePath, decode)];
         }

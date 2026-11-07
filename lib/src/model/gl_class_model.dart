@@ -32,12 +32,14 @@ class GLClassModel {
 }
 
 
-class GLImportContainer {
+class GLImportContainer implements GLImportSink {
   /// Fully-rendered import lines.
   final List<String> imports = [];
 
   final List<GLToken> importDepencies = [];
 
   GLImportContainer();
-  
+
+  @override
+  void addImport(String import) => imports.add(import);
 }

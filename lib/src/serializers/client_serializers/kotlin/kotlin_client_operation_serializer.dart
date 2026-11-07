@@ -4,8 +4,6 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_type.dart';
-import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_context.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
@@ -311,25 +309,7 @@ class KotlinClientOperationSerializer {
           ? 'MutableList(${arg.codeName}.size) { null }'
           : 'null';
     }
-    return _callToJson(arg.codeName, arg.type, 0);
-  }
-
-  String _callToJson(String variable, GLType type, int depth) {
-    if (type.isList) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _callToJson(varName, inner, depth + 1);
-      if (varName == innerExpr) {
-        return KotlinCodeGenUtils.safeCall(variable, 'toList()', type.nullable);
-      }
-      return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
-    }
-    final codec = _ctx.serializer.toJsonCodecOf(type);
-    if (codec != null) return _ctx.serializer.scalarToJson(codec, variable, nullable: type.nullable);
-    if (_ctx.grammar.isEnum(type.token) || _ctx.grammar.isInput(type.token)) {
-      return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
-    }
-    return variable;
+    return _ctx.serializer.toJsonExpr(arg.type, arg.codeName);
   }
 
   String _serializePartialQueryKotlin(DividedQuery e) {

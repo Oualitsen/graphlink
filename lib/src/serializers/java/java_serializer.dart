@@ -1,6 +1,5 @@
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
-import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
@@ -22,6 +21,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/utils.dart';
 
 const _list = "List";
@@ -54,15 +54,11 @@ const Set<String> _javaPrimitives = {
   'char',
 };
 
-String _listOf(String type) {
-  return '${_list}<${type}>';
-}
-
 String _mapOf(String key, String type) {
   return '${_map}<${key}, ${type}>';
 }
 
-class JavaSerializer extends GLSerializer {
+class JavaSerializer extends GLSerializer with JsonExpressions {
   final bool inputsAsRecords;
   final bool typesAsRecords;
   final bool typesCheckForNulls;
@@ -378,48 +374,25 @@ class JavaSerializer extends GLSerializer {
     return _javaNumberMethods[serializeType(type)]!;
   }
 
-  String getFromJsonCall(GLField field, String varName, int depth, GLToken context, [GLType? type]) {
-    type ??= field.type;
-    String callMapDotGet = depth == 0 ? '.get("${field.name.token}")' : '';
-    String nullCheckStatement = type.nullable ? '${varName}${callMapDotGet} == null ? null :' : '';
-
-    if (type.isList) {
-      var newVarName = '${varName}${depth}';
-      var inlineType = type.inlineType;
-      String targetCast;
-      if (grammar.isNonProjectableType(inlineType.token) && !grammar.isEnum(inlineType.token) && !grammar.isInput(inlineType.token)) {
-        targetCast = "(${_listOf('Object')})";
-      } else if (grammar.isEnum(type.token)) {
-        targetCast = "(${_listOf('Object')})";
-      } else {
-        targetCast = "(${_listOf('Object')})";
-      }
-      String mapFunction = 'map(${newVarName} -> ${getFromJsonCall(field, newVarName, depth + 1, context, type.inlineType)})';
-      var finalResult = '$nullCheckStatement (${targetCast}${varName}${callMapDotGet}).stream().${mapFunction}.${javaCollectorsToList}';
-      context.addImport(JavaImports.collectors);
-      return finalResult;
-    }
-    String result;
-    if (grammar.isNonProjectableType(type.token) && !grammar.isEnum(type.token) && !grammar.isInput(type.token)) {
-      final codec = fromJsonCodecOf(type);
-      if (codec != null) {
-        result = scalarFromJson(codec, '${varName}${callMapDotGet}', nullable: false);
-      } else if (_isNumber(type)) {
-        result = '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
-      } else {
-        result = '(${serializeType(type)})${varName}${callMapDotGet}';
-      }
-    } else if (grammar.isEnum(type.token)) {
-      result = '${resolveCodeName(type.token)}.fromJson((String)${varName}${callMapDotGet})';
-    } else {
-      result = '${resolveCodeName(type.token)}.fromJson((${_mapOf('String', 'Object')})${varName}${callMapDotGet})';
-    }
-    return nullCheckStatement.isEmpty ? result : '$nullCheckStatement $result';
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
+    context?.addImport(JavaImports.collectors);
+    final stream = JavaCodeGenUtils.streamMapCollect(receiver: '((${_list}<?>)$json)', param: element, body: body);
+    return JavaCodeGenUtils.nullSafeExpr(json, stream, list.nullable);
   }
 
-  String fromJsonValueExpr(String valueExpr, GLType type, GLToken context) {
-    final placeholder = GLField(name: type.tokenInfo, type: type, arguments: const [], directives: []);
-    return getFromJsonCall(placeholder, valueExpr, 1, context, type);
+  @override
+  String enumFromJson(GLType type, String json) =>
+      JavaCodeGenUtils.nullSafeExpr(json, '${resolveCodeName(type.token)}.fromJson((String)$json)', type.nullable);
+
+  @override
+  String modelFromJson(GLType type, String json) => JavaCodeGenUtils.nullSafeExpr(
+      json, '${resolveCodeName(type.token)}.fromJson((${_mapOf('String', 'Object')})$json)', type.nullable);
+
+  @override
+  String plainFromJson(GLType type, String json) {
+    final cast = _isNumber(type) ? '((Number)$json).${_numberValueMethod(type)}' : '(${serializeType(type)})$json';
+    return JavaCodeGenUtils.nullSafeExpr(json, cast, type.nullable);
   }
 
   List<String> _requiredFieldChecks(List<GLField> fields, GLToken context) {
@@ -447,7 +420,7 @@ class JavaSerializer extends GLSerializer {
         ..._requiredFieldChecks(fields, context),
         "return new ${token}(",
         ...fields.map((field) {
-          var statement = getFromJsonCall(field, 'json', 0, context);
+          var statement = fromJsonExpr(field.type, 'json.get("${field.name.token}")', context: context);
           if (field != fields.last) {
             return "${statement},";
           }
@@ -664,7 +637,7 @@ class JavaSerializer extends GLSerializer {
         "${_mapOf('String', 'Object')} glMap__ = new HashMap<>();",
         if (typeName != null) 'glMap__.put("__typename", "$typeName");',
         ...fields.map((field) {
-          final put = 'glMap__.put("${field.name}", ${_fieldToJson(field, context)});';
+          final put = 'glMap__.put("${field.name}", ${toJsonExpr(field.type, field.codeName, context: context)});';
           return omitNulls
               ? codeGenUtils.ifStatement(condition: '${field.codeName} != null', ifBlockStatements: [put])
               : put;
@@ -676,31 +649,15 @@ class JavaSerializer extends GLSerializer {
     return buffer.toString();
   }
 
-  String _fieldToJson(GLField field, GLToken context) {
-    var buffer = StringBuffer();
-    var toJosnCall = callToJson(field, field.type, field.codeName, 0, context);
-    buffer.write(toJosnCall);
-    return buffer.toString();
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) {
+    context?.addImport(JavaImports.collectors);
+    if (element == body) return JavaCodeGenUtils.streamMapCollect(receiver: value, nullable: list.nullable);
+    return JavaCodeGenUtils.streamMapCollect(receiver: value, param: element, body: body, nullable: list.nullable);
   }
 
-  String callToJson(GLField field, GLType type, String variableName, int index, GLToken context) {
-    if (type.isList) {
-      var inlineType = type.inlineType;
-      String varName = "e${index}";
-      var inlineCallToJson = callToJson(field, inlineType, varName, index + 1, context);
-      context.addImport(JavaImports.collectors);
-      if (varName == inlineCallToJson) {
-        return JavaCodeGenUtils.streamMapCollect(receiver: variableName, nullable: type.nullable);
-      }
-      return JavaCodeGenUtils.streamMapCollect(receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
-    }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, variableName, nullable: type.nullable);
-    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
-    }
-    return variableName;
-  }
+  @override
+  String modelToJson(GLType type, String value) => JavaCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>

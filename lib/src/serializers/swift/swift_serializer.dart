@@ -17,9 +17,10 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_recursion_extension.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
 
-class SwiftSerializer extends GLSerializer {
+class SwiftSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = SwiftCodeGenUtils();
 
   @override
@@ -365,7 +366,7 @@ class SwiftSerializer extends GLSerializer {
     final typeName = context is GLTypeDefinition ? context.jsonTypeName : null;
     final entries = [
       if (typeName != null) '"__typename": "$typeName"',
-      ...fields.map((f) => '"${f.name}": ${_fieldToJsonExpr(f.type, f.codeName, 0)}'),
+      ...fields.map((f) => '"${f.name}": ${toJsonExpr(f.type, f.codeName)}'),
     ].join(',\n').ident();
     return codeGenUtils.method(
       returnType: '[String: Any?]',
@@ -374,21 +375,49 @@ class SwiftSerializer extends GLSerializer {
     );
   }
 
-  String _fieldToJsonExpr(GLType type, String variable, int depth) {
-    if (type is GLListType) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _fieldToJsonExpr(inner, varName, depth + 1);
-      if (varName == innerExpr) return variable;
-      return SwiftCodeGenUtils.mapCall(
-          receiver: variable, param: varName, body: innerExpr, chainThroughOptional: type.nullable);
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) {
+    // `map { $0 as Any? }` so the result is always `[Any?]` whatever the source element
+    // type, matching the `as? [Any?]` cast of GraphLinkJson.normalize.
+    if (element == body) return SwiftCodeGenUtils.safeCall(value, 'map { \$0 as Any? }', list.nullable);
+    return SwiftCodeGenUtils.mapCall(receiver: value, param: element, body: body, chainThroughOptional: list.nullable);
+  }
+
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
+    final casted = list.nullable ? '($json as? [Any?])' : '($json as! [Any?])';
+    if (element == body) return casted;
+    return SwiftCodeGenUtils.mapCall(receiver: casted, param: element, body: body, chainThroughOptional: list.nullable);
+  }
+
+  @override
+  String modelToJson(GLType type, String value) => SwiftCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+
+  @override
+  String enumFromJson(GLType type, String json) {
+    final codeName = resolveCodeName(type.token);
+    if (type.nullable) return SwiftCodeGenUtils.mapCall(receiver: '($json as? String)', body: '$codeName.fromJson(\$0)');
+    return '$codeName.fromJson($json as! String)';
+  }
+
+  // Interfaces don't carry their own `fromJson` (a protocol can't declare "construct one of
+  // my conformers" as a static requirement): dispatch goes through the paired
+  // `<Interface>Json.fromJson` namespace `_serializeInterface` generates (see `_dispatchFactory`).
+  @override
+  String modelFromJson(GLType type, String json) {
+    final codeName = resolveCodeName(type.token);
+    final isInterface = grammar.interfaces.containsKey(type.token) || grammar.projectedInterfaces.containsKey(type.token);
+    final target = isInterface ? '${codeName}Json' : codeName;
+    if (type.nullable) {
+      return SwiftCodeGenUtils.mapCall(receiver: '($json as? [String: Any?])', body: '$target.fromJson(\$0)');
     }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
-    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      return SwiftCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
-    }
-    return variable;
+    return '$target.fromJson($json as! [String: Any?])';
+  }
+
+  @override
+  String plainFromJson(GLType type, String json) {
+    final mapped = getTypeNameFromGQExternal(type.token) ?? type.token;
+    return type.nullable ? '$json as? $mapped' : '$json as! $mapped';
   }
 
   @override
@@ -406,7 +435,7 @@ class SwiftSerializer extends GLSerializer {
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
     final args = fields
-        .map((f) => '${f.codeName}: ${_fromJsonExpr(f.type, 'map', 0, field: f)}')
+        .map((f) => '${f.codeName}: ${fromJsonExpr(f.type, 'map["${f.name}"]')}')
         .join(',\n')
         .ident();
     return codeGenUtils.createMethod(
@@ -415,50 +444,6 @@ class SwiftSerializer extends GLSerializer {
       arguments: ['_ map: [String: Any?]'],
       statements: ['return $token(\n$args\n)'],
     );
-  }
-
-  String fromJsonValueExpr(String valueExpr, GLType type) =>
-      _fromJsonExpr(type, valueExpr, 0, field: null, valueAccess: valueExpr);
-
-  String _fromJsonExpr(GLType type, String mapVar, int depth, {required GLField? field, String? valueAccess}) {
-    final key = depth == 0 ? '["${field?.name}"]' : '';
-    final access = valueAccess ?? '$mapVar$key';
-
-    if (type is GLListType) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _fromJsonExpr(inner, varName, depth + 1, field: field);
-      final castedList = type.nullable ? '($access as? [Any?])' : '($access as! [Any?])';
-      if (varName == innerExpr) return castedList;
-      return SwiftCodeGenUtils.mapCall(
-          receiver: castedList, param: varName, body: innerExpr, chainThroughOptional: type.nullable);
-    }
-
-    final wireToken = type.token;
-    if (grammar.isNonProjectableType(wireToken) && !grammar.isEnum(wireToken) && !grammar.isInput(wireToken)) {
-      final codec = fromJsonCodecOf(type);
-      if (codec != null) return scalarFromJson(codec, access, nullable: type.nullable);
-      final mappedToken = getTypeNameFromGQExternal(wireToken) ?? wireToken;
-      return type.nullable ? '$access as? $mappedToken' : '$access as! $mappedToken';
-    }
-    final codeName = resolveCodeName(wireToken);
-    if (grammar.isEnum(wireToken)) {
-      if (type.nullable) {
-        return SwiftCodeGenUtils.mapCall(receiver: '($access as? String)', body: '$codeName.fromJson(\$0)');
-      }
-      return '$codeName.fromJson($access as! String)';
-    }
-    // Projectable type, input, or interface/union. Interfaces don't carry
-    // their own `fromJson` (a protocol can't declare "construct one of my
-    // conformers" as a static requirement) — dispatch instead goes through
-    // the paired `<Interface>Json.fromJson` namespace `_serializeInterface`
-    // generates alongside the protocol (see `_dispatchFactory`).
-    final isInterface = grammar.interfaces.containsKey(wireToken) || grammar.projectedInterfaces.containsKey(wireToken);
-    final fromJsonTarget = isInterface ? '${codeName}Json' : codeName;
-    if (type.nullable) {
-      return SwiftCodeGenUtils.mapCall(receiver: '($access as? [String: Any?])', body: '$fromJsonTarget.fromJson(\$0)');
-    }
-    return '$fromJsonTarget.fromJson($access as! [String: Any?])';
   }
 
   // ── @glMapsTo ────────────────────────────────────────────────────────────────

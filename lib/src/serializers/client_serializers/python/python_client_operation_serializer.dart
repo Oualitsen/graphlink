@@ -3,7 +3,6 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
@@ -198,22 +197,7 @@ class PythonClientOperationSerializer {
       if (arg.type.isList) return '[None for _ in ${arg.codeName}]';
       return 'None';
     }
-    return _toJsonExpr(arg.codeName, arg.type, 0);
-  }
-
-  String _toJsonExpr(String expr, GLType type, int index) {
-    if (type.isList) {
-      final variable = 'e$index';
-      final inner = _toJsonExpr(variable, type.inlineType, index + 1);
-      if (inner == variable) return expr;
-      return _cg.nullSafe(expr, _cg.listComprehension(expression: inner, variable: variable, iterable: expr), type.nullable);
-    }
-    final codec = _serializer.toJsonCodecOf(type);
-    if (codec != null) return _serializer.scalarToJson(codec, expr, nullable: type.nullable);
-    if (_grammar.inputTypeRequiresProjection(type) || _grammar.isEnum(type.token)) {
-      return _cg.nullSafe(expr, '$expr.to_json()', type.nullable);
-    }
-    return expr;
+    return _serializer.toJsonExpr(arg.type, arg.codeName);
   }
 
   // ── Partial queries ────────────────────────────────────────────────────────

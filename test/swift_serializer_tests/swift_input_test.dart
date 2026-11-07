@@ -84,7 +84,7 @@ void main() {
         '"role": role?.toJson(),',
         '"role2": role2.toJson(),',
         '"address": address?.toJson(),',
-        '"tags": tags,',
+        '"tags": tags.map { \$0 as Any? },',
         '"roles": roles.map { e0 in e0.toJson() },',
         '"optRoles": optRoles?.map { e0 in e0?.toJson() },',
       ]));

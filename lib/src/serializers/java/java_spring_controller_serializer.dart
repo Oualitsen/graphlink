@@ -120,7 +120,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String _serviceResultToJson(GLField field, String expr, GLToken context) {
     final originalType = field.originalType;
     if (originalType == null) return expr;
-    return serializer.callToJson(field, originalType, expr, 0, context);
+    return serializer.toJsonExpr(originalType, expr, context: context);
   }
 
   /// Like [_serviceResultToJson], but when the conversion mentions [serviceCall]
@@ -273,7 +273,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final origArg = arg.originalArg;
       if (origArg == null) continue;
       final declaration = serializer.serializeType(origArg.type);
-      final fromJsonCall = _inputFromJsonConversion(origArg.type, arg.codeName, context);
+      final fromJsonCall = serializer.fromJsonExpr(origArg.type, arg.codeName, context: context);
       final importSource = grammar.inputs[origArg.type.token] ?? grammar.types[origArg.type.token];
       if (importSource != null) {
         context.addImportDependecy(importSource);
@@ -329,24 +329,6 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
     var buffer = StringBuffer();
     buffer.writeln('$header ${codeGenUtils.block(statements)}');
     return buffer.toString();
-  }
-
-  /// Builds the fromJson conversion expression for an input arg, recursing
-  /// through list nesting with inline stream chains.
-  /// Null guards are emitted wherever the element type is nullable.
-  String _inputFromJsonConversion(GLType type, String sourceExpr, GLToken context, [int depth = 0]) {
-    if (type is GLListType) {
-      context.addImport(JavaImports.collectors);
-      final varName = codeGenUtils.safeLocalVar('m$depth');
-      final inner = _inputFromJsonConversion(type.inlineType, varName, context, depth + 1);
-      final body = JavaCodeGenUtils.nullSafeExpr(varName, inner, type.inlineType.nullable);
-      return JavaCodeGenUtils.streamMapCollect(receiver: sourceExpr, param: varName, body: body, nullable: type.nullable);
-    }
-    final typeDef = grammar.types[type.token] ?? grammar.interfaces[type.token];
-    final typeToken = typeDef?.mappedToType?.token ?? typeDef?.token ?? type.token;
-
-    final call = '${typeToken}.fromJson((Map<String, Object>) $sourceExpr)';
-    return JavaCodeGenUtils.nullSafeExpr(sourceExpr, call, type.nullable);
   }
 
   List<String> _wrapInCompletableFuture(List<String> innerStatements, bool returnVoid, GLToken context) {

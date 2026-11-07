@@ -2,7 +2,6 @@ import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
-import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/swift/swift_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
@@ -298,33 +297,7 @@ class SwiftClientOperationSerializer {
     if (grammar.uploadScalarNames.contains(arg.type.firstType.token)) {
       return arg.type.isList ? '[Any?](repeating: nil, count: ${arg.codeName}.count)' : 'nil';
     }
-    return _callToJson(arg.codeName, arg.type, 0);
-  }
-
-  String _callToJson(String variable, GLType type, int depth) {
-    if (type.isList) {
-      final inner = type.inlineType;
-      final varName = 'e$depth';
-      final innerExpr = _callToJson(varName, inner, depth + 1);
-      if (varName == innerExpr) {
-        // `.map { $0 as Any? }` (not a plain identity map) so the result is
-        // always `[Any?]` regardless of the source element type — matching
-        // what GraphLinkJson.normalize's `as? [Any?]` cast expects.
-        return SwiftCodeGenUtils.safeCall(variable, 'map { \$0 as Any? }', type.nullable);
-      }
-      return SwiftCodeGenUtils.mapCall(
-        receiver: variable,
-        param: varName,
-        body: innerExpr,
-        chainThroughOptional: type.nullable,
-      );
-    }
-    final codec = serializer.toJsonCodecOf(type);
-    if (codec != null) return serializer.scalarToJson(codec, variable, nullable: type.nullable);
-    if (grammar.isEnum(type.token) || grammar.isInput(type.token)) {
-      return SwiftCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
-    }
-    return variable;
+    return serializer.toJsonExpr(arg.type, arg.codeName);
   }
 
   String _serializePartialQuery(DividedQuery e) {

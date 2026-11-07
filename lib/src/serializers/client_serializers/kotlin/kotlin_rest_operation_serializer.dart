@@ -1,5 +1,4 @@
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
-import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -43,15 +42,12 @@ class KotlinRestOperationSerializer {
 
   bool _nullable(GLRestArgument a) => a.argument.type.nullable;
 
-  String _value(GLRestArgument a) => _serializer.callToJson(_current, a.argument.type, _name(a), 0);
+  String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _name(a));
 
   String _presentValue(GLRestArgument a) =>
-      _serializer.callToJson(_current, _nonNull(a.argument.type), _name(a), 0);
-
-  late GLField _current;
+      _serializer.toJsonExpr(_nonNull(a.argument.type), _name(a));
 
   String operationToMethod(GLRestOperation op) {
-    _current = op.field;
     return _cg.suspendFun(
       name: op.field.codeName,
       arguments: _signature(op),
@@ -277,7 +273,7 @@ class KotlinRestOperationSerializer {
           'return $_result',
         ];
       case RestResponseKind.json:
-        final decode = _serializer.fromJsonValueExpr(_json, op.field.type);
+        final decode = _serializer.fromJsonExpr(op.field.type, _json);
         if (op.cacheTtl > 0) {
           return [_cachedReturn(op, path, decode)];
         }

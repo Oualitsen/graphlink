@@ -14,10 +14,11 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/utils.dart';
 
-class TypeScriptSerializer extends GLSerializer {
+class TypeScriptSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = TypeScriptCodeGenUtils();
   final bool immutableTypeFields;
   final bool optionalNullableInputFields;
@@ -563,41 +564,46 @@ class TypeScriptSerializer extends GLSerializer {
     return 'export function $func';
   }
 
-  String _fieldToJsonExpr(GLField field) {
-    final wireKey = field.name.token;
-    final expr = _callToJson('obj.${field.codeName}', field.type, 0);
-    return '"$wireKey": $expr';
+  String _fieldToJsonExpr(GLField field) => '"${field.name.token}": ${toJsonExpr(field.type, 'obj.${field.codeName}')}';
+
+  String _fieldFromJsonExpr(GLField field) =>
+      '${field.codeName}: ${fromJsonExpr(field.type, 'json["${field.name.token}"]')}';
+
+  // A nullable list falls back to `value` itself (not a hardcoded `null`) so an omitted
+  // (undefined) field stays omitted, triggering the server-side default, while an explicit
+  // null is preserved and overrides it.
+  @override
+  String listToJson(GLType list, String value, String element, String body, GLImportSink? context) {
+    final mapped = '$value.map(($element) => $body)';
+    return list.nullable ? '$value != null ? $mapped : $value' : mapped;
   }
 
-  String _fieldFromJsonExpr(GLField field) {
-    final wireKey = field.name.token;
-    final jsonExpr = 'json["$wireKey"]';
-    final expr = _callFromJson(jsonExpr, field.type, 0);
-    return '${field.codeName}: $expr';
+  @override
+  String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
+    final mapped = '($json as unknown[]).map(($element) => $body)';
+    return list.nullable ? '$json != null ? $mapped : null' : mapped;
   }
 
-  String callToJson(String varName, GLType type) => _callToJson(varName, type, 0);
-
-  String callFromJson(String jsonExpr, GLType type) => _callFromJson(jsonExpr, type, 0);
-
-  String _callToJson(String varName, GLType type, int depth) {
-    if (type is GLListType) {
-      final varEl = 'e$depth';
-      final elementCall = _callToJson(varEl, type.inlineType, depth + 1);
-      final mapExpr = '$varName.map(($varEl) => $elementCall)';
-      // Fall back to `varName` itself (not a hardcoded `null`) so an omitted
-      // (undefined) field stays omitted — triggering the server-side default —
-      // while an explicit null is preserved and correctly overrides it.
-      return type.nullable ? '$varName != null ? $mapExpr : $varName' : mapExpr;
-    }
-    final codec = toJsonCodecOf(type);
-    if (codec != null) return scalarToJson(codec, varName, nullable: type.nullable);
-    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
-      final call = '${resolveCodeName(type.token)}.toJson($varName)';
-      return type.nullable ? '$varName != null ? $call : $varName' : call;
-    }
-    return varName;
+  @override
+  String modelToJson(GLType type, String value) {
+    final call = '${resolveCodeName(type.token)}.toJson($value)';
+    return type.nullable ? '$value != null ? $call : $value' : call;
   }
+
+  @override
+  String enumFromJson(GLType type, String json) {
+    final call = '${resolveCodeName(type.token)}.fromJson($json as string)';
+    return type.nullable ? '$json != null ? $call : null' : call;
+  }
+
+  @override
+  String modelFromJson(GLType type, String json) {
+    final call = '${resolveCodeName(type.token)}.fromJson($json as Record<string, unknown>)';
+    return type.nullable ? '$json != null ? $call : null' : call;
+  }
+
+  @override
+  String plainFromJson(GLType type, String json) => '$json as ${serializeType(type)}';
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
@@ -606,25 +612,4 @@ class TypeScriptSerializer extends GLSerializer {
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
       nullable ? '$value != null ? ${codec.encode(value)} : $value' : codec.encode(value);
-
-  String _callFromJson(String jsonExpr, GLType type, int depth) {
-    if (type is GLListType) {
-      final varEl = 'e$depth';
-      final elementCall = _callFromJson(varEl, type.inlineType, depth + 1);
-      final mapExpr = '($jsonExpr as unknown[]).map(($varEl) => $elementCall)';
-      return type.nullable ? '$jsonExpr != null ? $mapExpr : null' : mapExpr;
-    }
-    if (grammar.isEnum(type.token)) {
-      final call = '${resolveCodeName(type.token)}.fromJson($jsonExpr as string)';
-      return type.nullable ? '$jsonExpr != null ? $call : null' : call;
-    }
-    if (grammar.isProjectableType(type.token)) {
-      final call = '${resolveCodeName(type.token)}.fromJson($jsonExpr as Record<string, unknown>)';
-      return type.nullable ? '$jsonExpr != null ? $call : null' : call;
-    }
-    final codec = fromJsonCodecOf(type);
-    if (codec != null) return scalarFromJson(codec, jsonExpr, nullable: type.nullable);
-    // Scalar — pure type assertion, no runtime cost
-    return '$jsonExpr as ${serializeType(type)}';
-  }
 }

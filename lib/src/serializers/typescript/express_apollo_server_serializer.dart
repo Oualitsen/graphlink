@@ -535,7 +535,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
       final callArgs = [...resolvedArgNames, if (e.contextInjected) 'context', if (e.needsInfo) 'info'].join(', ');
       final serviceCall = '$sVar.${e.fieldName}($callArgs)';
-      final toJsonExpr = tsSerializer.callToJson('_r', e.returnType);
+      final toJsonExpr = tsSerializer.toJsonExpr(e.returnType, '_r');
       final needsWrap = e.returnType is GLListType ||
           grammar.isEnum(e.returnType.firstType.token) ||
           grammar.isProjectableType(e.returnType.firstType.token);
@@ -590,7 +590,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           _argsDestructure(e.argNames, e.argCodeNames, '__');
       final callArgs = [...e.argCodeNames, if (e.contextInjected) 'context'].join(', ');
       final subscribeSignature = _resolverSignature('_', argsDestructure, e.contextInjected, false);
-      final toJsonExpr = tsSerializer.callToJson('payload', e.returnType);
+      final toJsonExpr = tsSerializer.toJsonExpr(e.returnType, 'payload');
       final runBefore = _runBeforeStatement(e);
       final subscribeBody = runBefore == null
           ? '$sVar.${e.fieldName}($callArgs)'
@@ -661,7 +661,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final loaderAccess = realArgs.isEmpty
           ? 'context.loaders.${m.key}'
           : 'context.loaders.${m.key}(${argCodeNames.join(', ')})';
-      final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+      final toJsonExpr = tsSerializer.toJsonExpr(m.field.type, '_r');
       const contextType = 'GraphLinkContext & { loaders: GraphLinkLoaders }';
       if (runBefore == null) {
         return '(parent, $argsDestructure, context: $contextType) => $loaderAccess.load(parent).then((_r) => $toJsonExpr)';
@@ -690,7 +690,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (needsInfo) 'info',
     ].join(', ');
     final mappingResolverArgs = _resolverSignature('parent', argsDestructure, ctx, needsInfo);
-    final toJsonExpr = tsSerializer.callToJson('_r', m.field.type);
+    final toJsonExpr = tsSerializer.toJsonExpr(m.field.type, '_r');
     final serviceCall = '$sVar.${m.key}($mappingCallArgs)';
     if (runBefore == null) {
       return '$mappingResolverArgs => $serviceCall.then((_r) => $toJsonExpr)';
