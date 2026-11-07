@@ -26,6 +26,11 @@ const _anyListType = 'List<*>';
 
 String _listOf(String inner) => 'List<$inner>';
 
+const _kotlinExactNumberCasts = <String, String>{
+  'Int': 'intValueExact()',
+  'Long': 'longValueExact()',
+};
+
 const _kotlinNumberCasts = <String, String>{
   'Int': 'toInt()',
   'Long': 'toLong()',
@@ -539,6 +544,12 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   }
 
   String _scalarCast(String access, String token, bool nullable) {
+    final exact = _kotlinExactNumberCasts[token];
+    if (exact != null) {
+      final convert = 'java.math.BigDecimal(it.toString()).$exact';
+      if (nullable) return '($access as? Number)?.let { $convert }';
+      return '($access as Number).let { $convert }';
+    }
     if (_kotlinNumbers.contains(token)) {
       final method = _kotlinNumberCasts[token]!;
       if (nullable) return '($access as? Number)?.$method';

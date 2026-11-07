@@ -26,16 +26,10 @@ import kotlin.test.fail
 private const val FAULT_PORT = 9951
 private val faultUrl = "http://127.0.0.1:$FAULT_PORT"
 
-private const val CLAMPED = "the number is silently clamped to Int.MAX_VALUE instead of failing"
-private const val TRUNCATED = "the fraction is silently truncated to an Int"
 private const val NULL_FOR_SHAPE = "a JSON array or string where an object is expected decodes to null"
 private const val BOM = "kotlinx.serialization rejects a UTF-8 byte order mark"
 
 private val knownDefects = mapOf(
-    "int-overflow:g" to CLAMPED,
-    "int-overflow:c" to CLAMPED,
-    "int-fraction:g" to TRUNCATED,
-    "int-fraction:c" to TRUNCATED,
     "json-array-top-level:p" to NULL_FOR_SHAPE,
     "json-string-top-level:p" to NULL_FOR_SHAPE,
     "bom:c" to BOM,
