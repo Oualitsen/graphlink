@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_defaults_extension.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -12,7 +13,6 @@ import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
@@ -136,17 +136,45 @@ class GoSerializer extends GLSerializer {
     final known = def.values;
     final constants = def.allValues.map(doSerializeEnumValueFor(def)).join('\n');
     final knownNames = known.map((v) => enumConstantName(def, v)).join(', ');
+    final toJson = codeGenUtils.createMethod(
+      receiver: 'v $name',
+      methodName: 'ToJson',
+      returnType: '(string, error)',
+      statements: [
+        if (known.isNotEmpty)
+          codeGenUtils.ifStatement(
+            condition: 'v == ${knownNames.split(', ').join(' || v == ')}',
+            ifBlockStatements: ['return string(v), nil'],
+          ),
+        'return "", fmt.Errorf("$name %q cannot be serialized", string(v))',
+      ],
+    );
+    final fromJson = codeGenUtils.createMethod(
+      methodName: '${name}FromJson',
+      arguments: ['value any'],
+      returnType: '($name, error)',
+      statements: [
+        's, err := glString(value)',
+        codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return "", err']),
+        if (known.isNotEmpty)
+          codeGenUtils.switchStatement(
+            expression: '$name(s)',
+            cases: [GoCaseBranch(caseValue: knownNames, statement: 'return $name(s), nil')],
+          ),
+        if (unknown != null)
+          'return ${enumConstantName(def, unknown)}, nil'
+        else
+          'return "", fmt.Errorf("invalid $name: %s", s)',
+      ],
+    );
     final marshal = codeGenUtils.createMethod(
       receiver: 'v $name',
       methodName: 'MarshalJSON',
       returnType: '([]byte, error)',
       statements: [
-        if (known.isNotEmpty)
-          codeGenUtils.ifStatement(
-            condition: 'v == ${knownNames.split(', ').join(' || v == ')}',
-            ifBlockStatements: ['return json.Marshal(string(v))'],
-          ),
-        'return nil, fmt.Errorf("$name %q cannot be serialized", string(v))',
+        's, err := v.ToJson()',
+        codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return nil, err']),
+        'return json.Marshal(s)',
       ],
     );
     final unmarshal = codeGenUtils.createMethod(
@@ -155,28 +183,20 @@ class GoSerializer extends GLSerializer {
       returnType: 'error',
       arguments: ['data []byte'],
       statements: [
-        'var s string',
-        codeGenUtils.ifStatement(
-          condition: 'err := json.Unmarshal(data, &s); err != nil',
-          ifBlockStatements: ['return err'],
-        ),
-        if (known.isNotEmpty)
-          codeGenUtils.switchStatement(
-            expression: '$name(s)',
-            cases: [
-              GoCaseBranch(caseValue: knownNames, statement: '*v = $name(s)\nreturn nil'),
-            ],
-          ),
-        if (unknown != null) ...[
-          '*v = ${enumConstantName(def, unknown)}',
-          'return nil',
-        ] else
-          'return fmt.Errorf("invalid $name: %s", s)',
+        'value, err := glParseJson(data)',
+        codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return err']),
+        codeGenUtils.ifStatement(condition: 'value == nil', ifBlockStatements: ['return nil']),
+        'decoded, err := ${name}FromJson(value)',
+        codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return err']),
+        '*v = decoded',
+        'return nil',
       ],
     );
     return [
       'type $name string',
       'const (\n${constants.identGo()}\n)',
+      toJson,
+      fromJson,
       marshal,
       unmarshal,
     ].join('\n\n');
@@ -212,8 +232,9 @@ class GoSerializer extends GLSerializer {
     final fields = serializableFields(def);
     final withDefaults = fields.where((f) => f.initialValue != null).toList();
     return [
-      codeGenUtils.structDecl(def.codeName, [_fieldLines(fields, omitEmpty: def.isOneOf)]),
+      codeGenUtils.structDecl(def.codeName, [_fieldLines(fields)]),
       if (withDefaults.isNotEmpty) _constructorWithDefaults(def.codeName, withDefaults),
+      ..._jsonBlocks(def.token, def.codeName, fields, omitUnset: def.isOneOf),
       ...generateMappingMethods(def),
     ].join('\n\n');
   }
@@ -269,13 +290,7 @@ class GoSerializer extends GLSerializer {
       }
     }
     if (!shouldSkipJsonMethods(def)) {
-      final typeName = def.jsonTypeName;
-      if (typeName != null) blocks.add(_marshalWithTypename(name, typeName));
-      final polymorphic = fields.where((f) => _isPolymorphic(f.type)).toList();
-      final checks = _requiredFieldChecks(def, fields);
-      if (polymorphic.isNotEmpty || checks.isNotEmpty) {
-        blocks.add(_unmarshalWithPolymorphicFields(name, polymorphic, checks));
-      }
+      blocks.addAll(_jsonBlocks(def.token, name, fields, typename: def.jsonTypeName));
     }
     final identity = def.getIdentityFields(grammar);
     if (identity.isNotEmpty) blocks.add(_equals(name, fields, identity));
@@ -304,18 +319,6 @@ class GoSerializer extends GLSerializer {
       methodName: 'Get${declared.codeName}',
       returnType: declaredType,
       statements: [body],
-    );
-  }
-
-  String _marshalWithTypename(String name, String typeName) {
-    return codeGenUtils.createMethod(
-      receiver: 'v $name',
-      methodName: 'MarshalJSON',
-      returnType: '([]byte, error)',
-      statements: [
-        'type alias $name',
-        'return json.Marshal(struct {\n${'alias\nTypename string `json:"__typename"`'.identGo()}\n}{alias(v), ${stringLiteral(typeName)}})',
-      ],
     );
   }
 
@@ -355,69 +358,165 @@ class GoSerializer extends GLSerializer {
     return 'unmarshal${resolveCodeName(type.token)}';
   }
 
-  List<String> _requiredFieldChecks(GLTypeDefinition def, List<GLField> fields) {
-    if (!grammar.restReachableTypeNames.contains(def.token)) return const [];
-    return [
-      for (final f in fields)
-        if (!f.type.nullable && f.initialValue == null)
-          codeGenUtils.ifStatement(
-            condition: 'glIsNull(glKeys__[${stringLiteral(f.name.token)}])',
-            ifBlockStatements: [
-              'return errors.New(${stringLiteral('${def.token}.${f.name.token} is missing or null in the response')})',
-            ],
-          ),
+  // ── Explicit ToJson / FromJson ─────────────────────────────────────────────
+
+  List<String> _jsonBlocks(String owner, String name, List<GLField> fields, {String? typename, bool omitUnset = false}) => [
+        _toJsonMethod(owner, name, fields, typename: typename, omitUnset: omitUnset),
+        _fromJsonFunction(owner, name, fields),
+        codeGenUtils.createMethod(
+          receiver: 'v $name',
+          methodName: 'MarshalJSON',
+          returnType: '([]byte, error)',
+          statements: [
+            'm, err := v.ToJson()',
+            codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return nil, err']),
+            'return m.MarshalJSON()',
+          ],
+        ),
+        codeGenUtils.createMethod(
+          receiver: 'v *$name',
+          methodName: 'UnmarshalJSON',
+          arguments: ['data []byte'],
+          returnType: 'error',
+          statements: [
+            'value, err := glParseJson(data)',
+            codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return err']),
+            codeGenUtils.ifStatement(condition: 'value == nil', ifBlockStatements: ['return nil']),
+            'decoded, err := glObject(${name}FromJson)(value)',
+            codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return err']),
+            '*v = decoded',
+            'return nil',
+          ],
+        ),
+      ];
+
+  String _toJsonMethod(String owner, String name, List<GLField> fields, {String? typename, bool omitUnset = false}) {
+    final statements = <String>[
+      if (typename != null) 'm.Set("__typename", ${stringLiteral(typename)})',
     ];
+    var needsConversion = false;
+    for (final f in fields) {
+      final key = stringLiteral(f.name.token);
+      final access = 'v.${f.codeName}';
+      final encoder = _encoder(f.type);
+      final List<String> set;
+      if (encoder == null) {
+        set = ['m.Set($key, $access)'];
+      } else {
+        needsConversion = true;
+        set = [
+          codeGenUtils.ifStatement(
+            condition: 'value, err = $encoder($access); err != nil',
+            ifBlockStatements: ['return JsonObject{}, glFieldError(${stringLiteral(owner)}, $key, err)'],
+          ),
+          'm.Set($key, value)',
+        ];
+      }
+      if (omitUnset) {
+        statements.add(codeGenUtils.ifStatement(condition: '$access != nil', ifBlockStatements: set));
+      } else {
+        statements.addAll(set);
+      }
+    }
+    return codeGenUtils.createMethod(
+      receiver: 'v $name',
+      methodName: 'ToJson',
+      returnType: '(JsonObject, error)',
+      statements: [
+        'm := NewJsonObject()',
+        if (needsConversion) ...['var value any', 'var err error'],
+        ...statements,
+        'return m, nil',
+      ],
+    );
   }
 
-  String _unmarshalWithPolymorphicFields(String name, List<GLField> polymorphic, [List<String> checks = const []]) {
-    final auxFields = polymorphic.map((f) => '${f.codeName} json.RawMessage `json:"${f.name.token}"`').join('\n');
-    if (polymorphic.isEmpty) {
-      return codeGenUtils.createMethod(
-        receiver: 'v *$name',
-        methodName: 'UnmarshalJSON',
-        arguments: ['data []byte'],
-        returnType: 'error',
-        statements: [
-          'var glKeys__ map[string]json.RawMessage',
-          codeGenUtils.ifStatement(
-            condition: 'err := json.Unmarshal(data, &glKeys__); err != nil',
-            ifBlockStatements: ['return err'],
-          ),
-          ...checks,
-          'type alias $name',
-          'return json.Unmarshal(data, (*alias)(v))',
-        ],
-      );
+  String _fromJsonFunction(String owner, String name, List<GLField> fields) {
+    final statements = <String>[];
+    for (final f in fields) {
+      final key = stringLiteral(f.name.token);
+      var decoder = _decoder(f.type);
+      if (f.initialValue != null && !f.type.nullable) decoder = 'glNilable($decoder)';
+      statements.add(codeGenUtils.ifStatement(
+        condition: 'v.${f.codeName}, err = $decoder(m[$key]); err != nil',
+        ifBlockStatements: ['return $name{}, glFieldError(${stringLiteral(owner)}, $key, err)'],
+      ));
     }
-    final statements = <String>[
-      if (checks.isNotEmpty) ...[
-        'var glKeys__ map[string]json.RawMessage',
-        codeGenUtils.ifStatement(
-          condition: 'err := json.Unmarshal(data, &glKeys__); err != nil',
-          ifBlockStatements: ['return err'],
-        ),
-        ...checks,
-      ],
-      'type alias $name',
-      'aux := struct {\n${'*alias\n$auxFields'.identGo()}\n}{alias: (*alias)(v)}',
-      codeGenUtils.ifStatement(
-        condition: 'err := json.Unmarshal(data, &aux); err != nil',
-        ifBlockStatements: ['return err'],
-      ),
-      'var err error',
-      for (final f in polymorphic) ...[
-        'v.${f.codeName}, err = ${decoderFor(f.type)}(aux.${f.codeName})',
-        codeGenUtils.nilCheckReturn('err'),
-      ],
-      'return nil',
-    ];
     return codeGenUtils.createMethod(
-      receiver: 'v *$name',
-      methodName: 'UnmarshalJSON',
-      arguments: ['data []byte'],
-      returnType: 'error',
-      statements: statements,
+      methodName: '${name}FromJson',
+      arguments: ['m map[string]any'],
+      returnType: '($name, error)',
+      statements: [
+        'var v $name',
+        if (fields.isNotEmpty) 'var err error',
+        ...statements,
+        'return v, nil',
+      ],
     );
+  }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) => codec.decode(json);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) => codec.encode(value);
+
+  String _decoder(GLType type) {
+    final base = _baseDecoder(type);
+    if (!type.nullable) return base;
+    return usesPointer(type) ? 'glPtr($base)' : 'glNilable($base)';
+  }
+
+  String _baseDecoder(GLType type) {
+    if (type is GLMapType) return 'glViaJson[${nonPointerType(type)}]';
+    if (type is GLListType) return 'glList(${_decoder(type.inlineType)})';
+    final token = type.token;
+    final codec = fromJsonCodecOf(type);
+    if (codec != null) {
+      return 'func(v any) (${_baseTypeName(type)}, error) { return ${scalarFromJson(codec, 'v', nullable: false)}, nil }';
+    }
+    if (grammar.isEnum(token)) return '${resolveCodeName(token)}FromJson';
+    if (isInterfaceLike(token)) return '${resolveCodeName(token)}FromJson';
+    if (grammar.isProjectableType(token)) return 'glObject(${resolveCodeName(token)}FromJson)';
+    final goType = _baseTypeName(type);
+    switch (goType) {
+      case 'string':
+        return 'glString';
+      case 'int':
+        return 'glInt';
+      case 'int64':
+        return 'glInt64';
+      case 'float64':
+        return 'glFloat64';
+      case 'bool':
+        return 'glBool';
+      case 'any':
+        return 'glAny';
+    }
+    return 'glViaJson[$goType]';
+  }
+
+  String? encoderFor(GLType type) => _encoder(type);
+
+  String? _encoder(GLType type) {
+    if (type is GLMapType) return null;
+    String? base;
+    if (type is GLListType) {
+      final element = _encoder(type.inlineType);
+      if (element == null) return null;
+      return 'glEncList($element)';
+    }
+    final token = type.token;
+    final codec = toJsonCodecOf(type);
+    if (codec != null) {
+      base = 'func(v ${_baseTypeName(type)}) (any, error) { return ${scalarToJson(codec, 'v', nullable: false)}, nil }';
+    } else if (grammar.isEnum(token)) {
+      base = 'glEncEnum[${resolveCodeName(token)}]';
+    } else if (isInterfaceLike(token) || grammar.isProjectableType(token)) {
+      base = 'glEncObject[${resolveCodeName(token)}]';
+    }
+    if (base == null) return null;
+    return usesPointer(type) ? 'glEncPtr($base)' : base;
   }
 
   String _serializeInterface(GLInterfaceDefinition interface) {
@@ -427,6 +526,7 @@ class GoSerializer extends GLSerializer {
     final members = <String>[
       ...parents,
       'Is$name()',
+      'ToJson() (JsonObject, error)',
       ...fields.map((f) => 'Get${f.codeName}() ${serializeType(f.type)}'),
     ];
     final blocks = <String>[codeGenUtils.interfaceDecl(name, members)];
@@ -442,104 +542,70 @@ class GoSerializer extends GLSerializer {
   @override
   String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
     final name = interface.codeName;
-    return codeGenUtils.createMethod(
-      methodName: 'unmarshal$name',
-      arguments: ['data json.RawMessage'],
-      returnType: '($name, error)',
-      statements: [
-        codeGenUtils.ifStatement(condition: 'glIsNull(data)', ifBlockStatements: ['return nil, nil']),
-        'var v ${interface.syntheticImplementation!.codeName}',
-        codeGenUtils.ifStatement(
-          condition: 'err := json.Unmarshal(data, &v); err != nil',
-          ifBlockStatements: ['return nil, err'],
-        ),
-        'return v, nil',
-      ],
-    );
+    return [
+      codeGenUtils.createMethod(
+        methodName: '${name}FromJson',
+        arguments: ['value any'],
+        returnType: '($name, error)',
+        statements: ['return glObject(${interface.syntheticImplementation!.codeName}FromJson)(value)'],
+      ),
+      _unmarshalWrapper(name),
+    ].join('\n\n');
   }
+
+  String _unmarshalWrapper(String name) => codeGenUtils.createMethod(
+        methodName: 'unmarshal$name',
+        arguments: ['data json.RawMessage'],
+        returnType: '($name, error)',
+        statements: [
+          codeGenUtils.ifStatement(condition: 'glIsNull(data)', ifBlockStatements: ['return nil, nil']),
+          'value, err := glParseJson(data)',
+          codeGenUtils.ifStatement(condition: 'err != nil', ifBlockStatements: ['return nil, err']),
+          'return ${name}FromJson(value)',
+        ],
+      );
 
   String _dispatchFunction(String name, Set<GLTypeDefinition> implementations, [GLRestDiscriminator? discriminator]) {
-    if (discriminator != null) return _discriminatedDispatch(name, implementations, discriminator);
-    final cases = implementations.map((impl) {
-      final wire = impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token;
-      return GoCaseBranch(
-        caseValue: stringLiteral(wire),
-        statement: [
-          'var v ${impl.codeName}',
-          codeGenUtils.ifStatement(
-            condition: 'err := json.Unmarshal(data, &v); err != nil',
-            ifBlockStatements: ['return nil, err'],
-          ),
-          'return v, nil',
-        ].join('\n'),
-      );
-    }).toList();
-    return codeGenUtils.createMethod(
-      methodName: 'unmarshal$name',
-      arguments: ['data json.RawMessage'],
-      returnType: '($name, error)',
-      statements: [
-        codeGenUtils.ifStatement(
-          condition: 'glIsNull(data)',
-          ifBlockStatements: ['return nil, nil'],
-        ),
-        'var probe struct {\n${'Typename string `json:"__typename"`'.identGo()}\n}',
-        codeGenUtils.ifStatement(
-          condition: 'err := json.Unmarshal(data, &probe); err != nil',
-          ifBlockStatements: ['return nil, err'],
-        ),
-        codeGenUtils.switchStatement(
-          expression: 'probe.Typename',
-          cases: cases,
-          defaultStatements: [
-            'return nil, fmt.Errorf("Invalid type %s. %s does not implement $name or not defined", probe.Typename, probe.Typename)',
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _discriminatedDispatch(String name, Set<GLTypeDefinition> implementations, GLRestDiscriminator discriminator) {
     String wire(GLTypeDefinition impl) => impl.derivedFromType?.tokenInfo.token ?? impl.tokenInfo.token;
-    String decodeInto(GLTypeDefinition impl) => [
-          'var v ${impl.codeName}',
-          codeGenUtils.ifStatement(
-            condition: 'err := json.Unmarshal(data, &v); err != nil',
-            ifBlockStatements: ['return nil, err'],
-          ),
-          'return v, nil',
-        ].join('\n');
-    return codeGenUtils.createMethod(
-      methodName: 'unmarshal$name',
-      arguments: ['data json.RawMessage'],
-      returnType: '($name, error)',
-      statements: [
-        codeGenUtils.ifStatement(condition: 'glIsNull(data)', ifBlockStatements: ['return nil, nil']),
-        'var probe map[string]json.RawMessage',
-        codeGenUtils.ifStatement(
-          condition: 'err := json.Unmarshal(data, &probe); err != nil',
-          ifBlockStatements: ['return nil, err'],
-        ),
+    GoCaseBranch branch(String value, GLTypeDefinition impl) =>
+        GoCaseBranch(caseValue: stringLiteral(value), statement: 'return ${impl.codeName}FromJson(m)');
+    final typenameCases = [for (final impl in implementations) branch(wire(impl), impl)];
+    final statements = <String>[
+      codeGenUtils.ifStatement(condition: 'value == nil', ifBlockStatements: ['return nil, glErrNull']),
+      'm, ok := value.(map[string]any)',
+      codeGenUtils.ifStatement(
+        condition: '!ok',
+        ifBlockStatements: ['return nil, fmt.Errorf("expected an object, got %T", value)'],
+      ),
+      if (discriminator == null)
         codeGenUtils.switchStatement(
-          expression: 'glProbeString(probe["__typename"])',
-          cases: [for (final impl in implementations) GoCaseBranch(caseValue: stringLiteral(wire(impl)), statement: decodeInto(impl))],
-        ),
-        'discriminator := glProbeString(probe[${stringLiteral(discriminator.field)}])',
+          expression: 'glStringOf(m["__typename"])',
+          cases: typenameCases,
+          defaultStatements: [
+            'return nil, fmt.Errorf("Invalid type %s. %s does not implement $name or not defined", glStringOf(m["__typename"]), glStringOf(m["__typename"]))',
+          ],
+        )
+      else ...[
+        codeGenUtils.switchStatement(expression: 'glStringOf(m["__typename"])', cases: typenameCases),
+        'discriminator := glStringOf(m[${stringLiteral(discriminator.field)}])',
         codeGenUtils.switchStatement(
           expression: 'discriminator',
-          cases: [
-            for (final impl in implementations)
-              GoCaseBranch(
-                caseValue: stringLiteral(discriminator.valueByType[wire(impl)] ?? wire(impl)),
-                statement: decodeInto(impl),
-              ),
-          ],
+          cases: [for (final impl in implementations) branch(discriminator.valueByType[wire(impl)] ?? wire(impl), impl)],
           defaultStatements: [
             'return nil, fmt.Errorf(${stringLiteral('Cannot decode $name: unknown or missing "${discriminator.field}" value (%s)')}, discriminator)',
           ],
         ),
       ],
-    );
+    ];
+    return [
+      codeGenUtils.createMethod(
+        methodName: '${name}FromJson',
+        arguments: ['value any'],
+        returnType: '($name, error)',
+        statements: statements,
+      ),
+      _unmarshalWrapper(name),
+    ].join('\n\n');
   }
 
   // ── Default literals ───────────────────────────────────────────────────────

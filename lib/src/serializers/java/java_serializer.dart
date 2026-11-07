@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
@@ -113,6 +114,7 @@ class JavaSerializer extends GLSerializer {
       if (javaType == 'Double' || javaType == 'Float') {
         return _serializeFloatingLiteral(value.toDouble(), javaType);
       }
+      if (javaType == 'Long' || javaType == 'long') return '${value}L';
       return '$value';
     }
     if (value is double) {
@@ -399,7 +401,10 @@ class JavaSerializer extends GLSerializer {
     }
     String result;
     if (grammar.isNonProjectableType(type.token) && !grammar.isEnum(type.token) && !grammar.isInput(type.token)) {
-      if (_isNumber(type)) {
+      final codec = fromJsonCodecOf(type);
+      if (codec != null) {
+        result = scalarFromJson(codec, '${varName}${callMapDotGet}', nullable: false);
+      } else if (_isNumber(type)) {
         result = '((Number)${varName}${callMapDotGet}).${_numberValueMethod(type)}';
       } else {
         result = '(${serializeType(type)})${varName}${callMapDotGet}';
@@ -688,11 +693,22 @@ class JavaSerializer extends GLSerializer {
         return JavaCodeGenUtils.streamMapCollect(receiver: variableName, nullable: type.nullable);
       }
       return JavaCodeGenUtils.streamMapCollect(receiver: variableName, param: varName, body: inlineCallToJson, nullable: type.nullable);
-    } else if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
+    }
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, variableName, nullable: type.nullable);
+    if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       return JavaCodeGenUtils.safeCall(variableName, "toJson()", type.nullable);
     }
     return variableName;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
+      JavaCodeGenUtils.nullSafeExpr(json, codec.decode(json), nullable);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      JavaCodeGenUtils.nullSafeExpr(value, codec.encode(value), nullable);
 
   String generateContructor(String name, List<GLField> fields, String? modifier, GLToken context,
       {bool checkForNulls = false, bool isTypeField = false}) {

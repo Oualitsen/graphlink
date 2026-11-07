@@ -1,6 +1,13 @@
 {
   "schemaPaths": ["../schema_real/schema.gql", "../schema_real/custom_query.graphql"],
   "mode": "client",
+  "typeMappings": {
+    "DateTime": "string",
+    "LocalDate": "string",
+    "BigDecimal": "any",
+    "JSON": "any",
+    "Opaque": {"type": "string", "fromJson": "\"opaque:\" + {}.(string)", "toJson": "strings.TrimPrefix({}, \"opaque:\")"}
+  },
   "outputDir": "generated",
   "clientConfig": {
     "go": {

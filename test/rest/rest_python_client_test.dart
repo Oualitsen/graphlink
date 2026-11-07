@@ -176,7 +176,7 @@ void main() {
       final out = [...g.projectedTypes.values, ...g.projectedInterfaces.values]
           .map(serializer.serializeTypeDefinition)
           .join('\n');
-      expect(out, contains('discriminator = data.get("kind")'));
+      expect(out, contains('discriminator = json.get("kind")'));
       expect(out, contains('"dog": Dog'));
       expect(out, contains('Cannot decode Pet: unknown or missing'));
     });

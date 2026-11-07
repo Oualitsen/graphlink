@@ -16,6 +16,7 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_scalar_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_collection_imports.dart';
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -50,6 +51,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.d
 import 'package:graphlink/src/model/skipped_auto_query.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_strict_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_expand_grammar_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -103,6 +105,8 @@ class GLParser {
   final Map<String, GLSchemaMapping> _schemaMappings = {};
 
   Map<String, String> typeMap = {};
+
+  final Map<String, GLScalarCodec> scalarCodecs;
 
   /// Target-language type for custom scalars that are not explicitly mapped.
   /// Sourced from `GeneratorConfig.unknownScalarType`; null disables the
@@ -355,6 +359,7 @@ class GLParser {
     this.autoQueryArgumentLimit = 200,
     this.maxFragmentBodySize = 8192,
     this.collectionImports = GLCollectionImports.none,
+    this.scalarCodecs = const {},
   })  : _parameterReservedWords = parameterReservedWords,
         assert(
           (!autoGenerateQueries && autoGenerateQueriesFor == null) || generateAllFieldsFragments,
@@ -395,6 +400,7 @@ class GLParser {
     validateInputReferences();
     validateDefaultValues();
     validateTypeReferences();
+    validateScalarCodecs();
     validateSkipOnServerMapTo();
     validateTypeFieldSkipOnServerDirectives();
     validateInterceptPlacement();

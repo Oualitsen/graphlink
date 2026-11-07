@@ -10,6 +10,8 @@ import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/scalar_codec.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -52,6 +54,31 @@ abstract class GLSerializer {
   /// the dispatching decoder.
   /// Must be implemented by every language serializer.
   String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface);
+
+  /// The expression that turns [json], a raw JSON value in the target language
+  /// (`dynamic`, `Any?`, `Object`, `unknown`), into the scalar's type using
+  /// [codec]. [json] is substituted for `{}` in the codec's `fromJson` template.
+  /// When [nullable], a null [json] yields null instead of reaching the template.
+  /// Must be implemented by every language serializer.
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable});
+
+  /// The expression that turns [value], a value of the scalar's type, into a JSON
+  /// value using [codec]. [value] is substituted for `{}` in the codec's `toJson`
+  /// template. When [nullable], a null [value] yields null instead of reaching it.
+  /// Must be implemented by every language serializer.
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable});
+
+  /// The codec that decodes values of [type], or null when the scalar is a plain alias.
+  GLScalarCodec? fromJsonCodecOf(GLType type) {
+    final codec = grammar.scalarCodecOf(type.token);
+    return codec != null && codec.canDecode ? codec : null;
+  }
+
+  /// The codec that encodes values of [type], or null when the scalar is a plain alias.
+  GLScalarCodec? toJsonCodecOf(GLType type) {
+    final codec = grammar.scalarCodecOf(type.token);
+    return codec != null && codec.canEncode ? codec : null;
+  }
 
   /// Effective type map: language defaults merged with user-supplied overrides.
   late final Map<String, String> typeMap;

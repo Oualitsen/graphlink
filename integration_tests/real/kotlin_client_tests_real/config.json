@@ -6,7 +6,12 @@
     "String":  "String",
     "Float":   "Double",
     "Int":     "Int",
-    "Boolean": "Boolean"
+    "Boolean": "Boolean",
+    "DateTime": "String",
+    "LocalDate": "String",
+    "BigDecimal": "Any",
+    "JSON": "Any",
+    "Opaque": {"type": "String", "fromJson": "\"opaque:\" + ({} as String)", "toJson": "{}.removePrefix(\"opaque:\")"}
   },
   "outputDir": "client-app/src/main/kotlin/dev/graphlink/test/generated",
   "clientConfig": {

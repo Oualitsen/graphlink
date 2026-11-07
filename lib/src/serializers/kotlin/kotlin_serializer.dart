@@ -1,3 +1,4 @@
+import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
@@ -477,11 +478,21 @@ class KotlinSerializer extends GLSerializer {
       if (varName == innerExpr) return variable;
       return KotlinCodeGenUtils.mapCall(receiver: variable, param: varName, body: innerExpr, nullable: type.nullable);
     }
+    final codec = toJsonCodecOf(type);
+    if (codec != null) return scalarToJson(codec, variable, nullable: type.nullable);
     if (grammar.isEnum(type.token) || grammar.isProjectableType(type.token)) {
       return KotlinCodeGenUtils.safeCall(variable, 'toJson()', type.nullable);
     }
     return variable;
   }
+
+  @override
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
+      nullable ? KotlinCodeGenUtils.letCall(receiver: json, body: codec.decode('it')) : codec.decode(json);
+
+  @override
+  String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
+      nullable ? KotlinCodeGenUtils.letCall(receiver: value, body: codec.encode('it')) : codec.encode(value);
 
   // ── fromJson ─────────────────────────────────────────────────────────────────
 
@@ -529,6 +540,8 @@ class KotlinSerializer extends GLSerializer {
 
     final wireToken = type.token;
     if (grammar.isNonProjectableType(wireToken) && !grammar.isEnum(wireToken) && !grammar.isInput(wireToken)) {
+      final codec = fromJsonCodecOf(type);
+      if (codec != null) return scalarFromJson(codec, access, nullable: type.nullable);
       final mappedToken = getTypeNameFromGQExternal(wireToken) ?? wireToken;
       return _scalarCast(access, mappedToken, type.nullable, depth);
     }

@@ -701,6 +701,9 @@ type Query {
   pingLength(ping: Ping!): Int!
   describePet(pet: Pet!): String!
   legacy(withReason: String, plain: String): Legacy!
+  scalarFixture: ScalarBag!
+  echoScalars(input: ScalarsInput!): ScalarBag!
+  echoScalarArgs(dt: DateTime!, date: LocalDate, long: Long!, big: BigDecimal, json: JSON, opaque: Opaque, dts: [DateTime!]!, longs: [Long]): ScalarBag!
 }
 
 type Mutation {
@@ -743,4 +746,35 @@ type Subscription {
 
   # Emits 1..failAfter, then the server fails the stream.
   flakyTicks(failAfter: Int!): Int!
+}
+
+# ── Custom scalars ───────────────────────────────────────────────────────────
+
+scalar DateTime
+scalar LocalDate
+scalar Long
+scalar BigDecimal
+scalar JSON
+scalar Opaque
+
+type ScalarBag {
+  dt: DateTime!
+  date: LocalDate
+  long: Long!
+  big: BigDecimal
+  json: JSON
+  opaque: Opaque
+  dts: [DateTime!]!
+  longs: [Long]
+}
+
+input ScalarsInput {
+  dt: DateTime!
+  date: LocalDate
+  long: Long!
+  big: BigDecimal
+  json: JSON
+  opaque: Opaque
+  dts: [DateTime!]!
+  longs: [Long]
 }

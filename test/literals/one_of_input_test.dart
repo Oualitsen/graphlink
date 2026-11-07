@@ -60,14 +60,14 @@ void main() {
 
     test('Go', () {
       String emit(GLParser g, String n) => GoSerializer(g, packageName: 'generated').serializeInputDefinition(g.inputs[n]!);
-      expect(out(emit, 'Pet'), contains('`json:"cat,omitempty"`'));
-      expect(out(emit, 'Plain'), contains('`json:"cat"`'));
+      expect(out(emit, 'Pet'), contains('if v.cat != nil {'));
+      expect(out(emit, 'Plain'), isNot(contains('if v.cat != nil {')));
     });
 
     test('Python', () {
       String emit(GLParser g, String n) => PythonSerializer(g).serializeInputDefinition(g.inputs[n]!);
-      expect(out(emit, 'Pet'), contains('GL_ONE_OF: ClassVar[bool] = True'));
-      expect(out(emit, 'Plain'), isNot(contains('GL_ONE_OF')));
+      expect(out(emit, 'Pet'), contains('.items() if v is not None}'));
+      expect(out(emit, 'Plain'), isNot(contains('if v is not None')));
     });
   });
 }
