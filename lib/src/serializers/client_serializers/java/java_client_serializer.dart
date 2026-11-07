@@ -1,6 +1,7 @@
 import 'package:graphlink/src/cache_store_java.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -808,6 +809,7 @@ class JavaClientSerializer extends GLClientSerializer {
       imports: [
         ...importContainer.imports,
         ...flavor.imports,
+        ..._grammar.scalarImportsOfOperationType(type),
         if (restOperations.isNotEmpty) ...[...flavor.optionalTypeImports, if (flavor.isReactive) JavaImports.optional],
       ],
       body: classBody,

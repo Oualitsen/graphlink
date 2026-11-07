@@ -5,24 +5,34 @@
   ],
   "mode": "client",
   "typeMappings": {
-    "ID":      "string",
-    "String":  "string",
-    "Float":   "number",
-    "Int":     "number",
+    "ID": "string",
+    "String": "string",
+    "Float": "number",
+    "Int": "number",
     "Boolean": "boolean",
-    "Null":    "null"
+    "Null": "null",
+    "Long": "number",
+    "DateTime": "string",
+    "LocalDate": "string",
+    "BigDecimal": "unknown",
+    "JSON": "unknown",
+    "Opaque": {
+      "type": "string",
+      "fromJson": "\"opaque:\" + ({} as string)",
+      "toJson": "{}.slice(7)"
+    }
   },
   "outputDir": "lib/generated",
   "clientConfig": {
     "typescript": {
       "generateAllFieldsFragments": true,
-      "autoGenerateQueries":        true,
-      "httpAdapter":                "fetch",
-      "immutableTypeFields":        true,
+      "autoGenerateQueries": true,
+      "httpAdapter": "fetch",
+      "immutableTypeFields": true,
       "optionalNullableInputFields": true,
-      "generateDefaultWsAdapter":   true,
-      "persistedQueries":           "apq",
-      "persistedQueriesUseGet":     true
+      "generateDefaultWsAdapter": true,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
     }
   }
 }

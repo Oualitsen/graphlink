@@ -45,8 +45,7 @@ void main() {
     final serializer = DartSerializer(parser, importPrefix: '');
     final queriesClass =
         DartClientSerializer(parser, serializer).getQueriesClass()!;
-    queriesFile =
-        "${queriesClass.imports.join('\n')}\n\n${queriesClass.body}";
+    queriesFile = serializer.serializeGlClass(queriesClass);
   });
 
   test('skipped operation method is not emitted', () {

@@ -1,6 +1,7 @@
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -253,6 +254,7 @@ class DartClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: _importsForType(GLQueryType.query),
+      importDepencies: _tokensForType(GLQueryType.query),
       body: body,
     );
   }
@@ -264,6 +266,7 @@ class DartClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: _importsForType(GLQueryType.mutation),
+      importDepencies: _tokensForType(GLQueryType.mutation),
       body: body,
     );
   }
@@ -275,6 +278,7 @@ class DartClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: _importsForType(GLQueryType.subscription),
+      importDepencies: _tokensForType(GLQueryType.subscription),
       body: body,
     );
   }
@@ -321,7 +325,6 @@ class DartClientSerializer extends GLClientSerializer {
       if (type == GLQueryType.query) ...[
         "import 'graph_link_cache_entry.dart';",
         "import 'graph_link_partial_query.dart';",
-        serializer.serializeImportToken(_parser.getTokenByKey('GraphLinkFullResponse')!),
       ],
       if (type == GLQueryType.mutation && _parser.hasUploadMutations)
         "import 'graph_link_uploads.dart';",
@@ -330,16 +333,18 @@ class DartClientSerializer extends GLClientSerializer {
         "import 'graph_link_websocket_adapter.dart';",
       ],
       ..._restImportsFor(type),
-      ...schemaImportsFor(type),
+      ..._parser.scalarImportsOfOperationType(type),
     }.toList();
   }
 
-  List<String> _restImportsFor(GLQueryType type) {
+  List<GLToken> _tokensForType(GLQueryType type) => {
+        if (type == GLQueryType.query) _parser.getTokenByKey('GraphLinkFullResponse')!,
+        ...schemaTokensFor(type),
+        ..._restTokensFor(type),
+      }.toList();
+
+  List<GLToken> _restTokensFor(GLQueryType type) {
     final operations = _restOperations(type);
-    if (operations.isEmpty) return const [];
-    final uploads = _parser.uploadScalarNames;
-    final usesUploads =
-        operations.any((o) => o.arguments.any((a) => uploads.contains(a.argument.type.firstType.token)));
     final tokens = <GLToken>[];
     for (final operation in operations) {
       final names = [
@@ -353,12 +358,20 @@ class DartClientSerializer extends GLClientSerializer {
         }
       }
     }
+    return tokens;
+  }
+
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
+    final uploads = _parser.uploadScalarNames;
+    final usesUploads =
+        operations.any((o) => o.arguments.any((a) => uploads.contains(a.argument.type.firstType.token)));
     return [
       "import 'graph_link_rest.dart';",
       "import 'graph_link_rest_resolver.dart';",
       if (usesUploads && !(type == GLQueryType.mutation && _parser.hasUploadMutations))
         "import 'graph_link_uploads.dart';",
-      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty),
     ];
   }
 

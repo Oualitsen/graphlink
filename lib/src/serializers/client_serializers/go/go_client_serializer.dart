@@ -3,6 +3,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/go_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
@@ -196,7 +197,7 @@ class GoClientSerializer extends GLClientSerializer {
 
   GLClassModel? _classModel(GLQueryType type) {
     final body = _buildOperationClass(type);
-    return body == null ? null : GLClassModel(body: body);
+    return body == null ? null : GLClassModel(imports: _parser.scalarImportsOfOperationType(type).map((i) => '"$i"').toList(), body: body);
   }
 
   // ── Client ─────────────────────────────────────────────────────────────────
