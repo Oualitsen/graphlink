@@ -41,6 +41,11 @@ abstract class GLSerializer {
   /// because Dart's const-context propagation makes them implicitly const.
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false});
 
+  /// A string literal of the target language whose value is [decoded] (a GraphQL
+  /// string literal already resolved by [decodeGraphqlString]).
+  /// Must be implemented by every language serializer.
+  String stringLiteral(String decoded);
+
   /// The decoder member of an interface whose only implementation is synthetic
   /// ([GLInterfaceDefinition.syntheticImplementation]): it returns that
   /// implementation directly and never reads `__typename`. Called in place of

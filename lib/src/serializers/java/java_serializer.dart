@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -135,8 +136,7 @@ class JavaSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      final content = value.startsWith('"') && value.endsWith('"') ? value.substring(1, value.length - 1) : value;
-      return '"$content"';
+      return stringLiteral(decodeGraphqlString(value));
     }
     return '"$value"';
   }
@@ -145,6 +145,10 @@ class JavaSerializer extends GLSerializer {
   // which are valid Java literals — those need the Double/Float constants
   // instead. A Java float literal also needs an explicit `f` suffix, since a
   // bare decimal literal defaults to double.
+  @override
+  String stringLiteral(String decoded) =>
+      '"${escapeStringBody(decoded, quote: '"', control: (unit) => '\\u${unit.toRadixString(16).padLeft(4, '0')}')}"';
+
   String _serializeFloatingLiteral(double value, String javaType) {
     final isFloat = javaType == 'Float';
     if (value.isNaN) return isFloat ? 'Float.NaN' : 'Double.NaN';
@@ -648,12 +652,18 @@ class JavaSerializer extends GLSerializer {
     context.addImport(JavaImports.map);
 
     final typeName = context is GLTypeDefinition ? context.jsonTypeName : null;
+    final omitNulls = context is GLInputDefinition && context.isOneOf;
 
     buffer.writeln(
       codeGenUtils.createMethod(returnType: "public ${_mapOf('String', 'Object')}", methodName: "toJson", statements: [
         "${_mapOf('String', 'Object')} glMap__ = new HashMap<>();",
         if (typeName != null) 'glMap__.put("__typename", "$typeName");',
-        ...fields.map((field) => 'glMap__.put("${field.name}", ${_fieldToJson(field, context)});'),
+        ...fields.map((field) {
+          final put = 'glMap__.put("${field.name}", ${_fieldToJson(field, context)});';
+          return omitNulls
+              ? codeGenUtils.ifStatement(condition: '${field.codeName} != null', ifBlockStatements: [put])
+              : put;
+        }),
         'return glMap__;'
       ]),
     );

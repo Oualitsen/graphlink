@@ -43,6 +43,7 @@ const includeDirective = "@include";
 const skipDirective = "@skip";
 
 const deprecatedDirective = "@deprecated";
+const oneOf = "@oneOf";
 
 const specifiedByDirective = "@specifiedBy";
 

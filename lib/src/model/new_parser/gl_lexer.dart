@@ -278,13 +278,10 @@ class GLLexer {
         throw errorAt(_pos, 'Unexpected newline inside string');
       }
       if (source[_pos] == '\\') {
-        //check for the next
-        if (source.length > _pos + 1 && source[_pos + 1] == '"') {
-          value.write('"');
+        value.write('\\');
+        if (source.length > _pos + 1 && source[_pos + 1] != '\n') {
           _pos++;
-          continue;
-        } else {
-          value.write('\\');
+          value.write(source[_pos]);
         }
       } else if (source[_pos] == '"') {
         //end of string

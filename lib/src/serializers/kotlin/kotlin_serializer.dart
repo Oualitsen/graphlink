@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
@@ -244,10 +245,7 @@ class KotlinSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      final content = value.startsWith('"') && value.endsWith('"')
-          ? value.substring(1, value.length - 1)
-          : value;
-      return '"$content"';
+      return stringLiteral(decodeGraphqlString(value));
     }
     return '"$value"';
   }
@@ -256,6 +254,10 @@ class KotlinSerializer extends GLSerializer {
   // which are valid Kotlin literals — those need the Double/Float companion
   // constants instead. A Kotlin Float literal also needs an explicit `f`
   // suffix, since a bare decimal literal defaults to Double.
+  @override
+  String stringLiteral(String decoded) =>
+      '"${escapeStringBody(decoded, quote: '"', dollar: true, control: (unit) => '\\u${unit.toRadixString(16).padLeft(4, '0')}')}"';
+
   String _serializeFloatingLiteral(double value, String kotlinType) {
     final isFloat = kotlinType == 'Float';
     if (value.isNaN) return isFloat ? 'Float.NaN' : 'Double.NaN';
@@ -456,7 +458,8 @@ class KotlinSerializer extends GLSerializer {
       if (typeName != null) '"__typename" to "$typeName"',
       ...fields.map((f) => '"${f.name}" to ${_fieldToJsonExpr(f, f.type, f.codeName, 0)}'),
     ];
-    return 'fun toJson(): $_mapType = ${codeGenUtils.constructorCall('mapOf', entries)}';
+    final omitNulls = context is GLInputDefinition && context.isOneOf;
+    return 'fun toJson(): $_mapType = ${codeGenUtils.constructorCall('mapOf', entries)}${omitNulls ? '.filterValues { it != null }' : ''}';
   }
 
   /// Public entry point for building the domain→wire JSON conversion of a

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -177,7 +178,7 @@ class DartSerializer extends GLSerializer {
           namedArguments: true,
           isConst: true,
           arguments: fields.map((e) => toConstructorDeclaration(e)).toList()),
-      generateToJson(fields),
+      generateToJson(fields, omitNulls: def.isOneOf),
       generateFromJson(fields, def.codeName),
       ...mappingMethods,
     ]);
@@ -350,14 +351,14 @@ class DartSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      // quoted string — strip surrounding quotes, emit as Dart single-quoted string
-      final content = value.startsWith('"') && value.endsWith('"')
-          ? value.substring(1, value.length - 1)
-          : value;
-      return "'$content'";
+      return stringLiteral(decodeGraphqlString(value));
     }
     return "'$value'";
   }
+
+  @override
+  String stringLiteral(String decoded) =>
+      "'${escapeStringBody(decoded, quote: "'", dollar: true, control: (unit) => '\\x${unit.toRadixString(16).padLeft(2, '0')}')}'";
 
   String toConstructorDeclaration(GLField field) {
     if (grammar.nullableFieldsRequired || (!field.type.nullable && field.initialValue == null)) {
@@ -403,7 +404,7 @@ class DartSerializer extends GLSerializer {
     ];
   }
 
-  String generateToJson(List<GLField> fields, {String? typeName}) {
+  String generateToJson(List<GLField> fields, {String? typeName, bool omitNulls = false}) {
     var buffer = StringBuffer();
 
     buffer.writeln(codeGenUtils.method(
@@ -413,8 +414,8 @@ class DartSerializer extends GLSerializer {
           "return {",
           if (typeName != null) "'__typename': '$typeName',".ident(),
           ...fields
-              .map((field) => fieldToJson(field).ident())
-              .map((e) => "${e},"),
+              .map((field) => (omitNulls ? 'if (${field.codeName} != null) ' : '') + fieldToJson(field))
+              .map((e) => "${e},".ident()),
           '};'
         ]));
     return buffer.toString();

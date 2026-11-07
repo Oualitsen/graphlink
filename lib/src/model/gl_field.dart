@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -90,7 +91,8 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
   String? get deprecationReason {
     final d = getDirectiveByName(deprecatedDirective);
     if (d == null) return null;
-    return d.getArgValueAsString("reason") ?? "No longer supported";
+    final reason = d.getArgValue("reason");
+    return reason is String ? decodeGraphqlString(reason) : "No longer supported";
   }
 
   /// Returns the target field name from @glMapField, or null if not declared.

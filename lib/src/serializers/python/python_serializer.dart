@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -58,14 +59,8 @@ class PythonSerializer extends GLSerializer {
     return def.nullable ? 'Optional[$type]' : type;
   }
 
-  String pythonStringLiteral(String value) {
-    final escaped = value
-        .replaceAll('\\', '\\\\')
-        .replaceAll('"', '\\"')
-        .replaceAll('\r', '\\r')
-        .replaceAll('\n', '\\n');
-    return '"$escaped"';
-  }
+  String pythonStringLiteral(String value) =>
+      '"${escapeStringBody(value, quote: '"', control: (unit) => '\\x${unit.toRadixString(16).padLeft(2, '0')}')}"';
 
   @override
   String serializeFieldDeprecation(GLField field) => '';
@@ -180,6 +175,7 @@ class PythonSerializer extends GLSerializer {
       baseClassNames: [pythonModelBaseName],
       statements: [
         _modelConfig(),
+        if (def.isOneOf) 'GL_ONE_OF: ClassVar[bool] = True',
         '',
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
         ...generateMappingMethods(def).expand((m) => ['', m]),
@@ -379,6 +375,9 @@ class PythonSerializer extends GLSerializer {
   // ── Default literals ───────────────────────────────────────────────────────
 
   @override
+  String stringLiteral(String decoded) => pythonStringLiteral(decoded);
+
+  @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
     if (value == null) return 'None';
     if (value is bool) return value ? 'True' : 'False';
@@ -401,8 +400,7 @@ class PythonSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      final content = value.startsWith('"') && value.endsWith('"') ? value.substring(1, value.length - 1) : value;
-      return pythonStringLiteral(content);
+      return stringLiteral(decodeGraphqlString(value));
     }
     return pythonStringLiteral('$value');
   }

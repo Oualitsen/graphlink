@@ -1,6 +1,9 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/model/token_info.dart';
 
 extension StringExt on String {
+  String graphqlStringValue() => decodeGraphqlString(this);
+
   String get firstUp {
     if (isEmpty) {
       return "";

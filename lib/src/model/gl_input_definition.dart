@@ -26,6 +26,9 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNa
     directives.forEach(addDirective);
   }
 
+  /// `@oneOf`: exactly one member may be present, so unused members must be left out of the payload.
+  bool get isOneOf => hasDirective(oneOf);
+
   /// Returns the target type name from @glMapsTo, or null if not declared.
   String? get mapsToType =>
       getDirectiveByName(glMapsTo)?.getArgValueAsString(glMapsToType);

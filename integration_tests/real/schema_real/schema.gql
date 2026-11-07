@@ -285,6 +285,124 @@ input OddInput {
   x: String!
 }
 
+# ── Literals, defaults and escaping ──────────────────────────────────────────
+
+input NastyInput {
+  dollar: String = "cost $5 and ${x} and $$"
+  quote: String = "say \"hi\" it's"
+  backslash: String = "C:\\dir\\file\\n"
+  newline: String = "line1\nline2\ttab"
+  percent: String = "100% {braces} {{x}} %s %d"
+  comments: String = "a */ b // c /* d"
+  triple: String = "\"\"\" ''' ```"
+  unicode: String = "caf\u00e9 \u4e2d \ud83d\ude00"
+  nonAscii: String = "é中😀"
+}
+
+type NastyEcho {
+  dollar: String
+  quote: String
+  backslash: String
+  newline: String
+  percent: String
+  comments: String
+  triple: String
+  unicode: String
+  nonAscii: String
+}
+
+"""
+An inner input with its own defaults: */ $ `code` @tag <b> é — and a very long line xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+"""
+input InnerInput {
+  n: Int = 1
+  label: String = "dflt"
+  tags: [String!] = ["a"]
+}
+
+type InnerEcho {
+  n: Int
+  label: String
+  tags: [String!]
+}
+
+input EverythingInput {
+  i: Int = 42
+  neg: Int = -7
+  big: Int = 2147483647
+  f: Float = 3.14
+  exp: Float = 1e3
+  b: Boolean = true
+  bf: Boolean = false
+  s: String = "x"
+  id: ID = "abc"
+  e: Spelling = x__y
+  ints: [Int!] = [1, 2, 3]
+  nested: [[Int!]!] = [[1], [2, 3]]
+  inner: InnerInput = {n: 5, label: "inner"}
+  nothing: String = null
+  emptyList: [String!] = []
+  emptyObj: InnerInput = {}
+}
+
+type EverythingEcho {
+  i: Int
+  neg: Int
+  big: Int
+  f: Float
+  exp: Float
+  b: Boolean
+  bf: Boolean
+  s: String
+  id: ID
+  e: Spelling
+  ints: [Int!]
+  nested: [[Int!]!]
+  inner: InnerEcho
+  nothing: String
+  emptyList: [String!]
+  emptyObj: InnerEcho
+}
+
+"One tree node: a plain description with a $ and a quote \" inside"
+input Tree {
+  value: Int!
+  children: [Tree!]
+}
+
+input Ping {
+  n: Int!
+  pong: Pong
+}
+
+input Pong {
+  n: Int!
+  ping: Ping
+}
+
+type TreeStats {
+  flat: [Int!]!
+  depth: Int!
+}
+
+input Pet @oneOf {
+  cat: String
+  dog: Int
+}
+
+enum Mood {
+  CALM @deprecated(reason: "use \"RELAXED\" instead")
+  RELAXED
+  ANGRY @deprecated
+}
+
+type Legacy {
+  id: ID!
+  old: String @deprecated(reason: "gone */ in 7.0 $x")
+  older: String @deprecated
+  mood: Mood
+}
+
 type ListShapes {
   a: [Int!]!
   b: [Int!]
@@ -714,6 +832,14 @@ type Query {
   func(value: String!): String!
   None(value: String!): String!
   self(value: String!): String!
+  echoNastyArgs(dollar: String = "cost $5 and ${x} and $$", quote: String = "say \"hi\" it's", backslash: String = "C:\\dir\\file\\n", newline: String = "line1\nline2\ttab", percent: String = "100% {braces} {{x}} %s %d", comments: String = "a */ b // c /* d", triple: String = "\"\"\" ''' ```", unicode: String = "caf\u00e9 \u4e2d \ud83d\ude00", nonAscii: String = "é中😀"): NastyEcho!
+  echoNasty(input: NastyInput = {}): NastyEcho!
+  echoInner(inner: InnerInput = {n: 9}): InnerEcho!
+  echoEverything(input: EverythingInput!): EverythingEcho!
+  treeStats(tree: Tree!): TreeStats!
+  pingLength(ping: Ping!): Int!
+  describePet(pet: Pet!): String!
+  legacy(withReason: String @deprecated(reason: "use plain"), plain: String @deprecated): Legacy!
 }
 
 
