@@ -486,6 +486,7 @@ class TypeScriptClientOperationSerializer {
               iterable: svGen,
               statements: ['onEvent(${_fromJson(svData, returnTypeName)});'],
             ),
+            'onComplete?.();',
           ],
           catchStatements: ['onError?.(e);'],
         ),
@@ -497,6 +498,7 @@ class TypeScriptClientOperationSerializer {
       ...queryArgs,
       'onEvent: (data: $returnTypeName) => void',
       'onError?: (error: unknown) => void',
+      'onComplete?: () => void',
     ];
 
     return _cg.createMethod(

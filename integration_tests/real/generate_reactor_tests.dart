@@ -12,7 +12,7 @@ class _Suite {
 
 // Blocking-only tests written against the listener-callback subscription API; the
 // reactive flavors share a stream-based SubscriptionsTest in java_reactive_shared.
-const _listenerOnly = {'SubscriptionReconnectTest.java', 'SubscriptionsTest.java'};
+const _listenerOnly = {'SubscriptionReconnectTest.java', 'SubscriptionsTest.java', 'SubscriptionStreamsTest.java'};
 
 const _suites = [
   _Suite('java_client_tests_real', 'java_client_tests_reactor_real', 'dev/graphlink/test', excluded: _listenerOnly),

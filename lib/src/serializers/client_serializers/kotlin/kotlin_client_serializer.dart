@@ -1011,6 +1011,7 @@ class KotlinClientSerializer extends GLClientSerializer {
           _grammar.getTokenByKey('GraphLinkPayload')!,
           _grammar.getTokenByKey('GraphLinkJsonEncoder')!,
           _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+          _grammar.getTokenByKey('GraphLinkError')!,
         ],
         body: kotlinGraphLinkSubscriptionHandler,
       );

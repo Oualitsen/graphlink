@@ -939,6 +939,16 @@ type Subscription {
 
   # Like counterTick but the server self-restarts after emitting tick stopAt.
   counterTickRestart(stopAt: Int!): Int!
+
+  # Subscription argument shapes: echoes once, then the server completes the stream.
+  subEchoArgs(a: [Int!]!, b: [Int], c: [[Int!]!], e: [Spelling!]!, f: [Spelling], g: [Spelling!] = [A, B2], one: OnlyOne = ONLY): ListsEcho!
+  subEchoInput(input: ListsInput!): ListsEcho!
+
+  # Emits 1..count, then the server completes the stream.
+  finiteTicks(count: Int!): Int!
+
+  # Emits 1..failAfter, then the server fails the stream.
+  flakyTicks(failAfter: Int!): Int!
 }
 
 

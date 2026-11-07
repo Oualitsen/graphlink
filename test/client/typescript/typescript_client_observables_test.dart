@@ -65,6 +65,11 @@ void main() {
       expect(client, isNot(contains('Observable<')));
     });
 
+    test('subscription reports server-side completion through onComplete', () {
+      expect(client, contains('onComplete?: () => void'));
+      expect(client, contains('onComplete?.();'));
+    });
+
     test('subscription uses onEvent callback', () {
       expect(client, contains('onEvent:'));
       expect(client, contains('onError?:'));
