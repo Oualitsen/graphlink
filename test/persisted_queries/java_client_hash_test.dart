@@ -22,7 +22,7 @@ JavaClientSerializer _clientSerializer({required bool persistedQueries, bool use
   return JavaClientSerializer(parser, JavaSerializer(parser, importPrefix: ''));
 }
 
-String _base(JavaClientSerializer s) => s.generateGraphLinkResolverBaseFile('com.example').toFileContent();
+String _base(JavaClientSerializer s) => s.runtime.generateGraphLinkResolverBaseFile('com.example').toFileContent();
 
 void main() {
   group('persisted queries off', () {
@@ -36,8 +36,8 @@ void main() {
     });
 
     test('no SHA-256 or persisted-queries file is produced', () {
-      expect(clientSerializer.generateSha256File, throwsStateError);
-      expect(clientSerializer.generatePersistedQueriesFile, throwsStateError);
+      expect(clientSerializer.runtime.generateSha256File, throwsStateError);
+      expect(clientSerializer.runtime.generatePersistedQueriesFile, throwsStateError);
     });
 
     test('glCallAdapter sends the payload untouched', () {
@@ -71,8 +71,8 @@ void main() {
     });
 
     test('the sha256 and protocol files carry the runtime', () {
-      expect(clientSerializer.generateSha256File().toFileContent(), contains('class GraphLinkSha256'));
-      final file = clientSerializer.generatePersistedQueriesFile().toFileContent();
+      expect(clientSerializer.runtime.generateSha256File().toFileContent(), contains('class GraphLinkSha256'));
+      final file = clientSerializer.runtime.generatePersistedQueriesFile().toFileContent();
       expect(file, contains('final class GraphLinkPersistedQueries'));
       expect(file, contains('static final int MIN_QUERY_LENGTH = 144;'));
       expect(file, isNot(contains('GraphLinkGetNotSupported')));
@@ -85,9 +85,9 @@ void main() {
       expect(_base(clientSerializer), isNot(contains('GetAdapter')));
       expect(clientSerializer.generateClient().toFileContent(), isNot(contains('getAdapter')));
       expect(clientSerializer.getQueriesClass()!.toFileContent(), isNot(contains('getAdapter')));
-      expect(clientSerializer.generateGetNotSupportedFile, throwsStateError);
-      expect(clientSerializer.generateGetRequestFile, throwsStateError);
-      expect(() => clientSerializer.generateDefaultGetAdapterFile('java11'), throwsStateError);
+      expect(clientSerializer.runtime.generateGetNotSupportedFile, throwsStateError);
+      expect(clientSerializer.runtime.generateGetRequestFile, throwsStateError);
+      expect(() => clientSerializer.runtime.generateDefaultGetAdapterFile('java11'), throwsStateError);
     });
 
     group('when on', () {
@@ -115,20 +115,20 @@ void main() {
       });
 
       test('the exception is a public class in its own file', () {
-        final file = clientSerializer.generateGetNotSupportedFile().toFileContent();
+        final file = clientSerializer.runtime.generateGetNotSupportedFile().toFileContent();
         expect(file, contains('public class GraphLinkGetNotSupported extends RuntimeException'));
-        expect(clientSerializer.generatePersistedQueriesFile().toFileContent(), isNot(contains('GraphLinkGetNotSupported')));
+        expect(clientSerializer.runtime.generatePersistedQueriesFile().toFileContent(), isNot(contains('GraphLinkGetNotSupported')));
       });
 
       test('the URL builder is a public class in its own file', () {
-        final file = clientSerializer.generateGetRequestFile().toFileContent();
+        final file = clientSerializer.runtime.generateGetRequestFile().toFileContent();
         expect(file, contains('public final class GraphLinkGetRequest'));
         expect(file, contains('public static String queryString('));
       });
 
       for (final flavor in ['java11', 'okhttp']) {
         test('the $flavor GET adapter issues a GET and maps 405 to GraphLinkGetNotSupported', () {
-          final file = clientSerializer.generateDefaultGetAdapterFile(flavor).toFileContent();
+          final file = clientSerializer.runtime.generateDefaultGetAdapterFile(flavor).toFileContent();
           expect(file, contains('class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter'));
           expect(file, contains('GraphLinkGetRequest.queryString(payload, decoder, encoder)'));
           expect(file, contains('405'));

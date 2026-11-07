@@ -89,26 +89,26 @@ Future<Set<String>> generateTypeScriptClientClasses(
   final ext = cs.fileExtension;
 
   // Always-present infra
-  addClient('graph-link-adapter$ext', cs.generateAdapterTypeFile());
-  addClient('graph-link-cache-store$ext', cs.generateCacheStoreFile());
-  addClient('graph-link-in-memory-cache-store$ext', cs.generateInMemoryCacheStoreFile());
-  addClient('graph-link-cache-entry$ext', cs.generateCacheEntryFile());
-  addClient('graph-link-tag-entry$ext', cs.generateTagEntryFile());
-  addClient('graph-link-lock$ext', cs.generateLockFile());
-  addClient('graph-link-partial-query$ext', cs.generatePartialQueryFile());
-  addClient('graph-link-resolver-base$ext', cs.generateResolverBaseFile());
+  addClient('graph-link-adapter$ext', cs.adapters.generateAdapterTypeFile());
+  addClient('graph-link-cache-store$ext', cs.runtime.generateCacheStoreFile());
+  addClient('graph-link-in-memory-cache-store$ext', cs.runtime.generateInMemoryCacheStoreFile());
+  addClient('graph-link-cache-entry$ext', cs.runtime.generateCacheEntryFile());
+  addClient('graph-link-tag-entry$ext', cs.runtime.generateTagEntryFile());
+  addClient('graph-link-lock$ext', cs.runtime.generateLockFile());
+  addClient('graph-link-partial-query$ext', cs.runtime.generatePartialQueryFile());
+  addClient('graph-link-resolver-base$ext', cs.runtime.generateResolverBaseFile());
   if (parser.persistedQueries) {
-    addClient('graph-link-sha256$ext', cs.generateSha256File());
-    addClient('graph-link-persisted-queries$ext', cs.generatePersistedQueriesFile());
+    addClient('graph-link-sha256$ext', cs.runtime.generateSha256File());
+    addClient('graph-link-persisted-queries$ext', cs.runtime.generatePersistedQueriesFile());
   }
 
   // WebSocket infrastructure (only when subscriptions exist)
   if (parser.hasSubscriptions) {
-    addClient('graph-link-ws-adapter$ext', cs.generateWsAdapterFile());
-    addClient('graph-link-ws-message-types$ext', cs.generateWsMessageTypesFile());
-    addClient('graph-link-subscription-handler$ext', cs.generateSubscriptionHandlerFile());
+    addClient('graph-link-ws-adapter$ext', cs.runtime.generateWsAdapterFile());
+    addClient('graph-link-ws-message-types$ext', cs.runtime.generateWsMessageTypesFile());
+    addClient('graph-link-subscription-handler$ext', cs.runtime.generateSubscriptionHandlerFile());
     if (tsConfig.generateDefaultWsAdapter) {
-      addClient('graph-link-default-ws-adapter$ext', cs.generateDefaultWsAdapterFile());
+      addClient('graph-link-default-ws-adapter$ext', cs.adapters.generateDefaultWsAdapterFile());
     }
   }
 
@@ -126,13 +126,13 @@ Future<Set<String>> generateTypeScriptClientClasses(
   }
 
   if (cs.hasRest) {
-    addClient('graph-link-rest$ext', cs.generateRestFile());
-    addClient('graph-link-rest-resolver$ext', cs.generateRestResolverFile());
-    addClient('graph-link-rest-adapters$ext', cs.generateRestAdaptersFile());
+    addClient('graph-link-rest$ext', cs.runtime.generateRestFile());
+    addClient('graph-link-rest-resolver$ext', cs.runtime.generateRestResolverFile());
+    addClient('graph-link-rest-adapters$ext', cs.adapters.generateRestAdaptersFile());
   }
 
   // HTTP adapters (conditional)
-  final adaptersModel = cs.generateAdaptersFile(tsConfig.httpAdapter);
+  final adaptersModel = cs.adapters.generateAdaptersFile(tsConfig.httpAdapter);
   if (adaptersModel != null) {
     addClient('graph-link-adapters$ext', adaptersModel);
   }

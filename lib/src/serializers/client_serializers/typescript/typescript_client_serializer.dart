@@ -7,7 +7,6 @@ import 'package:graphlink/src/model/gl_queries.dart';
 
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_operation_serializer.dart';
-import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_rest_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_rest_operation_serializer.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_token.dart';
@@ -19,19 +18,29 @@ import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_runtime_serializer.dart';
+import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_adapters_serializer.dart';
 
-const _adapterType = 'GraphLinkAdapter';
-const _cacheStoreType = 'GraphLinkCacheStore';
+const adapterType = 'GraphLinkAdapter';
+const cacheStoreType = 'GraphLinkCacheStore';
 const _inMemoryCacheStoreType = 'InMemoryGraphLinkCacheStore';
 
 class TypeScriptClientSerializer extends GLClientSerializer {
+  late final runtime = TypeScriptClientRuntimeSerializer(this);
+  late final adapters = TypeScriptClientAdaptersSerializer(this);
+
   final GLParser _parser;
+
   final bool generateDefaultWsAdapter;
+
   final bool observables;
+
   final TypeScriptHttpAdapter restHttpAdapter;
+
   final _cg = TypeScriptCodeGenUtils();
 
   late final TypeScriptClientOperationSerializer _opSer;
+
   late final TypeScriptRestOperationSerializer _restSer;
 
   TypeScriptClientSerializer(
@@ -60,11 +69,9 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   bool _hasOperations(GLQueryType type) => _parser.hasQueryType(type) || _restOperations(type).isNotEmpty;
 
-  bool get _hasRest => _parser.restOperations.isNotEmpty;
+  bool get hasRest => _parser.restOperations.isNotEmpty;
 
   bool get _hasGraphQL => GLQueryType.values.any(_parser.hasQueryType);
-
-  bool get hasRest => _hasRest;
 
   List<GLToken> _restTokensFor(GLQueryType type) {
     final operations = _restOperations(type);
@@ -125,26 +132,19 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     ];
   }
 
-
-
-  String _adapterTypeAlias() {
+  String adapterTypeAlias() {
     if (_parser.operationNameAsParameter) {
-      return 'export type $_adapterType = (payload: string, operationName: string) => Promise<string>;';
+      return 'export type $adapterType = (payload: string, operationName: string) => Promise<string>;';
     }
-    return 'export type $_adapterType = (payload: string) => Promise<string>;';
+    return 'export type $adapterType = (payload: string) => Promise<string>;';
   }
-
-  GLClassModel generateAdapterTypeFile() =>
-      GLClassModel(body: _adapterTypeAlias());
-
-  // ── Monolithic single-file generator (kept for test backward-compatibility) ──
 
   @override
   GLClassModel generateClient() {
     final imports = _buildImports();
     final buffer = StringBuffer();
 
-    buffer.writeln(_adapterTypeAlias());
+    buffer.writeln(adapterTypeAlias());
     buffer.writeln(tsCacheStore);
     buffer.writeln(tsInMemoryCacheStore);
     buffer.writeln(tsCacheEntry);
@@ -162,7 +162,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       buffer.writeln(tsPersistedQueries);
       if (_parser.persistedQueriesUseGet) buffer.writeln(tsPersistedQueriesGet);
     }
-    buffer.writeln(_resolverBase());
+    buffer.writeln(runtime.resolverBase());
     for (final type in GLQueryType.values) {
       final cls = _buildClass(type);
       if (cls != null) buffer.writeln(cls);
@@ -174,99 +174,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   // ── Per-file generators ───────────────────────────────────────────────────
 
-  GLClassModel generateCacheStoreFile() =>
-      const GLClassModel(body: tsCacheStore);
-
-  GLClassModel generateInMemoryCacheStoreFile() => const GLClassModel(
-        imports: [
-          "import type { GraphLinkCacheStore } from './graph-link-cache-store.js';",
-        ],
-        body: tsInMemoryCacheStore,
-      );
-
-  GLClassModel generateCacheEntryFile() =>
-      const GLClassModel(body: tsCacheEntry);
-
-  GLClassModel generateTagEntryFile() =>
-      const GLClassModel(body: tsTagEntry);
-
-  GLClassModel generateLockFile() =>
-      const GLClassModel(body: tsLock);
-
-  GLClassModel generatePartialQueryFile() =>
-      const GLClassModel(body: tsPartialQuery);
-
-  GLClassModel generateWsAdapterFile() =>
-      const GLClassModel(body: tsWsAdapter);
-
-  GLClassModel generateWsMessageTypesFile() =>
-      const GLClassModel(body: tsWsMessageTypes);
-
-  GLClassModel generateSubscriptionHandlerFile() {
-    final payloadToken = _parser.getTypeByName('GraphLinkPayload');
-    final payloadImport = payloadToken != null
-        ? serializer.serializeImportToken(payloadToken)
-        : '';
-    return GLClassModel(
-      imports: [
-        if (payloadImport.isNotEmpty) payloadImport,
-        "import type { GraphLinkWsAdapter } from './graph-link-ws-adapter.js';",
-        "import { _GL_WS } from './graph-link-ws-message-types.js';",
-        "import type { _GlWsMsg } from './graph-link-ws-message-types.js';",
-      ],
-      body: tsSubscriptionHandler,
-    );
-  }
-
-  GLClassModel generateDefaultWsAdapterFile() => const GLClassModel(
-        imports: [
-          "import type { GraphLinkWsAdapter } from './graph-link-ws-adapter.js';",
-          "import { _makeChannel, _makeBroadcastChannel } from './graph-link-subscription-handler.js';",
-        ],
-        body: tsDefaultWsAdapter,
-      );
-
-  GLClassModel generateSha256File() {
-    if (!_parser.persistedQueries) {
-      throw StateError('The SHA-256 runtime is only generated when persistedQueries is enabled.');
-    }
-    return const GLClassModel(body: tsSha256);
-  }
-
-  GLClassModel generatePersistedQueriesFile() {
-    if (!_parser.persistedQueries) {
-      throw StateError('The persisted-queries runtime is only generated when persistedQueries is enabled.');
-    }
-    return GLClassModel(
-      body: _parser.persistedQueriesUseGet ? '$tsPersistedQueries\n$tsPersistedQueriesGet' : tsPersistedQueries,
-    );
-  }
-
-  GLClassModel generateResolverBaseFile() {
-    final payloadToken = _parser.getTypeByName('GraphLinkPayload');
-    final payloadImport = payloadToken != null
-        ? serializer.serializeImportToken(payloadToken)
-        : '';
-    return GLClassModel(
-      imports: [
-        if (payloadImport.isNotEmpty) payloadImport,
-        "import type { $_adapterType } from './graph-link-adapter.js';",
-        "import type { GraphLinkCacheStore } from './graph-link-cache-store.js';",
-        "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
-        "import { GraphLinkTagEntry, __GL_TAG_KEY_PREFIX__ } from './graph-link-tag-entry.js';",
-        "import { GraphLinkLock } from './graph-link-lock.js';",
-        if (_parser.persistedQueries) ...[
-          "import { GraphLinkSha256 } from './graph-link-sha256.js';",
-          if (_parser.persistedQueriesUseGet)
-            "import { GraphLinkPersistedQueries, GraphLinkGetNotSupported } from './graph-link-persisted-queries.js';"
-          else
-            "import { GraphLinkPersistedQueries } from './graph-link-persisted-queries.js';",
-        ],
-      ],
-      body: _resolverBase(),
-    );
-  }
-
   GLClassModel? generateQueriesFile() {
     final body = _buildClass(GLQueryType.query);
     if (body == null) return null;
@@ -276,8 +183,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         ..._errorImport(),
         if (observables) "import { Observable } from 'rxjs';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
-        "import type { $_adapterType } from './graph-link-adapter.js';",
-        "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
+        "import type { $adapterType } from './graph-link-adapter.js';",
+        "import type { $cacheStoreType } from './graph-link-cache-store.js';",
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
@@ -299,8 +206,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         if (_parser.hasUploadMutations)
           "import { GLUpload, GLMultipartAdapter, UploadProgressCallback } from './graph-link-uploads.js';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
-        "import type { $_adapterType } from './graph-link-adapter.js';",
-        "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
+        "import type { $adapterType } from './graph-link-adapter.js';",
+        "import type { $cacheStoreType } from './graph-link-cache-store.js';",
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         ..._restImportsFor(GLQueryType.mutation),
       }.toList(),
@@ -317,7 +224,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         ..._parser.scalarImportsOfOperationType(GLQueryType.subscription),
         if (observables) "import { Observable } from 'rxjs';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
-        "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
+        "import type { $cacheStoreType } from './graph-link-cache-store.js';",
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         "import { GraphLinkSubscriptionHandler } from './graph-link-subscription-handler.js';",
         "import type { GraphLinkWsAdapter } from './graph-link-ws-adapter.js';",
@@ -329,11 +236,11 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   GLClassModel generateClientOnlyFile() {
     final imports = [
-      "import type { $_adapterType } from './graph-link-adapter.js';",
+      "import type { $adapterType } from './graph-link-adapter.js';",
       "import type { GraphLinkCacheStore } from './graph-link-cache-store.js';",
       "import { InMemoryGraphLinkCacheStore } from './graph-link-in-memory-cache-store.js';",
       "import { GraphLinkLock } from './graph-link-lock.js';",
-      if (_hasRest) ...[
+      if (hasRest) ...[
         "import { glNoGraphQL__ } from './graph-link-rest.js';",
         "import type { GLRestAdapter } from './graph-link-rest.js';",
       ],
@@ -351,300 +258,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     return GLClassModel(imports: imports, body: _graphLinkClientClass());
   }
 
-  // ── Resolver base class ───────────────────────────────────────────────────
-
-  String _resolverBase() {
-    return _cg.createClass(
-      className: 'GraphLinkResolverBase',
-      exported: true,
-      statements: [
-        'protected readonly $svStore: $_cacheStoreType;',
-        'protected readonly $svTagLocks: Map<string, GraphLinkLock>;',
-        'protected readonly $svFragMap: Record<string, string>;',
-        'protected readonly $svAdapter?: $_adapterType;',
-        if (_parser.persistedQueries) ...[
-          'protected readonly $svHashes: Map<string, string> = new Map();',
-          'protected $svPersistedUnsupported = false;',
-        ],
-        if (_parser.persistedQueriesUseGet) ...[
-          'protected readonly $svGetAdapter?: $_adapterType;',
-          'protected $svGetUnsupported = false;',
-        ],
-        _cg.createMethod(
-          methodName: 'constructor',
-          arguments: [
-            'store: $_cacheStoreType',
-            'tagLocks: Map<string, GraphLinkLock>',
-            'fragMap: Record<string, string>',
-            'adapter?: $_adapterType',
-            if (_parser.persistedQueriesUseGet) 'getAdapter?: $_adapterType',
-          ],
-          statements: [
-            'this.$svStore = store;',
-            'this.$svTagLocks = tagLocks;',
-            'this.$svFragMap = fragMap;',
-            'this.$svAdapter = adapter;',
-            if (_parser.persistedQueriesUseGet) 'this.$svGetAdapter = getAdapter;',
-          ],
-        ),
-        if (_parser.persistedQueries) ...[
-          _glHashMethod(),
-          _glSendMethod(),
-          if (_parser.persistedQueriesUseGet) _glSendHashOnlyMethod(),
-        ],
-        _cg.createMethod(
-          methodName: '_glCallAdapter',
-          async: true,
-          returnType: 'string',
-          arguments: ['payload: GraphLinkPayload'],
-          statements: _parser.persistedQueries
-              ? _persistedCallAdapterStatements()
-              : [
-                  if (_parser.operationNameAsParameter)
-                    'return await this.$svAdapter!(JSON.stringify(payload), payload.operationName);'
-                  else
-                    'return await this.$svAdapter!(JSON.stringify(payload));'
-                ],
-        ),
-        _cg.createMethod(
-          methodName: '_executeFull<T>',
-          async: true,
-          returnType: 'T',
-          arguments: [
-            'query: string',
-            'fragmentNames: string[]',
-            'operationName: string',
-            'variables: Record<string, unknown>',
-          ],
-          statements: [
-            _cg.constDecl('fullQuery', 'this.assembleQuery(query, fragmentNames)'),
-            _cg.constDecl('payload', '{ query: fullQuery, operationName, variables }', type: 'GraphLinkPayload'),
-            _cg.constDecl('response', 'await this._glCallAdapter(payload)'),
-            'return JSON.parse(response) as T;',
-          ],
-        ),
-        _cg.createMethod(
-          methodName: '_getFromCache',
-          async: true,
-          arguments: [
-            'key: string',
-            'tags: string[]',
-            'staleIfOffline: boolean',
-          ],
-          returnType: 'GraphLinkCacheEntry | null',
-          statements: [
-            _cg.constDecl('result', 'await this.$svStore.get(key)'),
-            _cg.ifStatement(
-              condition: 'result !== null',
-              ifBlockStatements: [
-                _cg.constDecl('entry', 'GraphLinkCacheEntry.fromJson(JSON.parse(result))'),
-                _cg.ifStatement(
-                  condition: 'entry.isExpired',
-                  ifBlockStatements: [
-                    _cg.ifStatement(
-                      condition: 'staleIfOffline',
-                      ifBlockStatements: ['return entry.asStale();'],
-                    ),
-                    'void this.$svStore.invalidate(key);',
-                    _cg.ifStatement(
-                      condition: 'tags.length > 0',
-                      ifBlockStatements: ['void this._removeKeyFromTags(key, tags);'],
-                    ),
-                    'return null;',
-                  ],
-                  elseBlockStatements: ['return entry;'],
-                ),
-              ],
-            ),
-            'return null;',
-          ],
-        ),
-        _cg.createMethod(
-          methodName: '_invalidateByTags',
-          async: true,
-          arguments: ['tags: string[]'],
-          returnType: 'void',
-          statements: [
-            _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              _cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              _cg.ifStatement(
-                condition: 'data !== null',
-                ifBlockStatements: [
-                  _cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
-                  _cg.forEachLoop(
-                    variable: 'k',
-                    iterable: 'entry.keys',
-                    statements: ['await this.$svStore.invalidate(k);'],
-                  ),
-                  'await this.$svStore.invalidate(tagKey);',
-                ],
-              ),
-              '});',
-            ]),
-          ],
-        ),
-        _cg.createMethod(
-          methodName: '_addKeyToTags',
-          async: true,
-          arguments: ['key: string', 'tags: string[]'],
-          returnType: 'void',
-          statements: [
-            _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              _cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              '  const entry = data !== null ? GraphLinkTagEntry.decode(data) : new GraphLinkTagEntry(new Set());',
-              '  entry.add(key);',
-              '  await this.$svStore.set(tagKey, entry.encode());',
-              '});',
-            ]),
-          ],
-        ),
-        _cg.createMethod(
-          methodName: '_removeKeyFromTags',
-          async: true,
-          arguments: ['key: string', 'tags: string[]'],
-          returnType: 'void',
-          statements: [
-            _cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-              _cg.constDecl('lock', 'this.$svTagLocks.get(tag) ?? (() => { const l = new GraphLinkLock(); this.$svTagLocks.set(tag, l); return l; })()'),
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              _cg.ifStatement(
-                condition: 'data !== null',
-                ifBlockStatements: [
-                  '  const entry = GraphLinkTagEntry.decode(data);',
-                  '  entry.remove(key);',
-                  _cg.ifStatement(
-                    condition: 'entry.keys.size === 0',
-                    ifBlockStatements: ['await this.$svStore.invalidate(tagKey);'],
-                    elseBlockStatements: [
-                      'await this.$svStore.set(tagKey, entry.encode());',
-                    ],
-                  ),
-                ],
-              ),
-              '});',
-            ]),
-          ],
-        ),
-        _cg.createMethod(
-          methodName: 'assembleQuery',
-          returnType: 'string',
-          arguments: ['query: string', 'fragmentNames: string[]'],
-          statements: [
-            'let result = query;',
-            _cg.forEachLoop(
-              variable: 'name',
-              iterable: 'fragmentNames',
-              statements: [
-                _cg.constDecl('frag', 'this.$svFragMap[name]'),
-                _cg.ifStatement(
-                  condition: 'frag',
-                  ifBlockStatements: ["result += '\\n' + frag;"],
-                ),
-              ],
-            ),
-            'return result;',
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _glHashMethod() {
-    return _cg.createMethod(
-      methodName: 'glHash',
-      returnType: 'string',
-      arguments: ['query: string'],
-      statements: [
-        _cg.constDecl('cached', 'this.$svHashes.get(query)'),
-        _cg.ifStatement(
-          condition: 'cached !== undefined',
-          ifBlockStatements: ['return cached;'],
-        ),
-        _cg.constDecl('hash', 'GraphLinkSha256.hex(query)'),
-        'this.$svHashes.set(query, hash);',
-        'return hash;',
-      ],
-    );
-  }
-
-  String _glSendMethod() {
-    final call = _parser.operationNameAsParameter
-        ? 'this.$svAdapter!(JSON.stringify(body), body.operationName as string)'
-        : 'this.$svAdapter!(JSON.stringify(body))';
-    return _cg.createMethod(
-      methodName: '_glSend',
-      async: true,
-      returnType: 'string',
-      arguments: ['body: Record<string, unknown>'],
-      statements: ['return await $call;'],
-    );
-  }
-
-  String _glSendHashOnlyMethod() {
-    final call = _parser.operationNameAsParameter
-        ? 'this.$svGetAdapter!(JSON.stringify(body), body.operationName as string)'
-        : 'this.$svGetAdapter!(JSON.stringify(body))';
-    return _cg.createMethod(
-      methodName: '_glSendHashOnly',
-      async: true,
-      returnType: 'string',
-      arguments: ['payload: GraphLinkPayload', 'body: Record<string, unknown>'],
-      statements: [
-        _cg.ifStatement(
-          condition: "this.$svGetUnsupported || payload.query.startsWith('mutation')",
-          ifBlockStatements: ['return await this._glSend(body);'],
-        ),
-        _cg.tryCatchFinally(
-          tryStatements: ['return await $call;'],
-          catchVariable: 'e',
-          catchStatements: [
-            _cg.ifStatement(
-              condition: '!(e instanceof GraphLinkGetNotSupported)',
-              ifBlockStatements: ['throw e;'],
-            ),
-            'this.$svGetUnsupported = true;',
-            'return await this._glSend(body);',
-          ],
-        ),
-      ],
-    );
-  }
-
-  List<String> _persistedCallAdapterStatements() {
-    return [
-      _cg.ifStatement(
-        condition:
-            'this.$svPersistedUnsupported || payload.query.length <= GraphLinkPersistedQueries.minQueryLength',
-        ifBlockStatements: ['return await this._glSend({ ...payload });'],
-      ),
-      _cg.constDecl('extensions', 'GraphLinkPersistedQueries.extensions(this.glHash(payload.query))'),
-      _cg.constDecl('hashOnly',
-          '{ operationName: payload.operationName, variables: payload.variables, extensions }'),
-      _cg.constDecl(
-        'response',
-        _parser.persistedQueriesUseGet
-            ? 'await this._glSendHashOnly(payload, hashOnly)'
-            : 'await this._glSend(hashOnly)',
-      ),
-      _cg.constDecl('failure', 'GraphLinkPersistedQueries.failure(response)'),
-      _cg.ifStatement(condition: 'failure === null', ifBlockStatements: ['return response;']),
-      _cg.constDecl('body', '{ ...payload }', type: 'Record<string, unknown>'),
-      _cg.ifStatement(
-        condition: 'failure === GraphLinkPersistedQueries.notSupported',
-        ifBlockStatements: ['this.$svPersistedUnsupported = true;'],
-        elseBlockStatements: ['body.extensions = extensions;'],
-      ),
-      'return await this._glSend(body);',
-    ];
-  }
 
   // ── Operation class builder ───────────────────────────────────────────────
 
@@ -682,13 +295,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       if (type == GLQueryType.subscription)
         'adapter: GraphLinkWsAdapter'
       else
-        'adapter: $_adapterType',
+        'adapter: $adapterType',
       if (type != GLQueryType.subscription && _parser.persistedQueriesUseGet)
-        'getAdapter: $_adapterType',
+        'getAdapter: $adapterType',
       if (type == GLQueryType.mutation && _parser.hasUploadMutations)
         'multipartAdapter: GLMultipartAdapter | undefined',
       'fragMap: Record<string, string>',
-      'store: $_cacheStoreType',
+      'store: $cacheStoreType',
       'tagLocks: Map<string, GraphLinkLock>',
     ];
     final superCall = type == GLQueryType.subscription
@@ -812,7 +425,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
           'readonly mutations: ${classNameFromType(GLQueryType.mutation)};',
         if (hasSubs)
           'readonly subscriptions: ${classNameFromType(GLQueryType.subscription)};',
-        'readonly store: $_cacheStoreType;',
+        'readonly store: $cacheStoreType;',
         _buildClientConstructor(
           hasQueries: hasQueries,
           hasMutations: hasMutations,
@@ -830,13 +443,13 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     required String allTags,
   }) {
     final args = [
-      if (_hasGraphQL) 'adapter: $_adapterType',
-      if (_hasGraphQL && _parser.persistedQueriesUseGet) 'getAdapter: $_adapterType',
+      if (_hasGraphQL) 'adapter: $adapterType',
+      if (_hasGraphQL && _parser.persistedQueriesUseGet) 'getAdapter: $adapterType',
       if (hasSubs) 'wsAdapter: GraphLinkWsAdapter',
-      if (_hasRest) 'restAdapter: GLRestAdapter',
+      if (hasRest) 'restAdapter: GLRestAdapter',
       if (hasMutations && _parser.hasUploadMutations)
         'multipartAdapter?: GLMultipartAdapter',
-      'store?: $_cacheStoreType',
+      'store?: $cacheStoreType',
     ];
     final adapterRef = _hasGraphQL ? 'adapter' : 'glNoGraphQL__';
     final getAdapterRef = _hasGraphQL ? 'getAdapter' : 'glNoGraphQL__';
@@ -876,75 +489,6 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   // ── Adapters file ─────────────────────────────────────────────────────────
 
-  GLClassModel? generateAdaptersFile(TypeScriptHttpAdapter httpAdapter) {
-    if (httpAdapter == TypeScriptHttpAdapter.none) return null;
-    final hasUploads = _parser.hasUploadMutations;
-    final buffer = StringBuffer();
-    buffer.writeln(
-      "import type { $_adapterType } from './graph-link-adapter.js';",
-    );
-    if (hasUploads && httpAdapter == TypeScriptHttpAdapter.fetch) {
-      buffer.writeln(
-        "import { glFetchMultipart } from './graph-link-uploads.js';",
-      );
-      buffer.writeln(
-        "import type { GLUpload, GLMultipartAdapter, GLMultipartPart, UploadProgressCallback } from './graph-link-uploads.js';",
-      );
-    }
-    if (_parser.persistedQueriesUseGet) {
-      buffer.writeln(
-        "import { GraphLinkGetNotSupported, GraphLinkGetRequest } from './graph-link-persisted-queries.js';",
-      );
-    }
-    buffer.writeln();
-    if (httpAdapter == TypeScriptHttpAdapter.fetch) {
-      buffer.writeln(tsFetchAdapter(_parser.operationNameAsParameter));
-      if (_parser.persistedQueriesUseGet) buffer.writeln(tsFetchGetAdapter(_parser.operationNameAsParameter));
-      if (hasUploads) buffer.writeln(tsMultipartFetchAdapter);
-    }
-    if (httpAdapter == TypeScriptHttpAdapter.axios) {
-      buffer.writeln(tsAxiosAdapter(_parser.operationNameAsParameter));
-      if (_parser.persistedQueriesUseGet) buffer.writeln(tsAxiosGetAdapter(_parser.operationNameAsParameter));
-    }
-    return GLClassModel(body: buffer.toString());
-  }
-
-  // ── REST files ────────────────────────────────────────────────────────────
-
-  GLClassModel generateRestFile() => const GLClassModel(
-        imports: [
-          "import { glUploadProgress, glUploadStream } from './graph-link-uploads.js';",
-          "import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';",
-        ],
-        body: tsRestFile,
-      );
-
-  GLClassModel generateRestResolverFile() => const GLClassModel(
-        imports: [
-          "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
-          "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
-          "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
-          "import { GLDownload, RestError, restNavigate } from './graph-link-rest.js';",
-          "import type { DownloadProgressCallback, GLRestAdapter, RestRequest, RestResponse } from './graph-link-rest.js';",
-        ],
-        body: tsRestResolver,
-      );
-
-  GLClassModel? generateRestAdaptersFile() {
-    if (!_hasRest || restHttpAdapter == TypeScriptHttpAdapter.none) return null;
-    final fetch = restHttpAdapter == TypeScriptHttpAdapter.fetch;
-    return GLClassModel(
-      imports: [
-        "import { RestResponse, restFormBody, restUrl${fetch ? ', restCountedStream' : ''} } from './graph-link-rest.js';",
-        "import { ${fetch ? 'glFetchMultipart' : 'glFormDataMultipart, glMultipartBody, glUploadProgress, glUploadStream'} } from './graph-link-uploads.js';",
-        "import type { GLRestAdapter, RestRequest } from './graph-link-rest.js';",
-      ],
-      body: fetch ? tsRestFetchAdapter : tsRestAxiosAdapter,
-    );
-  }
-
-  // ── Uploads file ──────────────────────────────────────────────────────────
-
   @override
   GLClassModel generateUploadsFile() => const GLClassModel(body: tsUploadsFile);
 
@@ -976,4 +520,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   }
 
   String get fileExtension => ".ts";
+
+  GLParser get parser => _parser;
+
+  TypeScriptCodeGenUtils get cg => _cg;
 }

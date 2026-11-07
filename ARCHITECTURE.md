@@ -188,6 +188,7 @@ Under `serializers/client_serializers/`:
 
 | File | Class | Generates |
 |---|---|---|
+| `<lang>/<lang>_client_serializer.dart` | `<Lang>ClientSerializer` | Facade of each client: `generateClient`, the queries/mutations/subscriptions classes, constructors and imports. It owns the `runtime` and `adapters` helpers below and exposes the few members they need (`parser`/`grammar`, `wrapSingle`, …). Swift and Go are small enough to stay in one file |
 | `dart/dart_client_serializer.dart` | `DartClientSerializer` | Dart adapter, queries, mutations, subscriptions |
 | `dart/dart_rest_operation_serializer.dart` | `DartRestOperationSerializer` | Dart methods for `GLRestOperation`s (request building, decoding, cache). Runtime types live in `dart_client_constants.dart` (`dartRestFile`, `dartRestResolver`, REST adapters) |
 | `java/java_client_serializer.dart` | `JavaClientSerializer` | Java adapter, OkHttp, WebSocket |
@@ -200,6 +201,8 @@ Under `serializers/client_serializers/`:
 | `typescript/typescript_client_serializer.dart` | `TypeScriptClientSerializer` | TypeScript fetch adapter, observables |
 | `java/java_client_operation_serializer.dart` | `JavaClientOperationSerializer` | Per-operation Java classes |
 | `kotlin/kotlin_client_operation_serializer.dart` | `KotlinClientOperationSerializer` | Per-operation Kotlin classes |
+| `<lang>/<lang>_client_runtime_serializer.dart` | `<Lang>ClientRuntimeSerializer` (Dart, Java, Kotlin, TypeScript, Python) | The runtime support files of the client: resolver base, cache store/entry/tag/lock, persisted-queries, subscription handler and WS message types, exception, uploads. Reached as `clientSerializer.runtime.generateXFile()` |
+| `<lang>/<lang>_client_adapters_serializer.dart` | `<Lang>ClientAdaptersSerializer` (Dart, Java, Kotlin, TypeScript, Python) | The transport adapter files: HTTP/Dio/httpx/fetch/WebClient/OkHttp adapters, default GET and WebSocket adapters, REST adapters. Reached as `clientSerializer.adapters.generateXFile()` |
 | `<lang>/<lang>_client_constants.dart` | — | Static GraphQL constant strings per language |
 | `java/`, `kotlin/` `<lang>_client_context.dart` | — | Generation context tracker per language |
 

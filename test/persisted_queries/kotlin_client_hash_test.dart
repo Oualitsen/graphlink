@@ -21,7 +21,7 @@ KotlinClientSerializer _clientSerializer({required bool persistedQueries, bool u
   return KotlinClientSerializer(parser, KotlinSerializer(parser, importPrefix: 'com.example'));
 }
 
-String _base(KotlinClientSerializer s) => s.generateGraphLinkResolverBaseFile('com.example').toFileContent();
+String _base(KotlinClientSerializer s) => s.runtime.generateGraphLinkResolverBaseFile('com.example').toFileContent();
 
 void main() {
   group('persisted queries off', () {
@@ -35,8 +35,8 @@ void main() {
     });
 
     test('no SHA-256 or persisted-queries file is produced', () {
-      expect(clientSerializer.generateSha256File, throwsStateError);
-      expect(clientSerializer.generatePersistedQueriesFile, throwsStateError);
+      expect(clientSerializer.runtime.generateSha256File, throwsStateError);
+      expect(clientSerializer.runtime.generatePersistedQueriesFile, throwsStateError);
     });
 
     test('glCallAdapter sends the payload untouched', () {
@@ -70,8 +70,8 @@ void main() {
     });
 
     test('the sha256 and protocol files carry the runtime', () {
-      expect(clientSerializer.generateSha256File().toFileContent(), contains('object GraphLinkSha256'));
-      final file = clientSerializer.generatePersistedQueriesFile().toFileContent();
+      expect(clientSerializer.runtime.generateSha256File().toFileContent(), contains('object GraphLinkSha256'));
+      final file = clientSerializer.runtime.generatePersistedQueriesFile().toFileContent();
       expect(file, contains('object GraphLinkPersistedQueries'));
       expect(file, contains('const val MIN_QUERY_LENGTH = 144'));
       expect(file, isNot(contains('GraphLinkGetNotSupported')));
@@ -84,8 +84,8 @@ void main() {
       expect(_base(clientSerializer), isNot(contains('getAdapter')));
       expect(clientSerializer.generateClient().toFileContent(), isNot(contains('getAdapter')));
       expect(clientSerializer.getQueriesClass()!.toFileContent(), isNot(contains('getAdapter')));
-      expect(clientSerializer.generatePersistedQueriesFile().toFileContent(), isNot(contains('GetNotSupported')));
-      expect(clientSerializer.generateDefaultGetAdapterFile, throwsStateError);
+      expect(clientSerializer.runtime.generatePersistedQueriesFile().toFileContent(), isNot(contains('GetNotSupported')));
+      expect(clientSerializer.adapters.generateDefaultGetAdapterFile, throwsStateError);
     });
 
     group('when on', () {
@@ -113,14 +113,14 @@ void main() {
       });
 
       test('the exception type and URL builder are part of the persisted-queries runtime', () {
-        final file = clientSerializer.generatePersistedQueriesFile().toFileContent();
+        final file = clientSerializer.runtime.generatePersistedQueriesFile().toFileContent();
         expect(file, contains('class GraphLinkGetNotSupported'));
         expect(file, contains('object GraphLinkGetRequest'));
         expect(file, contains('fun queryParameters('));
       });
 
       test('the default GET adapter issues a GET and maps 405 to GraphLinkGetNotSupported', () {
-        final file = clientSerializer.generateDefaultGetAdapterFile().toFileContent();
+        final file = clientSerializer.adapters.generateDefaultGetAdapterFile().toFileContent();
         expect(file, contains('class DefaultGraphLinkGetAdapter'));
         expect(file, contains('.get()'));
         expect(file, contains('GraphLinkGetRequest.queryParameters(payload, codec, codec)'));

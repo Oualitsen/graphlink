@@ -21,6 +21,7 @@ void main() {
   test('the WebClient adapter streams a GLMultipartBody instead of building a multipart form in memory', () {
     final parser = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)..parse(_schema);
     final adapter = JavaClientSerializer(parser, JavaSerializer(parser, importPrefix: ''), flavor: JavaReactiveFlavor.reactor)
+        .adapters
         .generateWebClientDefaultClientAdapterFile()
         .toFileContent();
 

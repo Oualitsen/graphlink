@@ -236,9 +236,9 @@ void main() {
       final g = GLParser()..parse('$_types$_graphql$_rest');
       TypeScriptClientSerializer make(TypeScriptHttpAdapter a) =>
           TypeScriptClientSerializer(g, TypeScriptSerializer(g, importPrefix: ''), restHttpAdapter: a);
-      expect(make(TypeScriptHttpAdapter.fetch).generateRestAdaptersFile()!.toFileContent(), contains('createRestFetchAdapter'));
-      expect(make(TypeScriptHttpAdapter.axios).generateRestAdaptersFile()!.toFileContent(), contains('createRestAxiosAdapter'));
-      expect(make(TypeScriptHttpAdapter.none).generateRestAdaptersFile(), isNull);
+      expect(make(TypeScriptHttpAdapter.fetch).adapters.generateRestAdaptersFile()!.toFileContent(), contains('createRestFetchAdapter'));
+      expect(make(TypeScriptHttpAdapter.axios).adapters.generateRestAdaptersFile()!.toFileContent(), contains('createRestAxiosAdapter'));
+      expect(make(TypeScriptHttpAdapter.none).adapters.generateRestAdaptersFile(), isNull);
     });
   });
 }

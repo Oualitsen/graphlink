@@ -72,18 +72,18 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     exports.add('from .client.$fileName import *  # noqa: F401,F403');
   }
 
-  add('client', 'graph_link_model.py', serializer.serializeGlClass(clientSerializer.generateModelBaseFile()));
-  addClient('graph_link_exception', clientSerializer.generateExceptionFile());
-  addClient('graph_link_lock', clientSerializer.generateLockFile());
-  addClient('graph_link_cache_entry', clientSerializer.generateCacheEntryFile());
-  addClient('graph_link_tag_entry', clientSerializer.generateTagEntryFile());
-  addClient('graph_link_partial_query', clientSerializer.generatePartialQueryFile());
-  addClient('graph_link_cache_store', clientSerializer.generateCacheStoreFile());
-  addClient('graph_link_in_memory_cache_store', clientSerializer.generateInMemoryCacheStoreFile());
+  add('client', 'graph_link_model.py', serializer.serializeGlClass(clientSerializer.runtime.generateModelBaseFile()));
+  addClient('graph_link_exception', clientSerializer.runtime.generateExceptionFile());
+  addClient('graph_link_lock', clientSerializer.runtime.generateLockFile());
+  addClient('graph_link_cache_entry', clientSerializer.runtime.generateCacheEntryFile());
+  addClient('graph_link_tag_entry', clientSerializer.runtime.generateTagEntryFile());
+  addClient('graph_link_partial_query', clientSerializer.runtime.generatePartialQueryFile());
+  addClient('graph_link_cache_store', clientSerializer.runtime.generateCacheStoreFile());
+  addClient('graph_link_in_memory_cache_store', clientSerializer.runtime.generateInMemoryCacheStoreFile());
   if (parser.persistedQueries) {
-    addClient('graph_link_persisted_queries', clientSerializer.generatePersistedQueriesFile());
+    addClient('graph_link_persisted_queries', clientSerializer.runtime.generatePersistedQueriesFile());
   }
-  addClient('graph_link_resolver_base', clientSerializer.generateResolverBaseFile());
+  addClient('graph_link_resolver_base', clientSerializer.runtime.generateResolverBaseFile());
   for (final type in GLQueryType.values) {
     final model = clientSerializer.getClassForType(type);
     addClient(_operationFileName(type), model);
@@ -92,22 +92,22 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     addClient('graph_link_uploads', clientSerializer.generateUploadsFile());
   }
   if (parser.hasUploadMutations) {
-    addClient('graph_link_upload_converter', clientSerializer.generateUploadConverterFile());
+    addClient('graph_link_upload_converter', clientSerializer.runtime.generateUploadConverterFile());
   }
   if (clientSerializer.hasRest) {
-    addClient('graph_link_rest', clientSerializer.generateRestFile());
-    addClient('graph_link_rest_resolver', clientSerializer.generateRestResolverFile());
-    addClient('graph_link_rest_httpx_adapter', clientSerializer.generateRestHttpxAdapterFile());
+    addClient('graph_link_rest', clientSerializer.runtime.generateRestFile());
+    addClient('graph_link_rest_resolver', clientSerializer.runtime.generateRestResolverFile());
+    addClient('graph_link_rest_httpx_adapter', clientSerializer.adapters.generateRestHttpxAdapterFile());
   }
   if (clientSerializer.generatesHttpxAdapter) {
-    addClient('graph_link_httpx_adapter', clientSerializer.generateHttpxAdapterFile());
+    addClient('graph_link_httpx_adapter', clientSerializer.adapters.generateHttpxAdapterFile());
   }
   if (parser.hasSubscriptions) {
-    addClient('graph_link_ws_message_types', clientSerializer.generateWsMessageTypesFile());
-    addClient('graph_link_websocket_adapter', clientSerializer.generateWsAdapterFile());
-    addClient('graph_link_subscription_handler', clientSerializer.generateSubscriptionHandlerFile());
+    addClient('graph_link_ws_message_types', clientSerializer.runtime.generateWsMessageTypesFile());
+    addClient('graph_link_websocket_adapter', clientSerializer.runtime.generateWsAdapterFile());
+    addClient('graph_link_subscription_handler', clientSerializer.runtime.generateSubscriptionHandlerFile());
     if (pythonConfig.wsAdapter == PythonWsAdapter.websockets) {
-      addClient('graph_link_default_websocket_adapter', clientSerializer.generateDefaultWebSocketAdapterFile());
+      addClient('graph_link_default_websocket_adapter', clientSerializer.adapters.generateDefaultWebSocketAdapterFile());
     }
   }
   addClient('graph_link_client', clientSerializer.generateClientFile());

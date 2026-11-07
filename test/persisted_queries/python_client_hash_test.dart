@@ -23,7 +23,7 @@ PythonClientSerializer _clientSerializer({required bool persistedQueries, bool u
   return PythonClientSerializer(parser, PythonSerializer(parser));
 }
 
-String _base(PythonClientSerializer s) => s.generateResolverBaseFile().toFileContent();
+String _base(PythonClientSerializer s) => s.runtime.generateResolverBaseFile().toFileContent();
 
 Iterable<String> _lines(String s) => s.split('\n').map((l) => l.trim()).where((l) => l.isNotEmpty);
 
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('no persisted-queries file is produced', () {
-      expect(clientSerializer.generatePersistedQueriesFile, throwsStateError);
+      expect(clientSerializer.runtime.generatePersistedQueriesFile, throwsStateError);
     });
 
     test('gl_call_adapter sends the payload untouched', () {
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('the persisted-queries runtime is generated without the GET helpers', () {
-      final file = clientSerializer.generatePersistedQueriesFile().toFileContent();
+      final file = clientSerializer.runtime.generatePersistedQueriesFile().toFileContent();
       expect(file, contains('class GraphLinkPersistedQueries'));
       expect(file, contains('MIN_QUERY_LENGTH = 144'));
       expect(file, isNot(contains('GraphLinkGetNotSupported')));
@@ -101,7 +101,7 @@ void main() {
     });
 
     test('the GET helpers are generated', () {
-      final file = clientSerializer.generatePersistedQueriesFile().toFileContent();
+      final file = clientSerializer.runtime.generatePersistedQueriesFile().toFileContent();
       expect(file, contains('class GraphLinkGetNotSupported'));
       expect(file, contains('class GraphLinkGetRequest'));
     });

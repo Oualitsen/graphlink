@@ -71,13 +71,13 @@ void main() {
 
   group('adapter files — upload support', () {
     test('dio adapter imports graph_link_uploads.dart', () {
-      final out = _serializer(_schema).generateDioAdapterFile().toFileContent();
+      final out = _serializer(_schema).adapters.generateDioAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
     });
 
     test('dio adapter streams a GLMultipartBody and never buffers a file', () {
-      final out = _serializer(_schema).generateDioAdapterFile().toFileContent();
+      final out = _serializer(_schema).adapters.generateDioAdapterFile().toFileContent();
       expect(out, contains('GLMultipartBody.of(parts)'));
       expect(out, contains('body.withProgress(onProgress)'));
       expect(out, isNot(contains('FormData')));
@@ -85,13 +85,13 @@ void main() {
     });
 
     test('http adapter imports graph_link_uploads.dart', () {
-      final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile().toFileContent();
+      final out = _serializer(_schema, adapter: DartHttpAdapter.http).adapters.generateHttpAdapterFile().toFileContent();
       expect(out, contains("import 'graph_link_uploads.dart'"));
       expect(out, contains('multipartCall'));
     });
 
     test('http adapter streams a GLMultipartBody and never buffers a file', () {
-      final out = _serializer(_schema, adapter: DartHttpAdapter.http).generateHttpAdapterFile().toFileContent();
+      final out = _serializer(_schema, adapter: DartHttpAdapter.http).adapters.generateHttpAdapterFile().toFileContent();
       expect(out, contains('GLMultipartBody.of(parts)'));
       expect(out, contains('class _GLStreamedRequest extends http.BaseRequest'));
       expect(out, isNot(contains('toBytes()')));
@@ -108,7 +108,7 @@ void main() {
     });
 
     test('dio adapter has no multipartCall', () {
-      final out = _serializer(_plainSchema).generateDioAdapterFile().toFileContent();
+      final out = _serializer(_plainSchema).adapters.generateDioAdapterFile().toFileContent();
       expect(out, isNot(contains('multipartCall')));
     });
   });
