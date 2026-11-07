@@ -109,7 +109,7 @@ Integration tests (real, as before; mock only if a hostile payload is needed):
    send them, so use the mock adapter in `integration_tests/mock/swift_client_tests` for these two cases.
 5. Regression: the full Swift suites (`swift-real`, `swift-rest-real`, mock `swift`, `swift-rest`) pass unchanged except where tests
    called `fromJson` directly (`EnumsTest.swift` in the mock package; check each).
-6. Update the plan `integration-schema-coverage.md`: remove the Swift exception notes for these cases.
+6. Update `integration-test-gaps.md`: remove the Swift exception notes for these cases.
 
 ## Steps
 

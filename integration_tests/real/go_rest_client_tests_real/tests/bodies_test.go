@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"sync/atomic"
@@ -220,6 +221,23 @@ func TestRawBody(t *testing.T) {
 	}
 	_, found := header(named, "content-disposition")
 	isTrue(t, !found, "no content-disposition")
+}
+
+type failingReader struct{ sent bool }
+
+func (r *failingReader) Read(p []byte) (int, error) {
+	if r.sent {
+		return 0, errors.New("source failed")
+	}
+	r.sent = true
+	return copy(p, pattern(1000)), nil
+}
+
+func TestRawBodyStreamThatFailsMidWayFailsTheCallAndTheClientKeepsWorking(t *testing.T) {
+	ctx, client := setup(t)
+	_, err := client.Mutations.ERaw(ctx, generated.NewGLUpload(&failingReader{}, ""))
+	isTrue(t, err != nil, "the call must fail")
+	eq(t, must(client.Queries.EAccept(ctx)).Method, "GET")
 }
 
 func TestRawBodyStreamedAndProgress(t *testing.T) {

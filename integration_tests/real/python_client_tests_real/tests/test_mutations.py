@@ -82,10 +82,17 @@ class CacheTest(unittest.IsolatedAsyncioTestCase):
         await self.client.mutations.transfer_post(post_id="post-1", new_author_id="user-2")
         self.assertEqual((await self.client.queries.get_cached_post(id="post-1")).get_cached_post.id, "post-1")
 
+    async def test_cached_config_without_shared_tag_survives_transfer_post(self) -> None:
+        first = (await self.client.queries.get_cached_config()).get_cached_config
+        await self.client.mutations.transfer_post(post_id="post-1", new_author_id="user-2")
+        self.assertEqual((await self.client.queries.get_cached_config()).get_cached_config.id, first.id)
+
     async def test_reset_all(self) -> None:
         await self.client.queries.get_cached_user(id="user-1")
+        await self.client.queries.get_cached_config()
         self.assertIs((await self.client.mutations.reset_all()).reset_all, True)
         self.assertEqual((await self.client.queries.get_cached_user(id="user-1")).get_cached_user.name, "Alice Smith")
+        self.assertIsNotNone((await self.client.queries.get_cached_config()).get_cached_config)
 
     async def test_ttl_expiry(self) -> None:
         import asyncio

@@ -37,14 +37,25 @@ func TestDataAccessibleAfterMultiTagInvalidation(t *testing.T) {
 	expectEqual(t, must(c.Queries.GetCachedPost(ctx(t), "post-1")).GetCachedPost.Id, "post-1", "post id")
 }
 
+func TestCachedConfigWithoutSharedTagSurvivesTransferPost(t *testing.T) {
+	c := newClient(t)
+	first := must(c.Queries.GetCachedConfig(ctx(t))).GetCachedConfig
+	must(c.Mutations.TransferPost(ctx(t), "post-1", "user-2"))
+	expectEqual(t, must(c.Queries.GetCachedConfig(ctx(t))).GetCachedConfig.Id, first.Id, "config id")
+}
+
 func TestResetAll(t *testing.T) {
 	c := newClient(t)
 	if !must(c.Mutations.ResetAll(ctx(t))).ResetAll {
 		t.Fatal("expected true")
 	}
 	must(c.Queries.GetCachedUser(ctx(t), "user-1"))
+	must(c.Queries.GetCachedConfig(ctx(t)))
 	must(c.Mutations.ResetAll(ctx(t)))
 	expectEqual(t, must(c.Queries.GetCachedUser(ctx(t), "user-1")).GetCachedUser.Name, "Alice Smith", "name")
+	if must(c.Queries.GetCachedConfig(ctx(t))).GetCachedConfig.Id == "" {
+		t.Fatal("config empty after resetAll")
+	}
 }
 
 func TestTtlExpiryRefetches(t *testing.T) {
