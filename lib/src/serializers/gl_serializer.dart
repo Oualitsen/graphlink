@@ -41,6 +41,13 @@ abstract class GLSerializer {
   /// because Dart's const-context propagation makes them implicitly const.
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false});
 
+  /// The decoder member of an interface whose only implementation is synthetic
+  /// ([GLInterfaceDefinition.syntheticImplementation]): it returns that
+  /// implementation directly and never reads `__typename`. Called in place of
+  /// the dispatching decoder.
+  /// Must be implemented by every language serializer.
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface);
+
   /// Effective type map: language defaults merged with user-supplied overrides.
   late final Map<String, String> typeMap;
 

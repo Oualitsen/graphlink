@@ -275,6 +275,9 @@ class SwiftSerializer extends GLSerializer {
     final subTypes = def.getSerializableImplementations(mode);
     if (skipJson || subTypes.isEmpty) return protocol;
 
+    if (def.syntheticImplementation != null) {
+      return '$protocol\n\n${serializeSyntheticInterfaceFromJson(def)}';
+    }
     return '$protocol\n\n${_dispatchFactory(def.codeName, subTypes, wireToken: def.token)}';
   }
 
@@ -284,6 +287,17 @@ class SwiftSerializer extends GLSerializer {
   /// concrete conforming type is known — not expressible as a protocol
   /// requirement). Mirrors `KotlinSerializer._serializeFromJsonForInterface`'s
   /// `when`-based dispatch.
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    final fromJson = 'public static ${codeGenUtils.method(
+      returnType: 'any ${interface.codeName}',
+      methodName: 'fromJson',
+      arguments: ['_ map: [String: Any?]'],
+      statements: ['return ${interface.syntheticImplementation!.codeName}.fromJson(map)'],
+    )}';
+    return codeGenUtils.enumNamespace(name: '${interface.codeName}Json', body: [fromJson]);
+  }
+
   String _dispatchFactory(String token, Set<GLTypeDefinition> subTypes, {String? wireToken}) {
     final discriminator = wireToken == null ? null : grammar.restDiscriminators[wireToken];
     final cases = subTypes.map((st) {

@@ -365,7 +365,9 @@ class KotlinSerializer extends GLSerializer {
     final companionMethods = <String>[];
     final subTypes = def.getSerializableImplementations(mode);
     if (!skipJsonConversionMethods && subTypes.isNotEmpty) {
-      companionMethods.add(_serializeFromJsonForInterface(def.codeName, subTypes));
+      companionMethods.add(def.syntheticImplementation != null
+          ? serializeSyntheticInterfaceFromJson(def)
+          : _serializeFromJsonForInterface(def.codeName, subTypes));
     }
 
     final isInternal = def.hasDirective(glInternal);
@@ -420,6 +422,10 @@ class KotlinSerializer extends GLSerializer {
       byValue,
     ])}';
   }
+
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) =>
+      'fun fromJson(map: $_mapType): ${interface.codeName} = ${interface.syntheticImplementation!.codeName}.fromJson(map)';
 
   String _serializeFromJsonForInterface(String token, Set<GLTypeDefinition> subTypes) {
     final discriminator = grammar.restDiscriminators[token];

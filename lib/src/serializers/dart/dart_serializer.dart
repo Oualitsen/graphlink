@@ -609,6 +609,16 @@ class DartSerializer extends GLSerializer {
     return "Map<String, dynamic> toJson();";
   }
 
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    return codeGenUtils.createMethod(
+        returnType: 'static ${interface.codeName}',
+        methodName: 'fromJson',
+        namedArguments: false,
+        arguments: ['Map<String, dynamic> json'],
+        statements: ['return ${interface.syntheticImplementation!.codeName}.fromJson(json);']);
+  }
+
   String _serializeFromJsonForInterface(
     String token,
     Set<GLTypeDefinition> implementations,
@@ -683,7 +693,10 @@ class DartSerializer extends GLSerializer {
         for (var field in fields) _serializeInterfaceMember(interface, field),
         if (!shouldSkipJsonMethods(interface)) ...[
           _serializeToJsonForInterface(codeName),
-          if (serialisableImplemenations.isNotEmpty) _serializeFromJsonForInterface(codeName, serialisableImplemenations),
+          if (interface.syntheticImplementation != null)
+            serializeSyntheticInterfaceFromJson(interface)
+          else if (serialisableImplemenations.isNotEmpty)
+            _serializeFromJsonForInterface(codeName, serialisableImplemenations),
         ],
       ],
     );

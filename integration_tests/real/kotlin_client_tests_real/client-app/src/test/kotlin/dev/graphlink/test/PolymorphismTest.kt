@@ -356,4 +356,15 @@ class PolymorphismTest {
         client.mutations.evictNodes()
         assertEquals(before, videoSeconds())
     }
+
+    @Test
+    fun anInterfaceSelectionWithoutImplementerDecodesEveryImplementer() = runTest {
+        assertEquals("a1", client.queries.fetchNodeId("a1").node!!.id)
+        assertEquals("c1", client.queries.fetchNodeId("c1").node!!.id)
+    }
+
+    @Test
+    fun anInterfaceSelectionWithoutImplementerUnknownIdIsNull() = runTest {
+        assertNull(client.queries.fetchNodeId("nope").node)
+    }
 }

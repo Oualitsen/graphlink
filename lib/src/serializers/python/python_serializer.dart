@@ -257,7 +257,10 @@ class PythonSerializer extends GLSerializer {
         _modelConfig(),
         '',
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
-        if (!skipJson && implementations.isNotEmpty) ...[
+        if (!skipJson && implementations.isNotEmpty && interface.syntheticImplementation != null) ...[
+          '',
+          serializeSyntheticInterfaceFromJson(interface),
+        ] else if (!skipJson && implementations.isNotEmpty) ...[
           '',
           codeGenUtils.createMethod(
             decorators: ['@model_validator(mode="wrap")', '@classmethod'],
@@ -295,7 +298,7 @@ class PythonSerializer extends GLSerializer {
         ],
       ],
     );
-    if (skipJson || implementations.isEmpty) return classSource;
+    if (skipJson || implementations.isEmpty || interface.syntheticImplementation != null) return classSource;
     final resolverSource = codeGenUtils.createMethod(
       methodName: resolver,
       returnType: 'Dict[str, Any]',
@@ -318,6 +321,28 @@ class PythonSerializer extends GLSerializer {
             ],
           );
     return [classSource, resolverSource, if (discriminatorSource != null) discriminatorSource].join('\n\n\n');
+  }
+
+  @override
+  String serializeSyntheticInterfaceFromJson(GLInterfaceDefinition interface) {
+    final name = interface.codeName;
+    final impl = interface.syntheticImplementation!;
+    return codeGenUtils.createMethod(
+      decorators: ['@model_validator(mode="wrap")', '@classmethod'],
+      methodName: '_decode_synthetic_implementation',
+      arguments: ['cls', 'data: Any', 'handler: Any'],
+      returnType: 'Any',
+      statements: [
+        codeGenUtils.ifStatement(
+          condition: 'cls is $name and isinstance(data, dict)',
+          ifBlockStatements: [
+            'from ..${_subdirFor(impl)}.${moduleNameFor(impl)} import ${impl.codeName}',
+            'return ${impl.codeName}.model_validate(data)',
+          ],
+        ),
+        'return handler(data)',
+      ],
+    );
   }
 
   List<String> _typenameDispatch(String name, String resolver) => [

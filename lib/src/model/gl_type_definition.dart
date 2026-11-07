@@ -98,7 +98,11 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
     return _interfaceNames[interfaceName] != null;
   }
 
-  bool get includeTypeName => _interfaceNames.isNotEmpty;
+  bool get includeTypeName => _interfaceNames.isNotEmpty && !isSyntheticImplementation;
+
+  /// True for the single implementation of an interface selected without any
+  /// implementer: it has no wire type name of its own.
+  bool isSyntheticImplementation = false;
 
   /// The `__typename` wire value to embed in this type's `toJson`, or `null`
   /// when the type implements no interface and so needs no discriminator.

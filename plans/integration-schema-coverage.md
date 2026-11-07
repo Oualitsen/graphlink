@@ -109,7 +109,7 @@ Open:
 
 - [x] A union whose members share a field with the **same type** (`Attachment.id` / `url`, `Shareable.id`): readable on the union itself, in the full type and in a projection that shares only `id`.
 - [ ] A union member that is also returned directly elsewhere (type reuse vs. projected copy).
-- [ ] An interface with no implementing type selected by the query (projection yields only the base).
+- [x] An interface with no implementing type selected by the query (`node(id) { id }`): the response is the projected interface (`Node_Id`) with one synthetic implementation (`Node_Id_Impl`) that its `fromJson` returns directly, without reading `__typename`. Found because the generated decoder dispatched on a `__typename` the query never asked for. IR flag: `isSyntheticImplementation` / `GLInterfaceDefinition.syntheticImplementation`; every serializer implements `serializeSyntheticInterfaceFromJson`. Tests: `test/projections/interface_selection_without_members_test.dart` and `fetchNodeId` in the 7 GraphQL packages (run in isolation; the full suites were not re-run after the serializer change).
 - [x] Cached query returning an interface (`getCachedNode`) and invalidation by tag on a union (`evictAttachments`) and an interface (`evictNodes`); another tag leaves the cache alone. The server returns different data per real fetch, so a cache hit is a repeated value.
 - [ ] Custom queries: an inline fragment on the interface itself mixed with concrete ones (`... on SearchResult { id }`).
 - [ ] Unknown or missing `__typename`: out of scope (Swift bug 8, `swift-throwing-polymorphic-decode.md`).
