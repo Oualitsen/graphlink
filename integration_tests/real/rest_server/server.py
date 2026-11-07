@@ -380,12 +380,16 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(404, {'error': f'no route {method} {"/".join(s)}'})
 
 
+class Server(ThreadingHTTPServer):
+    request_queue_size = 128
+    daemon_threads = True
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=9995)
     args = parser.parse_args()
-    server = ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
-    server.daemon_threads = True
+    server = Server(('127.0.0.1', args.port), Handler)
     print(f'rest server on {args.port}', flush=True)
     try:
         server.serve_forever()
