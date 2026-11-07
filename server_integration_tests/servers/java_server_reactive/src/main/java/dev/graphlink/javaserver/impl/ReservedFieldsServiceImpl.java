@@ -3,7 +3,7 @@ package dev.graphlink.javaserver.impl;
 import dev.graphlink.javaserver.generated.enums.Keyword;
 import dev.graphlink.javaserver.generated.inputs.ReservedInput;
 import dev.graphlink.javaserver.generated.services.ReservedFieldsService;
-import dev.graphlink.javaserver.generated.types.Class;
+import dev.graphlink.javaserver.generated.types.Class_;
 import dev.graphlink.javaserver.generated.types.ReservedFields;
 import dev.graphlink.javaserver.generated.types.Secret_;
 import org.springframework.stereotype.Service;
@@ -26,7 +26,7 @@ public class ReservedFieldsServiceImpl implements ReservedFieldsService {
             .synchronized_(false)
             .native_("n")
             .kind(Keyword.CLASS)
-            .nested(Class.builder().id("c1").value("v").build())
+            .nested(Class_.builder().id("c1").value("v").build())
             .secret(Secret_.builder().id("s1").token("tok").build());
     }
 
