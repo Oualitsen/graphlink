@@ -1,3 +1,4 @@
+import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -5,7 +6,6 @@ import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
-import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
@@ -18,12 +18,17 @@ import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/json_expressions.dart';
+import 'package:graphlink/src/serializers/python/python_mapping_serializer.dart';
 
 const pythonModelBaseName = 'GraphLinkModel';
 const pythonModelBaseModule = 'client/graph_link_model';
 
 class PythonSerializer extends GLSerializer with JsonExpressions {
+  @override
+  late final GLMappingSerializer mapping = PythonMappingSerializer(this);
+
   final codeGenUtils = PythonCodeGenUtils();
+
   final bool immutableTypeFields;
 
   @override
@@ -499,111 +504,6 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   }
 
   // ── @glMapsTo ──────────────────────────────────────────────────────────────
-
-  String _snake(String codeName) => codeName.toSnakeCaseWords();
-
-  @override
-  String generateToMethod(GLInputDefinition def, String targetType, ToMappingPlan plan) {
-    final params = [
-      ...plan.requiredParams.map((f) => '${f.targetField.codeName}: ${serializeType(f.targetField.type)}'),
-      ...plan.defaultParams.map((f) => 'default_${f.targetField.codeName}: ${serializeType(f.targetField.type)}'),
-    ];
-    final assignments = [
-      ...plan.autoMapped.map((f) =>
-          '${f.targetField.codeName}=${_mapToExpr('self.${f.sourceField!.codeName}', f.sourceField!.type, f.targetField.type, 0)}'),
-      ...plan.defaultParams.map((f) {
-        final source = 'self.${f.sourceField!.codeName}';
-        return '${f.targetField.codeName}=${codeGenUtils.ternaryOp(condition: '$source is not None', positiveStatement: source, negativeStatement: 'default_${f.targetField.codeName}')}';
-      }),
-      ...plan.requiredParams.map((f) => '${f.targetField.codeName}=${f.targetField.codeName}'),
-    ];
-    return codeGenUtils.createMethod(
-      methodName: 'to_${_snake(targetType)}',
-      arguments: ['self', if (params.isNotEmpty) '*', ...params],
-      returnType: '"$targetType"',
-      statements: ['return ${codeGenUtils.callExpression(targetType, assignments)}'],
-    );
-  }
-
-  @override
-  String generateFromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan) {
-    final targetVar = _snake(targetType);
-    final autoMapped = plan.autoMapped.map((f) =>
-        '${f.sourceField!.codeName}=${_mapFromExpr('$targetVar.${f.targetField.codeName}', f.sourceField!.type.firstType.token, f.targetField.type, 0)}');
-    final nullableListParams = plan.nullableListDefaults
-        .map((f) => 'default_${f.sourceField!.codeName}: Optional[${serializeType(f.sourceField!.type)}] = None');
-    final nullableListAssignments = plan.nullableListDefaults.map((f) {
-      final expr = _mapFromExpr('$targetVar.${f.targetField.codeName}', f.sourceField!.type.firstType.token, f.targetField.type, 0);
-      final fallback = 'default_${f.sourceField!.codeName}';
-      return '${f.sourceField!.codeName}=${codeGenUtils.ternaryOp(condition: '$expr is not None', positiveStatement: expr, negativeStatement: codeGenUtils.ternaryOp(condition: '$fallback is not None', positiveStatement: fallback, negativeStatement: '[]'))}';
-    });
-    final promotedParams = plan.promoted.map((f) => '${f.sourceField!.codeName}: ${serializeType(f.sourceField!.type)}');
-    final promotedAssignments = plan.promoted.map((f) => '${f.sourceField!.codeName}=${f.sourceField!.codeName}');
-    final inputOnlyAssignments = plan.inputOnly.map((f) => '${f.codeName}=${f.codeName}');
-
-    final requiredParams = [
-      '$targetVar: "$targetType"',
-      ...promotedParams,
-      ...plan.inputOnly.where((f) => !f.type.nullable).map((f) => '${f.codeName}: ${serializeType(f.type)}'),
-    ];
-    final optionalParams = [
-      ...nullableListParams,
-      ...plan.inputOnly.where((f) => f.type.nullable).map((f) => '${f.codeName}: ${serializeType(f.type)} = None'),
-    ];
-    return codeGenUtils.createMethod(
-      decorators: ['@classmethod'],
-      methodName: 'from_${_snake(targetType)}',
-      arguments: ['cls', '*', ...requiredParams, ...optionalParams],
-      returnType: '"${def.codeName}"',
-      statements: [
-        'return ${codeGenUtils.callExpression('cls', [
-          ...autoMapped,
-          ...nullableListAssignments,
-          ...promotedAssignments,
-          ...inputOnlyAssignments,
-        ])}',
-      ],
-    );
-  }
-
-  String _mapToExpr(String expr, GLType sourceType, GLType targetType, int index) {
-    if (sourceType.isList) {
-      if (sourceType.firstType.token == targetType.firstType.token) {
-        return codeGenUtils.nullSafe(expr, 'list($expr)', sourceType.nullable);
-      }
-      final variable = 'e$index';
-      final inner = _mapToExpr(variable, sourceType.inlineType, targetType.inlineType, index + 1);
-      return codeGenUtils.nullSafe(
-          expr, codeGenUtils.listComprehension(expression: inner, variable: variable, iterable: expr), sourceType.nullable);
-    }
-    final sourceInput = grammar.inputs[sourceType.token];
-    if (sourceInput?.mapsToType == targetType.token) {
-      return codeGenUtils.nullSafe(expr, '$expr.to_${_snake(resolveCodeName(targetType.token))}()', sourceType.nullable);
-    }
-    return expr;
-  }
-
-  String _mapFromExpr(String variable, String sourceElemToken, GLType targetType, int index) {
-    if (targetType.isList) {
-      if (sourceElemToken == targetType.firstType.token) {
-        return codeGenUtils.nullSafe(variable, 'list($variable)', targetType.nullable);
-      }
-      final element = 'e$index';
-      final inner = _mapFromExpr(element, sourceElemToken, targetType.inlineType, index + 1);
-      return codeGenUtils.nullSafe(
-          variable, codeGenUtils.listComprehension(expression: inner, variable: element, iterable: variable), targetType.nullable);
-    }
-    final sourceInput = grammar.inputs[sourceElemToken];
-    if (sourceInput?.mapsToType == targetType.token) {
-      final sourceCodeName = resolveCodeName(sourceElemToken);
-      final targetCodeName = resolveCodeName(targetType.token);
-      final call = '$sourceCodeName.from_${_snake(targetCodeName)}(${_snake(targetCodeName)}=$variable)';
-      return codeGenUtils.nullSafe(variable, call, targetType.nullable);
-    }
-    return variable;
-  }
-
-  // ── Files & imports ────────────────────────────────────────────────────────
 
   String moduleNameFor(GLToken token) {
     final name = resolveCodeName(token.token).toSnakeCaseWords();

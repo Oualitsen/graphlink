@@ -239,7 +239,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       if (grammar.services.containsKey(ctrl.serviceName)) 'private final ${ctrl.serviceName} $serviceInstanceName;',
       if (usesInterceptor) 'private final $interceptorTypeName interceptor;',
       '',
-      serializer.generateContructor(
+      serializer.accessors.generateContructor(
           controllerName,
           [
             if (grammar.services.containsKey(ctrl.serviceName))

@@ -74,7 +74,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
     final def = grammar.interfaces[glInterceptorInterfaceName]!;
     _prepareInterceptorInterface(def);
 
-    final body = serializer.serializeInterface(def, getters: false, skipJsonConversionMethods: true);
+    final body = serializer.interfaces.serializeInterface(def, getters: false, skipJsonConversionMethods: true);
     return serializer.serializeWithImport(def, body);
   }
 
@@ -126,13 +126,13 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
         interfaceNames: {},
         extension: false));
 
-    return serializer.serializeInterface(interface, getters: false);
+    return serializer.interfaces.serializeInterface(interface, getters: false);
   }
 
   // ── Service body ─────────────────────────────────────────────────────────────
 
   @override
   String serializeServiceBody(GLService service) {
-    return serializer.serializeInterface(service, getters: false, skipJsonConversionMethods: true);
+    return serializer.interfaces.serializeInterface(service, getters: false, skipJsonConversionMethods: true);
   }
 }

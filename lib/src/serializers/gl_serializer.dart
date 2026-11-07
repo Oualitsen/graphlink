@@ -1,30 +1,22 @@
-import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
-import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
-import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
-import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
-import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 
-abstract class GLSerializer {
-  final GLParser grammar;
-  late final CodeGenerationMode mode;
-  final String importPrefix;
+import 'package:graphlink/src/serializers/gl_import_rendering.dart';
+import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 
-  /// Language-specific scalar defaults (e.g. Boolean→bool for Dart).
-  /// Subclasses must override this.
-  Map<String, String> get defaultTypeMap;
+abstract class GLSerializer extends GLImportRendering {
+  GLSerializer(super.grammar, {super.typeMapOverrides, required super.importPrefix});
 
   /// Converts a parsed GraphQL default value into a target-language literal
   /// expression. [type] is the field's declared GraphQL type (used to resolve
@@ -91,49 +83,6 @@ abstract class GLSerializer {
     return codec != null && codec.canEncode ? codec : null;
   }
 
-  /// Effective type map: language defaults merged with user-supplied overrides.
-  late final Map<String, String> typeMap;
-
-  /// Resolves the code name for a wire token across all schema maps.
-  ///
-  /// Returns [wireToken] unchanged when the token is not a user-defined type
-  /// (e.g. a built-in scalar), letting the type-map lookup in [serializeType]
-  /// handle it as usual.
-  String resolveCodeName(String wireToken) {
-    final typeOrInterface = grammar.types[wireToken] ?? grammar.interfaces[wireToken];
-    if (typeOrInterface != null) {
-      return typeOrInterface.mappedToType?.codeName ?? typeOrInterface.codeName;
-    }
-    return grammar.projectedTypes[wireToken]?.codeName ??
-        grammar.inputs[wireToken]?.codeName ??
-        grammar.enums[wireToken]?.codeName ??
-        grammar.unions[wireToken]?.codeName ??
-        wireToken;
-  }
-
-
-
-  GLSerializer(this.grammar, {Map<String, String> typeMapOverrides = const {}, required this.importPrefix})
-      : mode = grammar.mode {
-    typeMap = {...defaultTypeMap, ...typeMapOverrides};
-    _applyUnknownScalarFallback();
-    grammar.typeMap = typeMap;
-  }
-
-  /// Maps every custom scalar that has no explicit mapping to
-  /// `grammar.unknownScalarType`, so unrecognized scalars (e.g. `scalar UserId`)
-  /// are emitted as the configured target-language type instead of verbatim.
-  /// Scalars already resolved by [defaultTypeMap], user `typeMappings`, or an
-  /// `@glExternal` directive are left untouched — those take precedence.
-  void _applyUnknownScalarFallback() {
-    final fallback = grammar.unknownScalarType;
-    if (fallback == null) return;
-    for (final entry in grammar.scalars.entries) {
-      if (typeMap.containsKey(entry.key)) continue;
-      if (entry.value.getDirectiveByName(glExternal) != null) continue;
-      typeMap[entry.key] = fallback;
-    }
-  }
 
   String serializeEnumDefinition(GLEnumDefinition def) {
     if (shouldSkipSerialization(directives: def.getDirectives(), mode: mode)) {
@@ -211,82 +160,18 @@ abstract class GLSerializer {
     return "${serializeListText(decorators, withParenthesis: false, join: joiner)}$joiner";
   }
 
-  String? getTypeNameFromGQExternal(String token) {
-    Object? typeWithDirectives = grammar.types[token] ??
-        grammar.projectedTypes[token] ??
-        grammar.interfaces[token] ??
-        grammar.inputs[token] ??
-        grammar.enums[token] ??
-        grammar.scalars[token];
-    typeWithDirectives = typeWithDirectives as GLDirectivesMixin?;
-    var result = typeWithDirectives
-        ?.getDirectiveByName(glExternal)
-        ?.getArgValueAsString(glExternalArg);
-    if (result == null) {
-      return typeMap[token];
-    }
-    return result;
-  }
-
-  String getFileNameFor(GLToken token);
-
-  String serializeImportToken(GLToken token);
-  String serializeImport(String import);
-
-  String serializeWithImport(GLToken token, String data) {
-    var imports = serializeImports(token);
-    var buffer = StringBuffer();
-    buffer.writeln(imports);
-    buffer.writeln();
-    buffer.writeln(data);
-    return buffer.toString();
-  }
-
-  String serializeImports(GLToken token) {
-    var deps = token.getImportDependecies(grammar).where((d) => d != token).toSet();
-    if (token is GLInterfaceDefinition) {
-      deps = {...deps, ...token.getSerializableImplementations(mode)};
-    }
-    var imports = token.getImports(grammar);
-    if (deps.isEmpty && imports.isEmpty) {
-      return "";
-    }
-    var buffer = StringBuffer();
-    for (var dep in deps) {
-      var import = serializeImportToken(dep);
-      if (import.isNotEmpty) {
-        buffer.writeln(import);
-      }
-    }
-    for (var i in imports) {
-      var import = serializeImport(i);
-      if (import.isNotEmpty) {
-        buffer.writeln(import);
-      }
-    }
-    return buffer.toString();
-  }
-
   // ---------------------------------------------------------------------------
   // Mapping — @glMapsTo / @glMapField
   // Override generateToMethod and generateFromMethod in language serializers.
   // ---------------------------------------------------------------------------
 
-  /// Generates the `toXxx()` method body for [def] → [targetType].
-  /// Returns an empty string by default (no mapping support).
-  String generateToMethod(
-          GLInputDefinition def, String targetType, ToMappingPlan plan) =>
-      '';
-
-  /// Generates the `fromXxx()` static method body for [targetType] → [def].
-  /// Returns an empty string by default (no mapping support).
-  String generateFromMethod(
-          GLInputDefinition def, String targetType, FromMappingPlan plan) =>
-      '';
+  /// The `@glMapsTo` mapping generator of the language, or null when it has none.
+  GLMappingSerializer? get mapping => null;
 
   /// Returns the mapping method strings for [def] if it declares @glMapsTo,
   /// otherwise returns an empty list.
   List<String> generateMappingMethods(GLInputDefinition def) {
+    if (mapping == null) return [];
     final toPlan = grammar.resolveToMappingPlan(def, mode);
     if (toPlan == null) return [];
     final fromPlan = grammar.resolveFromMappingPlan(def, mode)!;
@@ -294,27 +179,10 @@ abstract class GLSerializer {
     final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
     return [
       if (toPlan.derivesAnythingFromSource)
-        generateToMethod(def, targetName, toPlan),
+        mapping!.toMethod(def, targetName, toPlan),
       if (fromPlan.derivesAnythingFromTarget)
-        generateFromMethod(def, targetName, fromPlan),
+        mapping!.fromMethod(def, targetName, fromPlan),
     ].where((s) => s.isNotEmpty).toList();
-  }
-
-  /// Serializes a [GLClassModel] to a source file string.
-  ///
-  /// When [withImports] is `true` (default) the import block is prepended to
-  /// the body, producing a self-contained file.  Pass `false` to get just the
-  /// class body — useful when embedding the class inside a larger file that
-  /// already manages its own imports (e.g. the Dart single-file output).
-  ///
-  /// [importPrefix] is forwarded to [serializeImportToken] when resolving
-  /// [GLClassModel.importDepencies] into language-specific import lines.
-  /// Language-specific subclasses should override this to handle token
-  /// dependencies via [serializeImportToken].
-  String serializeGlClass(GLClassModel theClass,
-      {bool withImports = true}) {
-    if (!withImports) return theClass.body.trim();
-    return theClass.toFileContent();
   }
 
   String serializeToken(GLToken token) {

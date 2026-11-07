@@ -99,7 +99,7 @@ void main() {
 
     test('interface: fields get @NonNull / @Nullable', () {
       final iAnimal = g.projectedInterfaces['IAnimal']!;
-      final output = serializer.serializeInterface(iAnimal, getters: true);
+      final output = serializer.interfaces.serializeInterface(iAnimal, getters: true);
       expect(output, stringContainsInOrder([
         '@NonNull', 'String getId',
         '@NonNull', 'String getName',
