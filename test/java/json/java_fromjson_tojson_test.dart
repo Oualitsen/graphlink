@@ -92,21 +92,21 @@ void main() {
       inputSerial.split('\n').map((e) => e.trim()),
       containsAllInOrder([
         'public Map<String, Object> toJson() {',
-        'Map<String, Object> map = new HashMap<>();',
-        'map.put("id", id);',
-        'map.put("name", name);',
-        'map.put("middleName", middleName);',
-        'map.put("dateOfBirth", dateOfBirth);',
-        'map.put("gender", gender == null ? null : gender.toJson());',
-        'map.put("gender2", gender2.toJson());',
-        'map.put("names", names.stream().collect(Collectors.toList()));',
-        'map.put("deepGender", deepGender.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
-        'map.put("genders1", genders1.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
-        'map.put("genders2", genders2.stream().map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
-        'map.put("genders3", genders3 == null ? null : genders3.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
-        'map.put("city", city == null ? null : city.toJson());',
-        'map.put("city2", city2.toJson());',
-        'return map;',
+        'Map<String, Object> glMap__ = new HashMap<>();',
+        'glMap__.put("id", id);',
+        'glMap__.put("name", name);',
+        'glMap__.put("middleName", middleName);',
+        'glMap__.put("dateOfBirth", dateOfBirth);',
+        'glMap__.put("gender", gender == null ? null : gender.toJson());',
+        'glMap__.put("gender2", gender2.toJson());',
+        'glMap__.put("names", names.stream().collect(Collectors.toList()));',
+        'glMap__.put("deepGender", deepGender.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
+        'glMap__.put("genders1", genders1.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
+        'glMap__.put("genders2", genders2.stream().map(e0 -> e0 == null ? null : e0.toJson()).collect(Collectors.toList()));',
+        'glMap__.put("genders3", genders3 == null ? null : genders3.stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));',
+        'glMap__.put("city", city == null ? null : city.toJson());',
+        'glMap__.put("city2", city2.toJson());',
+        'return glMap__;',
         '}'
       ]),
     );
@@ -134,9 +134,9 @@ void main() {
       inputSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
         'public Map<String, Object> toJson() {',
-        'Map<String, Object> map = new HashMap<>();',
-        'map.put("genders", genders == null ? null : genders.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
-        'return map;',
+        'Map<String, Object> glMap__ = new HashMap<>();',
+        'glMap__.put("genders", genders == null ? null : genders.stream().map(e0 -> e0 == null ? null : e0.stream().map(e1 -> e1 == null ? null : e1.toJson()).collect(Collectors.toList())).collect(Collectors.toList()));',
+        'return glMap__;',
         '}'
       ]),
     );
@@ -175,7 +175,7 @@ void main() {
       userSerial.split("\n").map((e) => e.trim()),
       containsAllInOrder([
         'public Map<String, Object> toJson() {',
-        'Map<String, Object> map = new HashMap<>();',
+        'Map<String, Object> glMap__ = new HashMap<>();',
         "}"
       ]),
     );

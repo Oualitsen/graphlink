@@ -327,10 +327,14 @@ class GLParser {
   Set<String> get parameterReservedWords =>
       _parameterReservedWords ?? reservedWords;
 
+  /// Declaration names that shadow a standard-library type of the target language.
+  final Set<String> reservedTypeNames;
+
   GLParser({
     this.naming,
     this.reservedWords = const {},
     Set<String>? parameterReservedWords,
+    this.reservedTypeNames = const {},
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.tolerantEnums = false,

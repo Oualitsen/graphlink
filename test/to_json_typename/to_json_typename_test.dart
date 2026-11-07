@@ -54,7 +54,7 @@ void main() {
 
     print(dog);
 
-    expect(dog, contains('map.put("__typename", "Dog");'));
+    expect(dog, contains('glMap__.put("__typename", "Dog");'));
   });
 
   test("kotlin toJson emits __typename (server mode)", () {

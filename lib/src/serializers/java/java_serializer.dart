@@ -651,10 +651,10 @@ class JavaSerializer extends GLSerializer {
 
     buffer.writeln(
       codeGenUtils.createMethod(returnType: "public ${_mapOf('String', 'Object')}", methodName: "toJson", statements: [
-        "${_mapOf('String', 'Object')} map = new HashMap<>();",
-        if (typeName != null) 'map.put("__typename", "$typeName");',
-        ...fields.map((field) => 'map.put("${field.name}", ${_fieldToJson(field, context)});'),
-        'return map;'
+        "${_mapOf('String', 'Object')} glMap__ = new HashMap<>();",
+        if (typeName != null) 'glMap__.put("__typename", "$typeName");',
+        ...fields.map((field) => 'glMap__.put("${field.name}", ${_fieldToJson(field, context)});'),
+        'return glMap__;'
       ]),
     );
 

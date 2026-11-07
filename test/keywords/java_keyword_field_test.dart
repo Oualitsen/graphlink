@@ -28,8 +28,8 @@ void main() {
     expect(out, contains("String name;"));
 
     // toJson: wire key stays `default`, value reads the safe identifier.
-    expect(out, contains('map.put("default", default_)'));
-    expect(out, contains('map.put("name", name)'));
+    expect(out, contains('glMap__.put("default", default_)'));
+    expect(out, contains('glMap__.put("name", name)'));
 
     // fromJson is positional: the wire key must still be the original name.
     expect(out, contains('json.get("default")'));
@@ -53,8 +53,8 @@ void main() {
 
     expect(out, contains("String default_2;"));
     expect(out, contains("String default_;"));
-    expect(out, contains('map.put("default", default_2)'));
-    expect(out, contains('map.put("default_", default_)'));
+    expect(out, contains('glMap__.put("default", default_2)'));
+    expect(out, contains('glMap__.put("default_", default_)'));
   });
 
   test("type (class) keyword field is sanitized, wire key preserved", () {
@@ -74,7 +74,7 @@ void main() {
     final out = serializer.doSerializeTypeDefinition(type);
 
     expect(out, contains("String default_;"));
-    expect(out, contains('map.put("default", default_)'));
+    expect(out, contains('glMap__.put("default", default_)'));
     expect(out, contains('json.get("default")'));
   });
 
@@ -125,8 +125,8 @@ void main() {
     expect(out, contains("String name;"));
 
     // toJson: wire key stays `_links`.
-    expect(out, contains('map.put("_links", links_)'));
-    expect(out, contains('map.put("name", name)'));
+    expect(out, contains('glMap__.put("_links", links_)'));
+    expect(out, contains('glMap__.put("name", name)'));
 
     // fromJson: wire key original.
     expect(out, contains('json.get("_links")'));

@@ -150,7 +150,8 @@ extension GLGrammarKeywordExtension on GLParser {
   /// that pins the name to a reserved word (e.g. `class`) would otherwise
   /// generate an uncompilable declaration.
   void _assignTypeCodeNames() {
-    if (parameterReservedWords.isEmpty) return;
+    final reserved = {...parameterReservedWords, ...reservedTypeNames};
+    if (reserved.isEmpty) return;
 
     final allContainers = <CodeNameMixin>[
       ...types.values,
@@ -175,7 +176,7 @@ extension GLGrammarKeywordExtension on GLParser {
 
     for (final container in allContainers) {
       final current = container.codeName;
-      if (!parameterReservedWords.contains(current)) continue;
+      if (!reserved.contains(current)) continue;
 
       var candidate = '${current}_';
       var counter = 2;

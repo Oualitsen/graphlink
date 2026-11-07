@@ -48,6 +48,19 @@ NamingConvention _namingConventionFor(GeneratorConfig config) {
   return NamingConvention.typescript;
 }
 
+Set<String> _reservedTypeNamesFor(GeneratorConfig config) {
+  final lang = config.getMode() == CodeGenerationMode.server
+      ? config.serverConfig!.language
+      : config.clientConfig!.language;
+  if (lang is DartClientConfig) return dartReservedTypeNames;
+  if (lang is JavaClientConfig || lang is SpringServerConfig) return javaReservedTypeNames;
+  if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return kotlinReservedTypeNames;
+  if (lang is SwiftClientConfig) return swiftReservedTypeNames;
+  if (lang is PythonClientConfig) return pythonReservedTypeNames;
+  if (lang is GoClientConfig) return const {};
+  return typescriptReservedTypeNames;
+}
+
 Set<String>? _parameterReservedWordsFor(GeneratorConfig config) {
   final lang = config.getMode() == CodeGenerationMode.server
       ? config.serverConfig!.language
@@ -84,6 +97,7 @@ GLParser createGrammar(GeneratorConfig config) {
       identityFields: config.identityFields,
       reservedWords: _reservedWordsFor(config),
       parameterReservedWords: _parameterReservedWordsFor(config),
+      reservedTypeNames: _reservedTypeNamesFor(config),
       collectionImports: _collectionImportsFor(config),
     )..unknownScalarType = config.unknownScalarType;
   }
@@ -93,6 +107,7 @@ GLParser createGrammar(GeneratorConfig config) {
     naming: _namingConventionFor(config),
     reservedWords: _reservedWordsFor(config),
     parameterReservedWords: _parameterReservedWordsFor(config),
+    reservedTypeNames: _reservedTypeNamesFor(config),
     identityFields: config.identityFields,
     disableCache: config.disableCache,
     restNullableSuffix: config.restNullableSuffix,

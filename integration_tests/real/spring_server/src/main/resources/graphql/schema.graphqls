@@ -71,6 +71,160 @@ type Plain {
 
 union PhaseHolder = Phased | Plain
 
+# ── Identifiers ──────────────────────────────────────────────────────────────
+
+type Reserved {
+  type: String!
+  default: String!
+  in: String!
+  is: String!
+  var: String!
+  val: String!
+  fun: String!
+  new: String!
+  import: String!
+  return: String!
+  object: String!
+  from: String!
+  None: String!
+  True: String!
+  func: String!
+  range: String!
+  self: String!
+  Self: String!
+  init: String!
+  Type: String!
+  Protocol: String!
+  async: String!
+  await: String!
+  package: String!
+  interface: String!
+  enum: String!
+  null: String!
+}
+
+input ReservedInput {
+  type: String!
+  default: String!
+  in: String!
+  is: String!
+  var: String!
+  val: String!
+  fun: String!
+  new: String!
+  import: String!
+  return: String!
+  object: String!
+  from: String!
+  None: String!
+  True: String!
+  func: String!
+  range: String!
+  self: String!
+  Self: String!
+  init: String!
+  Type: String!
+  Protocol: String!
+  async: String!
+  await: String!
+  package: String!
+  interface: String!
+  enum: String!
+  null: String!
+}
+
+enum Literal {
+  default
+  class
+  None
+  True
+  nil
+  undefined
+  NaN
+  self
+}
+
+type Error {
+  id: ID!
+}
+
+type Response {
+  id: ID!
+}
+
+type Request {
+  id: ID!
+}
+
+type List {
+  id: ID!
+}
+
+type Map {
+  id: ID!
+}
+
+type Object {
+  id: ID!
+}
+
+type Optional {
+  id: ID!
+}
+
+type Date {
+  id: ID!
+}
+
+type Result {
+  id: ID!
+}
+
+type Void {
+  id: ID!
+}
+
+type Clashes {
+  error: Error!
+  response: Response!
+  request: Request!
+  list: List!
+  map: Map!
+  object: Object!
+  optional: Optional!
+  date: Date!
+  result: Result!
+  void: Void!
+}
+
+type Odd {
+  user_id: String!
+  userId: String!
+  URLValue: String!
+  HTTPServer: String!
+  _leading: String!
+  trailing_: String!
+  v2_name: String!
+  isActive: String!
+  active: String!
+  getX: String!
+  x: String!
+}
+
+input OddInput {
+  user_id: String!
+  userId: String!
+  URLValue: String!
+  HTTPServer: String!
+  _leading: String!
+  trailing_: String!
+  v2_name: String!
+  isActive: String!
+  active: String!
+  getX: String!
+  x: String!
+}
+
 type ListShapes {
   a: [Int!]!
   b: [Int!]
@@ -405,6 +559,18 @@ type Query {
   respOnly: RespOnly!
   phaseProbe: PhaseProbe!
   phaseHolder: PhaseHolder!
+  reservedEcho(type: String!, default: String!, in: String!, is: String!, var: String!, val: String!, fun: String!, new: String!, import: String!, return: String!, object: String!, from: String!, None: String!, True: String!, func: String!, range: String!, self: String!, Self: String!, init: String!, Type: String!, Protocol: String!, async: String!, await: String!, package: String!, interface: String!, enum: String!, null: String!): Reserved!
+  reservedEchoInput(input: ReservedInput!): Reserved!
+  literalEcho(v: Literal!, all: [Literal!]!): Literal!
+  literals: [Literal!]!
+  clashes: Clashes!
+  oddEcho(input: OddInput!): Odd!
+  import(value: String!): String!
+  default(value: String!): String!
+  new(value: String!): String!
+  func(value: String!): String!
+  None(value: String!): String!
+  self(value: String!): String!
 }
 
 type Mutation {
