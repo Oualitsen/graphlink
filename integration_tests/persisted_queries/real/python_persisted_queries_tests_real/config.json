@@ -4,6 +4,17 @@
     "../../schema/persisted_queries.graphql"
   ],
   "mode": "client",
+  "typeMappings": {
+    "DateTime": "str",
+    "LocalDate": "str",
+    "BigDecimal": "Any",
+    "JSON": "Any",
+    "Opaque": {
+      "type": "str",
+      "fromJson": "\"opaque:\" + {}",
+      "toJson": "{}[7:]"
+    }
+  },
   "outputDir": "generated",
   "clientConfig": {
     "python": {

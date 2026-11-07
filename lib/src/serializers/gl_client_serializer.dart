@@ -256,16 +256,4 @@ abstract class GLClientSerializer {
       }
     }
   }
-
-  /// Returns import lines scoped to operations of [type].
-  /// Converts [schemaTokensFor] tokens to language-specific import strings.
-  List<String> schemaImportsFor(GLQueryType type) {
-    final seen = <String>{};
-    final result = <String>[];
-    for (final t in schemaTokensFor(type)) {
-      final imp = serializer.serializeImportToken(t);
-      if (imp.isNotEmpty && seen.add(imp)) result.add(imp);
-    }
-    return result;
-  }
 }

@@ -1,5 +1,6 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -27,6 +28,15 @@ extension GLGrammarScalarCodecExtension on GLParser {
 
   Set<String> scalarImportsOfOperations(Iterable<GLQueryDefinition> operations) => {
         for (final op in operations) ...scalarImportsOfOperation(op),
+      };
+
+  Set<String> scalarImportsOfRestOperation(GLRestOperation operation) => {
+        for (final arg in operation.arguments) ...?scalarCodecOf(arg.argument.type.token)?.imports,
+      };
+
+  Set<String> scalarImportsOfOperationType(GLQueryType type) => {
+        ...scalarImportsOfOperations(queries.values.where((q) => q.type == type)),
+        for (final op in restOperations.values.where((o) => o.type == type)) ...scalarImportsOfRestOperation(op),
       };
 
   void validateScalarCodecs() {

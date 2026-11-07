@@ -10,7 +10,16 @@
     "Float": "double",
     "Int": "int",
     "Boolean": "bool",
-    "Null": "null"
+    "Null": "null",
+    "DateTime": "String",
+    "LocalDate": "String",
+    "BigDecimal": "Object",
+    "JSON": "Object",
+    "Opaque": {
+      "type": "String",
+      "fromJson": "'opaque:' + ({} as String)",
+      "toJson": "{}.substring(7)"
+    }
   },
   "outputDir": "lib/generated",
   "clientConfig": {

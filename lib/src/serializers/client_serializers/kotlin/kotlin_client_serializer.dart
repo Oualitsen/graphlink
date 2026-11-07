@@ -1,6 +1,7 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -768,7 +769,7 @@ class KotlinClientSerializer extends GLClientSerializer {
         ..._restTokens(type),
         ...container.importDepencies,
       }.toList(),
-      imports: [...container.imports],
+      imports: [...container.imports, ..._grammar.scalarImportsOfOperationType(type)],
       body: body,
     );
   }

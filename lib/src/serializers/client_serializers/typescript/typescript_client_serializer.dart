@@ -1,6 +1,7 @@
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 
@@ -65,9 +66,8 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   bool get hasRest => _hasRest;
 
-  List<String> _restImportsFor(GLQueryType type) {
+  List<GLToken> _restTokensFor(GLQueryType type) {
     final operations = _restOperations(type);
-    if (operations.isEmpty) return const [];
     final tokens = <GLToken>[];
     for (final operation in operations) {
       final names = [
@@ -81,13 +81,18 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         }
       }
     }
+    return tokens;
+  }
+
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
     return [
       "import { GraphLinkRestResolver } from './graph-link-rest-resolver.js';",
       "import { GLDownload, restEncode, restEntries, restSpreadEntries, restHeader, restHeaders, restParts } from './graph-link-rest.js';",
       "import type { DownloadProgressCallback, RestBody, RestPart, RestRequest } from './graph-link-rest.js';",
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
         "import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';",
-      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty),
     ];
   }
 
@@ -267,7 +272,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: {
-        ...schemaImportsFor(GLQueryType.query),
+        ..._parser.scalarImportsOfOperationType(GLQueryType.query),
         ..._errorImport(),
         if (observables) "import { Observable } from 'rxjs';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
@@ -278,6 +283,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
         ..._restImportsFor(GLQueryType.query),
       }.toList(),
+      importDepencies: {...schemaTokensFor(GLQueryType.query), ..._restTokensFor(GLQueryType.query)}.toList(),
       body: body,
     );
   }
@@ -287,7 +293,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: {
-        ...schemaImportsFor(GLQueryType.mutation),
+        ..._parser.scalarImportsOfOperationType(GLQueryType.mutation),
         ..._errorImport(),
         if (observables) "import { Observable } from 'rxjs';",
         if (_parser.hasUploadMutations)
@@ -298,6 +304,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import type { GraphLinkLock } from './graph-link-lock.js';",
         ..._restImportsFor(GLQueryType.mutation),
       }.toList(),
+      importDepencies: {...schemaTokensFor(GLQueryType.mutation), ..._restTokensFor(GLQueryType.mutation)}.toList(),
       body: body,
     );
   }
@@ -307,7 +314,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     if (body == null) return null;
     return GLClassModel(
       imports: [
-        ...schemaImportsFor(GLQueryType.subscription),
+        ..._parser.scalarImportsOfOperationType(GLQueryType.subscription),
         if (observables) "import { Observable } from 'rxjs';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
         "import type { $_cacheStoreType } from './graph-link-cache-store.js';",
@@ -315,6 +322,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
         "import { GraphLinkSubscriptionHandler } from './graph-link-subscription-handler.js';",
         "import type { GraphLinkWsAdapter } from './graph-link-ws-adapter.js';",
       ],
+      importDepencies: {...schemaTokensFor(GLQueryType.subscription), ..._restTokensFor(GLQueryType.subscription)}.toList(),
       body: body,
     );
   }

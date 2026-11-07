@@ -1,6 +1,7 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
@@ -292,7 +293,7 @@ class SwiftClientSerializer extends GLClientSerializer {
     final base = restOperations.isEmpty ? 'GraphLinkResolverBase' : 'GraphLinkRestResolver';
     final body = 'public final class $className: $base, @unchecked Sendable ${codeGenUtils.block(classBody)}';
 
-    return GLClassModel(body: body);
+    return GLClassModel(imports: grammar.scalarImportsOfOperationType(type).toList(), body: body);
   }
 
   List<String> _ctorParams(GLQueryType type) {

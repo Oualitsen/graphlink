@@ -1,6 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -177,9 +178,8 @@ class PythonClientSerializer extends GLClientSerializer {
         if (_parser.persistedQueriesUseGet) 'from .graph_link_persisted_queries import GraphLinkGetNotSupported',
       ];
 
-  List<String> _restImportsFor(GLQueryType type) {
+  List<GLToken> _restTokensFor(GLQueryType type) {
     final operations = _restOperations(type);
-    if (operations.isEmpty) return const [];
     final tokens = <GLToken>[];
     for (final operation in operations) {
       final names = [
@@ -193,12 +193,17 @@ class PythonClientSerializer extends GLClientSerializer {
         }
       }
     }
+    return tokens;
+  }
+
+  List<String> _restImportsFor(GLQueryType type) {
+    final operations = _restOperations(type);
+    if (operations.isEmpty) return const [];
     return [
       'from .graph_link_rest_resolver import GraphLinkRestResolver',
       'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestFormBody, RestJsonBody, RestMultipartBody, RestPart, RestRawBody, RestRequest, RestBody, rest_encode, rest_encode_json, rest_entries, rest_header, rest_headers, rest_parts, rest_spread_entries, rest_text',
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
         'from .graph_link_uploads import GLUpload, UploadProgressCallback',
-      ...tokens.map(serializer.serializeImportToken).where((e) => e.isNotEmpty).toSet(),
     ];
   }
 
@@ -206,7 +211,6 @@ class PythonClientSerializer extends GLClientSerializer {
         'from .graph_link_cache_store import $_cacheStoreClassName',
         'from .graph_link_lock import GraphLinkLock',
         'from .graph_link_resolver_base import $_resolverBaseClassName',
-        _tokenImport('GraphLinkPayload'),
         if (type == GLQueryType.query) 'from .graph_link_partial_query import GraphLinkPartialQuery',
         if (type != GLQueryType.subscription) 'from .graph_link_exception import GraphLinkException',
         if (type == GLQueryType.mutation && _parser.hasUploadMutations)
@@ -215,7 +219,7 @@ class PythonClientSerializer extends GLClientSerializer {
           'from .graph_link_subscription_handler import GraphLinkSubscriptionHandler',
           'from .graph_link_websocket_adapter import GraphLinkWebSocketAdapter',
         ],
-        ...schemaImportsFor(type),
+        ..._parser.scalarImportsOfOperationType(type),
         ..._restImportsFor(type),
       ];
 
@@ -737,6 +741,7 @@ class PythonClientSerializer extends GLClientSerializer {
         '',
         ..._importsForType(type),
       ],
+      importDepencies: {...schemaTokensFor(type), ..._restTokensFor(type)}.toList(),
       body: body,
     );
   }

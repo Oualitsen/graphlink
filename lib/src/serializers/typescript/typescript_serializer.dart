@@ -343,7 +343,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String serializeImport(String import) {
-    return "import '$import';";
+    return import.startsWith('import ') ? import : "import '$import';";
   }
 
   // ── GLClassModel serialization ─────────────────────────────────────────────
@@ -351,7 +351,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
   @override
   String serializeGlClass(GLClassModel theClass,
       {bool withImports = true}) {
-    if (!withImports || theClass.importDepencies.isEmpty) {
+    if (!withImports || theClass.importDepencies.isEmpty && theClass.imports.isEmpty) {
       return super.serializeGlClass(theClass,
           withImports: withImports);
     }

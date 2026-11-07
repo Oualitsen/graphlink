@@ -5,24 +5,33 @@
   ],
   "mode": "client",
   "typeMappings": {
-    "ID":      "String",
-    "String":  "String",
-    "Float":   "Double",
-    "Int":     "Int",
-    "Boolean": "Boolean"
+    "ID": "String",
+    "String": "String",
+    "Float": "Double",
+    "Int": "Int",
+    "Boolean": "Boolean",
+    "DateTime": "String",
+    "LocalDate": "String",
+    "BigDecimal": "Any",
+    "JSON": "Any",
+    "Opaque": {
+      "type": "String",
+      "fromJson": "\"opaque:\" + ({} as String)",
+      "toJson": "{}.removePrefix(\"opaque:\")"
+    }
   },
   "outputDir": "client-app/src/main/kotlin/dev/graphlink/test/generated",
   "clientConfig": {
     "kotlin": {
-      "packageName":                "dev.graphlink.test.generated",
+      "packageName": "dev.graphlink.test.generated",
       "generateAllFieldsFragments": true,
-      "autoGenerateQueries":        true,
-      "nullableFieldsRequired":     false,
-      "inputAsDataClass":           true,
-      "typeAsDataClass":            true,
-      "captureErrors":              false,
-      "persistedQueries":           "apq",
-      "persistedQueriesUseGet":     true
+      "autoGenerateQueries": true,
+      "nullableFieldsRequired": false,
+      "inputAsDataClass": true,
+      "typeAsDataClass": true,
+      "captureErrors": false,
+      "persistedQueries": "apq",
+      "persistedQueriesUseGet": true
     }
   }
 }
