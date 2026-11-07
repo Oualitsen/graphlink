@@ -225,6 +225,120 @@ input OddInput {
   x: String!
 }
 
+# ── Literals, defaults and escaping ──────────────────────────────────────────
+
+input NastyInput {
+  dollar: String
+  quote: String
+  backslash: String
+  newline: String
+  percent: String
+  comments: String
+  triple: String
+  unicode: String
+  nonAscii: String
+}
+
+type NastyEcho {
+  dollar: String
+  quote: String
+  backslash: String
+  newline: String
+  percent: String
+  comments: String
+  triple: String
+  unicode: String
+  nonAscii: String
+}
+
+input InnerInput {
+  n: Int
+  label: String
+  tags: [String!]
+}
+
+type InnerEcho {
+  n: Int
+  label: String
+  tags: [String!]
+}
+
+input EverythingInput {
+  i: Int
+  neg: Int
+  big: Int
+  f: Float
+  exp: Float
+  b: Boolean
+  bf: Boolean
+  s: String
+  id: ID
+  e: Spelling
+  ints: [Int!]
+  nested: [[Int!]!]
+  inner: InnerInput
+  nothing: String
+  emptyList: [String!]
+  emptyObj: InnerInput
+}
+
+type EverythingEcho {
+  i: Int
+  neg: Int
+  big: Int
+  f: Float
+  exp: Float
+  b: Boolean
+  bf: Boolean
+  s: String
+  id: ID
+  e: Spelling
+  ints: [Int!]
+  nested: [[Int!]!]
+  inner: InnerEcho
+  nothing: String
+  emptyList: [String!]
+  emptyObj: InnerEcho
+}
+
+input Tree {
+  value: Int!
+  children: [Tree!]
+}
+
+input Ping {
+  n: Int!
+  pong: Pong
+}
+
+input Pong {
+  n: Int!
+  ping: Ping
+}
+
+type TreeStats {
+  flat: [Int!]!
+  depth: Int!
+}
+
+input Pet @oneOf {
+  cat: String
+  dog: Int
+}
+
+enum Mood {
+  CALM
+  RELAXED
+  ANGRY
+}
+
+type Legacy {
+  id: ID!
+  old: String
+  older: String
+  mood: Mood
+}
+
 type ListShapes {
   a: [Int!]!
   b: [Int!]
@@ -571,6 +685,14 @@ type Query {
   func(value: String!): String!
   None(value: String!): String!
   self(value: String!): String!
+  echoNastyArgs(dollar: String, quote: String, backslash: String, newline: String, percent: String, comments: String, triple: String, unicode: String, nonAscii: String): NastyEcho!
+  echoNasty(input: NastyInput): NastyEcho!
+  echoInner(inner: InnerInput): InnerEcho!
+  echoEverything(input: EverythingInput!): EverythingEcho!
+  treeStats(tree: Tree!): TreeStats!
+  pingLength(ping: Ping!): Int!
+  describePet(pet: Pet!): String!
+  legacy(withReason: String, plain: String): Legacy!
 }
 
 type Mutation {

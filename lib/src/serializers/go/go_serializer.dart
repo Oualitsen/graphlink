@@ -1,3 +1,5 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_defaults_extension.dart';
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/go_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -105,15 +107,9 @@ class GoSerializer extends GLSerializer {
     return _baseTypeName(def);
   }
 
-  String stringLiteral(String value) {
-    final escaped = value
-        .replaceAll('\\', '\\\\')
-        .replaceAll('"', '\\"')
-        .replaceAll('\r', '\\r')
-        .replaceAll('\n', '\\n')
-        .replaceAll('\t', '\\t');
-    return '"$escaped"';
-  }
+  @override
+  String stringLiteral(String value) =>
+      '"${escapeStringBody(value, quote: '"', control: (unit) => '\\x${unit.toRadixString(16).padLeft(2, '0')}')}"';
 
   @override
   String serializeFieldDeprecation(GLField field) {
@@ -204,9 +200,9 @@ class GoSerializer extends GLSerializer {
   List<GLField> serializableFields(dynamic def) =>
       (def.getSerializableFields(grammar.mode) as List<GLField>).where((f) => serializeField(f, true, true).isNotEmpty).toList();
 
-  String _fieldLines(List<GLField> fields) => fields.map((f) {
-        final line = serializeField(f, true, true);
-        return line.trimRight();
+  String _fieldLines(List<GLField> fields, {bool omitEmpty = false}) => fields.map((f) {
+        final line = serializeField(f, true, true).trimRight();
+        return omitEmpty ? line.replaceFirst('`json:"${f.name.token}"`', '`json:"${f.name.token},omitempty"`') : line;
       }).join('\n');
 
   // ── Inputs ─────────────────────────────────────────────────────────────────
@@ -216,7 +212,7 @@ class GoSerializer extends GLSerializer {
     final fields = serializableFields(def);
     final withDefaults = fields.where((f) => f.initialValue != null).toList();
     return [
-      codeGenUtils.structDecl(def.codeName, [_fieldLines(fields)]),
+      codeGenUtils.structDecl(def.codeName, [_fieldLines(fields, omitEmpty: def.isOneOf)]),
       if (withDefaults.isNotEmpty) _constructorWithDefaults(def.codeName, withDefaults),
       ...generateMappingMethods(def),
     ].join('\n\n');
@@ -564,7 +560,7 @@ class GoSerializer extends GLSerializer {
     }
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
-      final args = value.entries.map((e) {
+      final args = grammar.completeInputDefault(type.token, value).entries.map((e) {
         final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
         final fieldType = field?.type ?? type;
         final key = field?.codeName ?? e.key;
@@ -577,8 +573,7 @@ class GoSerializer extends GLSerializer {
       if (enumDef != null) {
         return '${enumDef.codeName}${grammar.enumConstantName(type.token, value).firstUp}';
       }
-      final content = value.startsWith('"') && value.endsWith('"') ? value.substring(1, value.length - 1) : value;
-      return stringLiteral(content);
+      return stringLiteral(decodeGraphqlString(value));
     }
     return stringLiteral('$value');
   }

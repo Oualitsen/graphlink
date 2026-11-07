@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -7,10 +8,12 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_recursion_extension.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
@@ -87,13 +90,8 @@ class SwiftSerializer extends GLSerializer {
     return _deprecatedAttribute(value.deprecationReason);
   }
 
-  String _deprecatedAttribute(String? reason) {
-    final escaped = (reason ?? 'No longer supported')
-        .escapeForStringLiteral()
-        .replaceAll('\r', '')
-        .replaceAll('\n', r'\n');
-    return '@available(*, deprecated, message: "$escaped")';
-  }
+  String _deprecatedAttribute(String? reason) =>
+      '@available(*, deprecated, message: ${stringLiteral(reason ?? 'No longer supported')})';
 
   @override
   String doSerializeEnumDefinition(GLEnumDefinition def) {
@@ -143,12 +141,9 @@ class SwiftSerializer extends GLSerializer {
   String doSerializeInputDefinition(GLInputDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
 
-    final storedFields = fields.map((f) => _storedFieldDecl(f, immutableTypeFields)).toList();
+    final storedFields = fields.map((f) => _storedFieldDecl(def, f, immutableTypeFields)).toList();
     final initParams = fields.map(_initParam).toList();
-    final initAssignments = fields.map((f) {
-      final name = f.codeName;
-      return 'self.$name = $name';
-    }).toList();
+    final initAssignments = fields.map((f) => _initAssignment(def, f)).toList();
 
     final extraBody = [
       'public ${_generateToJson(fields, def)}',
@@ -159,13 +154,14 @@ class SwiftSerializer extends GLSerializer {
       ...generateMappingMethods(def),
     ];
 
-    return codeGenUtils.structDecl(
+    final decl = codeGenUtils.structDecl(
       name: def.codeName,
       fields: storedFields,
       initDecl: codeGenUtils.initDecl(params: initParams, assignments: initAssignments),
       extraBody: extraBody,
       conformances: const ['Sendable'],
     );
+    return fields.any((f) => grammar.isRecursiveField(def, f)) ? '$decl\n\n$_indirectBox' : decl;
   }
 
   /// `name: Type = default` for a stored-property initializer parameter.
@@ -194,13 +190,33 @@ class SwiftSerializer extends GLSerializer {
   /// shape (declaration, default, and init parameter all merged into one
   /// line), which is exactly the shape Swift's separate
   /// property-declaration/init-parameter split doesn't allow.
-  String _storedFieldDecl(GLField f, bool immutable) {
+  String _storedFieldDecl(GLTokenWithFields owner, GLField f, bool immutable) {
     final type = serializeType(f.type);
     final keyword = immutable ? 'let' : 'var';
     final deprecation = serializeFieldDeprecation(f);
     final name = f.codeName;
-    return '${deprecation}public $keyword $name: $type';
+    if (!grammar.isRecursiveField(owner, f)) return '${deprecation}public $keyword $name: $type';
+    final nullable = f.type.nullable;
+    final boxed = nullable ? 'GLIndirect<${type.substring(0, type.length - 1)}>?' : 'GLIndirect<$type>';
+    final read = nullable ? '_$name?.value' : '_$name.value';
+    final write = nullable ? 'newValue.map(GLIndirect.init)' : 'GLIndirect(newValue)';
+    return [
+      'private var _$name: $boxed',
+      if (immutable)
+        '${deprecation}public var $name: $type { $read }'
+      else
+        '${deprecation}public var $name: $type {\n   get { $read }\n   set { _$name = $write }\n}',
+    ].join('\n').replaceFirst('private var _$name', immutable ? 'private let _$name' : 'private var _$name');
   }
+
+  String _initAssignment(GLTokenWithFields owner, GLField f) {
+    final name = f.codeName;
+    if (!grammar.isRecursiveField(owner, f)) return 'self.$name = $name';
+    return f.type.nullable ? 'self._$name = $name.map(GLIndirect.init)' : 'self._$name = GLIndirect($name)';
+  }
+
+  static const _indirectBox =
+      'private final class GLIndirect<T>: @unchecked Sendable {\n   let value: T\n   init(_ value: T) { self.value = value }\n}';
 
   // ── Type definition ─────────────────────────────────────────────────────────
 
@@ -225,12 +241,9 @@ class SwiftSerializer extends GLSerializer {
     // Protocol conformance is structural in Swift — no `override` keyword
     // needed on a stored property that satisfies a protocol requirement,
     // unlike Kotlin's `override val`.
-    final storedFields = fields.map((f) => _storedFieldDecl(f, immutableTypeFields)).toList();
+    final storedFields = fields.map((f) => _storedFieldDecl(def, f, immutableTypeFields)).toList();
     final initParams = fields.map(_initParam).toList();
-    final initAssignments = fields.map((f) {
-      final name = f.codeName;
-      return 'self.$name = $name';
-    }).toList();
+    final initAssignments = fields.map((f) => _initAssignment(def, f)).toList();
 
     final extraBody = <String>[];
     if (!shouldSkipJsonMethods(def)) {
@@ -246,13 +259,14 @@ class SwiftSerializer extends GLSerializer {
       ...ifaces,
     ];
 
-    return codeGenUtils.structDecl(
+    final decl = codeGenUtils.structDecl(
       name: def.codeName,
       fields: storedFields,
       initDecl: codeGenUtils.initDecl(params: initParams, assignments: initAssignments),
       extraBody: extraBody,
       conformances: conformances,
     );
+    return fields.any((f) => grammar.isRecursiveField(def, f)) ? '$decl\n\n$_indirectBox' : decl;
   }
 
   String _serializeInterface(GLInterfaceDefinition def) {
@@ -355,7 +369,7 @@ class SwiftSerializer extends GLSerializer {
     return codeGenUtils.method(
       returnType: '[String: Any?]',
       methodName: 'toJson',
-      statements: ['return [\n$entries,\n]'],
+      statements: ['return [\n$entries,\n]${context is GLInputDefinition && context.isOneOf ? '.filter { \$0.value != nil }' : ''}'],
     );
   }
 
@@ -631,14 +645,17 @@ class SwiftSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      final content = value.startsWith('"') && value.endsWith('"') ? value.substring(1, value.length - 1) : value;
-      return '"$content"';
+      return stringLiteral(decodeGraphqlString(value));
     }
     return '"$value"';
   }
 
   // Swift has no bare NaN/Infinity literal — those come from the type's own
   // static members, same reasoning as KotlinSerializer's equivalent helper.
+  @override
+  String stringLiteral(String decoded) =>
+      '"${escapeStringBody(decoded, quote: '"', control: (unit) => '\\u{${unit.toRadixString(16)}}')}"';
+
   String _serializeFloatingLiteral(double value, String swiftType) {
     if (value.isNaN) return '$swiftType.nan';
     if (value.isInfinite) return value.isNegative ? '-$swiftType.infinity' : '$swiftType.infinity';

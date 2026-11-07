@@ -63,7 +63,7 @@ class DartClientOperationSerializer {
         arguments: getArguments(def),
         async: true,
         statements: [
-          "const $svQuery = '''$queryString''';",
+          "const $svQuery = ${_serializer.stringLiteral(queryString)};",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           generateVariables(def),
           if (isCaptureErrors)
@@ -82,7 +82,7 @@ class DartClientOperationSerializer {
         .serializeDirectiveValueList(def.getDirectives(skipGenerated: true));
 
     final executeCachedCall =
-        _cg.callExpression("executeCached", ["$svPartialQueries", "'${def.tokenInfo}'", "'$directives'", "$fullResponseToken.fromJson", "${isCaptureErrors ? 'true' : 'false'}"]);
+        _cg.callExpression("executeCached", ["$svPartialQueries", "'${def.tokenInfo}'", _serializer.stringLiteral(directives), "$fullResponseToken.fromJson", "${isCaptureErrors ? 'true' : 'false'}"]);
 
     return _cg.createMethod(
         returnType: returnTypeByQueryType(def),
@@ -114,7 +114,7 @@ class DartClientOperationSerializer {
         arguments: getArguments(def),
         async: !isSubscription,
         statements: [
-          "const $svQuery = '''$queryText''';",
+          "const $svQuery = ${_serializer.stringLiteral(queryText)};",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           // assembleQuery/payload are only needed for the subscription and upload
           // paths; plain mutations build the payload inside executeData/executeFull.
@@ -198,13 +198,13 @@ class DartClientOperationSerializer {
       for (var v in e.variables) "'${v.substring(1)}': $svVariables['${v.substring(1)}'],",
     ]);
     return _cg.callExpression('GraphLinkPartialQuery', [
-      "query: '${e.query}'",
+      'query: ${_serializer.stringLiteral(e.query)}',
       'operationName: "${e.operationName}"',
       'tags: ${e.tags.map((e) => e.quote()).toList()}',
       'ttl: ${e.cacheTTL}',
       "elementKey: '${e.elementKey}'",
       'fragmentNames: ${e.fragmentNames.map((e) => '"${e}"').toSet()}',
-      'argumentDeclarations: ${e.argumentDeclarations.map((e) => '"${e.dolarEscape()}"').toList()}',
+      'argumentDeclarations: [${e.argumentDeclarations.map(_serializer.stringLiteral).join(', ')}]',
       'variables: $variables',
       'staleIfOffline: ${e.staleIfOffline}',
     ]);

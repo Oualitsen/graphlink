@@ -176,14 +176,14 @@ Add:
 
 ## 5. Literals, defaults and escaping
 
-- [ ] String defaults and literals containing `$`, `${x}`, `"`, `'`, `\`, newline, tab, `%`, `{}`, `*/`, `//`,
+- [x] String defaults and literals (`NastyInput`, `echoNastyArgs`, `nastyLiteral`) containing `$`, `${x}`, `"`, `'`, `\`, newline, tab, `%`, `{}`, `*/`, `//`,
   triple quotes, unicode escapes.
-- [ ] Default values for every scalar, enum, list, nested list, nested input, `null` default.
-- [ ] Default on an argument whose type is an input object with its own defaults.
-- [ ] Descriptions (`"""..."""` and `"..."`) with `*/`, `$`, backticks, `@`, `<`, non-ASCII, very long lines.
-- [ ] `@deprecated` with and without reason, on fields, arguments, enum values.
-- [ ] Recursive input (`input Tree { children: [Tree!] }`) and mutually recursive inputs.
-- [ ] `@oneOf` input objects.
+- [x] Default values for every scalar, enum, list, nested list, nested input, `null` default (`EverythingInput`).
+- [x] Default on an argument whose type is an input object with its own defaults (`echoInner`; found the TypeScript and Go gap).
+- [x] Descriptions on `InnerInput` and `Tree` with `*/`, `$`, backticks, `@`, `<`, non-ASCII and a very long line (compile check in 7 languages).
+- [x] `@deprecated` with and without reason, on fields, arguments, enum values (`Legacy`, `Mood`).
+- [x] Recursive input (`Tree`) and mutually recursive inputs (`Ping`/`Pong`; found the Swift gap).
+- [x] `@oneOf` input objects (`Pet`; found the null-member bug).
 
 ## 6. Custom operations (`schema_real`)
 

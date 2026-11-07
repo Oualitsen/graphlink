@@ -98,3 +98,9 @@ query searchMixed($term: String!) {
 query fetchNodeId($id: ID!) {
   node(id: $id) { id }
 }
+
+query nastyLiteral {
+  echoNastyArgs(dollar: "cost $5 ${x}", quote: "say \"hi\"", backslash: "C:\\dir", newline: "a\nb", unicode: "\u00e9\ud83d\ude00", triple: """block "x" """) {
+    dollar quote backslash newline unicode triple
+  }
+}

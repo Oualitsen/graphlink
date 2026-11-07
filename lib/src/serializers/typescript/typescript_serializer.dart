@@ -1,6 +1,8 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_defaults_extension.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
@@ -40,6 +42,10 @@ class TypeScriptSerializer extends GLSerializer {
   });
 
   @override
+  String stringLiteral(String decoded) =>
+      '"${escapeStringBody(decoded, quote: '"', control: (unit) => '\\x${unit.toRadixString(16).padLeft(2, '0')}')}"';
+
+  @override
   String serializeDefaultLiteral(GLType type, Object? value, {bool needsConst = false}) {
     if (value == null) return 'null';
     if (value is int) return '$value';
@@ -52,7 +58,7 @@ class TypeScriptSerializer extends GLSerializer {
     }
     if (value is Map) {
       final inputDef = grammar.inputs[type.token];
-      final entries = value.entries.map((e) {
+      final entries = grammar.completeInputDefault(type.token, value).entries.map((e) {
         final field = inputDef?.fields.firstWhere((f) => f.name.token == e.key);
         final fieldType = field?.type ?? type;
         final key = field?.codeName ?? e.key;
@@ -64,10 +70,7 @@ class TypeScriptSerializer extends GLSerializer {
       if (grammar.enums.containsKey(type.token)) {
         return '${resolveCodeName(type.token)}.${grammar.enumConstantName(type.token, value)}';
       }
-      final content = value.startsWith('"') && value.endsWith('"')
-          ? value.substring(1, value.length - 1)
-          : value;
-      return '"$content"';
+      return stringLiteral(decodeGraphqlString(value));
     }
     return '"$value"';
   }
@@ -210,7 +213,7 @@ class TypeScriptSerializer extends GLSerializer {
     buffer.write(codeGenUtils.createNamespace(
       namespaceName: def.codeName,
       statements: [
-        _generateTypeToJson(def.codeName, fields),
+        _generateTypeToJson(def.codeName, fields, omitNulls: def.isOneOf),
         _generateTypeFromJson(def.codeName, fields),
       ],
     ));
@@ -409,7 +412,7 @@ class TypeScriptSerializer extends GLSerializer {
     return 'export function $func';
   }
 
-  String _generateTypeToJson(String typeName, List<GLField> fields, {String? wireTypeName}) {
+  String _generateTypeToJson(String typeName, List<GLField> fields, {String? wireTypeName, bool omitNulls = false}) {
     final entries = [
       if (wireTypeName != null) '"__typename": "$wireTypeName"',
       ...fields.map(_fieldToJsonExpr),
@@ -418,7 +421,11 @@ class TypeScriptSerializer extends GLSerializer {
       methodName: 'toJson',
       arguments: ['obj: $typeName'],
       returnType: 'Record<string, unknown>',
-      statements: ['return ${codeGenUtils.block(entries)};'],
+      statements: [
+        omitNulls
+            ? 'return Object.fromEntries(Object.entries(${codeGenUtils.block(entries)}).filter(([, v]) => v != null));'
+            : 'return ${codeGenUtils.block(entries)};'
+      ],
     );
     return 'export function $func';
   }

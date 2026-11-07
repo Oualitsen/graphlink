@@ -94,7 +94,7 @@ class TypeScriptClientOperationSerializer {
 
     final innerStatements = [
       _generateVariables(def),
-      _cg.constDecl(svQuery, "'$queryText'"),
+      _cg.constDecl(svQuery, _serializer.stringLiteral(queryText)),
       _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
       _executeFull(def, fullResponseTypeName),
       _cg.constDecl('gl_fullResponse__', _fromJson(svResult, fullResponseTypeName)),
@@ -269,7 +269,7 @@ class TypeScriptClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def),
-      _cg.constDecl(svQuery, "'$queryText'"),
+      _cg.constDecl(svQuery, _serializer.stringLiteral(queryText)),
       _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
     ];
 
@@ -337,7 +337,7 @@ class TypeScriptClientOperationSerializer {
 
     final statements = <String>[
       _generateVariables(def, nullifyUploads: true),
-      _cg.constDecl(svQuery, "'$queryTextUp'"),
+      _cg.constDecl(svQuery, _serializer.stringLiteral(queryTextUp)),
       _cg.constDecl(svFragmentNames, _fragmentNamesExpr(def)),
       _assembleQuery(),
     ];

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/constants.dart';
@@ -42,7 +43,7 @@ class DartClientSerializer extends GLClientSerializer {
       this.commaQueryLists = false,
       this.bracketFormNesting = false})
       : restHttpAdapter = restHttpAdapter ?? httpAdapter,
-        super(dartSerializer, _parser.serializer) {
+        super(dartSerializer, GLGraphqlSerializer(_parser, false)) {
     _opSer = DartClientOperationSerializer(
         _parser, codeGenUtils, gqlSerializer, serializer);
     _restSer = DartRestOperationSerializer(_parser, codeGenUtils, serializer, _opSer.callToJson,
@@ -879,7 +880,7 @@ class DartClientSerializer extends GLClientSerializer {
           ..._parser.usedFragments
               .where((value) => !oversizedFragmentNames.contains(value.tokenInfo.token))
               .map((value) =>
-                  "$svFragMap['${value.tokenInfo}'] = '${gqlSerializer.serializeFragmentDefinitionBase(value)}';"),
+                  "$svFragMap['${value.tokenInfo}'] = ${serializer.stringLiteral(gqlSerializer.serializeFragmentDefinitionBase(value))};"),
           'this.store = store ?? $_inMemorycacheStoreClassName();',
           codeGenUtils.constDecl('tags', '${_parser.getAllCacheTags().map((e) => e.quote()).toList()}'),
           codeGenUtils.forEachLoop(

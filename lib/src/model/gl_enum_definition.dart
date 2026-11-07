@@ -1,3 +1,4 @@
+import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
@@ -153,6 +154,7 @@ class GLEnumValue extends GLToken with GLDirectivesMixin, CodeNameMixin {
   String? get deprecationReason {
     final d = getDirectiveByName(deprecatedDirective);
     if (d == null) return null;
-    return d.getArgValueAsString("reason") ?? "No longer supported";
+    final reason = d.getArgValue("reason");
+    return reason is String ? decodeGraphqlString(reason) : "No longer supported";
   }
 }

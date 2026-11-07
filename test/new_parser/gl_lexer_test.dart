@@ -153,7 +153,7 @@ void main() {
     test('string with escaped quote', () {
       final tokens = lex(r'"say \"hi\""');
       expect(tokens[0].type, GLTokenType.string);
-      expect(tokens[0].value, '"say "hi""');
+      expect(tokens[0].value, r'"say \"hi\""');
     });
 
     test('unterminated string throws', () {
