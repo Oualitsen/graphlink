@@ -13,7 +13,7 @@
     "LocalDate": "string",
     "BigDecimal": "unknown",
     "JSON": "unknown",
-    "Opaque": {"type": "string", "fromJson": "\"opaque:\" + ({} as string)", "toJson": "{}.slice(7)"}
+    "Opaque": {"type": "string", "jsonType": "String", "fromJson": "\"opaque:\" + {}", "toJson": "{}.slice(7)"}
   },
   "outputDir": "lib/generated",
   "clientConfig": {

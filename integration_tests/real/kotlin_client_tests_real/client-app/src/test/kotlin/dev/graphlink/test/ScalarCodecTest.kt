@@ -50,4 +50,22 @@ class ScalarCodecTest {
     fun longDefaultReachesTheServer() = runTest {
         assertEquals(9007199254740993L, client.queries.echoScalarArgs(dt = "x", dts = listOf()).echoScalarArgs.long)
     }
+
+    private fun fixtureClient(opaque: String): GraphLinkClient {
+        val adapter = MockAdapter()
+        adapter.register("scalarFixture", """{"data":{"scalarFixture":{"dt":"x","long":1,"dts":[],"opaque":$opaque}}}""")
+        return Fixtures.newClient(adapter, MockWebSocketAdapter())
+    }
+
+    @Test
+    fun codecScalarOfTheWrongTypeFailsInsteadOfBeingCastBlindly() = runTest {
+        for (wire in listOf("7", "true", "1.5", """{"a":1}""", """["a"]""")) {
+            assertFailsWith<Exception>(wire) { fixtureClient(wire).queries.scalarFixture() }
+        }
+    }
+
+    @Test
+    fun codecScalarOfTheRightTypeStillRunsTheTemplate() = runTest {
+        assertEquals("opaque:abc", fixtureClient("\"abc\"").queries.scalarFixture().scalarFixture.opaque)
+    }
 }

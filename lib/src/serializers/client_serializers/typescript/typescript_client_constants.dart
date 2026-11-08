@@ -303,6 +303,16 @@ export function expectInteger(value: unknown, path: string): number {
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) fail(path, 'integer', value);
   return value;
 }
+
+export function expectObject(value: unknown, path: string): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) fail(path, 'object', value);
+  return value as Record<string, unknown>;
+}
+
+export function expectArray(value: unknown, path: string): unknown[] {
+  if (!Array.isArray(value)) fail(path, 'array', value);
+  return value;
+}
 ''';
 
 const tsLock = r'''

@@ -508,9 +508,22 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   String plainFromJson(GLType type, String json) =>
       _scalarCast(json, getTypeNameFromGQExternal(type.token) ?? type.token, type.nullable);
 
+  static const _jsonTypeCasts = {
+    'String': '(@ as String)',
+    'Int': '(@ as Number).let { java.math.BigDecimal(it.toString()).longValueExact() }',
+    'Double': '(@ as Number).toDouble()',
+    'Bool': '(@ as Boolean)',
+    'Map': '(@ as $_mapType)',
+    'List': '(@ as List<*>)',
+  };
+
   @override
-  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
-      nullable ? KotlinCodeGenUtils.letCall(receiver: json, body: codec.decode('it')) : codec.decode(json);
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final cast = _jsonTypeCasts[codec.jsonType];
+    final typed = cast != null && codec.canDecode;
+    String decode(String value) => codec.decode(typed ? cast.replaceAll('@', value) : value);
+    return nullable ? KotlinCodeGenUtils.letCall(receiver: json, body: decode('it')) : decode(json);
+  }
 
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>

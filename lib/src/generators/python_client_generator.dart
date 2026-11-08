@@ -75,6 +75,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   add('client', 'graph_link_model.py', serializer.serializeGlClass(clientSerializer.runtime.generateModelBaseFile()));
   addClient('graph_link_exception', clientSerializer.runtime.generateExceptionFile());
   addClient('graph_link_lock', clientSerializer.runtime.generateLockFile());
+  addClient('graph_link_json', clientSerializer.runtime.generateJsonChecksFile());
   addClient('graph_link_cache_entry', clientSerializer.runtime.generateCacheEntryFile());
   addClient('graph_link_tag_entry', clientSerializer.runtime.generateTagEntryFile());
   addClient('graph_link_partial_query', clientSerializer.runtime.generatePartialQueryFile());

@@ -643,9 +643,26 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
     return null;
   }
 
+  static const _jsonTypeChecks = {
+    'String': 'expectString',
+    'Int': 'expectInteger',
+    'Double': 'expectNumber',
+    'Bool': 'expectBoolean',
+    'Map': 'expectObject',
+    'List': 'expectArray',
+  };
+
   @override
-  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
-      nullable ? '$json != null ? ${codec.decode(json)} : null' : codec.decode(json);
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final check = _jsonTypeChecks[codec.jsonType];
+    var source = json;
+    if (check != null && codec.canDecode && _checkPath != null && grammar.mode == CodeGenerationMode.client) {
+      _checkSink?.addImport("import * as GraphLinkJson from '../client/graph-link-json.js';");
+      source = 'GraphLinkJson.$check($json, "$_checkPath")';
+    }
+    final decoded = codec.decode(source);
+    return nullable ? '$json != null ? $decoded : null' : decoded;
+  }
 
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>

@@ -123,6 +123,31 @@ async for event in client.subscriptions.user_status_changed(user_id="user-1"):
 Breaking out of the loop (or cancelling the task) completes the subscription. All subscriptions share one
 WebSocket connection; the default adapter reconnects with exponential backoff and re-subscribes.
 
+## Custom scalar codecs
+
+A scalar can map to a Python type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "str",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "{}[7:]"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Python type your code uses. With `jsonType`, the generated decoder checks the field with `graph_link_json.expect_str`, `expect_int`, `expect_float`, `expect_bool`, `expect_dict` or `expect_list` and passes a value of the matching type to `fromJson`.
+A `null`, missing or wrong-typed value is raised as an error naming the field and the expression never runs; on a
+nullable field `null` stays `null`.
+
+Without `jsonType`, `{}` is whatever the JSON parser produced, and an expression such as `{}[7:]` fails with an arbitrary exception on a value of another type. The check raises a `TypeError`.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## Errors
 
 Operations raise `GraphLinkException` (its `.errors` is the list of `GraphLinkError`) when the response contains GraphQL

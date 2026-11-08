@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:graphlink_client_integration_tests/generated/graphlink.dart';
 import 'package:test/test.dart';
 
+import 'mock_adapter.dart';
 import 'real_server_adapter.dart';
 
 void main() {
@@ -53,6 +56,24 @@ void main() {
     test('the Long default reaches the server', () async {
       final bag = (await client.queries.echoScalarArgs(dt: 'x', dts: [])).echoScalarArgs;
       expect(bag.long, 9007199254740993);
+    });
+  });
+
+  group('a scalar with a codec and a jsonType', () {
+    GraphLinkClient fixtureClient(Object? opaque) {
+      final adapter = MockAdapter();
+      adapter.register('scalarFixture', jsonEncode({'data': {'scalarFixture': {'dt': 'x', 'long': 1, 'dts': [], 'opaque': opaque}}}));
+      return GraphLinkClient(adapter: adapter.call, wsAdapter: MockWebSocketAdapter());
+    }
+
+    for (final wire in [7, true, 1.5, {'a': 1}, ['a']]) {
+      test('rejects ${jsonEncode(wire)}', () async {
+        await expectLater(fixtureClient(wire).queries.scalarFixture(), throwsA(anything));
+      });
+    }
+
+    test('runs the template on the right type', () async {
+      expect((await fixtureClient('abc').queries.scalarFixture()).scalarFixture.opaque, 'opaque:abc');
     });
   });
 }

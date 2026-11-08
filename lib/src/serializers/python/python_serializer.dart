@@ -382,7 +382,7 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   }
 
   String _fromJsonMethod(GLTokenWithFields def, List<GLField> fields, {List<String> dispatch = const []}) {
-    final args = fields.map((f) => '${f.codeName}=${fromJsonExpr(f.type, _jsonAccess(f))}');
+    final args = fields.map((f) => '${f.codeName}=${checkedFromJsonExpr(f.type, _jsonAccess(f), '${resolveCodeName(def.token)}.${f.name.token}')}');
     return codeGenUtils.createMethod(
       decorators: ['@classmethod'],
       methodName: 'from_json',
@@ -462,9 +462,34 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   String plainFromJson(GLType type, String json) =>
       type.token == 'Float' ? codeGenUtils.nullSafe(json, 'float($json)', type.nullable) : json;
 
+  String? _checkPath;
+
+  String checkedFromJsonExpr(GLType type, String json, String path) {
+    _checkPath = path;
+    try {
+      return fromJsonExpr(type, json);
+    } finally {
+      _checkPath = null;
+    }
+  }
+
+  static const _jsonTypeChecks = {
+    'String': 'expect_str',
+    'Int': 'expect_int',
+    'Double': 'expect_float',
+    'Bool': 'expect_bool',
+    'Map': 'expect_dict',
+    'List': 'expect_list',
+  };
+
   @override
-  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
-      codeGenUtils.nullSafe(json, codec.decode(json), nullable);
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final check = _jsonTypeChecks[codec.jsonType];
+    final source = check != null && codec.canDecode && _checkPath != null
+        ? 'graph_link_json.$check($json, ${pythonStringLiteral(_checkPath!)})'
+        : json;
+    return codeGenUtils.nullSafe(json, codec.decode(source), nullable);
+  }
 
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
@@ -583,6 +608,7 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
       if (usesModelBase && body.contains(pythonModelBaseName))
         'from ..$pythonModelBaseModule import $pythonModelBaseName'.replaceAll('/', '.'),
       ...{...runtimeImports},
+      if (body.contains('graph_link_json.')) 'from ..client import graph_link_json',
       if (typeCheckingImports.isNotEmpty) ...[
         '',
         'if TYPE_CHECKING:',

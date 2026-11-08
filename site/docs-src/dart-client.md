@@ -274,6 +274,31 @@ await subscription.cancel();
 
 If you supply a `headersProvider` on the WebSocket adapter, its result is returned from `connectionInitPayload()` and sent in the `connection_init` message — your server can use it to authenticate the WebSocket session without needing HTTP headers on the upgrade request.
 
+## Custom scalar codecs
+
+A scalar can map to a Dart type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "String",
+    "jsonType": "String",
+    "fromJson": "'opaque:' + {}",
+    "toJson": "{}.substring(7)"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Dart type your code uses. With `jsonType`, the generated decoder casts the value to `String`, `int`, `double` (read as `num`), `bool`, `Map<String, dynamic>` or `List<dynamic>` before it reaches `fromJson`, so the expression needs no `as`.
+A value of another type makes the decode fail instead of reaching your expression; on a nullable field `null`
+stays `null`.
+
+Without `jsonType`, `{}` is `dynamic` and nothing is checked before your expression runs.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## Error handling
 
 If the server returns a GraphQL error, the generated client throws a `GraphLinkException` containing the list of errors from the response. Wrap calls in a try/catch:

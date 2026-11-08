@@ -492,9 +492,21 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
   @override
   String modelToJson(GLType type, String value) => JavaCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
 
+  static const _jsonTypeCasts = {
+    'String': 'java.util.Objects.requireNonNull((String)@)',
+    'Int': 'new java.math.BigDecimal(((Number)@).toString()).longValueExact()',
+    'Double': '((Number)@).doubleValue()',
+    'Bool': 'java.util.Objects.requireNonNull((Boolean)@)',
+    'Map': 'java.util.Objects.requireNonNull((Map<String, Object>)@)',
+    'List': 'java.util.Objects.requireNonNull((List<?>)@)',
+  };
+
   @override
-  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
-      JavaCodeGenUtils.nullSafeExpr(json, codec.decode(json), nullable);
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final cast = _jsonTypeCasts[codec.jsonType];
+    final source = cast != null && codec.canDecode ? cast.replaceAll('@', json) : json;
+    return JavaCodeGenUtils.nullSafeExpr(json, codec.decode(source), nullable);
+  }
 
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>

@@ -321,9 +321,21 @@ class DartSerializer extends GLSerializer with JsonExpressions {
     return '$json as $serialized';
   }
 
+  static const _jsonTypeCasts = {
+    'String': '(@ as String)',
+    'Int': '(@ as int)',
+    'Double': '(@ as num).toDouble()',
+    'Bool': '(@ as bool)',
+    'Map': '(@ as Map<String, dynamic>)',
+    'List': '(@ as List<dynamic>)',
+  };
+
   @override
-  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>
-      DartCodeGenUtils.nullSafeExpr(json, codec.decode(json), nullable);
+  String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final cast = _jsonTypeCasts[codec.jsonType];
+    final source = cast != null && codec.canDecode ? cast.replaceAll('@', json) : json;
+    return DartCodeGenUtils.nullSafeExpr(json, codec.decode(source), nullable);
+  }
 
   @override
   String scalarToJson(GLScalarCodec codec, String value, {required bool nullable}) =>
