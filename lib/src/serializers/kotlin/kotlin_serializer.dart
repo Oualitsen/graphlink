@@ -481,7 +481,7 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
-    final casted = list.nullable ? '($json as? $_anyListType)' : '($json as $_anyListType)';
+    final casted = list.nullable ? '($json as $_anyListType?)' : '($json as $_anyListType)';
     return element == body ? casted : KotlinCodeGenUtils.mapCall(receiver: casted, param: element, body: body, nullable: list.nullable);
   }
 
@@ -491,7 +491,7 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   @override
   String enumFromJson(GLType type, String json) {
     final codeName = resolveCodeName(type.token);
-    if (type.nullable) return KotlinCodeGenUtils.letCall(receiver: '($json as? String)', body: '$codeName.fromJson(it)');
+    if (type.nullable) return KotlinCodeGenUtils.letCall(receiver: '($json as String?)', body: '$codeName.fromJson(it)');
     return '$codeName.fromJson($json as String)!!';
   }
 
@@ -499,7 +499,7 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   String modelFromJson(GLType type, String json) {
     final codeName = resolveCodeName(type.token);
     if (type.nullable) {
-      return KotlinCodeGenUtils.letCall(receiver: '($json as? Map<*, *>)', body: '$codeName.fromJson(it as $_mapType)');
+      return KotlinCodeGenUtils.letCall(receiver: '($json as Map<*, *>?)', body: '$codeName.fromJson(it as $_mapType)');
     }
     return '$codeName.fromJson($json as $_mapType)';
   }
@@ -547,15 +547,15 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
     final exact = _kotlinExactNumberCasts[token];
     if (exact != null) {
       final convert = 'java.math.BigDecimal(it.toString()).$exact';
-      if (nullable) return '($access as? Number)?.let { $convert }';
+      if (nullable) return '($access as Number?)?.let { $convert }';
       return '($access as Number).let { $convert }';
     }
     if (_kotlinNumbers.contains(token)) {
       final method = _kotlinNumberCasts[token]!;
-      if (nullable) return '($access as? Number)?.$method';
+      if (nullable) return '($access as Number?)?.$method';
       return '($access as Number).$method';
     }
-    if (nullable) return '$access as? $token';
+    if (nullable) return '$access as $token?';
     return '$access as $token';
   }
 

@@ -122,15 +122,15 @@ void main() {
       expect(lines(out), containsAllInOrder([
         'companion object {',
         'fun fromJson(map: Map<String, Any?>): CreateUserInput = CreateUserInput(',
-        'id = map["id"] as? String,',
+        'id = map["id"] as String?,',
         'name = map["name"] as String,',
         'age = (map["age"] as Number).let { java.math.BigDecimal(it.toString()).intValueExact() },',
-        'score = (map["score"] as? Number)?.toDouble(),',
+        'score = (map["score"] as Number?)?.toDouble(),',
         'active = map["active"] as Boolean,',
-        'bigNum = (map["bigNum"] as? Number)?.let { java.math.BigDecimal(it.toString()).longValueExact() },',
-        'role = (map["role"] as? String)?.let { Role.fromJson(it) },',
+        'bigNum = (map["bigNum"] as Number?)?.let { java.math.BigDecimal(it.toString()).longValueExact() },',
+        'role = (map["role"] as String?)?.let { Role.fromJson(it) },',
         'role2 = Role.fromJson(map["role2"] as String)!!,',
-        'address = (map["address"] as? Map<*, *>)?.let { AddressInput.fromJson(it as Map<String, Any?>) },',
+        'address = (map["address"] as Map<*, *>?)?.let { AddressInput.fromJson(it as Map<String, Any?>) },',
         'tags = (map["tags"] as List<*>).map { e0 -> e0 as String },',
         'roles = (map["roles"] as List<*>).map { e0 -> Role.fromJson(e0 as String)!! },',
       ]));
@@ -237,9 +237,9 @@ void main() {
         'fun fromJson(map: Map<String, Any?>): User = User(',
         'id = map["id"] as String,',
         'name = map["name"] as String,',
-        'email = map["email"] as? String,',
+        'email = map["email"] as String?,',
         'role = Role.fromJson(map["role"] as String)!!,',
-        'address = (map["address"] as? Map<*, *>)?.let { Address.fromJson(it as Map<String, Any?>) },',
+        'address = (map["address"] as Map<*, *>?)?.let { Address.fromJson(it as Map<String, Any?>) },',
       ]));
     });
   });
