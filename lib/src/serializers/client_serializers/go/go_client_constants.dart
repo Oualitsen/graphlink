@@ -188,6 +188,39 @@ func glPlain(v any) any {
 	return v
 }
 
+func glMapAny(v any) (map[string]any, error) {
+	if v == nil {
+		return nil, glErrNull
+	}
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("expected an object, got %T", v)
+	}
+	return m, nil
+}
+
+func glListAny(v any) ([]any, error) {
+	if v == nil {
+		return nil, glErrNull
+	}
+	l, ok := v.([]any)
+	if !ok {
+		return nil, fmt.Errorf("expected an array, got %T", v)
+	}
+	return l, nil
+}
+
+func glThen[W, T any](read func(any) (W, error), convert func(W) T) func(any) (T, error) {
+	return func(v any) (T, error) {
+		w, err := read(v)
+		if err != nil {
+			var zero T
+			return zero, err
+		}
+		return convert(w), nil
+	}
+}
+
 func glAny(v any) (any, error) {
 	return glPlain(v), nil
 }

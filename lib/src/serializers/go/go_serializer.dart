@@ -49,6 +49,24 @@ const _importBySelector = {
   'regexp': 'regexp',
 };
 
+const _jsonTypeReaders = {
+  'String': 'glString',
+  'Int': 'glInt',
+  'Double': 'glFloat64',
+  'Bool': 'glBool',
+  'Map': 'glMapAny',
+  'List': 'glListAny',
+};
+
+const _jsonTypeGoTypes = {
+  'String': 'string',
+  'Int': 'int',
+  'Double': 'float64',
+  'Bool': 'bool',
+  'Map': 'map[string]any',
+  'List': '[]any',
+};
+
 class GoSerializer extends GLSerializer {
   @override
   late final GLMappingSerializer mapping = GoMappingSerializer(this);
@@ -478,6 +496,10 @@ class GoSerializer extends GLSerializer {
     final token = type.token;
     final codec = fromJsonCodecOf(type);
     if (codec != null) {
+      final jsonType = codec.jsonType;
+      if (jsonType != null) {
+        return 'glThen(${_jsonTypeReaders[jsonType]}, func(v ${_jsonTypeGoTypes[jsonType]}) ${_baseTypeName(type)} { return ${scalarFromJson(codec, 'v', nullable: false)} })';
+      }
       return 'func(v any) (${_baseTypeName(type)}, error) { return ${scalarFromJson(codec, 'v', nullable: false)}, nil }';
     }
     if (grammar.isEnum(token)) return '${resolveCodeName(token)}FromJson';

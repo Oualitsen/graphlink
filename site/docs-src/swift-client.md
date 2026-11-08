@@ -456,8 +456,8 @@ expression runs inside the generated decoder, so a trap in it terminates the pro
 `fromJson` free of `!`.
 
 `jsonType` only checks the value that arrives. An expression that can fail on a valid wire value (a date string
-that does not parse) still has to handle that itself. `jsonType` is read by the Swift generator only; other
-targets ignore it.
+that does not parse) still has to handle that itself. `jsonType` is read by the Swift and Go generators; the
+other targets ignore it for now.
 
 ## Known limitations
 

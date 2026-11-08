@@ -183,6 +183,35 @@ and reports exact progress; a `Length` of `-1` is sent with chunked transfer enc
 [Persisted Queries](persisted-queries.md). With GET enabled, `NewGraphLinkClientWithHttp` wires the GET adapter; when
 building the client yourself set `GetAdapter` in `GraphLinkClientOptions`.
 
+## Custom scalar codecs
+
+A scalar can map to a Go type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "string",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "strings.TrimPrefix({}, \"opaque:\")"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Go type your code uses. With `jsonType`, the generated decoder reads the field
+with a checked reader and passes a value of the matching Go type (`string`, `int`, `float64`, `bool`,
+`map[string]any`, `[]any`) to `fromJson`, so the expression needs no type assertion. A `null`, missing or
+wrong-typed value is returned as an error naming the field and the expression never runs; on a nullable field
+`null` stays `nil`.
+
+Without `jsonType`, `{}` is an `any`, and an assertion such as `{}.(string)` panics on a value of another type. A
+panic is not a returned error, so it ends the program unless something recovers it. Set `jsonType` and keep
+`fromJson` free of unchecked assertions.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## Known limitations
 
 - **Non-null cycles do not compile.** Struct fields are plain values, so `type A { b: B! }` with `type B { a: A! }`

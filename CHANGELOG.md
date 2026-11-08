@@ -780,3 +780,5 @@
 
 - **`jsonType` for Swift scalar codecs** — a `typeMappings` object may declare `"jsonType": "String" | "Int" | "Double" | "Bool" | "Map" | "List"`. The Swift generator then reads the field through the checked `gl*` helper and passes a value of that type to `fromJson`, so a template no longer needs `as!` and a `null` or wrong-typed value throws a `GraphLinkDecodeError` instead of trapping. Omit it and the template receives an untyped value, as before. The other targets ignore the key for now.
 
+- **`jsonType` for Go scalar codecs** — the `jsonType` key (see the Swift entry) is now read by the Go generator. The field is read with a checked reader (`glString`, `glInt`, `glFloat64`, `glBool`, `glMapAny`, `glListAny`) and the template receives a typed value, so `fromJson` needs no `{}.(string)` assertion, and a `null` or wrong-typed value is returned as an error instead of panicking. Omit it and the template receives an `any`, as before.
+
