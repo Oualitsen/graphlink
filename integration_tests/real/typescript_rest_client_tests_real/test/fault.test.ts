@@ -96,3 +96,25 @@ describe('fault injection', () => {
     expect(failure[0].message).toContain('no data');
   });
 });
+
+describe('a call that the caller gives up on', () => {
+  const call = (c: GraphLinkClient, op: string): Promise<unknown> => {
+    if (op === 'g') return c.queries.getCount();
+    if (op === 'c') return c.queries.count();
+    if (op === 'k') return c.queries.cachedStatus({ code: 200 });
+    return c.queries.status({ code: 200 });
+  };
+
+  for (const op of 'gcpk') {
+    it(`${op}: the timeout fires promptly and the client still works`, async () => {
+      await post('/_reset');
+      const fresh = newClient({ baseUrl: faultUrl });
+      await post('/_arm?fault=slow');
+      const started = Date.now();
+      const giveUp = new Promise((_, reject) => setTimeout(() => reject(new Error('gave up')), 200));
+      await expect(Promise.race([call(fresh, op), giveUp])).rejects.toThrow('gave up');
+      expect(Date.now() - started).toBeLessThan(700);
+      await call(fresh, op);
+    }, 15000);
+  }
+});

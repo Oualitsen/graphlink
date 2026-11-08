@@ -12,6 +12,7 @@ import '../../dart_rest_client_tests_real/test/transport_test.dart' as transport
 import '../../dart_rest_client_tests_real/test/edge_cases_test.dart' as edge_cases;
 import '../../dart_rest_client_tests_real/test/lenient_test.dart' as lenient;
 import '../../dart_rest_client_tests_real/test/fault_test.dart' as fault;
+import '../../dart_rest_client_tests_real/test/cancel_test.dart' as cancel;
 import 'package:test/test.dart';
 
 void main() {
@@ -28,5 +29,6 @@ void main() {
   group('cache', cache.main);
   group('transport', transport.main);
   group('lenient', lenient.main);
+  group('cancel', cancel.main);
   group('fault', fault.main);
 }

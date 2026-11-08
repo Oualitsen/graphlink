@@ -58,7 +58,7 @@ Still open:
   operations, cache rules, uploads, downloads, headers, forms and edge cases in fewer, wider tests. The one missing behaviour, a raw
   upload stream that fails mid-way, now has a test (`TestRawBodyStreamThatFailsMidWay...`, passing).
 - `dart_rest_dio_client_tests_real` has no tests of its own; it runs the http package's tests with `REST_VARIANT=dio`.
-- Timeout: no evidence in Python, Swift, Go. Cancellation: only Swift.
+- Timeout and cancellation: covered in every language, see section 2a.
 
 ### 1.3 Mock suites
 
@@ -104,8 +104,14 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 UTF-16 and UTF-32 bodies (`utf16le-bom`, `utf16be-bom`, `utf16-charset`, `utf32le-bom`) are expected to give `either`: RFC 8259 requires UTF-8 on the
 wire, so a client may decode them (Dart, Kotlin do) or fail with a clear error (TypeScript, Java, Swift, Python, Go do), but never hang or crash.
 
-Not yet covered by the suite: timeouts and cancellation (`slow`, `hang` faults exist in the server, no test uses a client timeout),
-cookies and repeated headers on the client side, dates, GraphQL-only behaviours that need the Spring schema (`@glCaptureErrors`
+Cancellation and timeouts: every REST real package has a cancel test (`cancel_test.go`, `test_cancel.py`, `CancelTests.swift`, `CancelTest.kt`,
+`CancelTest.java` (blocking and the three reactive flavors), `cancel_test.dart`, a block in `fault.test.ts`). Each arms `slow` (1 s), gives up after 200 ms for
+GraphQL, REST, REST with a path argument and a cached REST operation, expects the call to end in under 700 ms, and calls again on the same client. Go, Swift,
+Kotlin and Python cancel through their own mechanism (`context`, `Task`, coroutine, `asyncio`); Java by thread interrupt. Dart and TypeScript have no way to cancel an
+in-flight request through the generated API, so their test only proves that a caller-side timeout leaves the client usable. The Kotlin test found that the OkHttp
+adapters did not abort a cancelled call (fixed).
+
+Not yet covered by the suite: cookies and repeated headers on the client side, dates, GraphQL-only behaviours that need the Spring schema (`@glCaptureErrors`
 with partial data, `staleIfOffline` on unions, `strictEnums`).
 
 ## 3. Behaviours with no evidence in any language (REST)

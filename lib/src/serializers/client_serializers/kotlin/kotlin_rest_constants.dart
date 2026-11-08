@@ -282,6 +282,12 @@ open class GraphLinkRestResolver(
 
 const kotlinRestOkHttpAdapter = r'''
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import okhttp3.Call
 import kotlinx.coroutines.withContext
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -307,7 +313,7 @@ class DefaultGraphLinkRestAdapter(
             .url(url(request))
             .method(request.method, body(request, contentType))
         headers.filterKeys { !it.equals("Content-Type", ignoreCase = true) }.forEach { (k, v) -> builder.header(k, v) }
-        val response = httpClient.newCall(builder.build()).execute()
+        val response = glCancellable(httpClient.newCall(builder.build())) { it.execute() }
         val responseHeaders = response.headers.toMultimap().mapValues { it.value.joinToString(",") }
         RestResponse(response.code, response.body!!.byteStream(), responseHeaders)
     }
@@ -372,6 +378,22 @@ class DefaultGraphLinkRestAdapter(
                 buffered.flush()
             }
         }
+    }
+}
+
+private suspend fun <T> glCancellable(call: Call, block: (Call) -> T): T = coroutineScope {
+    val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+    val watcher = launch(Dispatchers.Default) {
+        try { awaitCancellation() } finally { if (!finished.get()) call.cancel() }
+    }
+    try {
+        block(call)
+    } catch (e: java.io.IOException) {
+        currentCoroutineContext().ensureActive()
+        throw e
+    } finally {
+        finished.set(true)
+        watcher.cancel()
     }
 }
 ''';
