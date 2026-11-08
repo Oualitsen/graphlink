@@ -146,8 +146,16 @@ serializers/
       flutter_inputs_serializer.dart          # Flutter InputFormWidget generation
       flutter_inputs_companion_serializer.dart
       flutter_inputs_field_serializer.dart
-      flutter_inputs_state_serializer.dart
       flutter_inputs_date_serializer.dart
+      flutter_inputs_state_serializer.dart    # State class assembly + build()/validate()
+      flutter_inputs_widget_serializer.dart   # The InputFormWidget (Form) class
+      flutter_inputs_rows_serializer.dart     # _visibleRows, per-field row methods, build context
+      flutter_inputs_read_serializer.dart     # read()/tryRead()/buildResult
+      flutter_inputs_reset_serializer.dart    # reset() and isDirty
+      flutter_inputs_change_serializer.dart   # onFieldChanged, onChange scheduling, async validation
+      flutter_inputs_stepper_serializer.dart  # Stepper steps and controls
+      flutter_inputs_layout_helpers_serializer.dart  # label/field/decoration helpers
+      flutter_inputs_error_summary_serializer.dart   # Error summary widget, scroll-to-error
       flutter_inputs_draft_serializer.dart    # Draft persistence (persistDrafts): snapshot/restore/save
       flutter_inputs_radio_binding.dart       # RadioListTile vs RadioGroup per SDK version
       flutter_inputs_shared_serializer.dart

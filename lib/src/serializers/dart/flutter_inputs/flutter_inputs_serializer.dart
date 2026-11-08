@@ -14,7 +14,9 @@ import 'package:graphlink/src/utils.dart' as gl_utils;
 import 'flutter_inputs_companion_serializer.dart';
 import 'flutter_inputs_date_serializer.dart';
 import 'flutter_inputs_draft_serializer.dart';
+import 'flutter_inputs_error_summary_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
+import 'flutter_inputs_widget_serializer.dart';
 import 'flutter_inputs_shared_serializer.dart';
 import 'flutter_inputs_state_serializer.dart';
 import 'flutter_inputs_type_helpers.dart';
@@ -34,6 +36,8 @@ class FlutterInputsSerializer {
   late final _date = FlutterInputsDateSerializer(_u, _config, _types, _fields);
   late final _drafts = FlutterInputsDraftSerializer(_u, _types);
   late final _state = FlutterInputsStateSerializer(_u, _config, _types, _fields, _date, _drafts);
+  late final _widget = FlutterInputsWidgetSerializer(_u, _config, _types, _drafts);
+  late final _errors = FlutterInputsErrorSummarySerializer(_u, _types);
 
   FlutterInputsSerializer(this._parser, this._dartSerializer, this._config, this.importPrefix);
 
@@ -317,11 +321,11 @@ class FlutterInputsSerializer {
       enumValues: ['beside', 'above', 'floatingLabel'],
     ));
     buffer.writeln();
-    buffer.writeln(_state.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
+    buffer.writeln(_widget.serializeWidgetClass(inputName, listFields, formFields, enumFields, boolFields, textFields, dateEligibleFields, inputFields, inputListFields));
     buffer.writeln();
     buffer.write(_state.serializeStateClass(inputName, fields, listFields, textFields, enumFields, boolFields, intFields, dateEligibleFields, inputFields));
     buffer.writeln();
-    buffer.writeln(_state.serializeErrorSummaryClass(inputName, fields, textFields, enumFields, boolFields));
+    buffer.writeln(_errors.serializeErrorSummaryClass(inputName, fields, textFields, enumFields, boolFields));
 
     final file = _dartSerializer.serializeGlClass(GLClassModel(
       imports: imports.toList(),
