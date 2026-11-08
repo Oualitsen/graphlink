@@ -430,6 +430,35 @@ expect a few reports for a small body, not one per chunk.
 `GLUpload` no longer exposes a `data` property; call `try await upload.readAll()` if you need the bytes (for example in a
 custom `GraphLinkMultipartAdapter`).
 
+## Custom scalar codecs
+
+A scalar can map to a Swift type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "String",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "String({}.dropFirst(7))"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Swift type your code uses. With `jsonType`, the generated decoder reads the
+field through the same checked helper as a built-in scalar and passes a value of that type to `fromJson`, so the
+expression needs no cast. A `null`, missing or wrong-typed value throws a `GraphLinkDecodeError` naming the field
+and the expression never runs; on a nullable field `null` stays `nil`.
+
+Without `jsonType`, `{}` is an untyped `Any?`. Swift cannot catch a failed `as!`, a force unwrap or `try!`, and the
+expression runs inside the generated decoder, so a trap in it terminates the process. Set `jsonType` and keep
+`fromJson` free of `!`.
+
+`jsonType` only checks the value that arrives. An expression that can fail on a valid wire value (a date string
+that does not parse) still has to handle that itself. `jsonType` is read by the Swift generator only; other
+targets ignore it.
+
 ## Known limitations
 
 - **Encoding `unknownValue__` does not throw.** Dart, Java, Kotlin, TypeScript, Python and Go all refuse to encode the
