@@ -101,6 +101,9 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 | ~~UTF-8 BOM rejected~~ fixed: every client strips a leading BOM from a text or JSON body | Python, Go, Java, Kotlin |
 | ~~GraphQL transport drops the HTTP status~~ fixed with the item above | all |
 
+UTF-16 and UTF-32 bodies (`utf16le-bom`, `utf16be-bom`, `utf16-charset`, `utf32le-bom`) are expected to give `either`: RFC 8259 requires UTF-8 on the
+wire, so a client may decode them (Dart, Kotlin do) or fail with a clear error (TypeScript, Java, Swift, Python, Go do), but never hang or crash.
+
 Not yet covered by the suite: timeouts and cancellation (`slow`, `hang` faults exist in the server, no test uses a client timeout),
 cookies and repeated headers on the client side, dates, GraphQL-only behaviours that need the Spring schema (`@glCaptureErrors`
 with partial data, `staleIfOffline` on unions, `strictEnums`).
