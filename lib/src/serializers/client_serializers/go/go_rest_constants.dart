@@ -57,7 +57,8 @@ func (r *RestResponse) IsSuccess() bool { return r.Status >= 200 && r.Status < 3
 
 func (r *RestResponse) Bytes() ([]byte, error) {
 	defer r.Body.Close()
-	return io.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
+	return bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")), err
 }
 
 func (r *RestResponse) Text() (string, error) {

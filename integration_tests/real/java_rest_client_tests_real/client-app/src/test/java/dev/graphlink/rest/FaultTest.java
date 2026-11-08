@@ -22,12 +22,7 @@ import org.junit.jupiter.api.TestFactory;
 class FaultTest {
     private static final Map<Character, String> OP_NAMES = Map.of('g', "GraphQL getCount", 'c', "REST count", 'p', "REST status");
 
-    private static final String BOM = "Jackson rejects a UTF-8 byte order mark";
-
-    private static final Map<String, String> KNOWN_DEFECTS = Map.ofEntries(
-        Map.entry("bom:g", BOM),
-        Map.entry("bom:c", BOM),
-        Map.entry("bom:p", BOM));
+    private static final Map<String, String> KNOWN_DEFECTS = Map.of();
 
     private static final Map<String, String> WEBCLIENT_DEFECTS = Map.of(
         "wrong-charset:g", "WebClient rejects a Content-Type with an unknown charset",

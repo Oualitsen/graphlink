@@ -89,7 +89,7 @@ class RestResponse:
         return await rest_read_all(self.stream)
 
     async def text(self) -> str:
-        return (await self.bytes()).decode("utf-8")
+        return (await self.bytes()).decode("utf-8-sig")
 
     async def json(self) -> Any:
         body = await self.text()

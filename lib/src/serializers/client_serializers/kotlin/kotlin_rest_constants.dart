@@ -51,7 +51,7 @@ class RestResponse(
 
     fun bytes(): ByteArray = stream.use { it.readBytes() }
 
-    fun text(): String = String(bytes(), Charsets.UTF_8)
+    fun text(): String = String(bytes(), Charsets.UTF_8).removePrefix(Char(0xFEFF).toString())
 
     fun drain() {
         stream.use { it.copyTo(java.io.OutputStream.nullOutputStream()) }

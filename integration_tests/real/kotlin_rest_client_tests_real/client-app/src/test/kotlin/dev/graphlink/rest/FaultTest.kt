@@ -27,13 +27,10 @@ private const val FAULT_PORT = 9951
 private val faultUrl = "http://127.0.0.1:$FAULT_PORT"
 
 private const val NULL_FOR_SHAPE = "a JSON array or string where an object is expected decodes to null"
-private const val BOM = "kotlinx.serialization rejects a UTF-8 byte order mark"
 
 private val knownDefects = mapOf(
     "json-array-top-level:p" to NULL_FOR_SHAPE,
     "json-string-top-level:p" to NULL_FOR_SHAPE,
-    "bom:c" to BOM,
-    "bom:p" to BOM,
 )
 
 private val opNames = mapOf('g' to "GraphQL getCount", 'c' to "REST count", 'p' to "REST status")

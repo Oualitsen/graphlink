@@ -149,7 +149,10 @@ public final class RestResponse implements Closeable {
         }
     }
 
-    public String text() { return new String(bytes(), StandardCharsets.UTF_8); }
+    public String text() {
+        String value = new String(bytes(), StandardCharsets.UTF_8);
+        return !value.isEmpty() && value.charAt(0) == 0xFEFF ? value.substring(1) : value;
+    }
 
     public void drain() {
         try (InputStream in = stream) {

@@ -18,9 +18,6 @@ OP_NAMES = {"g": "GraphQL getCount", "c": "REST count", "p": "REST status"}
 
 UNCHECKED = "the generated decoder does not check scalar types at run time"
 KNOWN_DEFECTS: Dict[str, str] = {
-    "bom:g": "json.loads rejects a UTF-8 byte order mark",
-    "bom:c": "json.loads rejects a UTF-8 byte order mark",
-    "bom:p": "json.loads rejects a UTF-8 byte order mark",
     "int-as-string:g": UNCHECKED,
     "int-as-string:c": UNCHECKED,
     "int-bool:g": UNCHECKED,
