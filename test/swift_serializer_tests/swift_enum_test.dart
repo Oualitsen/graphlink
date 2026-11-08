@@ -37,12 +37,14 @@ void main() {
       ]));
     });
 
-    test('fromJson force-unwraps rawValue init', () {
+    test('fromJson throws on an unknown raw value', () {
       final out = _serializer(g).doSerializeEnumDefinition(g.enums['Status']!);
       expect(lines(out), containsAllInOrder([
-        'public static func fromJson(_ value: String) -> Status {',
-        'return Status(rawValue: value)!',
+        'public static func fromJson(_ value: String) throws -> Status {',
+        'if let result = Status(rawValue: value) {',
+        'return result',
         '}',
+        'throw GraphLinkDecodeError("Unknown Status value: " + value)',
       ]));
     });
   });

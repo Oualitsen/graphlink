@@ -45,6 +45,108 @@ public enum GraphLinkJson {
 }
 ''';
 
+const swiftGraphLinkDecode = r'''
+func glPresent(_ value: Any??) -> Any? {
+    guard let outer = value, let inner = outer, !(inner is NSNull) else { return nil }
+    return inner
+}
+
+func glIsBool(_ number: NSNumber) -> Bool {
+    String(cString: number.objCType) == "c"
+}
+
+func glTypeName(_ value: Any) -> String {
+    if let number = value as? NSNumber { return glIsBool(number) ? "Bool" : "number" }
+    if value is String { return "String" }
+    if value is [Any?] || value is [Any] { return "array" }
+    if value is [String: Any?] || value is [String: Any] { return "object" }
+    return String(describing: type(of: value))
+}
+
+func glRequired(_ value: Any??, _ path: String) throws -> Any {
+    guard let present = glPresent(value) else { throw GraphLinkDecodeError("\(path): missing or null") }
+    return present
+}
+
+func glExpected(_ expected: String, _ value: Any, _ path: String) -> GraphLinkDecodeError {
+    GraphLinkDecodeError("\(path): expected \(expected), got \(glTypeName(value))")
+}
+
+func glString(_ value: Any??, _ path: String) throws -> String {
+    let inner = try glRequired(value, path)
+    guard let string = inner as? String else { throw glExpected("String", inner, path) }
+    return string
+}
+
+func glBool(_ value: Any??, _ path: String) throws -> Bool {
+    let inner = try glRequired(value, path)
+    guard let number = inner as? NSNumber, glIsBool(number) else { throw glExpected("Bool", inner, path) }
+    return number.boolValue
+}
+
+func glInt(_ value: Any??, _ path: String) throws -> Int {
+    let inner = try glRequired(value, path)
+    guard let number = inner as? NSNumber, !glIsBool(number) else { throw glExpected("Int", inner, path) }
+    let integer = number.int64Value
+    guard Double(integer) == number.doubleValue, let result = Int(exactly: integer) else {
+        throw GraphLinkDecodeError("\(path): expected Int, got \(number)")
+    }
+    return result
+}
+
+func glDouble(_ value: Any??, _ path: String) throws -> Double {
+    let inner = try glRequired(value, path)
+    guard let number = inner as? NSNumber, !glIsBool(number) else { throw glExpected("Double", inner, path) }
+    return number.doubleValue
+}
+
+func glMap(_ value: Any??, _ path: String) throws -> [String: Any?] {
+    let inner = try glRequired(value, path)
+    guard let map = inner as? [String: Any?] else { throw glExpected("object", inner, path) }
+    return map
+}
+
+func glList(_ value: Any??, _ path: String) throws -> [Any?] {
+    let inner = try glRequired(value, path)
+    guard let list = inner as? [Any?] else { throw glExpected("array", inner, path) }
+    return list
+}
+
+func glCast<T>(_ value: Any??, _ path: String, _ type: T.Type) throws -> T {
+    let inner = try glRequired(value, path)
+    guard let result = inner as? T else { throw glExpected("\(T.self)", inner, path) }
+    return result
+}
+
+func glStringOrNil(_ value: Any??, _ path: String) throws -> String? {
+    glPresent(value) == nil ? nil : try glString(value, path)
+}
+
+func glBoolOrNil(_ value: Any??, _ path: String) throws -> Bool? {
+    glPresent(value) == nil ? nil : try glBool(value, path)
+}
+
+func glIntOrNil(_ value: Any??, _ path: String) throws -> Int? {
+    glPresent(value) == nil ? nil : try glInt(value, path)
+}
+
+func glDoubleOrNil(_ value: Any??, _ path: String) throws -> Double? {
+    glPresent(value) == nil ? nil : try glDouble(value, path)
+}
+
+func glMapOrNil(_ value: Any??, _ path: String) throws -> [String: Any?]? {
+    glPresent(value) == nil ? nil : try glMap(value, path)
+}
+
+func glListOrNil(_ value: Any??, _ path: String) throws -> [Any?]? {
+    glPresent(value) == nil ? nil : try glList(value, path)
+}
+
+func glCastOrNil<T>(_ value: Any??, _ path: String, _ type: T.Type) throws -> T? {
+    glPresent(value) == nil ? nil : try glCast(value, path, type)
+}
+''';
+
 // ── Cache store ──────────────────────────────────────────────────────────────
 //
 // Every method is `async` — not because the protocol requires concurrency,
@@ -111,10 +213,10 @@ public struct GraphLinkCacheEntry: Sendable {
         ["data": data, "expiry": expiry]
     }
 
-    public static func fromJson(_ map: [String: Any?]) -> GraphLinkCacheEntry {
+    public static func fromJson(_ map: [String: Any?]) throws -> GraphLinkCacheEntry {
         GraphLinkCacheEntry(
-            data: map["data"] as! String,
-            expiry: map["expiry"] as! Int
+            data: try glString(map["data"], "GraphLinkCacheEntry.data"),
+            expiry: try glInt(map["expiry"], "GraphLinkCacheEntry.expiry")
         )
     }
 }
@@ -143,6 +245,11 @@ public struct GraphLinkTagEntry: Sendable {
     public static func fromJson(_ map: [String: Any?]) -> GraphLinkTagEntry {
         let list = (map["keys"] as? [Any?])?.compactMap { \$0 as? String } ?? []
         return GraphLinkTagEntry(keys: Set(list))
+    }
+
+    public static func read(_ text: String) -> GraphLinkTagEntry {
+        guard let map = try? GraphLinkJson.decode(text.data(using: .utf8) ?? Data()) else { return GraphLinkTagEntry() }
+        return fromJson(map)
     }
 }
 ''';
@@ -398,7 +505,10 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
 
     func getFromCache(_ key: String, tags: [String], staleIfOffline: Bool) async throws -> GraphLinkCacheEntry? {
         guard let result = await store.get(key) else { return nil }
-        let entry = GraphLinkCacheEntry.fromJson(try GraphLinkJson.decode(result.data(using: .utf8) ?? Data()))
+        guard let entry = try? GraphLinkCacheEntry.fromJson(GraphLinkJson.decode(result.data(using: .utf8) ?? Data())) else {
+            await store.invalidate(key)
+            return nil
+        }
         if entry.isExpired() {
             if staleIfOffline { return entry.asStale() }
             await store.invalidate(key)
@@ -413,7 +523,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
             try await tagLocks.run(tag) {
                 let tKey = self.tagKey(tag)
                 if let data = await self.store.get(tKey) {
-                    let entry = GraphLinkTagEntry.fromJson(try GraphLinkJson.decode(data.data(using: .utf8) ?? Data()))
+                    let entry = GraphLinkTagEntry.read(data)
                     for k in entry.keys { await self.store.invalidate(k) }
                     await self.store.invalidate(tKey)
                 }
@@ -427,7 +537,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
                 let tKey = self.tagKey(tag)
                 var entry: GraphLinkTagEntry
                 if let data = await self.store.get(tKey) {
-                    entry = GraphLinkTagEntry.fromJson(try GraphLinkJson.decode(data.data(using: .utf8) ?? Data()))
+                    entry = GraphLinkTagEntry.read(data)
                 } else {
                     entry = GraphLinkTagEntry()
                 }
@@ -443,7 +553,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
             try await tagLocks.run(tag) {
                 let tKey = self.tagKey(tag)
                 guard let data = await self.store.get(tKey) else { return }
-                var entry = GraphLinkTagEntry.fromJson(try GraphLinkJson.decode(data.data(using: .utf8) ?? Data()))
+                var entry = GraphLinkTagEntry.read(data)
                 entry.remove(key)
                 if entry.keys.isEmpty {
                     await self.store.invalidate(tKey)
@@ -1411,10 +1521,11 @@ public struct DefaultGraphLinkURLSessionGetAdapter: Sendable {
     }
 
     public func execute(_ payload: Data${withOperationName ? ', _ operationName: String' : ''}) async throws -> Data {
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { throw URLError(.badURL) }
         let query = try GraphLinkGetRequest.queryString(payload)
         components.percentEncodedQuery = [components.percentEncodedQuery, query].compactMap { \$0 }.joined(separator: "&")
-        var request = URLRequest(url: components.url!)
+        guard let requestUrl = components.url else { throw URLError(.badURL) }
+        var request = URLRequest(url: requestUrl)
         request.httpMethod = "GET"
         headersProvider?().forEach { request.setValue(\$1, forHTTPHeaderField: \$0) }
         let (data, response) = try await session.data(for: request)

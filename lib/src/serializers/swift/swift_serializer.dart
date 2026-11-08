@@ -22,6 +22,13 @@ import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/swift/swift_mapping_serializer.dart';
 
+const _decodeHelpers = {
+  'String': 'glString',
+  'Int': 'glInt',
+  'Double': 'glDouble',
+  'Bool': 'glBool',
+};
+
 class SwiftSerializer extends GLSerializer with JsonExpressions {
   @override
   late final GLMappingSerializer mapping = SwiftMappingSerializer(this);
@@ -115,10 +122,17 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       methodName: 'fromJson',
       arguments: ['_ value: String'],
       statements: [
-        unknown != null
-            ? 'return ${def.codeName}(rawValue: value) ?? .${unknown.codeName}'
-            : 'return ${def.codeName}(rawValue: value)!',
+        if (unknown != null)
+          'return ${def.codeName}(rawValue: value) ?? .${unknown.codeName}'
+        else ...[
+          codeGenUtils.ifStatement(
+            condition: 'let result = ${def.codeName}(rawValue: value)',
+            ifBlockStatements: ['return result'],
+          ),
+          'throw GraphLinkDecodeError("Unknown ${def.codeName} value: " + value)',
+        ],
       ],
+      throws: unknown == null,
     )}';
 
     return codeGenUtils.enumDecl(
@@ -394,10 +408,10 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String listFromJson(GLType list, String json, String element, String body, GLImportSink? context) {
-    final casted = list.nullable ? '($json as? [Any?])' : '($json as! [Any?])';
+    final casted = 'try ${list.nullable ? 'glListOrNil' : 'glList'}($json, ${_pathLiteral()})';
     if (element == body) return casted;
     final mapped = SwiftCodeGenUtils.mapCall(receiver: casted, param: element, body: body, chainThroughOptional: list.nullable);
-    return '${_tryIf(grammar.decodesWithThrows(list.firstType.token))}$mapped';
+    return mapped;
   }
 
   @override
@@ -406,8 +420,12 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
   @override
   String enumFromJson(GLType type, String json) {
     final codeName = resolveCodeName(type.token);
-    if (type.nullable) return SwiftCodeGenUtils.mapCall(receiver: '($json as? String)', body: '$codeName.fromJson(\$0)');
-    return '$codeName.fromJson($json as! String)';
+    final fromJson = '$codeName.fromJson';
+    final throwing = grammar.enums[type.token]?.unknownValue == null ? 'try ' : '';
+    if (type.nullable) {
+      return 'try glStringOrNil($json, ${_pathLiteral()}).map { $throwing$fromJson(\$0) }';
+    }
+    return 'try $fromJson(glString($json, ${_pathLiteral()}))';
   }
 
   // Interfaces don't carry their own `fromJson` (a protocol can't declare "construct one of
@@ -418,12 +436,10 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
     final codeName = resolveCodeName(type.token);
     final isInterface = grammar.interfaces.containsKey(type.token) || grammar.projectedInterfaces.containsKey(type.token);
     final target = isInterface ? '${codeName}Json' : codeName;
-    final tryKeyword = _tryIf(grammar.decodesWithThrows(type.token));
     if (type.nullable) {
-      final mapped = SwiftCodeGenUtils.mapCall(receiver: '($json as? [String: Any?])', body: '$tryKeyword$target.fromJson(\$0)');
-      return '$tryKeyword$mapped';
+      return 'try glMapOrNil($json, ${_pathLiteral()}).map { try $target.fromJson(\$0) }';
     }
-    return '$tryKeyword$target.fromJson($json as! [String: Any?])';
+    return 'try $target.fromJson(glMap($json, ${_pathLiteral()}))';
   }
 
   String _tryIf(bool throws) => throws ? 'try ' : '';
@@ -431,7 +447,24 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
   @override
   String plainFromJson(GLType type, String json) {
     final mapped = getTypeNameFromGQExternal(type.token) ?? type.token;
-    return type.nullable ? '$json as? $mapped' : '$json as! $mapped';
+    final path = _pathLiteral();
+    final helper = _decodeHelpers[mapped];
+    final suffix = type.nullable ? 'OrNil' : '';
+    if (helper != null) return 'try $helper$suffix($json, $path)';
+    return 'try glCast$suffix($json, $path, $mapped.self)';
+  }
+
+  String? _decodePath;
+
+  String _pathLiteral() => stringLiteral(_decodePath ?? 'value');
+
+  String checkedFromJsonExpr(GLType type, String json, String path) {
+    _decodePath = path;
+    try {
+      return fromJsonExpr(type, json);
+    } finally {
+      _decodePath = null;
+    }
   }
 
   @override
@@ -449,7 +482,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
 
   String _generateFromJson(List<GLField> fields, String token, GLToken context) {
     final args = fields
-        .map((f) => '${f.codeName}: ${fromJsonExpr(f.type, 'map["${f.name}"]')}')
+        .map((f) => '${f.codeName}: ${checkedFromJsonExpr(f.type, 'map["${f.name}"]', '$token.${f.name}')}')
         .join(',\n')
         .ident();
     return codeGenUtils.createMethod(
@@ -457,7 +490,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       methodName: 'fromJson',
       arguments: ['_ map: [String: Any?]'],
       statements: ['return $token(\n$args\n)'],
-      throws: grammar.decodesWithThrows(context.token),
+      throws: true,
     );
   }
 

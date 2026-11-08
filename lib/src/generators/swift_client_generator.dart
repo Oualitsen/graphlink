@@ -87,6 +87,7 @@ Future<Set<String>> generateSwiftClientClasses(
   final clientFiles = <String, dynamic>{
     'GraphLinkClientAdapter.swift': clientSerializer.generateClientAdapterFile(),
     'GraphLinkJson.swift': clientSerializer.generateJsonFile(),
+    'GraphLinkDecode.swift': clientSerializer.generateDecodeFile(),
     'GraphLinkCacheStore.swift': clientSerializer.generateCacheStoreFile(),
     'InMemoryGraphLinkCacheStore.swift': clientSerializer.generateInMemoryCacheStoreFile(),
     'GraphLinkCacheEntry.swift': clientSerializer.generateCacheEntryFile(),

@@ -244,7 +244,7 @@ class SwiftRestOperationSerializer {
     return 'restParts(${_entry(a)})';
   }
 
-  String _decode(GLRestOperation op, String value) => _serializer.fromJsonExpr(op.field.type, value);
+  String _decode(GLRestOperation op, String value) => _serializer.checkedFromJsonExpr(op.field.type, value, op.name);
 
   List<String> _execution(GLRestOperation op) {
     final invalidation = _invalidation(op);

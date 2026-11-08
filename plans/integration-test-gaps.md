@@ -95,7 +95,7 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 | Defect | Languages |
 |---|---|
 | ~~GraphQL call with no `data` returns null / None / crashes~~ fixed: `GraphLinkError` carries nullable `status` and `body`, `executeFull` rejects a response without data or errors, the default adapters turn a non-2xx without a GraphQL body into a `GraphLinkException` | all |
-| Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
+| ~~Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge)~~ fixed: every `fromJson` throws `GraphLinkDecodeError` through the checked `gl*` helpers in `GraphLinkDecode.swift` | Swift (22 cases) |
 | Scalar types and shapes are not checked at run time. ~~TypeScript~~ fixed: generated `graph-link-json.ts` checks every scalar in `fromJson` and in REST results | Python (10, left to pydantic's lax mode) |
 | ~~Empty `errors: []` next to `data` is raised as a failure~~ fixed: an empty list counts as no errors | Dart, TypeScript, Python |
 | ~~UTF-8 BOM rejected~~ fixed: every client strips a leading BOM from a text or JSON body | Python, Go, Java, Kotlin |
@@ -129,8 +129,8 @@ union or interface without `@glRestDiscriminator` (belongs in `test/validation/`
 
 ## 4. Known defects that tests cannot cover yet
 
-- **Swift missing non-null field** still traps (force unwrap), so Swift has no test for it. An unknown or absent `__typename` or
-  discriminator now throws and is tested (REST: `PolymorphismPayloadTests`; GraphQL, mock: `QueriesTest_RunSearch`).
+- **Swift missing non-null field** now throws `GraphLinkDecodeError` and is covered by the fault suite. An unknown or absent `__typename` or
+  discriminator throws and is tested (REST: `PolymorphismPayloadTests`; GraphQL, mock: `QueriesTest_RunSearch`).
   See `plans/swift-throwing-polymorphic-decode.md`.
 - **Dart `subscription_reconnect` and Java `subscription_reconnect`** fail under plain `make test` and need the harness that
   restarts the server (`reconnect-test` targets). Never compared against `main`.

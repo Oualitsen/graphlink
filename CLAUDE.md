@@ -322,7 +322,7 @@ don't confuse them:
 - **`@glRestNullable`** (lenient REST responses): every REST real package has a lenient test (`LenientTest` / `lenient_test` / `LenientTests`) against the
   `/lenient/*` routes of `real/rest_server/server.py` and the `lenient*` / `strict*` operations of `real/schema_rest/rest.graphql`: partial payloads
   decoded into the `*Rest` copies, a polymorphic list, a union, a cached call, and the strict twins on the same payload that must fail.
-  Swift has no strict twins: its strict types decode with force unwraps, so a missing non-null field traps instead of throwing. The Java reactive
+  Swift has no strict twins: every Swift `fromJson` throws on a missing non-null field, so its strict types need no separate case. The Java reactive
   packages derive `LenientTest` from the blocking one.
 - **Fault injection** (bad responses): `real/fault_server/server.py` arms one fault per request (`POST /_arm?fault=<name>`); `fault_server/cases.json`
   is the one table of cases every language reads. Each REST real package has a fault test (`fault_test.dart`, `FaultTest.java`, `FaultTest.kt`,

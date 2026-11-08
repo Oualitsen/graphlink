@@ -92,23 +92,23 @@ void main() {
 
     test('fromJson is a public static factory', () {
       expect(lines(out), containsAllInOrder([
-        'public static func fromJson(_ map: [String: Any?]) -> CreateUserInput {',
+        'public static func fromJson(_ map: [String: Any?]) throws -> CreateUserInput {',
         'return CreateUserInput(',
-        'id: map["id"] as? String,',
-        'name: map["name"] as! String,',
-        'age: map["age"] as! Int,',
-        'score: map["score"] as? Double,',
-        'active: map["active"] as! Bool,',
-        'role: (map["role"] as? String).map { Role.fromJson(\$0) },',
-        'role2: Role.fromJson(map["role2"] as! String),',
-        'address: (map["address"] as? [String: Any?]).map { AddressInput.fromJson(\$0) },',
-        'tags: (map["tags"] as! [Any?]).map { e0 in e0 as! String },',
-        'roles: (map["roles"] as! [Any?]).map { e0 in Role.fromJson(e0 as! String) },',
+        'id: try glStringOrNil(map["id"], "CreateUserInput.id"),',
+        'name: try glString(map["name"], "CreateUserInput.name"),',
+        'age: try glInt(map["age"], "CreateUserInput.age"),',
+        'score: try glDoubleOrNil(map["score"], "CreateUserInput.score"),',
+        'active: try glBool(map["active"], "CreateUserInput.active"),',
+        'role: try glStringOrNil(map["role"], "CreateUserInput.role").map { try Role.fromJson(\$0) },',
+        'role2: try Role.fromJson(glString(map["role2"], "CreateUserInput.role2")),',
+        'address: try glMapOrNil(map["address"], "CreateUserInput.address").map { try AddressInput.fromJson(\$0) },',
+        'tags: try glList(map["tags"], "CreateUserInput.tags").map { e0 in try glString(e0, "CreateUserInput.tags") },',
+        'roles: try glList(map["roles"], "CreateUserInput.roles").map { e0 in try Role.fromJson(glString(e0, "CreateUserInput.roles")) },',
       ]));
     });
 
-    test('nullable list of nullable elements chains through the optional cast before mapping', () {
-      expect(lines(out), contains('optRoles: (map["optRoles"] as? [Any?])?.map { e0 in (e0 as? String).map { Role.fromJson(\$0) } }'));
+    test('nullable list of nullable elements chains through the optional helper before mapping', () {
+      expect(lines(out), contains('optRoles: try glListOrNil(map["optRoles"], "CreateUserInput.optRoles")?.map { e0 in try glStringOrNil(e0, "CreateUserInput.optRoles").map { try Role.fromJson(\$0) } }'));
     });
   });
 

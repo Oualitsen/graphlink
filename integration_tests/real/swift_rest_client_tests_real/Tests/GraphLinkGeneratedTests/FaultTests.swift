@@ -6,34 +6,8 @@ private let faultUrl = "http://127.0.0.1:\(Variant.comma ? 9965 : 9964)"
 
 private let opNames: [Character: String] = ["g": "GraphQL getCount", "c": "REST count", "p": "REST status"]
 
-private let bridgeCrash = "crash: NSNumber is force-bridged to Int"
-private let unwrapCrash = "crash: a missing or null non-null field is force-unwrapped"
-private let castCrash = "crash: the decoder traps on a JSON value of the wrong type"
-private let nilForShape = "a JSON array or string where an object is expected decodes to nil"
-private let boolAsInt = "true is accepted as the Int 1"
 
-private let knownDefects: [String: String] = [
-    "int-fraction:c": bridgeCrash,
-    "int-fraction:g": bridgeCrash,
-    "int-overflow:c": bridgeCrash,
-    "int-overflow:g": bridgeCrash,
-    "int-as-string:c": castCrash,
-    "int-as-string:g": castCrash,
-    "int-object:c": castCrash,
-    "int-object:g": castCrash,
-    "json-array-top-level:c": castCrash,
-    "json-string-top-level:c": castCrash,
-    "product-wrong-type:p": castCrash,
-    "gql-missing-field:g": unwrapCrash,
-    "gql-null-field-with-errors:g": unwrapCrash,
-    "int-null:g": unwrapCrash,
-    "product-missing-field:p": unwrapCrash,
-    "product-null-id:p": unwrapCrash,
-    "json-array-top-level:p": nilForShape,
-    "json-string-top-level:p": nilForShape,
-    "int-bool:g": boolAsInt,
-    "int-bool:c": boolAsInt,
-]
+private let knownDefects: [String: String] = [:]
 
 private struct FaultCase {
     let fault: String
