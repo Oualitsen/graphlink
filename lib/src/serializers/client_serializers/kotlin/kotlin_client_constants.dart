@@ -205,6 +205,12 @@ class InMemoryGraphLinkCacheStore : GraphLinkCacheStore {
 
 String kotlinDefaultGraphLinkClientAdapter(bool withOperationName) => '''
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import okhttp3.Call
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -225,13 +231,35 @@ class DefaultGraphLinkClientAdapter(
                 .url(${withOperationName ? 'url + "?operationName=" + operationName' : 'url'})
                 .post(body)
             headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
-            httpClient.newCall(builder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
+            glCancellable(httpClient.newCall(builder.build())) { call -> call.execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) } }
         }
+}
+
+private suspend fun <T> glCancellable(call: Call, block: (Call) -> T): T = coroutineScope {
+    val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+    val watcher = launch(Dispatchers.Default) {
+        try { awaitCancellation() } finally { if (!finished.get()) call.cancel() }
+    }
+    try {
+        block(call)
+    } catch (e: java.io.IOException) {
+        currentCoroutineContext().ensureActive()
+        throw e
+    } finally {
+        finished.set(true)
+        watcher.cancel()
+    }
 }
 ''';
 
 String kotlinDefaultGraphLinkClientAdapterWithUpload(bool withOperationName) => '''
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import okhttp3.Call
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -257,7 +285,7 @@ class DefaultGraphLinkClientAdapter(
                 .url(${withOperationName ? 'url + "?operationName=" + operationName' : 'url'})
                 .post(body)
             headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
-            httpClient.newCall(builder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
+            glCancellable(httpClient.newCall(builder.build())) { call -> call.execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) } }
         }
 
     override suspend fun executeMultipart(
@@ -284,7 +312,7 @@ class DefaultGraphLinkClientAdapter(
         if (onProgress != null && body.contentLength() > 0) body = ProgressRequestBody(body, onProgress)
         val reqBuilder = Request.Builder().url(url).post(body)
         headersProvider?.invoke()?.forEach { (k, v) -> reqBuilder.header(k, v) }
-        httpClient.newCall(reqBuilder.build()).execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) }
+        glCancellable(httpClient.newCall(reqBuilder.build())) { call -> call.execute().use { glCheckHttpStatus(it.code, it.body!!.string(), decoder) } }
     }
 
     private class ProgressRequestBody(
@@ -308,6 +336,22 @@ class DefaultGraphLinkClientAdapter(
             delegate.writeTo(buffered)
             buffered.flush()
         }
+    }
+}
+
+private suspend fun <T> glCancellable(call: Call, block: (Call) -> T): T = coroutineScope {
+    val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+    val watcher = launch(Dispatchers.Default) {
+        try { awaitCancellation() } finally { if (!finished.get()) call.cancel() }
+    }
+    try {
+        block(call)
+    } catch (e: java.io.IOException) {
+        currentCoroutineContext().ensureActive()
+        throw e
+    } finally {
+        finished.set(true)
+        watcher.cancel()
     }
 }
 ''';
@@ -714,6 +758,12 @@ object GraphLinkGetRequest {
 
 String kotlinDefaultGraphLinkGetAdapter(bool withOperationName) => '''
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import okhttp3.Call
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
@@ -734,13 +784,31 @@ class DefaultGraphLinkGetAdapter(
             }
             val builder = Request.Builder().url(target.build()).get()
             headersProvider?.invoke()?.forEach { (k, v) -> builder.header(k, v) }
-            httpClient.newCall(builder.build()).execute().use { response ->
-                if (response.code == 405) {
-                    throw GraphLinkGetNotSupported("GET is not allowed")
+            glCancellable(httpClient.newCall(builder.build())) { call ->
+                call.execute().use { response ->
+                    if (response.code == 405) {
+                        throw GraphLinkGetNotSupported("GET is not allowed")
+                    }
+                    glCheckHttpStatus(response.code, response.body!!.string(), codec)
                 }
-                glCheckHttpStatus(response.code, response.body!!.string(), codec)
             }
         }
+}
+
+private suspend fun <T> glCancellable(call: Call, block: (Call) -> T): T = coroutineScope {
+    val finished = java.util.concurrent.atomic.AtomicBoolean(false)
+    val watcher = launch(Dispatchers.Default) {
+        try { awaitCancellation() } finally { if (!finished.get()) call.cancel() }
+    }
+    try {
+        block(call)
+    } catch (e: java.io.IOException) {
+        currentCoroutineContext().ensureActive()
+        throw e
+    } finally {
+        finished.set(true)
+        watcher.cancel()
+    }
 }
 ''';
 
