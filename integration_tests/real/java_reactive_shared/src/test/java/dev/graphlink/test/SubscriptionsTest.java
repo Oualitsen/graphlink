@@ -288,6 +288,35 @@ class SubscriptionsTest {
         }
 
         @Test
+        void aStreamOfListsOfUnionsEmitsEachBatch() throws InterruptedException {
+            CountDownLatch latch = new CountDownLatch(2);
+            List<AttachmentsBatchResponse> events = new CopyOnWriteArrayList<>();
+            track(Rx.subscribe(client.subscriptions.attachmentsBatch(), r -> {
+                events.add(r);
+                latch.countDown();
+            }));
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Timed out waiting for events");
+            assertEquals(3, events.get(0).getAttachmentsBatch().size());
+            assertInstanceOf(Photo.class, events.get(0).getAttachmentsBatch().get(0));
+            assertInstanceOf(Video.class, events.get(0).getAttachmentsBatch().get(1));
+            assertEquals(1, events.get(1).getAttachmentsBatch().size());
+            assertInstanceOf(Document.class, events.get(1).getAttachmentsBatch().get(0));
+        }
+
+        @Test
+        void aStreamOfListsOfAnInterfaceEmitsEachImplementer() throws InterruptedException {
+            CountDownLatch latch = new CountDownLatch(1);
+            List<EntityBatchResponse> events = new CopyOnWriteArrayList<>();
+            track(Rx.subscribe(client.subscriptions.entityBatch(), r -> {
+                events.add(r);
+                latch.countDown();
+            }));
+            assertTrue(latch.await(10, TimeUnit.SECONDS), "Timed out waiting for events");
+            assertInstanceOf(Article.class, events.get(0).getEntityBatch().get(0));
+            assertInstanceOf(Comment.class, events.get(0).getEntityBatch().get(1));
+        }
+
+        @Test
         void anInterfaceStreamEmitsEachImplementer() throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(2);
             List<EntityPublishedResponse> events = new CopyOnWriteArrayList<>();

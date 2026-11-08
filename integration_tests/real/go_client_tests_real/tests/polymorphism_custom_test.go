@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	gl "graphlink.dev/realtests/generated"
@@ -144,4 +145,37 @@ func TestTypeInTwoUnionsPhoneDecodesThroughShareable(t *testing.T) {
 	if must(c.Queries.Shareable(ctx(t), "nope")).Shareable != nil {
 		t.Fatal("an unknown shareable must decode to nil")
 	}
+}
+
+func TestTypenameUnderAnAliasStillDispatchesEveryMember(t *testing.T) {
+	c := newClient(t)
+	list := must(c.Queries.KindAlias(ctx(t))).Attachments
+	expectEqual(t, len(list), 3, "length")
+	expectEqual(t, asMap(t, list[0])["width"], any(float64(640)), "width")
+	expectEqual(t, asMap(t, list[1])["seconds"], any(float64(30)), "seconds")
+	expectEqual(t, asMap(t, list[2])["pages"], any(float64(12)), "pages")
+	expectEqual(t, fmt.Sprintf("%T", list[0]), "generated.Photo_IdWidth", "first member")
+	expectEqual(t, fmt.Sprintf("%T", list[1]), "generated.Video_IdSeconds", "second member")
+	expectEqual(t, fmt.Sprintf("%T", list[2]), "generated.Document_IdPages", "third member")
+}
+
+func TestOneFieldSelectedTwoWaysInOneOperation(t *testing.T) {
+	c := newClient(t)
+	same := must(c.Queries.TwoViews(ctx(t), "ph1", "ph1"))
+	expectEqual(t, asMap(t, same.First)["width"], any(float64(640)), "first")
+	expectEqual(t, asMap(t, same.Second)["url"], any("http://cdn/1.png"), "second")
+	expectEqual(t, same.PhotoWidth.Width, 640, "photoWidth")
+	expectEqual(t, same.PhotoUrl.Url, "http://cdn/1.png", "photoUrl")
+	other := must(c.Queries.TwoViews(ctx(t), "v1", "d1"))
+	expectEqual(t, asMap(t, other.First)["seconds"], any(float64(30)), "video")
+	expectEqual(t, asMap(t, other.Second)["id"], any("d1"), "document")
+}
+
+func TestAnUnknownIdOnOneAliasLeavesTheOtherIntact(t *testing.T) {
+	c := newClient(t)
+	r := must(c.Queries.TwoViews(ctx(t), "nope", "v1"))
+	if r.First != nil {
+		t.Fatal("an unknown id must decode to nil")
+	}
+	expectEqual(t, asMap(t, r.Second)["url"], any("http://cdn/1.mp4"), "second")
 }

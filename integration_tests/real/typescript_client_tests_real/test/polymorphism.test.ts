@@ -354,3 +354,32 @@ describe('subscriptions', () => {
     }
   }, 15000);
 });
+
+describe('__typename under an alias', () => {
+  it('every member still decodes to its own type', async () => {
+    const list = (await client.queries.kindAlias()).attachments as Json[];
+    expect(kinds(list as any)).toEqual(['Photo', 'Video', 'Document']);
+    expect(list[0].width).toBe(640);
+    expect(list[1].seconds).toBe(30);
+    expect(list[2].pages).toBe(12);
+  });
+});
+
+describe('one field selected two ways in a single operation', () => {
+  it('each alias decodes with its own selection', async () => {
+    const same = await client.queries.twoViews({ a: 'ph1', b: 'ph1' });
+    expect((same.first as Json).width).toBe(640);
+    expect((same.second as Json).url).toBe('http://cdn/1.png');
+    expect(same.photoWidth!.width).toBe(640);
+    expect(same.photoUrl!.url).toBe('http://cdn/1.png');
+    const other = await client.queries.twoViews({ a: 'v1', b: 'd1' });
+    expect((other.first as Json).seconds).toBe(30);
+    expect((other.second as Json).id).toBe('d1');
+  });
+
+  it('an unknown id on one alias leaves the other intact', async () => {
+    const r = await client.queries.twoViews({ a: 'nope', b: 'v1' });
+    expect(r.first).toBeNull();
+    expect((r.second as Json).url).toBe('http://cdn/1.mp4');
+  });
+});

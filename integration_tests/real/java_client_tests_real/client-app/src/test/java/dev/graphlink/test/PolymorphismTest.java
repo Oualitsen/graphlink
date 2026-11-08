@@ -340,4 +340,35 @@ class PolymorphismTest {
     void anInterfaceSelectionWithoutImplementerUnknownIdIsNull() {
         assertNull(client.queries.fetchNodeId("nope").getNode());
     }
+
+    @Test
+    void typenameUnderAnAliasStillDispatchesEveryMember() {
+        List<?> list = client.queries.kindAlias().getAttachments();
+        assertEquals(
+            List.of("Photo_IdWidth", "Video_IdSeconds", "Document_IdPages"),
+            list.stream().map(a -> a.getClass().getSimpleName()).collect(java.util.stream.Collectors.toList()));
+        assertEquals(640, ((Photo_IdWidth) list.get(0)).getWidth());
+        assertEquals(30, ((Video_IdSeconds) list.get(1)).getSeconds());
+        assertEquals(12, ((Document_IdPages) list.get(2)).getPages());
+    }
+
+    @Test
+    void oneFieldSelectedTwoWaysInOneOperation() {
+        TwoViewsResponse same = client.queries.twoViews("ph1", "ph1");
+        assertEquals(640, ((Photo_Width) same.getFirst()).getWidth());
+        assertEquals("http://cdn/1.png", ((Photo_Url) same.getSecond()).getUrl());
+        assertEquals(640, same.getPhotoWidth().getWidth());
+        assertEquals("http://cdn/1.png", same.getPhotoUrl().getUrl());
+
+        TwoViewsResponse other = client.queries.twoViews("v1", "d1");
+        assertEquals(30, ((Video_Seconds) other.getFirst()).getSeconds());
+        assertEquals("d1", ((Document_Id) other.getSecond()).getId());
+    }
+
+    @Test
+    void anUnknownIdOnOneAliasLeavesTheOtherIntact() {
+        TwoViewsResponse r = client.queries.twoViews("nope", "v1");
+        assertNull(r.getFirst());
+        assertEquals("http://cdn/1.mp4", ((Video_Url) r.getSecond()).getUrl());
+    }
 }
