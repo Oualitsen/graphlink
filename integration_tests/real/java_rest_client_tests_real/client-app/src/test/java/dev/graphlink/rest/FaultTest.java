@@ -24,18 +24,6 @@ class FaultTest {
 
     private static final Map<String, String> KNOWN_DEFECTS = Map.of();
 
-    private static final Map<String, String> WEBCLIENT_DEFECTS = Map.of(
-        "wrong-charset:g", "WebClient rejects a Content-Type with an unknown charset",
-        "wrong-charset:c", "WebClient rejects a Content-Type with an unknown charset",
-        "wrong-charset:p", "WebClient rejects a Content-Type with an unknown charset");
-
-    private static boolean usesWebClient() {
-        for (java.lang.reflect.Field field : DefaultGraphLinkRestAdapter.class.getDeclaredFields()) {
-            if (field.getType().getName().endsWith("WebClient")) return true;
-        }
-        return false;
-    }
-
     private GraphLinkClient client() {
         return newClient(FAULT_URL);
     }
@@ -62,7 +50,6 @@ class FaultTest {
             for (char op : c.get("ops").asText().toCharArray()) {
                 tests.add(dynamicTest(fault + ": " + OP_NAMES.get(op) + " -> " + expected + ", then the client still works", () -> {
                     String defect = KNOWN_DEFECTS.get(fault + ":" + op);
-                    if (defect == null && usesWebClient()) defect = WEBCLIENT_DEFECTS.get(fault + ":" + op);
                     assumeTrue(defect == null, defect);
                     postFault("/_reset");
                     GraphLinkClient client = client();
