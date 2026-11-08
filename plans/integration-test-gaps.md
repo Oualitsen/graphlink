@@ -96,7 +96,7 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 |---|---|
 | ~~GraphQL call with no `data` returns null / None / crashes~~ fixed: `GraphLinkError` carries nullable `status` and `body`, `executeFull` rejects a response without data or errors, the default adapters turn a non-2xx without a GraphQL body into a `GraphLinkException` | all |
 | Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
-| Scalar types and shapes are not checked at run time | TypeScript (19 cases), Python (10) |
+| Scalar types and shapes are not checked at run time. ~~TypeScript~~ fixed: generated `graph-link-json.ts` checks every scalar in `fromJson` and in REST results | Python (10, left to pydantic's lax mode) |
 | ~~Empty `errors: []` next to `data` is raised as a failure~~ fixed: an empty list counts as no errors | Dart, TypeScript, Python |
 | UTF-8 BOM rejected | Python, Go, Java, Kotlin (c, p) |
 | ~~GraphQL transport drops the HTTP status~~ fixed with the item above | all |

@@ -317,7 +317,7 @@ class TypeScriptRestOperationSerializer {
           'return $_result;',
         ];
       case RestResponseKind.json:
-        final decode = _serializer.fromJsonExpr(op.field.type, _json);
+        final decode = _serializer.checkedFromJsonExpr(op.field.type, _json, op.name);
         if (op.cacheTtl > 0) {
           return [_cachedReturn(op, inlinePath, decode)];
         }

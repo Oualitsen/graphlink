@@ -94,6 +94,7 @@ Future<Set<String>> generateTypeScriptClientClasses(
   addClient('graph-link-in-memory-cache-store$ext', cs.runtime.generateInMemoryCacheStoreFile());
   addClient('graph-link-cache-entry$ext', cs.runtime.generateCacheEntryFile());
   addClient('graph-link-tag-entry$ext', cs.runtime.generateTagEntryFile());
+  addClient('graph-link-json$ext', cs.runtime.generateJsonChecksFile());
   addClient('graph-link-lock$ext', cs.runtime.generateLockFile());
   addClient('graph-link-partial-query$ext', cs.runtime.generatePartialQueryFile());
   addClient('graph-link-resolver-base$ext', cs.runtime.generateResolverBaseFile());

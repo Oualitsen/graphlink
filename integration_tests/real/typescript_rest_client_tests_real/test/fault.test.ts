@@ -13,24 +13,7 @@ interface FaultCase {
 const faultUrl = `http://127.0.0.1:${variant.faultPort}`;
 const cases: FaultCase[] = JSON.parse(readFileSync('../fault_server/cases.json', 'utf8'));
 
-const uncheckedTypes = 'the generated decoder does not check scalar types or the shape of data at run time';
-
 const knownDefects: Record<string, string> = {
-  'gql-missing-field:g': uncheckedTypes,
-  'int-as-string:c': uncheckedTypes,
-  'int-as-string:g': uncheckedTypes,
-  'int-bool:c': uncheckedTypes,
-  'int-bool:g': uncheckedTypes,
-  'int-fraction:c': uncheckedTypes,
-  'int-fraction:g': uncheckedTypes,
-  'int-null:g': uncheckedTypes,
-  'int-object:c': uncheckedTypes,
-  'int-object:g': uncheckedTypes,
-  'int-overflow:c': uncheckedTypes,
-  'int-overflow:g': uncheckedTypes,
-  'json-array-top-level:c': uncheckedTypes,
-  'json-string-top-level:c': uncheckedTypes,
-  'product-wrong-type:p': uncheckedTypes,
 };
 
 const opNames: Record<string, string> = { g: 'GraphQL getCount', c: 'REST count', p: 'REST status' };

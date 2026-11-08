@@ -96,6 +96,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     if (operations.isEmpty) return const [];
     return [
       "import { GraphLinkRestResolver } from './graph-link-rest-resolver.js';",
+      "import * as GraphLinkJson from './graph-link-json.js';",
       "import { GLDownload, restEncode, restEntries, restSpreadEntries, restHeader, restHeaders, restParts } from './graph-link-rest.js';",
       "import type { DownloadProgressCallback, RestBody, RestPart, RestRequest } from './graph-link-rest.js';",
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
