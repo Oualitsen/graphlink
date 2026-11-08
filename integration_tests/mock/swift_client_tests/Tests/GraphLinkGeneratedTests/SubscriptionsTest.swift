@@ -157,3 +157,45 @@ final class SubscriptionsTest_UserStatusChanged: XCTestCase {
         XCTAssertEqual(variables["userId"] as? String, "user-42")
     }
 }
+
+// ── Malformed events ─────────────────────────────────────────────────────────
+
+final class SubscriptionsTest_MalformedEvent: XCTestCase {
+    var adapter: MockAdapter!
+    var wsAdapter: MockWebSocketAdapter!
+    var client: GraphLinkClient!
+
+    override func setUp() {
+        adapter = MockAdapter()
+        wsAdapter = MockWebSocketAdapter()
+        client = Fixtures.newClient(adapter, wsAdapter)
+    }
+
+    private func firstFailure(of payload: [String: Any?]) async -> Error? {
+        let stream = client.subscriptions.userCreated()
+        wsAdapter.deliverConnectionAck()
+        let subId = wsAdapter.getLastSubscriptionId()
+        wsAdapter.deliverNext(subId, payload)
+        do {
+            for try await _ in stream { return nil }
+        } catch {
+            return error
+        }
+        return nil
+    }
+
+    func test_wrongTypedEvent_finishesTheStreamWithADecodeError() async {
+        let failure = await firstFailure(of: n(("userCreated", "not an object")))
+        XCTAssertTrue(failure is GraphLinkDecodeError, "\(String(describing: failure))")
+    }
+
+    func test_eventMissingARequiredField_finishesTheStreamWithADecodeError() async {
+        let failure = await firstFailure(of: n(("userCreated", n(("name", "Alice")))))
+        XCTAssertTrue(failure is GraphLinkDecodeError, "\(String(describing: failure))")
+    }
+
+    func test_eventWithoutTheField_finishesTheStreamWithADecodeError() async {
+        let failure = await firstFailure(of: n())
+        XCTAssertTrue(failure is GraphLinkDecodeError, "\(String(describing: failure))")
+    }
+}

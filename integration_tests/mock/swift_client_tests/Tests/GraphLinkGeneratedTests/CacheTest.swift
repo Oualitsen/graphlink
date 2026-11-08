@@ -200,3 +200,63 @@ final class CacheTest_StaleIfOffline: XCTestCase {
         }
     }
 }
+
+// ── Unreadable cache entries ────────────────────────────────────────────────
+
+private actor GarbageStore: GraphLinkCacheStore {
+    private let content: String
+    private(set) var invalidated: [String] = []
+
+    init(_ content: String) {
+        self.content = content
+    }
+
+    func set(_ key: String, value: String) {}
+    func get(_ key: String) -> String? { content }
+    func invalidate(_ key: String) { invalidated.append(key) }
+    func invalidateAll() {}
+}
+
+final class CacheTest_UnreadableEntry: XCTestCase {
+    private let unreadable = [
+        "not json",
+        "[1, 2]",
+        "{}",
+        "{\"data\": 5, \"expiry\": 10}",
+        "{\"data\": \"x\", \"expiry\": \"soon\"}",
+        "{\"data\": \"x\", \"expiry\": 1.5}",
+        "{\"data\": null, \"expiry\": null}",
+    ]
+
+    func test_unreadableEntry_isTreatedAsAMiss_andNeverCrashes() async throws {
+        for content in unreadable {
+            let adapter = MockAdapter()
+            adapter.registerData("getCachedUser", n(("getCachedUser", Fixtures.kUserAliceJson)))
+            let store = GarbageStore(content)
+            let client = GraphLinkClient(
+                adapter: adapter.execute,
+                wsAdapter: MockWebSocketAdapter(),
+                multipartAdapter: MockMultipartAdapter().executeMultipart,
+                store: store
+            )
+            let response = try await client.queries.getCachedUser(id: "user-1")
+            XCTAssertEqual(response.getCachedUser.id, "user-1", content)
+            XCTAssertEqual(adapter.getCallCount(), 1, content)
+        }
+    }
+
+    func test_unreadableEntry_isInvalidated() async throws {
+        let adapter = MockAdapter()
+        adapter.registerData("getCachedUser", n(("getCachedUser", Fixtures.kUserAliceJson)))
+        let store = GarbageStore("not json")
+        let client = GraphLinkClient(
+            adapter: adapter.execute,
+            wsAdapter: MockWebSocketAdapter(),
+            multipartAdapter: MockMultipartAdapter().executeMultipart,
+            store: store
+        )
+        _ = try await client.queries.getCachedUser(id: "user-1")
+        let invalidated = await store.invalidated
+        XCTAssertFalse(invalidated.isEmpty)
+    }
+}

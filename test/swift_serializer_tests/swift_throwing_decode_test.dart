@@ -41,9 +41,8 @@ void main() {
       expect(pet, contains('__typename'));
     });
 
-    test('members are decoded without try when they cannot fail', () {
-      expect(pet, contains('return Dog.fromJson(map)'));
-      expect(pet, isNot(contains('try Dog.fromJson')));
+    test('members are decoded with try', () {
+      expect(pet, contains('return try Dog.fromJson(map)'));
     });
   });
 
@@ -56,13 +55,13 @@ void main() {
 
     test('a nullable interface field keeps the optional map and tries inside the closure', () {
       final owner = type('Owner');
-      expect(owner, matches(RegExp(r'try \(map\["pet"\][^\n]*as\? \[String: Any\?\]\)\.map \{ try PetJson\.fromJson')));
+      expect(owner, contains('try glMapOrNil(map["pet"], "Owner.pet").map { try PetJson.fromJson(\$0) }'));
     });
 
     test('a list of interfaces tries the map and the element decode', () {
       final kennel = type('Kennel');
       expect(kennel, contains('throws -> Kennel'));
-      expect(kennel, contains('try (map["pets"] as! [Any?]).map { e0 in try PetJson.fromJson'));
+      expect(kennel, contains('try glList(map["pets"], "Kennel.pets").map { e0 in try PetJson.fromJson(glMap(e0, "Kennel.pets")) }'));
     });
 
     test('throwing propagates through an object that holds such an object', () {
@@ -73,17 +72,17 @@ void main() {
     });
   });
 
-  group('types that cannot fail', () {
-    test('a plain type is unchanged', () {
+  group('types without a polymorphic value', () {
+    test('a plain type throws and reads every field through a checked helper', () {
       final plain = type('Plain');
-      expect(plain, contains('public static func fromJson(_ map: [String: Any?]) -> Plain'));
-      expect(plain, isNot(contains('throws')));
-      expect(plain, isNot(contains('try')));
+      expect(plain, contains('public static func fromJson(_ map: [String: Any?]) throws -> Plain'));
+      expect(plain, contains('id: try glString(map["id"], "Plain.id")'));
+      expect(plain, contains('name: try glStringOrNil(map["name"], "Plain.name")'));
+      expect(plain, isNot(contains(' as! ')));
     });
 
-    test('a member of a dispatch is unchanged', () {
-      final dog = type('Dog');
-      expect(dog, isNot(contains('throws')));
+    test('a member of a dispatch throws too', () {
+      expect(type('Dog'), contains('throws -> Dog'));
     });
   });
 }

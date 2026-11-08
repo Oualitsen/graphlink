@@ -199,6 +199,8 @@ class SwiftClientSerializer extends GLClientSerializer {
 
   GLClassModel generateJsonFile() => const GLClassModel(imports: ['Foundation'], body: swiftGraphLinkJson);
 
+  GLClassModel generateDecodeFile() => const GLClassModel(imports: ['Foundation'], body: swiftGraphLinkDecode);
+
   GLClassModel generateCacheStoreFile() => const GLClassModel(body: swiftGraphLinkCacheStore);
 
   GLClassModel generateInMemoryCacheStoreFile() => const GLClassModel(body: swiftInMemoryGraphLinkCacheStore);
@@ -206,7 +208,7 @@ class SwiftClientSerializer extends GLClientSerializer {
   GLClassModel generateCacheEntryFile() =>
       const GLClassModel(imports: ['Foundation'], body: swiftGraphLinkCacheEntry);
 
-  GLClassModel generateTagEntryFile() => const GLClassModel(body: swiftGraphLinkTagEntry);
+  GLClassModel generateTagEntryFile() => const GLClassModel(imports: ['Foundation'], body: swiftGraphLinkTagEntry);
 
   GLClassModel generatePartialQueryFile() =>
       const GLClassModel(imports: ['Foundation'], body: swiftGraphLinkPartialQuery);

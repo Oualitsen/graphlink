@@ -135,17 +135,29 @@ public struct User: Sendable, Identifiable {
         ]
     }
 
-    public static func fromJson(_ map: [String: Any?]) -> User {
+    public static func fromJson(_ map: [String: Any?]) throws -> User {
         return User(
-            id: map["id"] as! String,
-            name: map["name"] as! String,
-            email: map["email"] as? String,
-            status: UserStatus.fromJson(map["status"] as! String),
-            address: Address.fromJson(map["address"] as! [String: Any?])
+            id: try glString(map["id"], "User.id"),
+            name: try glString(map["name"], "User.name"),
+            email: try glStringOrNil(map["email"], "User.email"),
+            status: try UserStatus.fromJson(glString(map["status"], "User.status")),
+            address: try Address.fromJson(glMap(map["address"], "User.address"))
         )
     }
 }
 ```
+
+`fromJson` never traps on bad data. A missing or `null` non-null field, a value of the wrong type, or an
+`Int` that is a fraction, out of range, a string or a boolean throws a `GraphLinkDecodeError` whose message
+names the field (`User.id: missing or null`, `User.age: expected Int, got Bool`). A nullable field accepts
+`null` or an absent key, and throws on a wrong type. The checks are the `gl*` helpers in the generated
+`GraphLinkDecode.swift`.
+
+!!! danger "Breaking change in v6.0.0"
+    `fromJson` on every generated type, input and strict enum is now `throws`. It used to be non-throwing and
+    crashed the process on a bad value (`as!`, a force unwrap, the `NSNumber` bridge). The generated client
+    already calls it with `try`. If you call `fromJson` yourself, add `try` and handle the
+    `GraphLinkDecodeError`. A nullable field with the wrong type used to decode as `nil` and now throws.
 
 A type is additionally `Identifiable` whenever it has a non-null `id` field — ready to drop into
 a SwiftUI `List` without extra glue.
@@ -186,8 +198,8 @@ statements.
     error. The failure happens on the server instead of before the request leaves the
     client. Do not pass `unknownValue__` as an argument.
 
-Set `"strictEnums": true` to remove the fallback. `fromJson` then force-unwraps, so an
-unrecognized wire value crashes — treat that as a contract error.
+Set `"strictEnums": true` to remove the fallback. `fromJson` then throws a `GraphLinkDecodeError`
+for an unrecognized wire value — treat that as a contract error.
 
 ## Queries
 
@@ -424,8 +436,6 @@ custom `GraphLinkMultipartAdapter`).
   fallback enum member, so it can never reach the server. Swift's `toJson()` is non-throwing across all generated code,
   so it returns the literal string `"unknownValue__"` and the server rejects the request with a GraphQL validation
   error. See [Unknown enum values](#unknown-enum-values).
-- **`strictEnums: true` crashes on an unrecognized wire value.** `fromJson` force-unwraps, so a value the schema does
-  not declare terminates the process instead of throwing a catchable error.
 
 ## Configuration reference
 

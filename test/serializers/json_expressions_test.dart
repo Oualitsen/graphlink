@@ -65,12 +65,12 @@ void main() {
 
   test('Swift', () {
     _check((p) => SwiftSerializer(p, importPrefix: '', typeMapOverrides: {'Stamp': 'Int'}), {
-      'maybeRole': ['v?.toJson()', '(j as? String).map { Role.fromJson(\$0) }'],
-      'maybeAddress': ['v?.toJson()', '(j as? [String: Any?]).map { Address.fromJson(\$0) }'],
-      'roles': ['v.map { e0 in e0.toJson() }', '(j as! [Any?]).map { e0 in Role.fromJson(e0 as! String) }'],
-      'grid': ['v?.map { e0 in e0?.map { e1 in e1?.toJson() } }', '(j as? [Any?])?.map { e0 in (e0 as? [Any?])?.map { e1 in (e1 as? [String: Any?]).map { Address.fromJson(\$0) } } }'],
+      'maybeRole': ['v?.toJson()', 'try glStringOrNil(j, "value").map { try Role.fromJson(\$0) }'],
+      'maybeAddress': ['v?.toJson()', 'try glMapOrNil(j, "value").map { try Address.fromJson(\$0) }'],
+      'roles': ['v.map { e0 in e0.toJson() }', 'try glList(j, "value").map { e0 in try Role.fromJson(glString(e0, "value")) }'],
+      'grid': ['v?.map { e0 in e0?.map { e1 in e1?.toJson() } }', 'try glListOrNil(j, "value")?.map { e0 in try glListOrNil(e0, "value")?.map { e1 in try glMapOrNil(e1, "value").map { try Address.fromJson(\$0) } } }'],
       'maybeStamp': ['v.map { back(\$0) }', '(j ?? nil).flatMap { \$0 is NSNull ? nil : \$0 }.map { conv(\$0) }'],
-      'stamps': ['v?.map { e0 in back(e0) }', '(j as? [Any?])?.map { e0 in conv(e0) }'],
+      'stamps': ['v?.map { e0 in back(e0) }', 'try glListOrNil(j, "value")?.map { e0 in conv(e0) }'],
     });
   });
 

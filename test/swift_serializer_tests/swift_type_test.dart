@@ -61,13 +61,13 @@ void main() {
 
     test('fromJson parses all fields', () {
       expect(lines(out), containsAllInOrder([
-        'public static func fromJson(_ map: [String: Any?]) -> User {',
+        'public static func fromJson(_ map: [String: Any?]) throws -> User {',
         'return User(',
-        'id: map["id"] as! String,',
-        'name: map["name"] as! String,',
-        'email: map["email"] as? String,',
-        'role: Role.fromJson(map["role"] as! String),',
-        'address: (map["address"] as? [String: Any?]).map { Address.fromJson(\$0) },',
+        'id: try glString(map["id"], "User.id"),',
+        'name: try glString(map["name"], "User.name"),',
+        'email: try glStringOrNil(map["email"], "User.email"),',
+        'role: try Role.fromJson(glString(map["role"], "User.role")),',
+        'address: try glMapOrNil(map["address"], "User.address").map { try Address.fromJson(\$0) },',
       ]));
     });
   });
@@ -115,7 +115,7 @@ void main() {
         'public static func fromJson(_ map: [String: Any?]) throws -> any Node {',
         'switch map["__typename"] as? String {',
         'case "User":',
-        'return User.fromJson(map)',
+        'return try User.fromJson(map)',
         'default:',
       ]));
       expect(out, contains('throw GraphLinkDecodeError("Unknown Node __typename:'));
@@ -178,9 +178,9 @@ void main() {
 
     test('dispatch factory has a case for every implementor', () {
       expect(lines(out), contains('case "Dog":'));
-      expect(lines(out), contains('return Dog.fromJson(map)'));
+      expect(lines(out), contains('return try Dog.fromJson(map)'));
       expect(lines(out), contains('case "Cat":'));
-      expect(lines(out), contains('return Cat.fromJson(map)'));
+      expect(lines(out), contains('return try Cat.fromJson(map)'));
     });
 
     test('default branch throws instead of crashing', () {
