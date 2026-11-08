@@ -152,6 +152,12 @@ exponential backoff and re-subscribes. Use `AddReconnectListener` on it to obser
 
 ## Errors
 
+!!! danger "Behavior change in v6.0.0"
+    A GraphQL call whose response has no `data` and no errors, or whose HTTP status is not 2xx and carries no
+    GraphQL body (a gateway page, `{"error": "unauthorized"}`), now returns a `*GraphLinkException`, like a
+    server-side GraphQL error, instead of a zero value. `GraphLinkError` has two new fields, `Status` and `Body`,
+    set for HTTP failures. A leading UTF-8 byte order mark is ignored.
+
 Operations return a `*GraphLinkException` (its `Errors` field is a `[]GraphLinkError`) when the response contains
 GraphQL errors; use `errors.As` to read it. Mark an operation with `@glCaptureErrors` (or set `captureErrors: true`) to
 get a `…FullResponse` with `Data` and `Errors` instead.

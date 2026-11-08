@@ -95,7 +95,7 @@ Both `DefaultGraphLinkClientAdapter` and `DefaultGraphLinkWebSocketAdapter` acce
     );
     ```
 
-The no-arg and headers-only constructors still work unchanged — the injected client is an opt-in.
+Injecting a client is optional: `(url, decoder)` and `(url, headersProvider, decoder)` use a default one.
 
 ## Initializing the client
 
@@ -480,6 +480,25 @@ Without `jsonType`, `{}` is an `Object` and a hard cast such as `(String) {}` is
 
 `jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
 handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
+!!! danger "Breaking change in v6.0.0: `DefaultGraphLinkClientAdapter` takes a decoder"
+    The adapter now needs a `GraphLinkJsonDecoder`, like `DefaultGraphLinkGetAdapter` already did, so it can tell a
+    GraphQL response from a gateway page. The constructors are `new DefaultGraphLinkClientAdapter(url, decoder)`,
+    `(url, headersProvider, decoder)` and `(url, headersProvider, decoder, httpClient)`. The `GraphLinkClient`
+    factory methods are unchanged.
+
+## Decoding and HTTP errors
+
+- A GraphQL call whose response has no `data` and no errors, or whose HTTP status is not 2xx and carries no GraphQL
+  body, throws a `GraphLinkException` (it used to return `null` or throw a cast error). `GraphLinkError` has two new
+  nullable fields, `getStatus()` and `getBody()`. A response with `"errors": []` is a success.
+- Decoding an `int`, `long`, `Integer` or `Long` field is exact. A value outside the type's range
+  (`99999999999999999999999`) or with a fraction (`19.5`) throws an `ArithmeticException`; `19.0` and `1e3` are
+  accepted. These used to wrap or truncate silently. To get another type, declare a
+  [scalar codec](#custom-scalar-codecs).
+- A leading UTF-8 byte order mark is ignored.
+- The WebClient adapters wrap the `WebClient` (yours too) with a generated `GLWebClientContentType` filter that
+  drops a `Content-Type` charset Spring cannot parse, so `application/json; charset=nonsense` decodes as UTF-8.
 
 ## File uploads
 
