@@ -42,44 +42,33 @@ GLParser _parse() => GLParser(autoGenerateQueries: true, generateAllFieldsFragme
 void main() {
   final g = _parse();
 
-  test('an interface or union with implementations is a dispatch that can fail', () {
-    expect(g.decodesWithThrows('Pet'), isTrue);
-    expect(g.decodesWithThrows('Hit'), isTrue);
+  test('every object, interface and union validates the JSON it reads', () {
+    for (final name in ['Pet', 'Hit', 'Dog', 'Cat', 'Owner', 'Shelter', 'Deep', 'Finder', 'Plain', 'Painted']) {
+      expect(g.decodesWithThrows(name), isTrue, reason: name);
+    }
   });
 
-  test('a type holding an interface or union field throws', () {
-    expect(g.decodesWithThrows('Owner'), isTrue);
-    expect(g.decodesWithThrows('Finder'), isTrue);
+  test('cycles throw on both sides, whether or not they reach a dispatch', () {
+    for (final name in ['Left', 'Right', 'Loop1', 'Loop2']) {
+      expect(g.decodesWithThrows(name), isTrue, reason: name);
+    }
   });
 
-  test('throwing propagates through lists and through other objects', () {
-    expect(g.decodesWithThrows('Shelter'), isTrue);
-    expect(g.decodesWithThrows('Deep'), isTrue);
-  });
-
-  test('members of a dispatch, plain types, enums and scalars do not throw', () {
-    for (final name in ['Dog', 'Cat', 'Plain', 'Painted', 'Color', 'String', 'ID', 'Boolean']) {
+  test('enums and scalars never throw', () {
+    for (final name in ['Color', 'String', 'ID', 'Boolean']) {
       expect(g.decodesWithThrows(name), isFalse, reason: name);
     }
   });
 
-  test('a cycle that reaches a dispatch throws on both sides; one that does not stays plain', () {
-    expect(g.decodesWithThrows('Left'), isTrue);
-    expect(g.decodesWithThrows('Right'), isTrue);
-    expect(g.decodesWithThrows('Loop1'), isFalse);
-    expect(g.decodesWithThrows('Loop2'), isFalse);
-  });
-
-  test('generated response wrappers follow their payload', () {
+  test('generated response wrappers throw too', () {
     final wrappers = g.projectedTypes.keys.where((k) => k.toLowerCase().contains('response')).toList();
     expect(wrappers, isNotEmpty);
-    final owner = wrappers.firstWhere((k) => k.toLowerCase().contains('owner'));
-    final plain = wrappers.firstWhere((k) => k.toLowerCase().contains('plain'));
-    expect(g.decodesWithThrows(owner), isTrue, reason: owner);
-    expect(g.decodesWithThrows(plain), isFalse, reason: plain);
+    for (final w in wrappers) {
+      expect(g.decodesWithThrows(w), isTrue, reason: w);
+    }
   });
 
-  test('an interface that is only a synthetic implementation follows that implementation', () {
+  test('an interface that is only a synthetic implementation throws like any interface', () {
     final g2 = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)
       ..parse('''
 interface Node { id: ID! }
@@ -90,7 +79,7 @@ query nodeId(\$id: ID!) { node(id: \$id) { id } }
     final synthetic = g2.projectedInterfaces.values.where((i) => i.syntheticImplementation != null).toList();
     expect(synthetic, isNotEmpty);
     for (final i in synthetic) {
-      expect(g2.decodesWithThrows(i.token), isFalse, reason: i.token);
+      expect(g2.decodesWithThrows(i.token), isTrue, reason: i.token);
     }
   });
 }

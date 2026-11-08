@@ -173,6 +173,17 @@ Future<Set<String>> generateJavaClientClasses(
     }
   }
 
+  for (final entry in clientSerializer.generateWebClientFiles().entries) {
+    futures.add(writeToFile(
+      data: serializer.serializeGlClass(entry.value),
+      fileName: entry.key,
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   if (clientSerializer.hasRest) {
     for (final entry in clientSerializer.generateRestFiles().entries) {
       futures.add(writeToFile(

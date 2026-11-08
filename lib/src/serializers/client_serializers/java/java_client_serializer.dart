@@ -451,6 +451,26 @@ class JavaClientSerializer extends GLClientSerializer {
     ];
   }
 
+  bool get needsWebClientContentType =>
+      flavor.isReactive && reactiveHttpClient == JavaReactiveHttpClient.webclient && (restAdapterUsesWebClient || _hasGraphQL);
+
+  Map<String, GLClassModel> generateWebClientFiles() => {
+        if (needsWebClientContentType)
+          'GLWebClientContentType.java': GLClassModel(
+            imports: [
+              'java.util.Arrays',
+              'java.util.Locale',
+              'java.util.stream.Collectors',
+              'org.springframework.http.HttpHeaders',
+              'org.springframework.http.InvalidMediaTypeException',
+              'org.springframework.http.MediaType',
+              'org.springframework.web.reactive.function.client.ClientResponse',
+              'org.springframework.web.reactive.function.client.ExchangeFilterFunction',
+            ],
+            body: javaGLWebClientContentType(),
+          ),
+      };
+
   // ── REST files ──────────────────────────────────────────────────────────────
 
   Map<String, GLClassModel> generateRestFiles() {
@@ -567,20 +587,6 @@ class JavaClientSerializer extends GLClientSerializer {
             ...flavor.singleImports,
           ],
           body: restAdapterUsesWebClient ? javaRestWebClientAdapter() : javaRestJdkAdapter(flavor),
-        ),
-      if (flavor.isReactive && reactiveHttpClient == JavaReactiveHttpClient.webclient && (restAdapterUsesWebClient || _hasGraphQL))
-        'GLWebClientContentType.java': GLClassModel(
-          imports: [
-            'java.util.Arrays',
-            'java.util.Locale',
-            'java.util.stream.Collectors',
-            'org.springframework.http.HttpHeaders',
-            'org.springframework.http.InvalidMediaTypeException',
-            'org.springframework.http.MediaType',
-            'org.springframework.web.reactive.function.client.ClientResponse',
-            'org.springframework.web.reactive.function.client.ExchangeFilterFunction',
-          ],
-          body: javaGLWebClientContentType(),
         ),
       if (restAdapterUsesWebClient)
         'GLDataBufferInputStream.java': GLClassModel(
