@@ -29,6 +29,15 @@ const _decodeHelpers = {
   'Bool': 'glBool',
 };
 
+const _jsonTypeHelpers = {
+  'String': 'glString',
+  'Int': 'glInt',
+  'Double': 'glDouble',
+  'Bool': 'glBool',
+  'Map': 'glMap',
+  'List': 'glList',
+};
+
 class SwiftSerializer extends GLSerializer with JsonExpressions {
   @override
   late final GLMappingSerializer mapping = SwiftMappingSerializer(this);
@@ -469,6 +478,12 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) {
+    final jsonType = codec.jsonType;
+    if (jsonType != null) {
+      final helper = _jsonTypeHelpers[jsonType]!;
+      if (!nullable) return 'try ${codec.decode('$helper($json, ${_pathLiteral()})')}';
+      return 'try ${helper}OrNil($json, ${_pathLiteral()}).map { ${codec.decode('\$0')} }';
+    }
     if (!nullable) return codec.decode(json);
     final present = '($json ?? nil).flatMap { \$0 is NSNull ? nil : \$0 }';
     return SwiftCodeGenUtils.mapCall(receiver: present, body: codec.decode('\$0'));

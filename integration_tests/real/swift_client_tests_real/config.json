@@ -12,7 +12,7 @@
     "LocalDate": "String",
     "BigDecimal": "Any",
     "JSON": "Any",
-    "Opaque": {"type": "String", "fromJson": "\"opaque:\" + ({} as! String)", "toJson": "String({}.dropFirst(7))"}
+    "Opaque": {"type": "String", "jsonType": "String", "fromJson": "\"opaque:\" + {}", "toJson": "String({}.dropFirst(7))"}
   },
   "outputDir": "Sources/GraphLinkGenerated",
   "clientConfig": {

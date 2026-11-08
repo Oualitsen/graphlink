@@ -44,4 +44,28 @@ final class ScalarCodecTest: XCTestCase {
         let bag = try await client.queries.echoScalarArgs(dt: "x", dts: []).echoScalarArgs
         XCTAssertEqual(bag.long, 9007199254740993)
     }
+
+    func testCodecScalarOfTheWrongTypeThrowsInsteadOfCrashing() async {
+        for wire in [7, true, 1.5, ["a": 1], ["a"]] as [Any] {
+            let adapter = MockAdapter()
+            adapter.registerData("scalarFixture", n(("scalarFixture", n(("dt", "x"), ("long", 1), ("dts", []), ("opaque", wire)))))
+            let client = Fixtures.newClient(adapter, MockWebSocketAdapter())
+            do {
+                _ = try await client.queries.scalarFixture()
+                XCTFail("a \(wire) was accepted for an Opaque")
+            } catch let error as GraphLinkDecodeError {
+                XCTAssertTrue(error.message.contains("opaque"), error.message)
+            } catch {
+                XCTFail("unexpected error \(error)")
+            }
+        }
+    }
+
+    func testCodecScalarOfTheRightTypeStillRunsTheTemplate() async throws {
+        let adapter = MockAdapter()
+        adapter.registerData("scalarFixture", n(("scalarFixture", n(("dt", "x"), ("long", 1), ("dts", []), ("opaque", "abc")))))
+        let client = Fixtures.newClient(adapter, MockWebSocketAdapter())
+        let bag = try await client.queries.scalarFixture().scalarFixture
+        XCTAssertEqual(bag.opaque, "opaque:abc")
+    }
 }
