@@ -54,12 +54,12 @@ void main() {
 
   test('Kotlin', () {
     _check((p) => KotlinSerializer(p, importPrefix: '', typeMapOverrides: {'Stamp': 'Int'}), {
-      'maybeRole': ['v?.toJson()', '(j as? String)?.let { Role.fromJson(it) }'],
-      'maybeAddress': ['v?.toJson()', '(j as? Map<*, *>)?.let { Address.fromJson(it as Map<String, Any?>) }'],
+      'maybeRole': ['v?.toJson()', '(j as String?)?.let { Role.fromJson(it) }'],
+      'maybeAddress': ['v?.toJson()', '(j as Map<*, *>?)?.let { Address.fromJson(it as Map<String, Any?>) }'],
       'roles': ['v.map { e0 -> e0.toJson() }', '(j as List<*>).map { e0 -> Role.fromJson(e0 as String)!! }'],
-      'grid': ['v?.map { e0 -> e0?.map { e1 -> e1?.toJson() } }', '(j as? List<*>)?.map { e0 -> (e0 as? List<*>)?.map { e1 -> (e1 as? Map<*, *>)?.let { Address.fromJson(it as Map<String, Any?>) } } }'],
+      'grid': ['v?.map { e0 -> e0?.map { e1 -> e1?.toJson() } }', '(j as List<*>?)?.map { e0 -> (e0 as List<*>?)?.map { e1 -> (e1 as Map<*, *>?)?.let { Address.fromJson(it as Map<String, Any?>) } } }'],
       'maybeStamp': ['v?.let { back(it) }', 'j?.let { conv(it) }'],
-      'stamps': ['v?.map { e0 -> back(e0) }', '(j as? List<*>)?.map { e0 -> conv(e0) }'],
+      'stamps': ['v?.map { e0 -> back(e0) }', '(j as List<*>?)?.map { e0 -> conv(e0) }'],
     });
   });
 

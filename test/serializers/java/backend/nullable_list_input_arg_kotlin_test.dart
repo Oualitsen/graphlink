@@ -37,7 +37,7 @@ void main() {
     // The safe cast + safe call already short-circuits to null for a null
     // list argument, so no separate null guard is needed (unlike Java's
     // stream()-based conversion, which required an explicit null check).
-    expect(result, contains('(itemsAsMap as? List<*>)?.map'));
+    expect(result, contains('(itemsAsMap as List<*>?)?.map'));
   });
 
   test('mutation with nullable list of nullable list of input argument serializes controller (Kotlin)',
@@ -72,7 +72,7 @@ void main() {
 
     // Every level of nesting uses a safe cast + safe call, so a null outer
     // list, a null inner list, and a null element all short-circuit cleanly.
-    expect(result, contains('(itemsAsMap as? List<*>)?.map'));
-    expect(result, contains('(e0 as? List<*>)?.map'));
+    expect(result, contains('(itemsAsMap as List<*>?)?.map'));
+    expect(result, contains('(e0 as List<*>?)?.map'));
   });
 }

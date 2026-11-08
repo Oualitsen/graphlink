@@ -53,8 +53,8 @@ void main() {
     test('fromJson parses both fields as nullable Double', () {
       expect(lines(out), containsAllInOrder([
         'fun fromJson(map: Map<String, Any?>): PriceRangeFilter = PriceRangeFilter(',
-        'max = (map["max"] as? Number)?.toDouble(),',
-        'min = (map["min"] as? Number)?.toDouble(),',
+        'max = (map["max"] as Number?)?.toDouble(),',
+        'min = (map["min"] as Number?)?.toDouble(),',
       ]));
     });
   });

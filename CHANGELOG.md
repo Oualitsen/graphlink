@@ -772,3 +772,5 @@
 
 - **UTF-8 byte order mark** — a response body that starts with a BOM (`EF BB BF`) is now decoded in Python, Go, Java and Kotlin, as it already was in Dart, TypeScript and Swift. The clients drop the mark from GraphQL bodies and from REST text and JSON bodies; binary downloads are untouched.
 
+- **Wrong-typed nullable values in Kotlin** — decoding a nullable field, list element or REST result whose JSON value has the wrong type (an array or a string where an object is expected, a number where a string is expected) no longer yields `null`. It now throws a `ClassCastException`, as it already did for non-null values and as Java does. `null` and absent values are still `null`. **Migration:** regenerate; a server that sent the wrong type for a nullable field used to get `null` silently and now gets an exception.
+
