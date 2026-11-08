@@ -98,7 +98,7 @@ Each test file has a `knownDefects` map: a skipped case with the reason. These a
 | Decoders trap on wrong-typed or missing values (`as!`, force unwrap, NSNumber bridge) | Swift (22 cases) |
 | Scalar types and shapes are not checked at run time. ~~TypeScript~~ fixed: generated `graph-link-json.ts` checks every scalar in `fromJson` and in REST results | Python (10, left to pydantic's lax mode) |
 | ~~Empty `errors: []` next to `data` is raised as a failure~~ fixed: an empty list counts as no errors | Dart, TypeScript, Python |
-| UTF-8 BOM rejected | Python, Go, Java, Kotlin (c, p) |
+| ~~UTF-8 BOM rejected~~ fixed: every client strips a leading BOM from a text or JSON body | Python, Go, Java, Kotlin |
 | ~~GraphQL transport drops the HTTP status~~ fixed with the item above | all |
 
 Not yet covered by the suite: timeouts and cancellation (`slow`, `hang` faults exist in the server, no test uses a client timeout),

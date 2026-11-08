@@ -746,7 +746,8 @@ class DefaultGraphLinkGetAdapter(
 
 
 const kotlinHttpStatusHelpers = r'''
-fun glCheckHttpStatus(status: Int, body: String, decoder: GraphLinkJsonDecoder): String {
+fun glCheckHttpStatus(status: Int, rawBody: String, decoder: GraphLinkJsonDecoder): String {
+    val body = rawBody.removePrefix(Char(0xFEFF).toString())
     if (status in 200..299) return body
     val json = try { decoder.decode(body) } catch (e: Exception) { null }
     if (json != null && (json.containsKey("errors") || json.containsKey("data"))) return body

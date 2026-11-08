@@ -1779,6 +1779,7 @@ func (a *GraphLinkHttpAdapter) do(ctx context.Context, request *http.Request) (*
 func glReadBody(response *http.Response) (string, error) {
 	defer response.Body.Close()
 	data, err := io.ReadAll(response.Body)
+	data = bytes.TrimPrefix(data, []byte("\xef\xbb\xbf"))
 	body := string(data)
 	if err != nil || (response.StatusCode >= 200 && response.StatusCode < 300) {
 		return body, err

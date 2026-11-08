@@ -22,9 +22,6 @@ type faultCase struct {
 }
 
 var knownDefects = map[string]string{
-	"bom:g": "encoding/json rejects a UTF-8 byte order mark",
-	"bom:c": "encoding/json rejects a UTF-8 byte order mark",
-	"bom:p": "encoding/json rejects a UTF-8 byte order mark",
 }
 
 var opNames = map[rune]string{'g': "GraphQL getCount", 'c': "REST count", 'p': "REST status"}

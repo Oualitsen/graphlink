@@ -790,6 +790,8 @@ class JavaClientRuntimeSerializer {
             methodName: 'checkStatus',
             arguments: ['int status', 'String body', 'GraphLinkJsonDecoder decoder'],
             statements: [
+              codeGenUtils.ifStatement(
+                  condition: '!body.isEmpty() && body.charAt(0) == 0xFEFF', ifBlockStatements: ['body = body.substring(1);']),
               codeGenUtils.ifStatement(condition: 'status >= 200 && status < 300', ifBlockStatements: ['return body;']),
               codeGenUtils.tryCatchFinally(
                 tryStatements: [

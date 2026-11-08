@@ -723,6 +723,8 @@ class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
 
 const pythonCheckHttpStatus = r'''
 def _check_http_status(status: int, body: str) -> str:
+    if body.startswith("\ufeff"):
+        body = body[1:]
     if 200 <= status < 300:
         return body
     try:
