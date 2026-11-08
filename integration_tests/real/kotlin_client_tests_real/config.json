@@ -11,7 +11,7 @@
     "LocalDate": "String",
     "BigDecimal": "Any",
     "JSON": "Any",
-    "Opaque": {"type": "String", "fromJson": "\"opaque:\" + ({} as String)", "toJson": "{}.removePrefix(\"opaque:\")"}
+    "Opaque": {"type": "String", "jsonType": "String", "fromJson": "\"opaque:\" + {}", "toJson": "{}.removePrefix(\"opaque:\")"}
   },
   "outputDir": "client-app/src/main/kotlin/dev/graphlink/test/generated",
   "clientConfig": {

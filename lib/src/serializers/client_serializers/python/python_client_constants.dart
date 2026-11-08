@@ -34,6 +34,65 @@ class GraphLinkException(Exception):
         super().__init__(message or "GraphQL request failed")
 ''';
 
+const pythonJsonChecks = r'''
+import math
+from typing import Any, Dict, List
+
+
+def _describe(value: Any) -> str:
+    if value is None:
+        return "null"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, (int, float)):
+        return "number"
+    if isinstance(value, str):
+        return "string"
+    if isinstance(value, list):
+        return "array"
+    return "object"
+
+
+def _fail(path: str, expected: str, value: Any) -> Any:
+    raise TypeError(f"{path}: expected {expected}, got {_describe(value)}")
+
+
+def expect_str(value: Any, path: str) -> str:
+    if not isinstance(value, str):
+        _fail(path, "string", value)
+    return value
+
+
+def expect_bool(value: Any, path: str) -> bool:
+    if not isinstance(value, bool):
+        _fail(path, "boolean", value)
+    return value
+
+
+def expect_int(value: Any, path: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        _fail(path, "integer", value)
+    return value
+
+
+def expect_float(value: Any, path: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        _fail(path, "number", value)
+    return float(value)
+
+
+def expect_dict(value: Any, path: str) -> Dict[str, Any]:
+    if not isinstance(value, dict):
+        _fail(path, "object", value)
+    return value
+
+
+def expect_list(value: Any, path: str) -> List[Any]:
+    if not isinstance(value, list):
+        _fail(path, "array", value)
+    return value
+''';
+
 const pythonLock = r'''
 from __future__ import annotations
 

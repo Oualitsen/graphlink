@@ -52,4 +52,22 @@ class ScalarCodecTest {
         assertEquals("2026-01-02T03:04:05Z", bag.getDt());
         assertEquals("x", ((java.util.Map<?, ?>) bag.getJson()).get("name"));
     }
+
+    private GraphLinkClient fixtureClient(String opaque) {
+        MockAdapter adapter = new MockAdapter();
+        adapter.register("scalarFixture", "{\"data\":{\"scalarFixture\":{\"dt\":\"x\",\"long\":1,\"dts\":[],\"opaque\":" + opaque + "}}}");
+        return Fixtures.newClient(adapter, new MockWebSocketAdapter());
+    }
+
+    @Test
+    void codecScalarOfTheWrongTypeFailsInsteadOfBeingCastBlindly() {
+        for (String wire : List.of("7", "true", "1.5", "{\"a\":1}", "[\"a\"]")) {
+            assertThrows(RuntimeException.class, () -> fixtureClient(wire).queries.scalarFixture(), wire);
+        }
+    }
+
+    @Test
+    void codecScalarOfTheRightTypeStillRunsTheTemplate() {
+        assertEquals("opaque:abc", fixtureClient("\"abc\"").queries.scalarFixture().getScalarFixture().getOpaque());
+    }
 }

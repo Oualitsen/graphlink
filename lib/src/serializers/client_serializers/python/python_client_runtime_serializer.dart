@@ -15,6 +15,8 @@ class PythonClientRuntimeSerializer {
 
   GLClassModel generateLockFile() => _client.static(pythonLock);
 
+  GLClassModel generateJsonChecksFile() => _client.static(pythonJsonChecks);
+
   GLClassModel generateCacheEntryFile() => _client.static(pythonCacheEntry);
 
   GLClassModel generateTagEntryFile() => _client.static(pythonTagEntry);

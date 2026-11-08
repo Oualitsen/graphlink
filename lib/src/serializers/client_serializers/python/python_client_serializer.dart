@@ -139,6 +139,7 @@ class PythonClientSerializer extends GLClientSerializer {
     final operations = _restOperations(type);
     if (operations.isEmpty) return const [];
     return [
+      'from . import graph_link_json',
       'from .graph_link_rest_resolver import GraphLinkRestResolver',
       'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestFormBody, RestJsonBody, RestMultipartBody, RestPart, RestRawBody, RestRequest, RestBody, rest_encode, rest_encode_json, rest_entries, rest_header, rest_headers, rest_parts, rest_spread_entries, rest_text',
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))

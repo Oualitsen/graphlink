@@ -379,6 +379,31 @@ Set `"operationNameAsParameter": true` to append the operation name as a query p
 
 The adapter function gains a second parameter and the client sends requests to `<url>?operationName=OperationName`.
 
+## Custom scalar codecs
+
+A scalar can map to a TypeScript type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "string",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "{}.slice(7)"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the TypeScript type your code uses. With `jsonType`, the generated decoder checks the field with `GraphLinkJson.expectString`, `expectInteger`, `expectNumber`, `expectBoolean`, `expectObject` or `expectArray` and passes a value of the matching type to `fromJson`, so the expression needs no `as` cast.
+A `null`, missing or wrong-typed value is raised as an error naming the field and the expression never runs; on a
+nullable field `null` stays `null`.
+
+Without `jsonType`, `{}` is `unknown` at run time: a cast such as `{} as string` is erased when TypeScript compiles to JavaScript and checks nothing. Set `jsonType` and keep `fromJson` free of casts.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## Readonly types
 
 Set `"immutableTypeFields": true` (the default) to generate `readonly` on every field in type interfaces:

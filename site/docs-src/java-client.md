@@ -456,6 +456,31 @@ res.subscribe(r -> System.out.println(r.getGetVehicle().getBrand()));
 
 File upload support is available for the Java client regardless of `asyncStyle` — see below.
 
+## Custom scalar codecs
+
+A scalar can map to a Java type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "String",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "{}.substring(7)"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Java type your code uses. With `jsonType`, the generated decoder casts the value to `String`, `Boolean`, `Map<String, Object>` or `List<?>`; `Int` becomes a `long` converted exactly (a fractional or out-of-range number fails) and `Double` a `double`. The expression needs no cast.
+A value of another type makes the decode fail instead of reaching your expression; on a nullable field `null`
+stays `null`.
+
+Without `jsonType`, `{}` is an `Object` and a hard cast such as `(String) {}` is yours to write. A `null` for a non-null `jsonType` fails with a `NullPointerException`, a wrong type with a `ClassCastException`.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## File uploads
 
 When your schema uses the built-in `Upload` scalar, GraphLink generates a `GLUpload` class and handles multipart encoding in the generated adapter:

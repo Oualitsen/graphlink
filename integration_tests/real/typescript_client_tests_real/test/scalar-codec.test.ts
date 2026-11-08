@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
-import { newClient } from './real-server-adapter.ts';
+import { newClient, newWsAdapter } from './real-server-adapter.ts';
 
 let client: GraphLinkClient;
 beforeEach(() => { client = newClient(); });
@@ -41,5 +41,22 @@ describe('scalars that are plain aliases', () => {
   it('a Long above 2^53 loses precision, because JSON.parse reads every number as a double', async () => {
     const bag = (await client.queries.scalarFixture()).scalarFixture;
     expect(bag.long).toBe(9007199254740992);
+  });
+});
+
+function fixtureClient(opaque: unknown): GraphLinkClient {
+  const response = JSON.stringify({ data: { scalarFixture: { dt: 'x', long: 1, dts: [], opaque } } });
+  return new GraphLinkClient(async () => response, newWsAdapter());
+}
+
+describe('a scalar with a codec and a jsonType', () => {
+  for (const wire of [7, true, 1.5, { a: 1 }, ['a']]) {
+    it(`rejects ${JSON.stringify(wire)} naming the field`, async () => {
+      await expect(fixtureClient(wire).queries.scalarFixture()).rejects.toThrow(/opaque/);
+    });
+  }
+
+  it('runs the template on the right type', async () => {
+    expect((await fixtureClient('abc').queries.scalarFixture()).scalarFixture.opaque).toBe('opaque:abc');
   });
 });

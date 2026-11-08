@@ -1,8 +1,14 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/go/go_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:test/test.dart';
 
 const _schema = '''
@@ -136,6 +142,127 @@ void main() {
     test('without jsonType the template still receives the untyped value', () {
       final untyped = {'Opaque': GLScalarCodec.fromConfig('Opaque', {'type': 'string', 'fromJson': '"opaque:" + {}.(string)'})};
       expect(expr(untyped, 'tag'), 'func(v any) (string, error) { return "opaque:" + v.(string), nil }(j)');
+    });
+  });
+
+  group('TypeScript', () {
+    String expr(Map<String, GLScalarCodec> codecs, String field) {
+      final g = GLParser(scalarCodecs: codecs)..parse(_schema);
+      final s = TypeScriptSerializer(g, importPrefix: '', typeMapOverrides: {for (final e in codecs.entries) e.key: e.value.type});
+      final type = g.types['Bag']!.fields.firstWhere((f) => f.name.token == field).type;
+      return s.checkedFromJsonExpr(type, 'j', 'Bag.$field');
+    }
+
+    final typed = {'Opaque': _codec('string', 'String', '"opaque:" + {}'), 'Count': _codec('number', 'Int', '{}')};
+
+    test('a non-null field is checked before the template runs', () {
+      expect(expr(typed, 'tag'), '"opaque:" + GraphLinkJson.expectString(j, "Bag.tag")');
+    });
+
+    test('a nullable field keeps null as null', () {
+      expect(expr(typed, 'maybeTag'), 'j != null ? "opaque:" + GraphLinkJson.expectString(j, "Bag.maybeTag") : null');
+    });
+
+    test('each jsonType picks its own check', () {
+      for (final entry in {
+        'String': 'expectString',
+        'Int': 'expectInteger',
+        'Double': 'expectNumber',
+        'Bool': 'expectBoolean',
+        'Map': 'expectObject',
+        'List': 'expectArray',
+      }.entries) {
+        final codecs = {'Opaque': _codec('T', entry.key, '{}'), 'Count': _codec('number', 'Int', '{}')};
+        expect(expr(codecs, 'tag'), 'GraphLinkJson.${entry.value}(j, "Bag.tag")', reason: entry.key);
+      }
+    });
+
+    test('without jsonType the template receives the untyped value', () {
+      final untyped = {'Opaque': GLScalarCodec.fromConfig('Opaque', {'type': 'string', 'fromJson': '{} as string'})};
+      expect(expr(untyped, 'tag'), 'j as string');
+    });
+  });
+
+  group('Python', () {
+    String expr(Map<String, GLScalarCodec> codecs, String field) {
+      final g = GLParser(scalarCodecs: codecs)..parse(_schema);
+      final s = PythonSerializer(g, importPrefix: '', typeMapOverrides: {for (final e in codecs.entries) e.key: e.value.type});
+      final type = g.types['Bag']!.fields.firstWhere((f) => f.name.token == field).type;
+      return s.checkedFromJsonExpr(type, 'j', 'Bag.$field');
+    }
+
+    final typed = {'Opaque': _codec('str', 'String', '"opaque:" + {}'), 'Count': _codec('int', 'Int', '{}')};
+
+    test('a non-null field is checked before the template runs', () {
+      expect(expr(typed, 'tag'), '"opaque:" + graph_link_json.expect_str(j, "Bag.tag")');
+    });
+
+    test('a nullable field keeps None', () {
+      expect(expr(typed, 'maybeTag'), '(None if j is None else "opaque:" + graph_link_json.expect_str(j, "Bag.maybeTag"))');
+    });
+
+    test('each jsonType picks its own check', () {
+      for (final entry in {
+        'String': 'expect_str',
+        'Int': 'expect_int',
+        'Double': 'expect_float',
+        'Bool': 'expect_bool',
+        'Map': 'expect_dict',
+        'List': 'expect_list',
+      }.entries) {
+        final codecs = {'Opaque': _codec('T', entry.key, '{}'), 'Count': _codec('int', 'Int', '{}')};
+        expect(expr(codecs, 'tag'), 'graph_link_json.${entry.value}(j, "Bag.tag")', reason: entry.key);
+      }
+    });
+  });
+
+  group('Dart, Java and Kotlin', () {
+    String expr(GLSerializer Function(GLParser, Map<String, String>) make, Map<String, GLScalarCodec> codecs, String field) {
+      final g = GLParser(scalarCodecs: codecs)..parse(_schema);
+      final s = make(g, {for (final e in codecs.entries) e.key: e.value.type});
+      final type = g.types['Bag']!.fields.firstWhere((f) => f.name.token == field).type;
+      return s.fromJsonExpr(type, 'j');
+    }
+
+    String dart(Map<String, GLScalarCodec> c, String f) =>
+        expr((g, m) => DartSerializer(g, importPrefix: '', typeMapOverrides: m), c, f);
+    String java(Map<String, GLScalarCodec> c, String f) =>
+        expr((g, m) => JavaSerializer(g, importPrefix: '', typeMapOverrides: m), c, f);
+    String kotlin(Map<String, GLScalarCodec> c, String f) =>
+        expr((g, m) => KotlinSerializer(g, importPrefix: '', typeMapOverrides: m), c, f);
+
+    Map<String, GLScalarCodec> codecs(String jsonType, [String template = '{}']) =>
+        {'Opaque': _codec('T', jsonType, template), 'Count': _codec('int', 'Int', '{}')};
+
+    test('Dart casts to the declared type before the template runs', () {
+      expect(dart(codecs('String', "'o:' + {}"), 'tag'), "'o:' + (j as String)");
+      expect(dart(codecs('String', "'o:' + {}"), 'maybeTag'), "j == null ? null : 'o:' + (j as String)");
+      expect(dart(codecs('Int'), 'tag'), '(j as int)');
+      expect(dart(codecs('Double'), 'tag'), '(j as num).toDouble()');
+      expect(dart(codecs('Bool'), 'tag'), '(j as bool)');
+      expect(dart(codecs('Map'), 'tag'), '(j as Map<String, dynamic>)');
+      expect(dart(codecs('List'), 'tag'), '(j as List<dynamic>)');
+    });
+
+    test('Java rejects null and converts integers exactly', () {
+      expect(java(codecs('String', '"o:" + {}'), 'tag'), '"o:" + java.util.Objects.requireNonNull((String)j)');
+      expect(java(codecs('Int'), 'tag'), 'new java.math.BigDecimal(((Number)j).toString()).longValueExact()');
+      expect(java(codecs('Double'), 'tag'), '((Number)j).doubleValue()');
+      expect(java(codecs('String', '{}'), 'maybeTag'), 'j == null ? null : java.util.Objects.requireNonNull((String)j)');
+    });
+
+    test('Kotlin casts to the declared type and converts integers exactly', () {
+      expect(kotlin(codecs('String', '"o:" + {}'), 'tag'), '"o:" + (j as String)');
+      expect(kotlin(codecs('String', '"o:" + {}'), 'maybeTag'), 'j?.let { "o:" + (it as String) }');
+      expect(kotlin(codecs('Int'), 'tag'), '(j as Number).let { java.math.BigDecimal(it.toString()).longValueExact() }');
+      expect(kotlin(codecs('Double'), 'tag'), '(j as Number).toDouble()');
+    });
+
+    test('without jsonType the template receives the untyped value', () {
+      final untyped = {'Opaque': GLScalarCodec.fromConfig('Opaque', {'type': 'T', 'fromJson': 'conv({})'})};
+      expect(dart(untyped, 'tag'), 'conv(j)');
+      expect(java(untyped, 'tag'), 'conv(j)');
+      expect(kotlin(untyped, 'tag'), 'conv(j)');
     });
   });
 }

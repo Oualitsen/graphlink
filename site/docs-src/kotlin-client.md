@@ -348,6 +348,31 @@ val client = GraphLinkClient(
 val user = runBlocking { client.queries.getUser("42").getUser }
 ```
 
+## Custom scalar codecs
+
+A scalar can map to a Kotlin type with `fromJson` and `toJson` expressions, where `{}` stands for the value:
+
+```json
+"typeMappings": {
+  "Opaque": {
+    "type": "String",
+    "jsonType": "String",
+    "fromJson": "\"opaque:\" + {}",
+    "toJson": "{}.removePrefix(\"opaque:\")"
+  }
+}
+```
+
+`jsonType` names the JSON type the server sends: `String`, `Int`, `Double`, `Bool`, `Map` or `List`. It is
+different from `type`, which is the Kotlin type your code uses. With `jsonType`, the generated decoder casts the value to `String`, `Boolean`, `Map<String, Any?>` or `List<*>`; `Int` becomes a `Long` converted exactly (a fractional or out-of-range number fails) and `Double` a `Double`. The expression needs no cast.
+A value of another type makes the decode fail instead of reaching your expression; on a nullable field `null`
+stays `null`.
+
+Without `jsonType`, `{}` is an `Any` and a cast such as `{} as String` is yours to write. A wrong type fails with a `ClassCastException`, a `null` for a non-null `jsonType` with a `NullPointerException`.
+
+`jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
+handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
 ## Caching
 
 Cache behaviour is declared in the schema, not in code:

@@ -293,7 +293,7 @@ class PythonRestOperationSerializer {
           'return $_result',
         ];
       case RestResponseKind.json:
-        final decode = _serializer.fromJsonExpr(op.field.type, _json);
+        final decode = _serializer.checkedFromJsonExpr(op.field.type, _json, op.name);
         if (op.cacheTtl > 0) return [_cachedReturn(op, path, decode)];
         return [
           _cg.constDecl(_json, 'await self.rest_json__($_request, $path, ${_bool(op.allowsEmptyBody)})'),
