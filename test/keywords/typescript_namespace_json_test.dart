@@ -76,7 +76,7 @@ void main() {
       expect(out, contains('"id": obj.id'));
       // Scalar nullable: type assertion in fromJson
       expect(out, contains('"name": obj.name'));
-      expect(out, contains('name: json["name"] as string | null'));
+      expect(out, contains('name: json["name"] != null ? GraphLinkJson.expectString(json["name"], "User.name") : null'));
 
       // Enum non-nullable toJson and fromJson
       expect(out, contains('"role": Role.toJson(obj.role)'));
@@ -96,11 +96,11 @@ void main() {
 
       // List non-nullable
       expect(out, contains('"tags": obj.tags.map((e0) => e0)'));
-      expect(out, contains('tags: (json["tags"] as unknown[]).map((e0) => e0 as string)'));
+      expect(out, contains('tags: (json["tags"] as unknown[]).map((e0) => GraphLinkJson.expectString(e0, "User.tags"))'));
 
       // List nullable
       expect(out, contains('obj.nullableTags != null ? obj.nullableTags.map((e0) => e0) : obj.nullableTags'));
-      expect(out, contains('json["nullableTags"] != null ? (json["nullableTags"] as unknown[]).map((e0) => e0 as string) : null'));
+      expect(out, contains('json["nullableTags"] != null ? (json["nullableTags"] as unknown[]).map((e0) => GraphLinkJson.expectString(e0, "User.nullableTags")) : null'));
     });
 
     test('input: namespace emitted alongside interface', () {
@@ -124,9 +124,9 @@ void main() {
       expect(out, contains('fromJson(json: Record<string, unknown>): CreateUserInput'));
 
       expect(out, contains('"name": obj.name'));
-      expect(out, contains('name: json["name"] as string'));
+      expect(out, contains('name: GraphLinkJson.expectString(json["name"], "CreateUserInput.name")'));
       expect(out, contains('"age": obj.age'));
-      expect(out, contains('age: json["age"] as number | null'));
+      expect(out, contains('age: json["age"] != null ? GraphLinkJson.expectInteger(json["age"], "CreateUserInput.age") : null'));
     });
 
     test('union interface: fromJson dispatches on __typename', () {
