@@ -729,6 +729,15 @@ type VehicleDriver @glExpand(depth: 3) {
 
 
 type Query {
+
+  chain(id: ID!): Chain
+  grid(empty: Boolean = false): Grid!
+  moments: [Moment!]!
+  timed: [Timed!]!
+  cachedAttachments: [Attachment!]! @glCache(ttl: "1m", tags: ["attachments"])
+  failingAttachments(fail: Boolean!): [Attachment!]!
+  describePick(pick: Pick!): String!
+  describeBasket(basket: Basket!): String!
   # Non-nullable single object — basic case.
   getUser(id: ID!): User!
 
@@ -857,6 +866,9 @@ type Query {
 # ── 10. Mutations — plain ─────────────────────────────────────────────────────
 
 type Mutation {
+
+  bulkAttachments(n: Int!): [Attachment!]!
+  bulkEntities: [Entity!]!
   # Returns the full created object.
   createUser(input: CreateUserInput!): User!
 
@@ -924,6 +936,9 @@ type Mutation {
 # ── 13. Subscriptions ─────────────────────────────────────────────────────────
 
 type Subscription {
+
+  attachmentsBatch: [Attachment!]!
+  entityBatch: [Entity!]!
   # Basic subscription — typed response stream.
   userCreated: User!
   userCreateds(ids: [ID!]!): [User!]
@@ -1028,4 +1043,34 @@ input ScalarsInput {
   opaque: Opaque
   dts: [DateTime!]!
   longs: [Long]
+}
+
+# ── Polymorphic nesting, recursion, scalars and oneOf ────────────────────────
+
+union Chain = Link | End
+type Link { id: ID! next: Chain }
+type End { id: ID! reason: String! }
+
+type Grid {
+  cells: [[Attachment]]!
+  rows: [[Entity!]!]!
+  maybe: [[Attachment!]]
+}
+
+interface Timed { id: ID! at: DateTime! }
+type Stamp implements Timed { id: ID! at: DateTime! big: Long! }
+type Span implements Timed { id: ID! at: DateTime! until: LocalDate opaque: Opaque dts: [DateTime!]! }
+union Moment = Stamp | Span
+
+input Pick @oneOf {
+  inner: InnerInput
+  status: UserStatus
+  ids: [Int!]
+  pet: Pet
+  child: Pick
+}
+
+input Basket {
+  pets: [Pet!]!
+  lead: Pet
 }

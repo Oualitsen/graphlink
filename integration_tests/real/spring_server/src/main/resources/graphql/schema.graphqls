@@ -631,6 +631,15 @@ type VehicleDriver {
 }
 
 type Query {
+
+  chain(id: ID!): Chain
+  grid(empty: Boolean = false): Grid!
+  moments: [Moment!]!
+  timed: [Timed!]!
+  cachedAttachments: [Attachment!]!
+  failingAttachments(fail: Boolean!): [Attachment!]!
+  describePick(pick: Pick!): String!
+  describeBasket(basket: Basket!): String!
   getUser(id: ID!): User!
   findUser(id: ID!): User
   listUsers: [User!]!
@@ -707,6 +716,9 @@ type Query {
 }
 
 type Mutation {
+
+  bulkAttachments(n: Int!): [Attachment!]!
+  bulkEntities: [Entity!]!
   createUser(input: CreateUserInput!): User!
   deleteUser(id: ID!): Boolean!
   updateUser(id: ID!, input: UpdateUserInput!): User!
@@ -726,6 +738,9 @@ type Mutation {
 }
 
 type Subscription {
+
+  attachmentsBatch: [Attachment!]!
+  entityBatch: [Entity!]!
   userCreated: User!
   userCreateds(ids: [ID!]!): [User!]
   userStatusChanged(userId: ID!): User!
@@ -777,4 +792,34 @@ input ScalarsInput {
   opaque: Opaque
   dts: [DateTime!]!
   longs: [Long]
+}
+
+# ── Polymorphic nesting, recursion, scalars and oneOf ────────────────────────
+
+union Chain = Link | End
+type Link { id: ID! next: Chain }
+type End { id: ID! reason: String! }
+
+type Grid {
+  cells: [[Attachment]]!
+  rows: [[Entity!]!]!
+  maybe: [[Attachment!]]
+}
+
+interface Timed { id: ID! at: DateTime! }
+type Stamp implements Timed { id: ID! at: DateTime! big: Long! }
+type Span implements Timed { id: ID! at: DateTime! until: LocalDate opaque: Opaque dts: [DateTime!]! }
+union Moment = Stamp | Span
+
+input Pick @oneOf {
+  inner: InnerInput
+  status: UserStatus
+  ids: [Int!]
+  pet: Pet
+  child: Pick
+}
+
+input Basket {
+  pets: [Pet!]!
+  lead: Pet
 }

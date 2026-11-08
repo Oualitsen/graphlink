@@ -333,3 +333,32 @@ class PolymorphicSubscriptions(unittest.IsolatedAsyncioTestCase):
     async def test_an_interface_stream_emits_each_implementer(self) -> None:
         events = await self._take(self.client.subscriptions.entity_published(), 2)
         self.assertEqual([type(e.entity_published) for e in events], [Article, Comment])
+
+
+class TypenameUnderAnAlias(RealTestCase):
+    async def test_every_member_still_decodes_to_its_own_type(self) -> None:
+        attachments = (await self.client.queries.kind_alias()).attachments
+        self.assertEqual(
+            [type(a).__name__ for a in attachments],
+            ["Photo_IdWidth", "Video_IdSeconds", "Document_IdPages"],
+        )
+        self.assertEqual(attachments[0].width, 640)
+        self.assertEqual(attachments[1].seconds, 30)
+        self.assertEqual(attachments[2].pages, 12)
+
+
+class OneFieldSelectedTwoWays(RealTestCase):
+    async def test_each_alias_decodes_with_its_own_selection(self) -> None:
+        same = await self.client.queries.two_views(a="ph1", b="ph1")
+        self.assertEqual(same.first.width, 640)
+        self.assertEqual(same.second.url, "http://cdn/1.png")
+        self.assertEqual(same.photo_width.width, 640)
+        self.assertEqual(same.photo_url.url, "http://cdn/1.png")
+        other = await self.client.queries.two_views(a="v1", b="d1")
+        self.assertEqual(other.first.seconds, 30)
+        self.assertEqual(other.second.id, "d1")
+
+    async def test_an_unknown_id_on_one_alias_leaves_the_other_intact(self) -> None:
+        r = await self.client.queries.two_views(a="nope", b="v1")
+        self.assertIsNone(r.first)
+        self.assertEqual(r.second.url, "http://cdn/1.mp4")

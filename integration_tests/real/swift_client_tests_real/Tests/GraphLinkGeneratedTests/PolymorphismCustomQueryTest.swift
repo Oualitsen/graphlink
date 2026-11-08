@@ -115,4 +115,28 @@ final class PolymorphismCustomQueryTest: XCTestCase {
         let missing = try await client.queries.shareable(id: "nope").shareable
         XCTAssertNil(missing)
     }
+
+    func test_typenameUnderAnAliasStillDispatchesEveryMember() async throws {
+        let list = try await client.queries.kindAlias().attachments
+        XCTAssertEqual((list[0] as? Photo_IdWidth)?.width, 640)
+        XCTAssertEqual((list[1] as? Video_IdSeconds)?.seconds, 30)
+        XCTAssertEqual((list[2] as? Document_IdPages)?.pages, 12)
+    }
+
+    func test_oneFieldSelectedTwoWaysInOneOperation() async throws {
+        let same = try await client.queries.twoViews(a: "ph1", b: "ph1")
+        XCTAssertEqual((same.first as? Photo_Width)?.width, 640)
+        XCTAssertEqual((same.second as? Photo_Url)?.url, "http://cdn/1.png")
+        XCTAssertEqual(same.photoWidth?.width, 640)
+        XCTAssertEqual(same.photoUrl?.url, "http://cdn/1.png")
+        let other = try await client.queries.twoViews(a: "v1", b: "d1")
+        XCTAssertEqual((other.first as? Video_Seconds)?.seconds, 30)
+        XCTAssertEqual((other.second as? Document_Id)?.id, "d1")
+    }
+
+    func test_anUnknownIdOnOneAliasLeavesTheOtherIntact() async throws {
+        let r = try await client.queries.twoViews(a: "nope", b: "v1")
+        XCTAssertNil(r.first)
+        XCTAssertEqual((r.second as? Video_Url)?.url, "http://cdn/1.mp4")
+    }
 }

@@ -367,4 +367,33 @@ class PolymorphismTest {
     fun anInterfaceSelectionWithoutImplementerUnknownIdIsNull() = runTest {
         assertNull(client.queries.fetchNodeId("nope").node)
     }
+
+    @Test
+    fun typenameUnderAnAliasStillDispatchesEveryMember() = runTest {
+        val list = client.queries.kindAlias().attachments
+        assertEquals(listOf("Photo_IdWidth", "Video_IdSeconds", "Document_IdPages"), list.map { it::class.simpleName })
+        assertEquals(640, assertIs<Photo_IdWidth>(list[0]).width)
+        assertEquals(30, assertIs<Video_IdSeconds>(list[1]).seconds)
+        assertEquals(12, assertIs<Document_IdPages>(list[2]).pages)
+    }
+
+    @Test
+    fun oneFieldSelectedTwoWaysInOneOperation() = runTest {
+        val same = client.queries.twoViews("ph1", "ph1")
+        assertEquals(640, assertIs<Photo_Width>(same.first).width)
+        assertEquals("http://cdn/1.png", assertIs<Photo_Url>(same.second).url)
+        assertEquals(640, same.photoWidth!!.width)
+        assertEquals("http://cdn/1.png", same.photoUrl!!.url)
+
+        val other = client.queries.twoViews("v1", "d1")
+        assertEquals(30, assertIs<Video_Seconds>(other.first).seconds)
+        assertEquals("d1", assertIs<Document_Id>(other.second).id)
+    }
+
+    @Test
+    fun anUnknownIdOnOneAliasLeavesTheOtherIntact() = runTest {
+        val r = client.queries.twoViews("nope", "v1")
+        assertNull(r.first)
+        assertEquals("http://cdn/1.mp4", assertIs<Video_Url>(r.second).url)
+    }
 }

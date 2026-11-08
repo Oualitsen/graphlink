@@ -342,4 +342,41 @@ void main() {
       expect(events.map((e) => e.entityPublished.runtimeType), [Article, Comment]);
     });
   });
+
+  group('__typename under an alias', () {
+    test('every member still decodes to its own type', () async {
+      final list = (await client.queries.kindAlias()).attachments;
+      expect(list.map((a) => a.runtimeType.toString()), ['Photo_IdWidth', 'Video_IdSeconds', 'Document_IdPages']);
+      expect((list[0] as dynamic).width, 640);
+      expect((list[1] as dynamic).seconds, 30);
+      expect((list[2] as dynamic).pages, 12);
+    });
+
+    test('the dispatch key survives a round trip', () async {
+      final list = (await client.queries.kindAlias()).attachments;
+      expect(list.map((a) => a.toJson()['__typename']), ['Photo', 'Video', 'Document']);
+    });
+  });
+
+  group('one field selected two ways in a single operation', () {
+    test('each alias decodes with its own selection', () async {
+      final r = await client.queries.twoViews(a: 'ph1', b: 'ph1');
+      expect((r.first as Photo_Width).width, 640);
+      expect((r.second as Photo_Url).url, 'http://cdn/1.png');
+      expect(r.photoWidth!.width, 640);
+      expect(r.photoUrl!.url, 'http://cdn/1.png');
+    });
+
+    test('different members come back for the two aliases', () async {
+      final r = await client.queries.twoViews(a: 'v1', b: 'd1');
+      expect((r.first as Video_Seconds).seconds, 30);
+      expect((r.second as Document_Id).id, 'd1');
+    });
+
+    test('an unknown id on one alias leaves the other intact', () async {
+      final r = await client.queries.twoViews(a: 'nope', b: 'v1');
+      expect(r.first, isNull);
+      expect((r.second as Video_Url).url, 'http://cdn/1.mp4');
+    });
+  });
 }
