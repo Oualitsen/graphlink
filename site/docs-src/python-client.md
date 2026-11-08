@@ -150,6 +150,12 @@ handle that itself. A codec with no `fromJson` is a plain type alias and ignores
 
 ## Errors
 
+!!! danger "Behavior change in v6.0.0"
+    A GraphQL call whose response has no `data` and no `errors`, or whose HTTP status is not 2xx and carries no
+    GraphQL body (a gateway page, `{"error": "unauthorized"}`), now raises `GraphLinkException`, like a server-side
+    GraphQL error. It used to return `None`. `GraphLinkError` has two new optional fields, `status` and `body`. A
+    response with `"errors": []` is a success, and a leading UTF-8 byte order mark is ignored.
+
 Operations raise `GraphLinkException` (its `.errors` is the list of `GraphLinkError`) when the response contains GraphQL
 errors. Mark an operation with `@glCaptureErrors` (or set `captureErrors: true`) to get a `…FullResponse` with `data` and
 `errors` instead.

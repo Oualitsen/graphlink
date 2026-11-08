@@ -447,6 +447,22 @@ This completes proper discriminated-union (de)serialization on the TypeScript ta
 
 ## Error handling
 
+!!! danger "Behavior change in v6.0.0"
+    A GraphQL call whose response has no `data` and no `errors`, or whose HTTP status is not 2xx and carries no
+    GraphQL body (a gateway page, `{"error": "unauthorized"}`), now rejects with a `GraphLinkException`, like a
+    server-side GraphQL error. It used to resolve with `null` or throw a cast error. `GraphLinkError` has two new
+    nullable fields, `status` and `body`, set for HTTP failures. The axios adapter no longer throws its own
+    exception on a non-2xx status. A response with `"errors": []` is a success.
+
+!!! danger "Breaking change in v6.0.0: run-time type checks"
+    The generated `fromJson` of every type and input, and the result of a REST operation, check scalars at run time
+    (new generated file `client/graph-link-json.ts`) instead of casting with `as`. A value of the wrong type, a
+    non-integer or unsafe integer for an `Int`, or a non-finite number for a `Float` throws a `TypeError` naming the
+    field, for example `Product.id: expected string, got number`. The check follows the type a scalar is mapped
+    to: an `ID` mapped to `string` accepts only strings. Regenerate. A server that sent `"19"` for an `Int` used to
+    be accepted and is now rejected. A scalar with a codec is checked only when it declares a
+    [`jsonType`](#custom-scalar-codecs).
+
 The generated client throws a `GraphLinkException` when the server returns GraphQL errors:
 
 ```typescript title="Error handling"

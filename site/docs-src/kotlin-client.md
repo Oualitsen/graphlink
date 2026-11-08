@@ -348,6 +348,26 @@ val client = GraphLinkClient(
 val user = runBlocking { client.queries.getUser("42").getUser }
 ```
 
+!!! danger "Breaking change in v6.0.0: `DefaultGraphLinkClientAdapter` takes a decoder"
+    The adapter now needs a `GraphLinkJsonDecoder`, like `DefaultGraphLinkGetAdapter` already did, so it can tell a
+    GraphQL response from a gateway page. The signature is
+    `DefaultGraphLinkClientAdapter(url, decoder, headersProvider, httpClient)`. The `GraphLinkClient` factory
+    methods are unchanged.
+
+## Decoding, HTTP errors and cancellation
+
+- A GraphQL call whose response has no `data` and no errors, or whose HTTP status is not 2xx and carries no GraphQL
+  body, throws a `GraphLinkException` (it used to return `null` or throw a cast error). `GraphLinkError` has two new
+  nullable fields, `status` and `body`. A response with `"errors": []` is a success.
+- Decoding an `Int` or `Long` field is exact. A value outside the type's range or with a fraction (`19.5`) throws an
+  `ArithmeticException`; `19.0` and `1e3` are accepted. To get another type, declare a
+  [scalar codec](#custom-scalar-codecs).
+- A nullable field, list element or REST result with a wrong-typed JSON value (an array where an object is expected)
+  throws a `ClassCastException`. It used to become `null`. `null` and absent values are still `null`.
+- A leading UTF-8 byte order mark is ignored.
+- The OkHttp adapters abort the request when the coroutine is cancelled or `withTimeout` fires, and the call ends
+  with a `CancellationException`. Regenerate to get this; an adapter you wrote yourself keeps its own behavior.
+
 ## Custom scalar codecs
 
 A scalar can map to a Kotlin type with `fromJson` and `toJson` expressions, where `{}` stands for the value:

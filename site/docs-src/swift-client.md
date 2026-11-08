@@ -381,6 +381,14 @@ let third  = try await client.queries.getUser(id: "1")   // cache evicted — hi
 Bring your own cache store by conforming to `GraphLinkCacheStore` (a `Sendable` protocol) and
 passing it to the `GraphLinkClient` initializer.
 
+## Transport errors
+
+!!! danger "Behavior change in v6.0.0"
+    A GraphQL call whose response has no `data` and no errors, or whose HTTP status is not 2xx and carries no
+    GraphQL body (a gateway page, `{"error": "unauthorized"}`), now throws a `GraphLinkException`, like a
+    server-side GraphQL error. It used to crash the process. `GraphLinkError` has two new optional fields,
+    `status` and `body`, set for HTTP failures.
+
 ## Inline error handling (`@glCaptureErrors`)
 
 Enable per-operation inline errors with the directive or globally via config:
