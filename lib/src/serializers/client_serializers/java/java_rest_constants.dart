@@ -860,6 +860,31 @@ String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
   return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${body.ident()}\n}\n';
 }
 
+String javaGLWebClientContentType() {
+  final sanitize = _method('public static ExchangeFilterFunction sanitize()', [
+    'return (request, next) -> next.exchange(request).map(GLWebClientContentType::sanitize);',
+  ]);
+  final response = _method('private static ClientResponse sanitize(ClientResponse response)', [
+    'String value = response.headers().asHttpHeaders().getFirst(HttpHeaders.CONTENT_TYPE);',
+    _braces('if (value == null || parses(value))', ['return response;']),
+    'String cleaned = withoutCharset(value);',
+    'return response.mutate().headers(headers -> replace(headers, cleaned)).build();',
+  ]);
+  final replace = _method('private static void replace(HttpHeaders headers, String cleaned)', [
+    'headers.remove(HttpHeaders.CONTENT_TYPE);',
+    _braces('if (parses(cleaned))', ['headers.set(HttpHeaders.CONTENT_TYPE, cleaned);']),
+  ]);
+  final parses = _method('private static boolean parses(String value)', [
+    _braces('try', ['MediaType.parseMediaType(value);', 'return true;']),
+    _braces('catch (InvalidMediaTypeException e)', ['return false;']),
+  ]);
+  final withoutCharset = _method('private static String withoutCharset(String value)', [
+    'return Arrays.stream(value.split(";")).filter(part -> !part.trim().toLowerCase(Locale.ROOT).startsWith("charset=")).collect(Collectors.joining(";"));',
+  ]);
+  final members = [sanitize, response, replace, parses, withoutCharset].join('\n\n');
+  return 'public final class GLWebClientContentType {\n${members.ident()}\n}\n';
+}
+
 String javaGLDataBufferInputStream() {
   final constructor = _method('GLDataBufferInputStream(Flux<DataBuffer> body)', [
     _braces('subscriber = new BaseSubscriber<DataBuffer>()', [
@@ -1011,7 +1036,7 @@ String javaRestWebClientAdapter() {
     _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider, WebClient webClient)', [
       'this.baseUrl = baseUrl;',
       'this.headersProvider = headersProvider;',
-      'this.webClient = webClient;',
+      'this.webClient = webClient.mutate().filter(GLWebClientContentType.sanitize()).build();',
     ]),
   ].join('\n\n');
 

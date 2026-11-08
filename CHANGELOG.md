@@ -774,3 +774,5 @@
 
 - **Wrong-typed nullable values in Kotlin** — decoding a nullable field, list element or REST result whose JSON value has the wrong type (an array or a string where an object is expected, a number where a string is expected) no longer yields `null`. It now throws a `ClassCastException`, as it already did for non-null values and as Java does. `null` and absent values are still `null`. **Migration:** regenerate; a server that sent the wrong type for a nullable field used to get `null` silently and now gets an exception.
 
+- **Unparseable `Content-Type` in the Java WebClient adapters** — a response whose `Content-Type` Spring cannot parse (`application/json; charset=nonsense`) no longer fails every call with `InvalidMediaTypeException`. The WebClient-based `DefaultGraphLinkClientAdapter`, `DefaultGraphLinkGetAdapter` and `DefaultGraphLinkRestAdapter` now wrap the `WebClient` (including one you pass in) with a generated filter, `GLWebClientContentType`, that drops the unknown charset, or the header if it still does not parse, so the body decodes as UTF-8 like in the JDK adapters. A header that parses is left alone.
+
