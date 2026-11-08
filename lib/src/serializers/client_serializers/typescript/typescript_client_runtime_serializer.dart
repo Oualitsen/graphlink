@@ -25,6 +25,9 @@ class TypeScriptClientRuntimeSerializer {
   GLClassModel generateTagEntryFile() =>
       const GLClassModel(body: tsTagEntry);
 
+  GLClassModel generateJsonChecksFile() =>
+      const GLClassModel(body: tsJsonChecks);
+
   GLClassModel generateLockFile() =>
       const GLClassModel(body: tsLock);
 

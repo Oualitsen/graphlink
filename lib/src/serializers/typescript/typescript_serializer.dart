@@ -1,3 +1,4 @@
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -216,7 +217,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
       namespaceName: def.codeName,
       statements: [
         _generateTypeToJson(def.codeName, fields, omitNulls: def.isOneOf),
-        _generateTypeFromJson(def.codeName, fields),
+        _generateTypeFromJson(def.codeName, fields, def),
       ],
     ));
     return buffer.toString();
@@ -290,7 +291,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
         namespaceName: def.codeName,
         statements: [
           _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
-          _generateTypeFromJson(def.codeName, fields,
+          _generateTypeFromJson(def.codeName, fields, def,
               wireTypeName: wireTypeName, requiredChecksFor: def.token),
         ],
       ));
@@ -444,10 +445,11 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
     ];
   }
 
-  String _generateTypeFromJson(String typeName, List<GLField> fields, {String? wireTypeName, String? requiredChecksFor}) {
+  String _generateTypeFromJson(String typeName, List<GLField> fields, GLImportSink context,
+      {String? wireTypeName, String? requiredChecksFor}) {
     final entries = [
       if (wireTypeName != null) "__typename: '$wireTypeName'",
-      ...fields.map(_fieldFromJsonExpr),
+      ...fields.map((f) => _fieldFromJsonExpr(f, typeName, context)),
     ].map((e) => '$e,').toList();
     final func = codeGenUtils.createMethod(
       methodName: 'fromJson',
@@ -566,8 +568,21 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
 
   String _fieldToJsonExpr(GLField field) => '"${field.name.token}": ${toJsonExpr(field.type, 'obj.${field.codeName}')}';
 
-  String _fieldFromJsonExpr(GLField field) =>
-      '${field.codeName}: ${fromJsonExpr(field.type, 'json["${field.name.token}"]')}';
+  String _fieldFromJsonExpr(GLField field, String typeName, GLImportSink context) {
+    _checkSink = context;
+    final expr = checkedFromJsonExpr(field.type, 'json["${field.name.token}"]', '$typeName.${field.name.token}');
+    _checkSink = null;
+    return '${field.codeName}: $expr';
+  }
+
+  String checkedFromJsonExpr(GLType type, String json, String path) {
+    _checkPath = path;
+    try {
+      return fromJsonExpr(type, json);
+    } finally {
+      _checkPath = null;
+    }
+  }
 
   // A nullable list falls back to `value` itself (not a hardcoded `null`) so an omitted
   // (undefined) field stays omitted, triggering the server-side default, while an explicit
@@ -602,8 +617,31 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
     return type.nullable ? '$json != null ? $call : null' : call;
   }
 
+  String? _checkPath;
+  GLImportSink? _checkSink;
+
   @override
-  String plainFromJson(GLType type, String json) => '$json as ${serializeType(type)}';
+  String plainFromJson(GLType type, String json) {
+    final check = _scalarCheck(type);
+    if (check == null || _checkPath == null || grammar.mode != CodeGenerationMode.client) {
+      return '$json as ${serializeType(type)}';
+    }
+    _checkSink?.addImport("import * as GraphLinkJson from '../client/graph-link-json.js';");
+    final call = 'GraphLinkJson.$check($json, "$_checkPath")';
+    return type.nullable ? '$json != null ? $call : null' : call;
+  }
+
+  String? _scalarCheck(GLType type) {
+    switch (serializeType(type).replaceAll(' | null', '')) {
+      case 'string':
+        return 'expectString';
+      case 'boolean':
+        return 'expectBoolean';
+      case 'number':
+        return type.token == 'Int' ? 'expectInteger' : 'expectNumber';
+    }
+    return null;
+  }
 
   @override
   String scalarFromJson(GLScalarCodec codec, String json, {required bool nullable}) =>

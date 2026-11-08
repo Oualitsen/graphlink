@@ -274,6 +274,37 @@ export class GraphLinkTagEntry {
 }
 ''';
 
+const tsJsonChecks = r'''
+function describe(value: unknown): string {
+  if (value === null) return 'null';
+  return Array.isArray(value) ? 'array' : typeof value;
+}
+
+function fail(path: string, expected: string, value: unknown): never {
+  throw new TypeError(`${path}: expected ${expected}, got ${describe(value)}`);
+}
+
+export function expectString(value: unknown, path: string): string {
+  if (typeof value !== 'string') fail(path, 'string', value);
+  return value;
+}
+
+export function expectBoolean(value: unknown, path: string): boolean {
+  if (typeof value !== 'boolean') fail(path, 'boolean', value);
+  return value;
+}
+
+export function expectNumber(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) fail(path, 'number', value);
+  return value;
+}
+
+export function expectInteger(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value)) fail(path, 'integer', value);
+  return value;
+}
+''';
+
 const tsLock = r'''
 export class GraphLinkLock {
   private _last: Promise<void> = Promise.resolve();
