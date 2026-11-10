@@ -1,6 +1,6 @@
 ---
 title: "Philosophy: Pure GraphQL Code Generation"
-description: "Why GraphLink is pure code generation: no runtime, the schema as single source of truth, keyword-safe identifiers, and only the fields the server needs."
+description: "Why GraphLink is pure code generation, and how it compares with Apollo, GraphQL Code Generator, genqlient, ariadne-codegen, ferry and Netflix DGS."
 ---
 
 # The GraphLink Philosophy
@@ -9,7 +9,7 @@ Pure code generation. No runtime abstractions. Only what the server needs.
 
 ## What pure code generation means
 
-GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart, Java, TypeScript, Kotlin, or Swift source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
+GraphLink is a code generator, not a runtime library. When you run `glink`, it reads your schema and writes ordinary Dart, Java, TypeScript, Kotlin, Swift, Python, or Go source files. Those files have zero dependency on GraphLink itself — no base classes to extend, no interfaces to implement, no runtime to ship.
 
 Every generated class is plain code in the target language. A generated `Vehicle` class in Dart is just a Dart class with fields, a constructor, `fromJson`, and `toJson`. A generated `Vehicle.java` is just a POJO with a builder. A generated Kotlin `Vehicle` is a `data class`, and a generated Swift `Vehicle` is a `Sendable` struct. You could hand-write these classes yourself; GraphLink simply writes them faster and keeps them in sync with your schema.
 
@@ -126,16 +126,52 @@ GraphLink generates the logic — the query strings, the serialization, the clie
 - In TypeScript: `(payload: string) => Promise<string>`
 - In Kotlin: a `fun interface` with a single `suspend` method
 - In Swift: a `GraphLinkClientAdapter` closure typealias
+- In Python: an `async` function that takes the JSON payload and returns the response body
+- In Go: a function that takes a `context.Context` and the JSON payload and returns the response body and an error
 
-This means you can use `http`, `dio`, `fetch`, `OkHttp`, `URLSession`, Spring's `WebClient`, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.
+This means you can use `http`, `dio`, `fetch`, `OkHttp`, `URLSession`, `httpx`, `net/http`, Spring's `WebClient`, a mock, or anything else. The generated client does not import any HTTP library. You swap the transport at construction time. This makes testing trivial — pass a function that returns a hardcoded JSON string and you have a complete mock client.
 
 ## How it compares
 
-GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is a direct comparison with popular alternatives:
+GraphLink is built around one idea: **one schema generates the client and the server for every language you ship**, with no runtime library in between. Most other tools are the opposite: excellent at one language or one framework. This section shows where each one fits so you can choose on facts.
+
+### Scope: what each tool generates
+
+| Tool | Language | What it generates | Server code |
+|---|---|---|---|
+| **GraphLink** | Dart / Flutter, Java, TypeScript, Kotlin, Swift, Python, Go | Typed models, inputs, enums, a client with queries, mutations, subscriptions, caching, uploads, persisted queries and REST operations | **Spring Boot** (Java, Kotlin), **Express / Apollo** (TypeScript) |
+| [Apollo Kotlin](https://www.apollographql.com/docs/kotlin) | Kotlin (multiplatform) | Models and queries, used with the Apollo runtime library and its normalized cache | No |
+| Apollo iOS | Swift | Models and queries, used with the Apollo iOS library | No |
+| [GraphQL Code Generator](https://the-guild.dev/graphql/codegen) | TypeScript first, plugin-based | Types and typed documents for the GraphQL client you choose | Resolver types through plugins |
+| [genqlient](https://github.com/Khan/genqlient) | Go | Type-safe helpers for the queries you write, with a small runtime package | No |
+| [ariadne-codegen](https://github.com/mirumee/ariadne-codegen) | Python | Pydantic models and an async or sync client from your schema and operations, with a plugin system | No |
+| [Netflix DGS codegen](https://netflix.github.io/dgs/generating-code-from-schema) | Java, Kotlin | Types, inputs and a query builder API, tied to the DGS framework | Types for the DGS server framework |
+| ferry | Dart | Typed operations on top of the ferry client | No |
+
+### Features documented by each tool
+
+This matrix compares GraphLink with the dedicated generator for each of its target languages. **—** means the feature was not found in the documentation we checked (November 2026), which is not the same as "no". Tools change, so check their documentation before you decide.
+
+| Feature | GraphLink | Apollo Kotlin | Apollo iOS | ferry (Dart) | ariadne-codegen (Python) | genqlient (Go) | GraphQL Code Generator (TS) | Netflix DGS (Java) |
+|---|---|---|---|---|---|---|---|---|
+| Typed client from the schema | **Yes** | Yes | Yes | Yes | Yes | Typed helpers for queries you write | Types and typed documents, you bring the client | Types and a query builder API |
+| Runtime library in your app | **None** | Yes (Apollo runtime) | Yes (Apollo library) | Yes (ferry client) | — | Small runtime package | Depends on your client | Optional DGS client |
+| Subscriptions | **Yes** | Yes (`Flow`) | Yes | — | Yes (graphql-transport-ws) | — | Types only | Yes (WebSocket, SSE) |
+| File uploads | **Yes** | Yes | Yes (one operation, no batches) | — | Yes (multipart) | — | — | — |
+| Persisted queries (APQ) | **Yes** | Yes | — | — | — | — | — | — |
+| Custom scalar mapping | **Yes** | Yes | Yes | — | Yes | Yes (bindings) | Yes (`scalars`) | — |
+| Client cache | Per operation, tag invalidation | Normalized (memory, SQLite) | Normalized | Normalized | — | — | — | — |
+| REST operations in the same client | **Yes** | — | — | — | — | — | — | — |
+| Server code from the same schema | **Yes** | — | — | — | — | — | Resolver types (plugin) | Types for the DGS framework |
+
+Read it as scope, not as a verdict. The Apollo clients and ferry have normalized caches, which GraphLink does not. ariadne-codegen has a plugin system. GraphQL Code Generator works with whichever client you already use. What GraphLink adds is the same schema, features and call syntax across all of the languages.
+
+### Feature comparison
 
 | Feature | GraphLink | ferry (Dart) | Apollo (JS/Kotlin) | Manual code |
 |---|---|---|---|---|
 | Runtime dependency in app | **None** | Yes (ferry, gql) | Yes (Apollo runtime) | None |
+| Languages from one schema | **7 clients** | Dart only | One library per platform | Manual |
 | Sends whole schema on request | **No** | Yes | Partial | No |
 | Generics at Java call site | **No** | N/A | Yes | Yes |
 | Server-side generation | **Yes** | No | Partial | Manual |
@@ -143,3 +179,26 @@ GraphLink occupies a distinct position in the GraphQL tooling landscape. Here is
 | Caching directives in schema | **Yes** | No | No | No |
 | Partial query caching | **Yes** | No | No | No |
 | Spring Boot controller gen | **Yes** | No | No | Manual |
+
+The competitor columns describe each project's documented approach and may be out of date. Check their documentation before deciding.
+
+### What GraphLink gives you
+
+- **Classes and client operations, generated together.** Other generators stop at types, or at types plus typed documents, and leave you to pick, wire and maintain a client library. GraphLink also generates the client: every query, mutation and subscription becomes a typed method, with the serialization, caching and transport wiring included.
+- **A generated backend you only fill in.** For Spring Boot (Java and Kotlin) and Express / Apollo, GraphLink generates the controllers or resolvers and the service interfaces. You implement the generated interfaces and the routing is done, so the architecture is the same in every project. The generated handlers are asynchronous by default (`CompletableFuture` on Java MVC, coroutines on Kotlin, `async` resolvers on Express), so sibling query fields can run concurrently. See [Concurrent execution](spring-server.md#concurrent-execution).
+- **N+1 is built into the workflow.** `@glSkipOnServer(batch: true)` turns a field into a batch mapping (`@BatchMapping` on Spring, a per-request DataLoader on Express). One directive argument is all it takes, and it pushes developers to fix the N+1 problem instead of discovering it in production. See [Skip directives](skip-directives.md).
+- **One schema for every target, or just one.** GraphLink works the same with a single client as with seven clients and two servers. Add a language later and the schema, the features and the call syntax carry over.
+- **GraphQL and REST in one client.** A field annotated with `@glRest` is served over HTTP/JSON with the same call syntax, in all seven clients. Remove the directive and it becomes a GraphQL field without changing the call site. See [REST operations](rest-client.md).
+- **Cache policy in the schema.** `@glCache` and `@glCacheInvalidate` set TTL, tags and offline fallback. There is no cache code in your application.
+- **No runtime library.** The generated files compile without GraphLink. Stop using it tomorrow and nothing breaks.
+- **Hardened decoding.** A bad response fails with a named error in every client instead of returning `null` or crashing.
+
+### When another tool fits better
+
+GraphLink does not cover everything, and these are the cases where something else is the better choice:
+
+- **You need a normalized client cache.** GraphLink caches per operation and arguments, with tag invalidation. Apollo's normalized cache, which stores entities by identity so one mutation updates every query that shows them, is a different and more powerful model. ferry offers one for Dart too.
+- **You rely on optimistic updates or cache watchers.** Apollo Kotlin has watchers that react to cache changes, and ferry has an optimistic cache. GraphLink's generated clients do not have an equivalent.
+- **Your language is not one of the seven clients.** GraphLink generates Dart / Flutter, Java, TypeScript, Kotlin, Swift, Python and Go clients, and Spring Boot and Express / Apollo servers. For any other language or server framework you need another tool.
+
+If you are in between, you can adopt GraphLink for one target first. The generated code is plain code in your language, so you are not locked in.

@@ -280,3 +280,221 @@
   border: 0;
   border-radius: 0.4rem;
 }
+
+/* ---------------------------------------------------------------------------
+   Supported targets (landing page)
+--------------------------------------------------------------------------- */
+
+.md-typeset .gl-targets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+  gap: .8rem;
+  margin: 1em 0 1.4em;
+}
+
+.md-typeset .gl-target {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .5rem;
+  padding: 1rem .8rem .8rem;
+  text-align: center;
+  transition: border-color .15s, transform .15s;
+}
+
+.md-typeset .gl-target:hover {
+  border-color: var(--md-accent-fg-color);
+  transform: translateY(-2px);
+}
+
+.md-typeset .gl-target-icons {
+  display: flex;
+  justify-content: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.md-typeset .gl-target-icons .gl-logo {
+  height: 2.8rem;
+  width: 2.8rem;
+  object-fit: contain;
+}
+
+.md-typeset .gl-target-name {
+  font-weight: 700;
+}
+
+.md-typeset .gl-target-sub {
+  font-size: .72rem;
+  opacity: .7;
+  margin-bottom: .5rem;
+}
+
+.md-typeset .gl-pills {
+  display: flex;
+  justify-content: center;
+  gap: .3rem;
+  flex-wrap: wrap;
+}
+
+.md-typeset .gl-pill {
+  font-size: .65rem;
+  font-weight: 600;
+  padding: .05rem .45rem;
+  border-radius: 1rem;
+  background: var(--md-accent-fg-color--transparent);
+  color: var(--md-accent-fg-color);
+}
+
+/* ---------------------------------------------------------------------------
+   Language carousel (landing page)
+--------------------------------------------------------------------------- */
+
+.md-typeset .gl-carousel {
+  overflow: hidden;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .7rem;
+  padding: 1.4rem 1.4rem .8rem;
+  margin: 1.2em 0 1.8em;
+}
+
+.md-typeset .gl-carousel > .gl-slides {
+  display: flex;
+  transition: transform .45s ease;
+}
+
+.md-typeset .gl-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1.1rem;
+}
+
+.md-typeset .gl-tab {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .55rem .8rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: .5rem;
+  background: none;
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .15s, border-color .15s, transform .15s;
+}
+
+.md-typeset .gl-tab:hover {
+  opacity: 1;
+}
+
+.md-typeset .gl-tab.is-active {
+  opacity: 1;
+  border-color: var(--md-accent-fg-color);
+  transform: translateY(-2px);
+}
+
+.md-typeset .gl-tab .gl-logo {
+  width: 3.2rem;
+  height: 3.2rem;
+  object-fit: contain;
+}
+
+.md-typeset .gl-slide {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.md-typeset .gl-slide-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .8rem;
+  margin-bottom: .6rem;
+}
+
+.md-typeset .gl-slide-head .gl-slide-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.md-typeset .gl-slide-code .highlight {
+  margin: 0;
+}
+
+.md-typeset .gl-slide-code pre > code {
+  font-size: .85rem;
+  line-height: 1.55;
+  padding: 1.1rem 1.3rem;
+}
+
+.md-typeset .gl-steps {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .4rem 1.6rem;
+  list-style: none;
+  counter-reset: step;
+  margin: .8rem 0 0;
+  padding: 0;
+  font-size: .8rem;
+}
+
+.md-typeset .gl-steps li {
+  counter-increment: step;
+  margin: 0;
+}
+
+.md-typeset .gl-steps li::before {
+  content: counter(step);
+  display: inline-block;
+  width: 1.3rem;
+  height: 1.3rem;
+  line-height: 1.3rem;
+  margin-right: .4rem;
+  text-align: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #fff;
+  background: var(--md-accent-fg-color);
+}
+
+.md-typeset .gl-carousel-caption {
+  text-align: center;
+  font-size: .75rem;
+  opacity: .75;
+  margin: .6rem 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   "NEW" tag on the Why REST? navigation entry (top tab and sidebar)
+--------------------------------------------------------------------------- */
+
+.md-tabs__link[href*="why-rest.html"]::after,
+.md-nav__link[href*="why-rest.html"]::after {
+  content: "NEW";
+  display: inline-block;
+  margin-left: .45rem;
+  padding: .08rem .4rem;
+  border-radius: .7rem;
+  font-size: .55rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  line-height: 1.3;
+  vertical-align: .12em;
+  color: #fff;
+  background: linear-gradient(135deg, #ff5722, #e91e63);
+  box-shadow: 0 0 0 0 rgba(233, 30, 99, .55);
+  animation: gl-new-pulse 2.4s ease-out infinite;
+}
+
+@keyframes gl-new-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(233, 30, 99, .55); }
+  70%  { box-shadow: 0 0 0 .5rem rgba(233, 30, 99, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-tabs__link[href*="why-rest.html"]::after,
+  .md-nav__link[href*="why-rest.html"]::after {
+    animation: none;
+  }
+}

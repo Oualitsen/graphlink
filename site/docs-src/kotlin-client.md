@@ -272,13 +272,81 @@ plugins {
 }
 ```
 
-### HTTP adapter
+### Quick start
 
-Implement the single-method `GraphLinkClientAdapter` interface with your HTTP client of
-choice. The interface is a Kotlin `fun interface`, so a lambda works too:
+Unless `wsAdapter` is `"none"`, the generated `GraphLinkClient` has `create` factories that build the default OkHttp
+adapters for you. The shortest one takes only the URL and derives the WebSocket URL by replacing `http` with `ws`:
 
 ```kotlin
+import com.example.generated.client.GraphLinkClient
+
+val client = GraphLinkClient.create("https://api.example.com/graphql")
+
+val user = runBlocking { client.queries.getUser("42").getUser }
+```
+
+To send headers on every request, pass a `headersProvider` and the codec. `wsUrl` is a parameter only when the schema
+has subscriptions, and a schema with [REST operations](rest-client.md#kotlin) adds a `restBaseUrl` parameter:
+
+```kotlin
+import com.example.generated.client.KotlinxSerializationGraphLinkJsonCodec
+
+val codec = KotlinxSerializationGraphLinkJsonCodec()
+
+val client = GraphLinkClient.create(
+    url             = "https://api.example.com/graphql",
+    wsUrl           = "wss://api.example.com/graphql",
+    headersProvider = { mapOf("Authorization" to "Bearer $token") },
+    encoder         = codec,
+    decoder         = codec,
+)
+```
+
+### Assembling the client
+
+The constructor takes the adapters and the codec explicitly. This is what the factories above call:
+
+```kotlin
+import com.example.generated.client.DefaultGraphLinkClientAdapter
+import com.example.generated.client.DefaultGraphLinkWebSocketAdapter
+import com.example.generated.client.GraphLinkClient
+import com.example.generated.client.KotlinxSerializationGraphLinkJsonCodec
+
+val codec = KotlinxSerializationGraphLinkJsonCodec()
+val headers = { mapOf("Authorization" to "Bearer $token") }
+
+val http = DefaultGraphLinkClientAdapter("https://api.example.com/graphql", codec, headers)
+
+val client = GraphLinkClient(
+    adapter          = http,
+    wsAdapter        = DefaultGraphLinkWebSocketAdapter("wss://api.example.com/graphql", headers),
+    multipartAdapter = http,  // only when the schema has file uploads; the default adapter implements it
+    encoder          = codec,
+    decoder          = codec,
+)
+```
+
+`wsAdapter` is a parameter only when the schema has subscriptions, and `multipartAdapter` only when it has file upload
+mutations. `DefaultGraphLinkClientAdapter(url, decoder, headersProvider, httpClient)` and
+`DefaultGraphLinkWebSocketAdapter(url, headersProvider, httpClient, maxReconnectAttempts, maxReconnectDelayMs, protocols)`
+take an optional `OkHttpClient`, so you can share one with the rest of your app.
+
+!!! danger "Breaking change in v6.0.0: `DefaultGraphLinkClientAdapter` takes a decoder"
+    The adapter now needs a `GraphLinkJsonDecoder`, like `DefaultGraphLinkGetAdapter` already did, so it can tell a
+    GraphQL response from a gateway page. The signature is
+    `DefaultGraphLinkClientAdapter(url, decoder, headersProvider, httpClient)`. The `GraphLinkClient` factory
+    methods are unchanged.
+
+### Bring your own HTTP adapter
+
+To use another HTTP client, implement the single-method `GraphLinkClientAdapter` interface. It is a Kotlin
+`fun interface`, so a lambda works too. Call `glCheckHttpStatus` on the response so a gateway page or a non-2xx status
+without a GraphQL body surfaces as a `GraphLinkException`, as it does with the default adapter:
+
+```kotlin
+import com.example.generated.client.glCheckHttpStatus
 import com.example.generated.interfaces.GraphLinkClientAdapter
+import com.example.generated.interfaces.GraphLinkJsonDecoder
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -286,8 +354,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class OkHttpGraphLinkAdapter(
+class MyHttpAdapter(
     private val url: String,
+    private val decoder: GraphLinkJsonDecoder,
     private val httpClient: OkHttpClient = OkHttpClient(),
     private val headers: Map<String, String> = emptyMap(),
 ) : GraphLinkClientAdapter {
@@ -302,57 +371,14 @@ class OkHttpGraphLinkAdapter(
             .build()
 
         httpClient.newCall(request).execute().use { response ->
-            check(response.isSuccessful) { "HTTP ${response.code}" }
-            response.body!!.string()
+            glCheckHttpStatus(response.code, response.body!!.string(), decoder)
         }
     }
 }
 ```
 
-### WebSocket adapter (OkHttp)
-
-When `wsAdapter: "okhttp"` is set, GraphLink generates a default
-`DefaultGraphLinkWebSocketAdapter` that uses OkHttp. Pass your server URL and optional
-headers:
-
-```kotlin
-import com.example.generated.client.DefaultGraphLinkWebSocketAdapter
-
-val wsAdapter = DefaultGraphLinkWebSocketAdapter(
-    url     = "wss://api.example.com/graphql",
-    headers = mapOf("Authorization" to "Bearer $token"),
-)
-```
-
-### Assembling the client
-
-```kotlin
-import com.example.generated.client.GraphLinkClient
-import com.example.generated.client.KotlinxSerializationGraphLinkJsonCodec
-
-val codec   = KotlinxSerializationGraphLinkJsonCodec()
-val adapter = OkHttpGraphLinkAdapter("https://api.example.com/graphql",
-    headers = mapOf("Authorization" to "Bearer $token"))
-val wsAdapter = DefaultGraphLinkWebSocketAdapter("wss://api.example.com/graphql",
-    headers = mapOf("Authorization" to "Bearer $token"))
-
-val client = GraphLinkClient(
-    adapter          = adapter,
-    wsAdapter        = wsAdapter,
-    multipartAdapter = NoOpMultipartAdapter(),  // or a real upload adapter
-    encoder          = codec,
-    decoder          = codec,
-)
-
-// Use it
-val user = runBlocking { client.queries.getUser("42").getUser }
-```
-
-!!! danger "Breaking change in v6.0.0: `DefaultGraphLinkClientAdapter` takes a decoder"
-    The adapter now needs a `GraphLinkJsonDecoder`, like `DefaultGraphLinkGetAdapter` already did, so it can tell a
-    GraphQL response from a gateway page. The signature is
-    `DefaultGraphLinkClientAdapter(url, decoder, headersProvider, httpClient)`. The `GraphLinkClient` factory
-    methods are unchanged.
+This example does not cancel the OkHttp call when the coroutine is cancelled; the default adapter does (see below).
+With `operationNameAsParameter: true`, `execute` also receives the operation name as a second argument.
 
 ## Decoding, HTTP errors and cancellation
 
@@ -442,6 +468,14 @@ if (result.errors != null) {
 ```
 
 Enable globally in config with `"captureErrors": true` under `clientConfig.kotlin`.
+
+## Persisted queries
+
+Set `persistedQueries: "apq"` under `clientConfig.kotlin` to send long operations as a SHA-256 hash and retry once with the query text on `PersistedQueryNotFound`. `persistedQueriesUseGet: true` sends hash-only queries over GET. Both are off by default. See [Persisted queries](persisted-queries.md).
+
+## REST operations
+
+Fields of `Query` and `Mutation` annotated with `@glRest` are served over HTTP/JSON through this same client, with the same call syntax as GraphQL operations. See [REST operations](rest-client.md#kotlin) for the directive, argument roles, responses, caching and the adapter.
 
 ## Configuration reference
 

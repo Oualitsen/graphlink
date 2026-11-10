@@ -1,6 +1,6 @@
 ---
 title: "glink.json Configuration Reference"
-description: "Every glink.json / glink.yaml option: schemaPaths, typeMappings, outputDir, clientConfig for Dart, Java, TypeScript, Kotlin, Swift, serverConfig and CLI flags."
+description: "Every glink.json / glink.yaml option: schemaPaths, typeMappings and scalar codecs, outputDir, clientConfig for seven languages, serverConfig, CLI flags."
 ---
 
 # Configuration Reference
