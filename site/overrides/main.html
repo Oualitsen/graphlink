@@ -3,6 +3,8 @@
 {% block htmltitle %}
   {% if page and page.file.src_path == "index.md" and page.meta and page.meta.title %}
   <title>{{ page.meta.title }}</title>
+  {% elif page and page.meta and page.meta.seo_title %}
+  <title>{{ page.meta.seo_title }}</title>
   {% elif page and page.file.src_path.startswith("blog/posts/") %}
   <title>{{ page.title }} - GraphLink Blog</title>
   {% else %}
@@ -16,7 +18,7 @@
   <script data-goatcounter="https://graphlink.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 
   {% set site_root = "https://graphlink.dev" %}
-  {% set page_title = (page.meta.title if page and page.meta and page.meta.title else (page.title if page else config.site_name)) %}
+  {% set page_title = (page.meta.seo_title if page and page.meta and page.meta.seo_title else (page.meta.title if page and page.meta and page.meta.title else (page.title if page else config.site_name))) %}
   {% set page_desc = (page.meta.description if page and page.meta and page.meta.description else config.site_description) %}
   {% set page_url = (page.canonical_url if page and page.canonical_url else site_root + "/") %}
   {% set src = page.file.src_path if page else "index.md" %}
@@ -40,12 +42,49 @@
   <meta property="og:image"        content="{{ site_root }}/og-image.png">
   <meta property="og:image:width"  content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt"    content="GraphLink — GraphQL code generator for Dart, Java, TypeScript, Kotlin and Swift">
+  <meta property="og:image:alt"    content="GraphLink — GraphQL and REST client generator for Dart, Java, TypeScript, Kotlin, Swift, Python and Go">
   <meta property="og:locale"       content="en_US">
   <meta name="twitter:card"        content="summary_large_image">
   <meta name="twitter:title"       content="{{ page_title }}">
   <meta name="twitter:description" content="{{ page_desc }}">
   <meta name="twitter:image"       content="{{ site_root }}/og-image.png">
+
+  {% if page and page_slug == "why-rest" %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "@id": "{{ page_url }}#faq",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Do I need a GraphQL server to use REST operations?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. A schema with only REST operations needs no GraphQL URL or adapter. GraphLink uses the schema only as a description of your REST API and generates the client from it." }
+      },
+      {
+        "@type": "Question",
+        "name": "Which languages support REST operations?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Dart, Java (blocking and reactive), TypeScript, Kotlin, Swift, Python and Go." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is the REST cache an HTTP cache?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. It is a client-side store configured with @glCache in the schema, so its policy does not come from HTTP caching headers. It shares its entries and tags with GraphQL operations." }
+      },
+      {
+        "@type": "Question",
+        "name": "Are REST subscriptions supported?",
+        "acceptedAnswer": { "@type": "Answer", "text": "No. Subscriptions are always GraphQL." }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it replace my REST client library?",
+        "acceptedAnswer": { "@type": "Answer", "text": "It replaces the hand-written part: the models, the serialization, the request building and the response handling. The HTTP transport is a function you can supply, or a generated adapter." }
+      }
+    ]
+  }
+  </script>
+  {% endif %}
 
   {% if page and page_slug == "index" %}
   {# JSON-LD structured data — home page #}
@@ -58,7 +97,7 @@
         "@id": "https://graphlink.dev/#website",
         "url": "https://graphlink.dev/",
         "name": "GraphLink",
-        "description": "GraphQL code generator for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot and Express/Apollo.",
+        "description": "GraphQL and REST client generator for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python and Go, plus Spring Boot and Express/Apollo servers.",
         "inLanguage": "en"
       },
       {
@@ -66,13 +105,16 @@
         "@id": "https://graphlink.dev/#app",
         "name": "GraphLink",
         "alternateName": ["glink", "graphlink GraphQL code generator"],
-        "description": "GraphLink is a command-line code generator that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Spring Boot and Express/Apollo. It removes hand-written data classes, serializers, query strings and HTTP wiring, and the generated code has no runtime dependency on GraphLink.",
+        "description": "GraphLink is a command-line code generator that reads a GraphQL schema and generates fully type-safe client and server code for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, Go, Spring Boot and Express/Apollo. It removes hand-written data classes, serializers, query strings and HTTP wiring, and the generated code has no runtime dependency on GraphLink.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "GraphQL code generation tool",
         "operatingSystem": "Linux, macOS, Windows",
-        "programmingLanguage": ["Dart", "Flutter", "Java", "TypeScript", "Kotlin", "Swift", "Spring Boot", "Express", "Apollo Server"],
+        "programmingLanguage": ["Dart", "Flutter", "Java", "TypeScript", "Kotlin", "Swift", "Python", "Go", "Spring Boot", "Express", "Apollo Server"],
         "featureList": [
-          "Type-safe GraphQL client generation for Dart, Flutter, Java, TypeScript, Kotlin and Swift",
+          "Type-safe GraphQL client generation for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python and Go",
+          "REST operations (@glRest) served through the same generated client in all seven clients",
+          "Custom scalar codecs and streaming file uploads in every client",
+          "Generated Spring Boot and Express/Apollo backends with asynchronous handlers and built-in N+1 batching (@glSkipOnServer(batch: true))",
           "Spring Boot (Java and Kotlin) and Express/Apollo server code generation",
           "Custom queries and mutations generate fully typed client methods",
           "Schema-driven client caching via @glCache and @glCacheInvalidate",
@@ -113,7 +155,22 @@
           {
             "@type": "Question",
             "name": "What languages and frameworks does GraphLink support?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Clients: Dart and Flutter, Java (blocking or reactive), TypeScript (Angular, React, Vue, Svelte, Node), Kotlin (coroutines) and Swift (async/await). Servers: Spring Boot in Java or Kotlin (MVC and WebFlux) and Express/Apollo in TypeScript. Go is planned." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Clients: Dart and Flutter, Java (blocking or reactive), TypeScript (Angular, React, Vue, Svelte, Node), Kotlin (coroutines), Swift (async/await), Python (pydantic and asyncio) and Go (context-aware, (value, error)). Every client can also call REST operations declared with @glRest. Servers: Spring Boot in Java or Kotlin (MVC and WebFlux) and Express/Apollo in TypeScript." }
+          },
+          {
+            "@type": "Question",
+            "name": "Can the generated client call REST APIs?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes. Annotate a field of Query or Mutation with @glRest and the generated client calls it over HTTP/JSON with the same call syntax as a GraphQL operation, in all seven clients (Dart, Java, TypeScript, Kotlin, Swift, Python and Go). Removing the directive moves the field to GraphQL without changing the call site." }
+          },
+          {
+            "@type": "Question",
+            "name": "How does GraphLink compare with Apollo, GraphQL Code Generator and other generators?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Most generators cover one language or framework: Apollo Kotlin and Apollo iOS with the Apollo runtime and a normalized cache, GraphQL Code Generator for TypeScript types and typed documents, genqlient for Go, ariadne-codegen for Python, Netflix DGS codegen for Java and Kotlin, and ferry for Dart. GraphLink generates both the classes and the typed client operations for seven languages, plus Spring Boot and Express/Apollo servers, from one schema with no runtime library. Choose another tool if you need a normalized client cache or optimistic updates, or if your language is not one of the seven." }
+          },
+          {
+            "@type": "Question",
+            "name": "Does the generated server handle concurrency and the N+1 problem?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Generated handlers are asynchronous by default: Java MVC controllers return CompletableFuture, reactive controllers return Mono, Kotlin controllers are suspend functions and Express resolvers are async functions, so sibling query fields can run concurrently. For N+1, the @glSkipOnServer(batch: true) directive argument generates a Spring @BatchMapping or an Express per-request DataLoader." }
           },
           {
             "@type": "Question",
@@ -130,6 +187,33 @@
             "name": "Can I use watch mode to auto-regenerate on schema changes?",
             "acceptedAnswer": { "@type": "Answer", "text": "Yes. Run glink -w to watch your schema files and regenerate all output on every change. Use --debounce <ms> to control how long it waits for changes to settle." }
           }
+        ]
+      }
+    ]
+  }
+  </script>
+  {% elif page and not is_post and not is_blog_listing %}
+  {# JSON-LD structured data — documentation pages #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "TechArticle",
+        "@id": "{{ page_url }}#article",
+        "headline": {{ page_title | tojson }},
+        "description": {{ page_desc | tojson }},
+        "url": "{{ page_url }}",
+        "inLanguage": "en",
+        "isPartOf": { "@id": "https://graphlink.dev/#website" },
+        "about": { "@id": "https://graphlink.dev/#app" },
+        "publisher": { "@type": "Organization", "name": "GraphLink", "url": "https://graphlink.dev/" }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "GraphLink", "item": "https://graphlink.dev/" },
+          { "@type": "ListItem", "position": 2, "name": {{ page.title | tojson }}, "item": "{{ page_url }}" }
         ]
       }
     ]

@@ -486,6 +486,58 @@ try {
 !!! info "Testing without mocking frameworks"
     The adapter is a plain function — `(payload: string) => Promise<string>`. In tests, pass a lambda that returns the JSON you want: `adapter: async () => JSON.stringify({ data: { getVehicle: { id: '1', brand: 'Toyota', ... } } })`. No HTTP mocking library needed.
 
+## Caching
+
+Cache behaviour is declared in the schema with `@glCache` and `@glCacheInvalidate`, exactly as for the other clients, and
+the generated client handles TTL, tags and `staleIfOffline` itself:
+
+```graphql
+type Query {
+  getUser(id: ID!): User! @glCache(ttl: "2m", tags: ["users"])
+}
+type Mutation {
+  updateUser(id: ID!, input: UpdateUserInput!): User! @glCacheInvalidate(tags: ["users"])
+}
+```
+
+The default store keeps entries in memory (`InMemoryGraphLinkCacheStore`). To persist them or share them, implement
+`GraphLinkCacheStore` and pass it as the last constructor argument:
+
+```typescript
+interface GraphLinkCacheStore {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+  invalidate(key: string): Promise<void>;
+  invalidateAll(): Promise<void>;
+}
+
+const client = new GraphLinkClient(adapter.call.bind(adapter), wsAdapter, undefined, new MyCacheStore());
+```
+
+The third argument is the multipart adapter, which only exists when the schema has file upload mutations; pass
+`undefined` to keep the default. See [Caching](caching.md) for the full reference.
+
+## File uploads
+
+Upload mutations take a `GLUpload` and are sent as a GraphQL multipart request. Build one from a `Blob` or a `File`, or give it a `ReadableStream`:
+
+```typescript
+import { glUploadFromBlob, glUploadFromFile } from './generated/client/graph-link-uploads';
+
+await client.mutations.uploadOneFile({ userId: 'u1', file: glUploadFromFile(input.files[0]) });
+await client.mutations.uploadOneFile({ userId: 'u1', file: glUploadFromBlob(blob, 'avatar.png') }, (sent, total) => {});
+```
+
+The body is streamed lazily (`glMultipartBody` in `graph-link-uploads.ts`), not assembled in memory. The default fetch adapter reports progress through the optional `(sent, total)` callback. On runtimes without streaming request bodies (Firefox, Safari) it falls back to `FormData` for `Blob` and `File` uploads. The callback is not called when the total size is unknown, and an upload of unknown length is sent chunked.
+
+## Persisted queries
+
+Set `persistedQueries: "apq"` under `clientConfig.typescript` to send long operations as a SHA-256 hash and retry once with the query text on `PersistedQueryNotFound`. `persistedQueriesUseGet: true` sends hash-only queries over GET. Both are off by default. See [Persisted queries](persisted-queries.md).
+
+## REST operations
+
+Fields of `Query` and `Mutation` annotated with `@glRest` are served over HTTP/JSON through this same client, with the same call syntax as GraphQL operations. See [REST operations](rest-client.md#typescript) for the directive, argument roles, responses, caching and the adapter.
+
 ## Using with Angular
 
 In Angular, inject the `GraphLinkClient` as a singleton service and use `observables: true` for the most ergonomic integration with Angular's reactive patterns:

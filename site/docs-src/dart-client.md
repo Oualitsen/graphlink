@@ -486,3 +486,11 @@ print(result.uploadDocument); // e.g. "https://cdn.example.com/document.pdf"
 ```
 
 The Dio and http adapters both handle multipart encoding automatically when a mutation argument contains a `GLUpload`. No extra configuration is needed.
+
+## Persisted queries
+
+Set `persistedQueries: "apq"` under `clientConfig.dart` to send long operations as a SHA-256 hash and retry once with the query text on `PersistedQueryNotFound`. `persistedQueriesUseGet: true` sends hash-only queries over GET. Both are off by default. See [Persisted queries](persisted-queries.md).
+
+## REST operations
+
+Fields of `Query` and `Mutation` annotated with `@glRest` are served over HTTP/JSON through this same client, with the same call syntax as GraphQL operations. See [REST operations](rest-client.md) for the directive, argument roles, responses, caching and the adapter.

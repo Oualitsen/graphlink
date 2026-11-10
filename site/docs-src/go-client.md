@@ -1,6 +1,6 @@
 ---
 title: "Go GraphQL Client Generator"
-description: "Generated Go GraphQL client: plain structs with json tags, context-aware methods returning (value, error), channel subscriptions, net/http and coder/websocket adapters, caching, uploads and persisted queries."
+description: "Generated Go GraphQL and REST client: plain structs, context-aware (value, error) methods, channel subscriptions, net/http and coder/websocket adapters."
 ---
 
 # Go Client
@@ -217,6 +217,10 @@ panic is not a returned error, so it ends the program unless something recovers 
 
 `jsonType` only checks the value that arrives; an expression that can fail on a valid wire value still has to
 handle that itself. A codec with no `fromJson` is a plain type alias and ignores `jsonType`.
+
+## REST operations
+
+Fields of `Query` and `Mutation` annotated with `@glRest` are served over HTTP/JSON through this same client, with the same call syntax as GraphQL operations. See [REST operations](rest-client.md#go) for the directive, argument roles, responses, caching and the adapter.
 
 ## Known limitations
 

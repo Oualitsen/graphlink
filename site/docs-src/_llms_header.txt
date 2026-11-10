@@ -1,6 +1,6 @@
 # GraphLink
 
-> GraphQL code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, Go, and Spring Boot. Open source. MIT License.
+> GraphQL and REST code generation tool for Dart, Flutter, Java, TypeScript, Kotlin, Swift, Python, Go, Spring Boot and Express/Apollo. Open source. MIT License.
 
 GraphLink is a command-line tool (`glink`) that reads a GraphQL schema and generates fully type-safe
 client and server code. Developers define their API once in a `.graphql` schema file and run
@@ -54,6 +54,18 @@ client and server code. Developers define their API once in a `.graphql` schema 
 
 ## Key differentiators
 
+- **Classes and client operations, generated together.** Other generators stop at types (or types plus typed
+  documents) and leave the client library to you. GraphLink also generates the client: every query, mutation
+  and subscription becomes a typed method with serialization, caching and transport wiring included.
+- **A generated backend you only fill in.** For Spring Boot (Java and Kotlin) and Express/Apollo, GraphLink
+  generates controllers/resolvers and service interfaces; developers implement the generated interfaces and the
+  routing is done. Generated handlers are asynchronous by default: Java MVC controllers return
+  `CompletableFuture` and call the service in `CompletableFuture.supplyAsync`; Java reactive controllers return
+  `Mono`; Kotlin controllers are `suspend` functions (blocking services run in
+  `withContext(Dispatchers.IO + SecurityCoroutineContext())`, `blockingServices: false` calls the service
+  directly); Express resolvers are `async` functions. Sibling query fields can therefore run concurrently.
+- **N+1 is built into the workflow.** `@glSkipOnServer(batch: true)` generates a Spring `@BatchMapping` or an
+  Express per-request DataLoader, so one directive argument fixes the N+1 problem for a field.
 - **No generics at the Java call site.** Other Java GraphQL clients require
   `TypeReference<GraphQLResponse<GetUserData>>` on every call. GraphLink generates fully-resolved
   return types: `client.queries.getUser(id).getUser()` is all you write.
@@ -92,17 +104,17 @@ client and server code. Developers define their API once in a `.graphql` schema 
   is loaded by the server and delivered to the client. This eliminates N+1 queries and keeps
   each side's model clean without any shared representation.
 - **WebSocket auto-reconnect by default.** Every generated WebSocket adapter — Dart, Java, TypeScript,
-  Kotlin, and Swift — reconnects automatically after a network drop, server restart, or idle timeout.
+  Kotlin, Swift, Python, and Go — reconnects automatically after a network drop, server restart, or idle timeout.
   This is where most GraphQL client libraries fall short: they generate the subscription method but
   leave reconnection to the user. GraphLink handles the full connection lifecycle out of the box,
   integration-tested across all targets.
 - **Inline error handling (`@glCaptureErrors`).** Annotate any query or mutation with
   `@glCaptureErrors` (or set `captureErrors: true` in config) to return a `FullResponse` with
-  `data` and `errors` side by side instead of throwing on GraphQL errors. Dart, Java, TypeScript, Kotlin, and Swift.
+  `data` and `errors` side by side instead of throwing on GraphQL errors. Every client target.
 - **Selective auto-generation (`autoGenerateQueriesFor`).** On large schemas, `autoGenerateQueries: true`
   generates a client method for every root field — which can be hundreds of methods. `autoGenerateQueriesFor`
   lets you list exactly which queries, mutations, and subscriptions to auto-generate. Unknown names cause a
-  build error. Supported in all five client targets (Dart, Java, TypeScript, Kotlin, Swift).
+  build error. Supported in every client target.
 - **Propagated-arg grouping and limit.** When auto-generating queries, nested field arguments collected
   from sub-fields are automatically grouped into a synthesized `<Op>FieldArgs` input object (the single
   `fieldArgs` parameter), so method signatures never explode into hundreds of positional parameters.
@@ -114,8 +126,7 @@ client and server code. Developers define their API once in a `.graphql` schema 
   60 KB+, bloating the compiled binary (JVM constant pool, Dart exe) and every network request that
   references them. `maxFragmentBodySize` (default 8192 chars) silently omits any `_all_fields` fragment
   whose serialized body exceeds the cap, along with any auto-generated operations that depend on it.
-  Set to `null` to disable the cap and always generate all fragments. Applies to all five client
-  targets (Dart, Java, TypeScript, Kotlin, Swift).
+  Set to `null` to disable the cap and always generate all fragments. Applies to every client target.
 - **Barrel file generation.** Dart and TypeScript generators emit a single barrel/index file that
   re-exports all generated enums, inputs, types, and interfaces. One import covers the entire layer.
 - **Flutter UI widget generation.** The `flutter` config block generates display widgets for output
@@ -168,9 +179,55 @@ client and server code. Developers define their API once in a `.graphql` schema 
   `@glRestField`, `@glRestPart`). `@glRestNullable` (on an operation, on the `Query`/`Mutation` type, or for the
   whole project with the top-level `restNullable` option) decodes into a copy of the response type with every
   field nullable (`Product` gives `ProductRest`).
+- **Scalar codecs (v6.0.0+).** A `typeMappings` entry can be an object, `{"type", "import", "fromJson", "toJson",
+  "jsonType"}`, so a custom scalar (`DateTime`, `Decimal`, `Money`, ...) is converted when it is decoded and encoded, in
+  fields, list elements, input fields and operation arguments. `{}` stands for the value. `jsonType` (`String`, `Int`,
+  `Double`, `Bool`, `Map`, `List`) makes the generated decoder check the JSON type before `fromJson` runs. A string value
+  is still a plain type alias. Supported by every client.
+- **Hardened decoding (v6.0.0+, breaking).** A GraphQL response with no `data` and no errors, or a non-2xx status without
+  a GraphQL body, fails with the client's error type (`GraphLinkException` or the `GraphLinkError` list). Swift decoders
+  `throw` a `GraphLinkDecodeError` instead of trapping. Python and Go decode and encode explicitly (`to_json`/`from_json`,
+  `ToJson`/`<Type>FromJson`) and report a missing non-null field. TypeScript checks scalars at run time. Java and Kotlin
+  decode `Int` and `Long` exactly.
+- **Streaming uploads (v6.0.0+).** Every client streams multipart and raw uploads instead of building them in memory,
+  reports exact progress, sends chunked when the length is unknown, and does not call `onProgress` without a known total.
+- **Why REST (v6.0.0+).** Three reasons a GraphQL generator also generates REST clients: (1) try GraphLink on the API
+  you already have, since a schema with only `@glRest` operations needs no GraphQL server, URL or adapter; (2) a real
+  client-side cache: `@glCache` and `@glCacheInvalidate` apply to REST `GET` queries, share one store and one tag
+  space with GraphQL operations, and take their policy from the schema, not from HTTP caching headers; (3) migrate
+  to GraphQL one field at a time by removing the directive, with the call site unchanged. https://graphlink.dev/why-rest.html
 - **Directives are validated (v6.0.0+, breaking).** Every directive must be built in or declared with
   `directive @name ... on ...`; unknown or misspelled arguments, wrong value kinds and wrong locations fail
   generation. `glink --print-directives` prints the declarations of GraphLink's own directives for your IDE.
+
+## How GraphLink compares
+
+GraphLink generates clients for seven languages (Dart/Flutter, Java, TypeScript, Kotlin, Swift, Python, Go) and
+servers for Spring Boot and Express/Apollo from one schema, with no runtime library in the app. Other tools are
+usually specific to one language or framework:
+
+- Apollo Kotlin (Kotlin multiplatform): models and queries used with the Apollo runtime library and its
+  normalized cache (in-memory and SQLite); subscriptions as `Flow`; file uploads, persisted queries and custom scalars.
+- Apollo iOS (Swift): models and queries used with the Apollo iOS library; normalized cache; multipart uploads for a
+  single operation.
+- GraphQL Code Generator (TypeScript first): types and typed documents for the client you choose; custom scalar
+  mapping; resolver types through plugins.
+- genqlient (Go): type-safe helpers for the queries you write, with a small runtime package.
+- ariadne-codegen (Python): pydantic models and an async or sync client from schema and operations;
+  graphql-transport-ws subscriptions, multipart uploads, custom scalars, plugins.
+- Netflix DGS codegen (Java, Kotlin): types, inputs and a query builder API for the DGS framework; DGS client with
+  WebSocket and SSE subscriptions.
+- ferry (Dart): typed operations on the ferry client with a normalized, optimistic cache.
+
+Where GraphLink goes further: one schema for every client and server target, GraphQL and REST operations through
+the same client (`@glRest`), cache policy declared in the schema (`@glCache`, `@glCacheInvalidate`), generated
+backends whose interfaces you implement, and no runtime dependency.
+
+When another tool fits better: you need a normalized client cache (Apollo, ferry), you rely on optimistic updates
+or cache watchers, or your language is not one of the seven client targets. GraphLink caches per operation and
+arguments with tag invalidation; it has no normalized cache.
+
+Full comparison: https://graphlink.dev/philosophy.html#how-it-compares
 
 ## Supported targets (as of v6.0.0)
 
@@ -181,7 +238,11 @@ client and server code. Developers define their API once in a `.graphql` schema 
 - TypeScript client (stable — fetch/axios, RxJS observables, WebSocket subscriptions)
 - Kotlin client (stable — coroutines, kotlinx.serialization, OkHttp WebSocket)
 - Swift client (stable — async/await, Sendable structs, URLSession/URLSessionWebSocketTask, no third-party dependency)
+- Python client (stable — pydantic v2 models, asyncio, httpx and websockets adapters)
+- Go client (stable — plain structs, context-aware methods returning (value, error), net/http and coder/websocket adapters)
 - Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
+
+REST operations (`@glRest*`) and GraphQL are both generated for all seven clients: Dart, Java (blocking and reactive), TypeScript, Kotlin, Swift, Python and Go.
 
 ## Installation
 
@@ -232,20 +293,28 @@ type Mutation {
 ## Documentation pages
 
 - Overview: https://graphlink.dev/
-- Philosophy (pure codegen, no runtime, schema as source of truth): https://graphlink.dev/philosophy.html
-- Getting Started (install, first schema, run generator): https://graphlink.dev/getting-started.html
+- Philosophy (pure codegen, no runtime, schema as source of truth, comparison with Apollo, GraphQL Code Generator, genqlient, ariadne-codegen, ferry and Netflix DGS): https://graphlink.dev/philosophy.html
+- Getting Started (install, first schema, a config for every client and server, run generator): https://graphlink.dev/getting-started.html
+- Supported Targets (every client and server with config key, models, async model, default adapters, requirements and the feature matrix): https://graphlink.dev/targets.html
 - Dart / Flutter client (generated adapters, named-param constructors, queries, mutations, subscriptions, file upload): https://graphlink.dev/dart-client.html
 - Java client (generated adapters, injectable HttpClient, no-generics API, builder pattern, file upload): https://graphlink.dev/java-client.html
 - TypeScript client (fetch/axios adapters, RxJS observables, WebSocket subscriptions, Angular/React/Vue examples): https://graphlink.dev/typescript-client.html
 - Kotlin client (coroutine-based queries/mutations/subscriptions, data classes, kotlinx.serialization, OkHttp WebSocket): https://graphlink.dev/kotlin-client.html
+- Python client (pydantic v2 models, asyncio, httpx and websockets adapters, snake_case, AsyncIterator subscriptions): https://graphlink.dev/python-client.html
+- Go client (plain structs with json tags, context-aware (value, error) methods, channel subscriptions, net/http and coder/websocket adapters): https://graphlink.dev/go-client.html
 - Swift client (async/await queries/mutations/subscriptions, Sendable structs, URLSession/URLSessionWebSocketTask, actor-based cache, no third-party dependency): https://graphlink.dev/swift-client.html
-- Spring Boot server (MVC + reactive/WebFlux, Java and Kotlin targets, strict-by-default generation, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/spring-server.html
-- Express / Apollo server (TypeScript service interfaces, generated resolvers, DataLoader batch mappings, graphql-ws subscriptions, createServer entry point, @glIntercept, @glValidate): https://graphlink.dev/express-apollo.html
+- Spring Boot server (MVC + reactive/WebFlux, async controllers (CompletableFuture, Mono, coroutines), Java and Kotlin targets, strict-by-default generation, Map-boundary controllers, service interfaces, file upload, security context propagation): https://graphlink.dev/spring-server.html
+- Express / Apollo server (TypeScript service interfaces, generated resolvers, async resolvers, DataLoader batch mappings, graphql-ws subscriptions, createServer entry point, @glIntercept, @glValidate): https://graphlink.dev/express-apollo.html
+- Custom Queries & Mutations (hand-written operations next to the schema, aliases, fragments, projections, typed responses): https://graphlink.dev/custom-queries.html
+- Why Support REST (trying GraphLink on an existing REST API with no GraphQL server, the client-side cache shared by REST and GraphQL with @glCache tags, and migrating REST to GraphQL one field at a time by removing @glRest): https://graphlink.dev/why-rest.html
+- REST Operations (@glRest, argument roles, encodings, responses, @glRestNullable, caching, adapters, all seven clients): https://graphlink.dev/rest-client.html
 - Caching (@glCache, @glCacheInvalidate, tag invalidation, staleIfOffline): https://graphlink.dev/caching.html
 - Persisted Queries (persistedQueries: apq, persistedQueriesUseGet, PersistedQueryNotFound retry, GET adapters, GraphLinkGetNotSupported, Spring interceptor, bounded server cache): https://graphlink.dev/persisted-queries.html
 - Directives (@glMapsTo, @glMapField, @glCache, @glCacheInvalidate, @glSkipOnServer forward mappings, @glServerLenient, @glInjectContext, @glIntercept, @deprecated, and more): https://graphlink.dev/directives.html
 - "@glSkipOnServer & @glSkipOnClient" (two-layer server-side access control, schema stripping, @SchemaMapping, @BatchMapping, mapTo, forward mappings, ID/object field-pair pattern for N+1-safe loading): https://graphlink.dev/skip-directives.html
-- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Swift, Spring; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/configuration.html
+- Configuration (all config keys for Dart, Java, TypeScript, Kotlin, Swift, Python, Go, Spring; scalar codecs in typeMappings; restNullable, restNullableSuffix; autoGenerateQueriesFor for selective operation generation; autoGenerateQueriesArgumentLimit for propagated-arg cap; maxFragmentBodySize to skip oversized _all_fields fragments and their dependent auto-queries; reactive; useSpringSecurity; typeMappings; unknownScalarType fallback for unmapped custom scalars; CLI flags; YAML config): https://graphlink.dev/configuration.html
+- AI Agents (ready-to-copy AGENTS.md / CLAUDE.md instructions for Claude Code, Gemini CLI, Copilot and Cursor): https://graphlink.dev/ai-agents.html
+- Blog (articles and release notes): https://graphlink.dev/blog/index.html
 
 ## Links
 

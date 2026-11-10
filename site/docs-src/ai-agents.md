@@ -7,7 +7,7 @@ description: "Ready-to-copy AGENTS.md / CLAUDE.md instructions so Claude Code, G
 
 AI coding assistants work best when they understand how your project is structured.
 Without instructions, an agent seeing a `generated/` directory full of Dart or Java files
-will waste time reading, editing, or recreating code that GraphLink owns.
+will waste time reading, editing, or recreating code that GraphLink owns. The setups below cover Dart, Java, TypeScript, Kotlin, Swift, Python, Go, Spring Boot and Express.
 
 This page provides ready-to-use instruction files for common setups.
 **Copy the one that matches your project and paste it into your agent's instruction file.**
@@ -196,6 +196,85 @@ This page provides ready-to-use instruction files for common setups.
 
 ---
 
+## Python client project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Python client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` (or `glink.yaml`) at the project root
+    - **Generated files**: `myapp/graphql/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    # or with watch mode:
+    glink -c glink.json -w
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `myapp/graphql/` — they will be overwritten on next run.
+    - `GraphLinkClient` is the entry point. Queries are on `client.queries`, mutations on
+      `client.mutations`, subscriptions on `client.subscriptions`.
+    - All operation methods are `async` — call them with `await` from a coroutine.
+    - Operation arguments are keyword-only and named in `snake_case` (`client.queries.get_user(id="1")`).
+    - Subscriptions return an `AsyncIterator` — iterate with `async for`.
+    - Generated types and inputs are pydantic v2 models with `to_json()` / `from_json()` — use them directly,
+      do not re-serialize.
+
+    ### Caching
+    Cache behaviour is declared in the schema via `@glCache` and `@glCacheInvalidate` directives.
+    Do not implement caching in application code — add or modify the directive in the schema instead.
+    ```
+
+---
+
+## Go client project
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ## Code generation — GraphLink
+
+    This project uses [GraphLink](https://graphlink.dev) (`glink`) to generate
+    Go client code from a GraphQL schema.
+
+    - **Schema**: `schema/*.graphql` (or wherever your .graphql files are)
+    - **Config**: `glink.json` (or `glink.yaml`) at the project root
+    - **Generated files**: `internal/graphql/` — DO NOT edit these manually
+
+    To regenerate after any schema change:
+    ```bash
+    glink -c glink.json
+    # or with watch mode:
+    glink -c glink.json -w
+    ```
+
+    ### Rules
+    - To add a field, type, query, or mutation: edit the `.graphql` schema file, then run `glink`.
+    - Never edit files inside `internal/graphql/` — they will be overwritten on next run.
+    - Everything is one flat Go package. `GraphLinkClient` is the entry point: `client.Queries`,
+      `client.Mutations`, `client.Subscriptions`.
+    - Every operation takes a `context.Context` first and returns `(value, error)`.
+    - Required arguments are positional; optional and defaulted arguments go in the trailing
+      `<Operation>Options` struct.
+    - Subscriptions return channels of `GraphLinkEvent[T]`.
+    - Inputs with schema defaults have a `New<Input>()` constructor — use it instead of a zero-value literal.
+    - Run `gofmt -w` on the output directory if you commit it; generated files are not formatted.
+
+    ### Caching
+    Cache behaviour is declared in the schema via `@glCache` and `@glCacheInvalidate` directives.
+    Do not implement caching in application code — add or modify the directive in the schema instead.
+    ```
+
+---
+
 ## Spring Boot server project
 
 === "AGENTS.md / CLAUDE.md"
@@ -253,6 +332,27 @@ This page provides ready-to-use instruction files for common setups.
     - Start the server with the generated `createServer({ ...services })`; per-request context goes through `contextFactory`.
     - Batch-mapped fields (`@glSkipOnServer(batch: true)`) use generated DataLoaders — do not hand-roll N+1 lookups.
     - If the schema uses `@glIntercept`, pass an `interceptor` implementation in the services object.
+    ```
+
+---
+
+## REST operations and persisted queries (all clients)
+
+=== "AGENTS.md / CLAUDE.md"
+
+    ```markdown
+    ### REST operations
+    Fields of `Query` and `Mutation` annotated with `@glRest(path: "...", method: ...)` are served over HTTP/JSON
+    by the same generated client, with the same call syntax as GraphQL operations. Do not hand-write HTTP calls for
+    them. Argument roles are declared in the schema (`@glRestPath`, `@glRestParam`, `@glRestHeader`, `@glRestBody`,
+    `@glRestField`, `@glRestPart`). To move a field to GraphQL, remove the directive.
+
+    ### Directives
+    Every directive in the schema must be built in or declared with `directive @name ... on ...`.
+    Run `glink --print-directives` to print the declarations of GraphLink's own directives.
+
+    ### Persisted queries
+    Enabled per client with `persistedQueries: "apq"` in the config; do not implement hashing in application code.
     ```
 
 ---

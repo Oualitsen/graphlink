@@ -1,6 +1,6 @@
 ---
 title: "Getting Started: GraphQL Codegen in 5 Minutes"
-description: "Install the glink CLI, write a GraphQL schema, configure the generator and get typed Dart, Java, TypeScript, Kotlin or Swift code in under 5 minutes."
+description: "Install the glink CLI, write a GraphQL schema, pick a config and get typed Dart, Java, TypeScript, Kotlin, Swift, Python or Go code in 5 minutes."
 ---
 
 # Getting Started
@@ -143,7 +143,7 @@ type Subscription {
 
 ## Step 3 — Configure the generator
 
-Create a config file in your project root. GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), or **YML** (`.yml`). Name it `glink.json` / `glink.yaml` / `glink.yml` and the `-c` flag becomes optional — `glink` finds it automatically.
+Create a config file in your project root. GraphLink accepts **JSON** (`.json`), **YAML** (`.yaml`), or **YML** (`.yml`). Name it `glink.json` / `glink.yaml` / `glink.yml` and the `-c` flag becomes optional — `glink` finds it automatically. Every tab below shows JSON first (the default) and the same config in YAML. Each language's page lists every option: [Dart](dart-client.md), [Java](java-client.md), [TypeScript](typescript-client.md), [Kotlin](kotlin-client.md), [Swift](swift-client.md), [Python](python-client.md), [Go](go-client.md), or the full [configuration reference](configuration.md).
 
 === "Dart / Flutter"
 
@@ -251,6 +251,282 @@ Create a config file in your project root. GraphLink accepts **JSON** (`.json`),
             nullableFieldsRequired: false
             immutableInputFields: true
             immutableTypeFields: true
+        ```
+
+=== "TypeScript"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "client",
+          "typeMappings": {
+            "ID": "string",
+            "String": "string",
+            "Float": "number",
+            "Int": "number",
+            "Boolean": "boolean",
+            "Null": "null"
+          },
+          "outputDir": "src/generated",
+          "clientConfig": {
+            "typescript": {
+              "packageName": "my-app",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "httpAdapter": "fetch"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: string
+          String: string
+          Float: number
+          Int: number
+          Boolean: boolean
+          "Null": "null"
+        outputDir: src/generated
+        clientConfig:
+          typescript:
+            packageName: my-app
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            httpAdapter: fetch
+        ```
+
+=== "Kotlin"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "client",
+          "typeMappings": {
+            "ID": "String",
+            "String": "String",
+            "Float": "Double",
+            "Int": "Int",
+            "Boolean": "Boolean"
+          },
+          "outputDir": "src/main/kotlin/com/example/generated",
+          "clientConfig": {
+            "kotlin": {
+              "packageName": "com.example.generated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "wsAdapter": "okhttp"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Int
+          Boolean: Boolean
+        outputDir: src/main/kotlin/com/example/generated
+        clientConfig:
+          kotlin:
+            packageName: com.example.generated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            wsAdapter: okhttp
+        ```
+
+=== "Swift"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "client",
+          "typeMappings": {
+            "ID": "String",
+            "String": "String",
+            "Float": "Double",
+            "Int": "Int",
+            "Boolean": "Bool"
+          },
+          "outputDir": "Sources/GraphLinkGenerated",
+          "clientConfig": {
+            "swift": {
+              "moduleName": "GraphLinkGenerated",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "wsAdapter": "urlsession"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        typeMappings:
+          ID: String
+          String: String
+          Float: Double
+          Int: Int
+          Boolean: Bool
+        outputDir: Sources/GraphLinkGenerated
+        clientConfig:
+          swift:
+            moduleName: GraphLinkGenerated
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            wsAdapter: urlsession
+        ```
+
+=== "Python"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "client",
+          "outputDir": "myapp/graphql",
+          "clientConfig": {
+            "python": {
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "httpAdapter": "httpx",
+              "wsAdapter": "websockets"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        outputDir: myapp/graphql
+        clientConfig:
+          python:
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            httpAdapter: httpx
+            wsAdapter: websockets
+        ```
+
+=== "Go"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "client",
+          "outputDir": "internal/graphql",
+          "clientConfig": {
+            "go": {
+              "packageName": "graphql",
+              "generateAllFieldsFragments": true,
+              "autoGenerateQueries": true,
+              "httpAdapter": "nethttp",
+              "wsAdapter": "coder"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: client
+        outputDir: internal/graphql
+        clientConfig:
+          go:
+            packageName: graphql
+            generateAllFieldsFragments: true
+            autoGenerateQueries: true
+            httpAdapter: nethttp
+            wsAdapter: coder
+        ```
+
+=== "Express / Apollo"
+
+    === "JSON"
+
+        ```json title="glink.json"
+        {
+          "schemaPaths": [
+            "schema/*.graphql"
+          ],
+          "mode": "server",
+          "typeMappings": {
+            "ID": "string",
+            "String": "string",
+            "Float": "number",
+            "Int": "number",
+            "Boolean": "boolean",
+            "Null": "null"
+          },
+          "outputDir": "src/generated",
+          "serverConfig": {
+            "expressApollo": {
+              "port": 4000,
+              "graphqlPath": "/graphql"
+            }
+          }
+        }
+        ```
+
+    === "YAML"
+
+        ```yaml title="glink.yaml"
+        schemaPaths:
+          - schema/*.graphql
+        mode: server
+        typeMappings:
+          ID: string
+          String: string
+          Float: number
+          Int: number
+          Boolean: boolean
+          "Null": "null"
+        outputDir: src/generated
+        serverConfig:
+          expressApollo:
+            port: 4000
+            graphqlPath: /graphql
         ```
 
 === "Spring Boot"
@@ -388,7 +664,7 @@ The generator processed each section of your schema and produced a corresponding
 
 ### Types → model classes
 
-`type Vehicle` became `vehicle.dart` (Dart) and `Vehicle.java` (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with `required`. In Java, an inner `Builder` class is generated.
+`type Vehicle` became `vehicle.dart` (Dart) and `Vehicle.java` (Java). Each has all fields, a constructor, and JSON serialization. In Dart, fields are final and the constructor uses named parameters with `required`. In Java, an inner `Builder` class is generated. The other targets follow their language's idiom: a `data class` in Kotlin, a `Sendable` struct in Swift, a pydantic model in Python, a struct with `json` tags in Go, an interface in TypeScript.
 
 ### Enums → enum classes with serialization
 
@@ -433,5 +709,14 @@ You now have generated code. The next step depends on your target:
 
 - [Dart / Flutter client](dart-client.md) — set up the adapter, initialize the client, make queries
 - [Java client](java-client.md) — wire up Jackson or Gson, make type-safe calls
+- [TypeScript client](typescript-client.md) — fetch or axios, optional RxJS observables
+- [Kotlin client](kotlin-client.md) — coroutines and kotlinx.serialization
+- [Swift client](swift-client.md) — async/await with no third-party dependency
+- [Python client](python-client.md) — pydantic models and an asyncio client
+- [Go client](go-client.md) — plain structs and a context-aware client
 - [Spring Boot server](spring-server.md) — implement the generated service interfaces, run your app
+- [Express / Apollo server](express-apollo.md) — implement the generated service interfaces in TypeScript
+- [Custom queries & mutations](custom-queries.md) — write your own operations next to the schema
+- [REST operations](rest-client.md) — serve some fields over HTTP/JSON from the same client
 - [Caching](caching.md) — understand TTL, tags, and partial query caching in depth
+- [Persisted queries](persisted-queries.md) — send a hash instead of the query text

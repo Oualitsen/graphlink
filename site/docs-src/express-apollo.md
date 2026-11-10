@@ -1,6 +1,6 @@
 ---
 title: "Express & Apollo GraphQL Server Generator"
-description: "Generate an Express + Apollo Server GraphQL scaffold in TypeScript: service interfaces, resolvers, DataLoader batching and graphql-ws subscriptions."
+description: "Generate an Express + Apollo Server GraphQL scaffold in TypeScript: service interfaces, async resolvers, DataLoader batching and graphql-ws subscriptions."
 ---
 
 # Express / Apollo Server
@@ -196,6 +196,10 @@ const httpServer = await createServer({
 `contextFactory` runs once per HTTP request (and once per WebSocket connection for subscriptions).
 Fields declared with `@glInjectContext`, or every field when `injectContext: true` is set, receive
 this context object as an argument.
+
+## Concurrent execution
+
+Every generated resolver is an `async` function that awaits your service, for example `catalog: async (_, __, context, info) => { ... }`. Apollo Server resolves the sibling fields of a query without waiting for each one in turn, so independent fields of the same request can load concurrently, and the event loop is never blocked while your service waits on I/O. For the N+1 problem inside one field, use `@glSkipOnServer(batch: true)`, which generates a per-request DataLoader (next section).
 
 ## Batch mappings and DataLoader
 

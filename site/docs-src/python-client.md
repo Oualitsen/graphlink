@@ -1,6 +1,6 @@
 ---
 title: "Python GraphQL Client Generator"
-description: "Generated Python GraphQL client: pydantic v2 models, asyncio methods with keyword-only arguments, AsyncIterator subscriptions, httpx and websockets adapters, caching, uploads and persisted queries."
+description: "Generated Python GraphQL and REST client: pydantic v2 models, asyncio methods, AsyncIterator subscriptions, httpx and websockets adapters, caching."
 ---
 
 # Python Client
@@ -175,11 +175,16 @@ from myapp.graphql import GLUpload
 await client.mutations.upload_avatar(user_id="1", file=GLUpload.from_file("avatar.png"))
 ```
 
-`progress` is reported through `on_progress(sent, total)`; the default httpx adapter reports the start and the end of
-the request.
+The default httpx adapter streams the multipart body (`gl_multipart_stream` in `graph_link_uploads.py`) instead of reading
+each file into memory, and accepts async-iterable uploads. Progress is reported through `on_progress(sent, total)` and
+is not called when the total size is unknown; an upload of unknown length is sent chunked.
 
 ## Persisted queries
 
 `persistedQueries: "apq"` (and optionally `persistedQueriesUseGet`) work as described in
 [Persisted Queries](persisted-queries.md). With GET enabled, `GraphLinkClient.with_http` wires the GET adapter;
 when building the client yourself pass `get_adapter=`.
+
+## REST operations
+
+Fields of `Query` and `Mutation` annotated with `@glRest` are served over HTTP/JSON through this same client, with the same call syntax as GraphQL operations. See [REST operations](rest-client.md#python) for the directive, argument roles, responses, caching and the adapter.

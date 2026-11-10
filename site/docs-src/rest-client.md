@@ -1,9 +1,12 @@
 ---
 title: "REST Operations in a GraphQL Client"
-description: "Serve some Query and Mutation fields over plain HTTP/JSON from the same schema and the same generated client: @glRest, argument roles, encodings, responses, caching and the adapter contract."
+description: "Serve Query and Mutation fields over HTTP/JSON from the same schema and generated client: @glRest, argument roles, responses, caching and adapters."
 ---
 
 # REST Operations
+
+!!! tip "New to REST operations?"
+    Read [Why support REST](why-rest.md) first: trying GraphLink on the API you have, one cache for REST and GraphQL, and migrating one field at a time.
 
 Annotate a root field with `@glRest` and the generated client calls it over HTTP/JSON instead of GraphQL. The schema, the
 types and the client are the same, so you can move an API from REST to GraphQL one field at a time: remove the directive

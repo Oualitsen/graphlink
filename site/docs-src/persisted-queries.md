@@ -1,6 +1,6 @@
 ---
 title: "GraphQL Persisted Queries (APQ)"
-description: "Automatic Persisted Queries in every generated client: send a SHA-256 hash instead of the query, retry once on PersistedQueryNotFound, optional GET for queries, Apollo-compatible wire format."
+description: "Automatic Persisted Queries in every generated client: send a SHA-256 hash, retry once on PersistedQueryNotFound, optional GET for CDN-cacheable queries."
 ---
 
 # Persisted Queries (APQ)

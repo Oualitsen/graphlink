@@ -10,7 +10,7 @@ Two directives that give you fine-grained control over what GraphLink generates 
 | Directive | Target | Effect |
 |---|---|---|
 | `@glSkipOnServer` | Server (Spring Boot) | Excludes a type or field from server generation; generates `@SchemaMapping` / `@BatchMapping` to resolve it |
-| `@glSkipOnClient` | Client (Dart, Java, TypeScript, Kotlin, Swift) | Strips the type or field from the generated schema — **no client can query it** |
+| `@glSkipOnClient` | Client (every client target) | Strips the type or field from the generated schema — **no client can query it** |
 
 Declaration (add to your schema or a dedicated `directives.graphql`):
 

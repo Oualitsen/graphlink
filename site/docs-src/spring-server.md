@@ -1,6 +1,6 @@
 ---
 title: "Spring Boot GraphQL Server Generator"
-description: "Generate a Spring Boot GraphQL server (Java or Kotlin) from your schema: controllers, service interfaces, MVC or WebFlux, uploads and strict nullability."
+description: "Generate a Spring Boot GraphQL server (Java or Kotlin): async controllers, service interfaces, MVC or WebFlux, N+1 batching and strict nullability."
 ---
 
 # Spring Boot Server
@@ -236,7 +236,7 @@ The generated controller is the glue between Spring's GraphQL runtime and your s
 
     Java Spring controller methods also now bind input arguments as `Map<String, Object>` and convert them via the input's generated `fromJson()`, instead of receiving a Spring-bound typed input object directly — again to keep renamed/normalized fields correct on the wire. Any custom Jackson/Spring binding configuration relying on the previous direct-typed argument binding needs to be revisited.
 
-```java title="generated/controllers/VehicleServiceController.java — v5.0.0+"
+```java title="generated/controllers/VehicleServiceController.java"
 @Controller()
 public class VehicleServiceController {
    private final VehicleService vehicleService;
@@ -246,28 +246,45 @@ public class VehicleServiceController {
    }
 
    @QueryMapping()
-   public Map<String, Object> getVehicle(@Argument() String id) {
-      return vehicleService.getVehicle(id).toJson();
+   public CompletableFuture<Map<String, Object>> getVehicle(@Argument() String id) {
+      return CompletableFuture.supplyAsync(() -> vehicleService.getVehicle(id).toJson());
    }
 
    @QueryMapping()
-   public List<Map<String, Object>> listVehicles() {
-      return vehicleService.listVehicles().stream().map(Vehicle::toJson).toList();
-   }
-
-   @MutationMapping()
-   public Map<String, Object> addVehicle(@Argument() Map<String, Object> input) {
-      return vehicleService.addVehicle(AddVehicleInput.fromJson(input)).toJson();
+   public CompletableFuture<List<? extends Map<String, Object>>> listVehicles() {
+      return CompletableFuture.supplyAsync(() -> vehicleService.listVehicles().stream().map(e0 -> e0.toJson()).collect(Collectors.toList()));
    }
 
    @SubscriptionMapping()
    public Flux<Map<String, Object>> vehicleAdded() {
-      return vehicleService.vehicleAdded().map(Vehicle::toJson);
+      return vehicleService.vehicleAdded().map(__gl_result__ -> __gl_result__.toJson());
    }
 }
 ```
 
+In MVC mode every query and mutation method returns a `CompletableFuture` and runs the service call asynchronously, see [Concurrent execution](#concurrent-execution). Subscriptions return a `Flux`.
+
 Spring's `@QueryMapping`, `@MutationMapping`, and `@SubscriptionMapping` use the method name to map to the schema field by convention. `@Argument` on method parameters maps GraphQL arguments to Java parameters by name.
+
+## Concurrent execution
+
+The generated controllers are asynchronous by default, so you do not write any threading code and the request thread is not held while your service works. What happens depends on the target, and you can see each shape in the generated files of the `server_integration_tests` servers:
+
+| Target | Generated handler | What runs where |
+|---|---|---|
+| Java, MVC (default) | `CompletableFuture<...>` returning `CompletableFuture.supplyAsync(() -> service.call(...))` | The service call runs on the JDK's default async executor (the common `ForkJoinPool`) |
+| Java, reactive (`"reactive": true`) | `Mono<...>` returning the service's `Mono` | Non-blocking end to end: your service composes reactive types, no thread hand-off |
+| Kotlin, blocking services (`blockingServices: true`, the default) | `suspend fun` wrapping the call in `withContext(Dispatchers.IO + SecurityCoroutineContext())` | Blocking work (JPA, JDBC) is moved off the coroutine dispatcher, and the security context is carried across |
+| Kotlin, suspend services (`blockingServices: false`) | `suspend fun` calling the service directly | Your coroutine-native service runs on Spring's coroutine dispatch, no dispatcher switch |
+
+Because every query handler returns a future, a `Mono` or a coroutine instead of a value, Spring GraphQL can start the sibling fields of a query without waiting for each one in turn. A request such as `{ vehicle(id: "1") { brand } owner(id: "7") { name } }` can fetch both services concurrently.
+
+Two consequences to keep in mind:
+
+- **Service implementations must be thread-safe.** With blocking services, a call runs on a pool thread, not on the thread that received the request.
+- **Thread-local state is not carried over by itself.** Spring Security's `SecurityContextHolder` is propagated with `useSpringSecurity: true` on Java MVC (see [Security context propagation](#security-context-propagation-mvc)) and by `SecurityCoroutineContext` on Kotlin. Anything else you keep in a `ThreadLocal` needs your own propagation.
+
+For the N+1 problem inside a single field, use `@glSkipOnServer(batch: true)`: it generates a batch mapping so one call loads the field for all parents. See [Skip directives](skip-directives.md).
 
 ## Implementing the service
 
