@@ -1,7 +1,6 @@
 ---
 date: 2026-11-10
 slug: graphlink-6-0-release
-draft: true
 categories:
   - Release
 description: "GraphLink 6.0: REST operations in all seven clients, new Python and Go clients, scalar codecs, validated directives and streaming uploads."
