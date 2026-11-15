@@ -38,6 +38,12 @@ class FlutterInputsTypeHelpers {
   bool isTextField(GLField f) =>
       !isListField(f) && !isEnumField(f) && !isBoolField(f) && !isInputField(f);
 
+  bool isNumberField(GLField f) {
+    if (!isTextField(f)) return false;
+    final type = dartScalarType(f);
+    return type == 'int' || type == 'double';
+  }
+
   bool isTristateField(GLField f) {
     if (!isBoolField(f)) return false;
     if (f.type.nullable) return _config.nullableBooleanWidget == NullableBooleanWidget.tristate;
@@ -138,9 +144,7 @@ class FlutterInputsTypeHelpers {
     final type = dartScalarType(f);
     final nullable = f.type.nullable;
     if (type == 'int') {
-      final rawToString = nullable
-          ? "_form.initialValues?.$name?.toString() ?? ''"
-          : "_form.initialValues?.$name.toString() ?? ''";
+      final rawToString = _formattedNumberExpr(name, nullable);
       final epochExpr = nullable
           ? 'DateTime.fromMillisecondsSinceEpoch(_form.initialValues!.$name!)'
           : 'DateTime.fromMillisecondsSinceEpoch(_form.initialValues!.$name)';
@@ -148,13 +152,12 @@ class FlutterInputsTypeHelpers {
           '? DateFormat(_form.dateConfig!.$name!.pattern).format($epochExpr) '
           ': $rawToString';
     }
-    if (type == 'double') {
-      return nullable
-          ? "_form.initialValues?.$name?.toString() ?? ''"
-          : "_form.initialValues?.$name.toString() ?? ''";
-    }
+    if (type == 'double') return _formattedNumberExpr(name, nullable);
     return "_form.initialValues?.$name ?? ''";
   }
+
+  String _formattedNumberExpr(String name, bool nullable) =>
+      "_form.initialValues?.$name == null ? '' : _${name}Number.format(_form.initialValues!.$name${nullable ? '!' : ''})";
 
   String initialBoolExpr(GLField f) {
     final name = f.codeName;
@@ -199,7 +202,7 @@ class FlutterInputsTypeHelpers {
 
   String smartKeyboardTypeExpr(GLField f) {
     final type = dartScalarType(f);
-    if (type == 'int' || type == 'double') return 'TextInputType.number';
+    if (type == 'int' || type == 'double') return '_${f.codeName}Number.keyboardType(integer: ${type == 'int'})';
     final n = f.name.token.toLowerCase();
     if (n.contains('email')) return 'TextInputType.emailAddress';
     if (n.contains('phone')) return 'TextInputType.phone';

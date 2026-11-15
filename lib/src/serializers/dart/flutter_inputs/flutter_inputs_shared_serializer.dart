@@ -1,6 +1,7 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/dart/flutter_api.dart';
+import 'flutter_inputs_number_constants.dart';
 
 class _Field {
   final String type;
@@ -134,6 +135,10 @@ class FlutterInputsSharedSerializer {
           _Field('String', 'required', "'Required'"),
           _Field('String', 'mustBeWholeNumber', "'Must be a whole number'"),
           _Field('String', 'mustBeNumber', "'Must be a number'"),
+          _Field('String', 'numberCharNotAllowed', "'Numbers only'"),
+          _Field('String', 'numberOneSeparator', "'Only one decimal separator'"),
+          _Field('String', 'numberTooManyDecimals', "'Too many decimals'"),
+          _Field('String', 'numberNoNegative', "'Negative numbers are not allowed'"),
           _Field('String', 'invalidDate', "'Invalid date'"),
           _Field('String', 'chooseAnOption', "'Choose an option'"),
           _Field('String', 'yes', "'Yes'"),
@@ -172,6 +177,8 @@ class FlutterInputsSharedSerializer {
           const _Field('DateTime?', 'initialDate'),
         ]),
       ]);
+
+  String serializeSharedNumberInputConfig() => flutterNumberInputConfigFile(_config.defaultDecimalSeparator.name);
 
   String serializeSharedDateInputFormatter() => _file([
         "import 'package:flutter/services.dart';",

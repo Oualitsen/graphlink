@@ -6,6 +6,7 @@ import 'flutter_inputs_draft_serializer.dart';
 import 'flutter_inputs_field_serializer.dart';
 import 'flutter_inputs_error_summary_serializer.dart';
 import 'flutter_inputs_layout_helpers_serializer.dart';
+import 'flutter_inputs_number_serializer.dart';
 import 'flutter_inputs_reset_serializer.dart';
 import 'flutter_inputs_read_serializer.dart';
 import 'flutter_inputs_rows_serializer.dart';
@@ -28,6 +29,7 @@ class FlutterInputsStateSerializer {
   late final _layout = FlutterInputsLayoutHelpersSerializer(_u, _config, _types);
   late final _stepper = FlutterInputsStepperSerializer(_u, _config, _types, _drafts);
   late final _errors = FlutterInputsErrorSummarySerializer(_u, _types);
+  late final _numbers = FlutterInputsNumberSerializer(_u);
 
   FlutterInputsStateSerializer(this._u, this._config, this._types, this._fields, this._date, this._drafts);
 
@@ -58,6 +60,7 @@ class FlutterInputsStateSerializer {
     final stepBuckets = _stepper.buildStepBuckets(fields, hasScalarFields, inputFields, inputListFields);
 
     final validatableFields = [...textFields, ...enumFields, ...boolFields];
+    final numberFields = textFields.where(_types.isNumberField).toList();
 
     final stateVarDecls = <String>[
       _u.constDecl('_formKey', 'GlobalKey<FormState>()'),
@@ -65,12 +68,13 @@ class FlutterInputsStateSerializer {
       'Timer? _debounceTimer;',
       'bool _isResetting = false;',
       'bool _submitting = false;',
-      'bool _asyncNotifying = false;',
+      if (validatableFields.isNotEmpty) 'bool _asyncNotifying = false;',
       _u.constDecl('_errorsNotifier', 'ValueNotifier<Map<String, String>>({})'),
       if (validatableFields.isNotEmpty) '// async validation state',
       ...validatableFields.map((f) => 'bool _${f.codeName}Validating = false;'),
       ...validatableFields.map((f) => 'String? _${f.codeName}AsyncError;'),
       ...validatableFields.map((f) => 'Timer? _${f.codeName}AsyncTimer;'),
+      ..._numbers.stateVarDecls(numberFields),
       if (_config.persistDrafts) ...FlutterInputsDraftSerializer.stateVarDecls,
       if (hasSubInputs) 'int _currentStep = 0;',
       if (textFields.isNotEmpty) '// text controllers',
@@ -144,6 +148,7 @@ class FlutterInputsStateSerializer {
       '_debounceTimer?.cancel();',
       if (_config.persistDrafts) ...FlutterInputsDraftSerializer.disposeStatements,
       ...validatableFields.map((f) => '_${f.codeName}AsyncTimer?.cancel();'),
+      ..._numbers.disposeStatements(numberFields),
       '_errorsNotifier.dispose();',
       ...textFields.map((f) => '_${f.codeName}Controller.dispose();'),
       'super.dispose();',
@@ -220,10 +225,10 @@ class FlutterInputsStateSerializer {
         _layout.requiredLabelHelper(inputName),
         _layout.labelWithInfoHelper(inputName),
         _layout.withFloatingInfoHelper(inputName),
-        _change.onFieldChangedMethod(),
+        _change.onFieldChangedMethod(hasAsyncValidations: validatableFields.isNotEmpty),
         _change.notifyContextChangeMethod(),
         _change.scheduleOnChangeMethod(),
-        _change.scheduleAllAsyncValidationsMethod(validatableFields),
+        if (validatableFields.isNotEmpty) _change.scheduleAllAsyncValidationsMethod(validatableFields),
         ..._change.asyncSchedulerMethods(validatableFields, textFields),
         if (_layout.needsFieldHelper(textFields, enumFields, boolFields, inputListFields)) _layout.fieldHelper(inputName),
         if (_types.needsSwitchBoolHelper(boolFields)) _layout.switchBoolFieldHelper(inputName),
@@ -237,6 +242,7 @@ class FlutterInputsStateSerializer {
         if (dateEligibleFields.isNotEmpty) _date.pickDateMaterialHelper(),
         if (dateEligibleFields.isNotEmpty) _date.pickDateCupertinoHelper(),
         if (intFields.isNotEmpty) _date.parseDateHelper(),
+        ..._numbers.stateMembers(numberFields),
         _layout.intersperseHelper(),
         if (_config.persistDrafts)
           ..._drafts.stateMethods(inputName, fields, textFields, enumFields, boolFields, listFields),

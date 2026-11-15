@@ -118,11 +118,13 @@ class FlutterInputsReadSerializer {
     if (textFields.contains(f)) {
       if (dartType == 'int') {
         return nullable
-            ? '_form.dateConfig?.$name != null ? _parseDate(_${name}Controller.text, _form.dateConfig!.$name!) : int.tryParse(_${name}Controller.text)'
-            : '_form.dateConfig?.$name != null ? (_parseDate(_${name}Controller.text, _form.dateConfig!.$name!) ?? (throw InputReadException(\'$name: invalid date\'))) : int.parse(_${name}Controller.text)';
+            ? '_form.dateConfig?.$name != null ? _parseDate(_${name}Controller.text, _form.dateConfig!.$name!) : _${name}Number.parseInt(_${name}Controller.text)'
+            : '_form.dateConfig?.$name != null ? (_parseDate(_${name}Controller.text, _form.dateConfig!.$name!) ?? (throw InputReadException(\'$name: invalid date\'))) : (_${name}Number.parseInt(_${name}Controller.text) ?? (throw InputReadException(\'$name: invalid number\')))';
       }
       if (dartType == 'double') {
-        return nullable ? 'double.tryParse(_${name}Controller.text)' : 'double.parse(_${name}Controller.text)';
+        return nullable
+            ? '_${name}Number.parseDouble(_${name}Controller.text)'
+            : '(_${name}Number.parseDouble(_${name}Controller.text) ?? (throw InputReadException(\'$name: invalid number\')))';
       }
       return nullable
           ? '_${name}Controller.text.isEmpty ? null : _${name}Controller.text'

@@ -2,6 +2,7 @@ import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/serializers/dart/flutter_api.dart';
+import 'flutter_inputs_number_serializer.dart';
 import 'flutter_inputs_radio_binding.dart';
 import 'flutter_inputs_type_helpers.dart';
 
@@ -12,6 +13,8 @@ class FlutterInputsFieldSerializer {
   final FlutterApi _api;
 
   FlutterInputsFieldSerializer(this._u, this._config, this._types, this._api);
+
+  late final FlutterInputsNumberSerializer _numbers = FlutterInputsNumberSerializer(_u);
 
   FlutterInputsRadioBinding radioBinding({
     required String type,
@@ -47,14 +50,22 @@ class FlutterInputsFieldSerializer {
 
     final name = f.codeName;
     final nullable = f.type.nullable;
+    final isDouble = dartType == 'double';
     final validators = _validatorStatements(name, [
+      if (isDouble) _numbers.hintGuard(name),
       if (!nullable)
         _u.inlineIfStatement(condition: 'v == null || v.isEmpty', statement: 'return _form.strings.required;'),
-      if (dartType == 'double') ...[
+      if (isDouble) ...[
         if (nullable)
-          _u.inlineIfStatement(condition: 'v != null && v.isNotEmpty && double.tryParse(v) == null', statement: 'return _form.strings.mustBeNumber;')
+          _u.ifStatement(
+            condition: 'v != null && v.isNotEmpty && _${name}Number.parseDouble(v) == null',
+            ifBlockStatements: ['return _form.strings.mustBeNumber;'],
+          )
         else
-          _u.inlineIfStatement(condition: 'double.tryParse(v) == null', statement: 'return _form.strings.mustBeNumber;'),
+          _u.ifStatement(
+            condition: '_${name}Number.parseDouble(v) == null',
+            ifBlockStatements: ['return _form.strings.mustBeNumber;'],
+          ),
       ],
     ]);
 
@@ -72,25 +83,30 @@ class FlutterInputsFieldSerializer {
       'maxLength: _form.textConfig?.$name?.maxLength',
       'maxLines: _form.textConfig?.$name?.maxLines ?? 1',
       'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name, ${clearControllerArg(name, enabledExpr)})',
-      'onChanged: (_) => _onFieldChanged()',
+      if (isDouble) _u.listArg('inputFormatters', [_numbers.formatterExpr(name, integer: false)]),
+      'onChanged: ${isDouble ? _clearHintAndNotify(name) : '(_) => _onFieldChanged()'}',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }
+
+  String _clearHintAndNotify(String name) =>
+      _u.functionLiteral(['_'], ['_${name}Hint = null;', '_onFieldChanged();']);
 
   String intRegularExpr(GLField f, String enabledExpr) {
     final name = f.codeName;
     final nullable = f.type.nullable;
     final validators = _validatorStatements(name, [
+      _numbers.hintGuard(name),
       if (!nullable) requiredGuard('v == null || v.isEmpty'),
       if (nullable)
-        _u.inlineIfStatement(
-          condition: 'v != null && v.isNotEmpty && int.tryParse(v) == null',
-          statement: 'return _form.strings.mustBeWholeNumber;',
+        _u.ifStatement(
+          condition: 'v != null && v.isNotEmpty && _${name}Number.parseInt(v) == null',
+          ifBlockStatements: ['return _form.strings.mustBeWholeNumber;'],
         )
       else
-        _u.inlineIfStatement(
-          condition: 'int.tryParse(v) == null',
-          statement: 'return _form.strings.mustBeWholeNumber;',
+        _u.ifStatement(
+          condition: '_${name}Number.parseInt(v) == null',
+          ifBlockStatements: ['return _form.strings.mustBeWholeNumber;'],
         ),
     ]);
     const spinnerExpr = 'const SizedBox(width: 44, height: 44, child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))';
@@ -98,9 +114,10 @@ class FlutterInputsFieldSerializer {
       'key: _${name}FieldKey',
       'controller: _${name}Controller',
       'enabled: $enabledExpr',
-      'keyboardType: TextInputType.number',
+      'keyboardType: _${name}Number.keyboardType(integer: true)',
+      _u.listArg('inputFormatters', [_numbers.formatterExpr(name, integer: true)]),
       'decoration: _textDecoration(label, _form.textConfig?.$name, _${name}Validating ? $spinnerExpr : null, _form.fieldIcons?.$name, ${clearControllerArg(name, enabledExpr)})',
-      'onChanged: (_) => _onFieldChanged()',
+      'onChanged: ${_clearHintAndNotify(name)}',
       'validator: ${_u.functionLiteral(['v'], validators)}',
     ]);
   }

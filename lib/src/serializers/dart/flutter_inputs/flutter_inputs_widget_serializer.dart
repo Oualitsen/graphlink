@@ -18,6 +18,7 @@ class FlutterInputsWidgetSerializer {
       List<GLField> dateEligibleFields,
       List<GLField> inputFields, List<GLField> inputListFields) {
     final hasSubInputs = inputFields.isNotEmpty || inputListFields.isNotEmpty;
+    final numberFields = textFields.where(_types.isNumberField).toList();
     final gap = _types.gapStr();
     final hasDropdownLabels = enumFields.isNotEmpty || boolFields.isNotEmpty || listFields.any(_types.isEnumListField);
 
@@ -55,6 +56,7 @@ class FlutterInputsWidgetSerializer {
         if (enumFields.isNotEmpty || boolFields.isNotEmpty) 'final ${inputName}Widgets? widgets;',
         if (textFields.isNotEmpty) 'final ${inputName}TextConfig? textConfig;',
         if (dateEligibleFields.isNotEmpty) 'final ${inputName}DateConfig? dateConfig;',
+        if (numberFields.isNotEmpty) 'final ${inputName}NumberConfig? numberConfig;',
         if (textFields.isNotEmpty) 'final ${inputName}SelectConfig? selectConfig;',
         if (textFields.isNotEmpty) 'final ${inputName}FocusNodes? focusNodes;',
         if (textFields.isNotEmpty || enumFields.isNotEmpty) 'final ${inputName}FieldIcons? fieldIcons;',
@@ -103,6 +105,7 @@ class FlutterInputsWidgetSerializer {
             if (enumFields.isNotEmpty || boolFields.isNotEmpty) 'this.widgets',
             if (textFields.isNotEmpty) 'this.textConfig',
             if (dateEligibleFields.isNotEmpty) 'this.dateConfig',
+            if (numberFields.isNotEmpty) 'this.numberConfig',
             if (textFields.isNotEmpty) 'this.selectConfig',
             if (textFields.isNotEmpty) 'this.focusNodes',
             if (textFields.isNotEmpty || enumFields.isNotEmpty) 'this.fieldIcons',

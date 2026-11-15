@@ -66,9 +66,11 @@ class FlutterInputsErrorSummarySerializer {
       caseValue: "'${f.codeName}'",
       statement: _u.block([
         _u.constDecl('ctx', '_${f.codeName}FieldKey.currentContext'),
-        _u.inlineIfStatement(
+        _u.ifStatement(
           condition: 'ctx != null',
-          statement: '${_u.callExpression('Scrollable.ensureVisible', ['ctx', 'duration: const Duration(milliseconds: 300)', 'curve: Curves.easeInOut'])};',
+          ifBlockStatements: [
+            '${_u.callExpression('Scrollable.ensureVisible', ['ctx', 'duration: const Duration(milliseconds: 300)', 'curve: Curves.easeInOut'])};',
+          ],
         ),
       ]),
     )).toList();
@@ -155,7 +157,7 @@ class FlutterInputsErrorSummarySerializer {
             'super.initState();',
             '// Trigger a rebuild once the form state is available.',
             'WidgetsBinding.instance.addPostFrameCallback(${_u.functionLiteral(['_'], [
-              _u.inlineIfStatement(condition: 'mounted', statement: 'setState(${_u.functionLiteral([], [])});'),
+              _u.ifStatement(condition: 'mounted', ifBlockStatements: ['setState(${_u.functionLiteral([], [])});']),
             ])});',
           ],
         ),
@@ -186,12 +188,12 @@ class FlutterInputsErrorSummarySerializer {
           arguments: ['BuildContext context'],
           statements: [
             _u.constDecl('state', 'widget.formKey.currentState'),
-            _u.inlineIfStatement(condition: 'state == null', statement: 'return const SizedBox.shrink();'),
+            _u.ifStatement(condition: 'state == null', ifBlockStatements: ['return const SizedBox.shrink();']),
             'return ${_u.callExpression('ListenableBuilder', [
               'listenable: state.errorsNotifier',
               'builder: ${_u.functionLiteral(['context', '_'], [
                 'final errors = state.errorsNotifier.value;',
-                _u.inlineIfStatement(condition: 'errors.isEmpty', statement: 'return const SizedBox.shrink();'),
+                _u.ifStatement(condition: 'errors.isEmpty', ifBlockStatements: ['return const SizedBox.shrink();']),
                 'return ${_u.callExpression('Column', [
                   'crossAxisAlignment: CrossAxisAlignment.start',
                   'children: errors.entries.map((e) => $errorTile).toList()',

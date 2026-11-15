@@ -76,12 +76,17 @@ class FlutterTypesSerializer {
           statements: [
             _u.switchStatement(
               expression: 'value',
-              cases: values
-                  .map((v) => DartCaseStatement(
-                        caseValue: '$enumName.${v.codeName}',
-                        statement: 'return ${v.codeName};',
-                      ))
-                  .toList(),
+              cases: [
+                ...values.map((v) => DartCaseStatement(
+                      caseValue: '$enumName.${v.codeName}',
+                      statement: 'return ${v.codeName};',
+                    )),
+                if (def.unknownValue != null)
+                  DartCaseStatement(
+                    caseValue: '$enumName.${def.unknownValue!.codeName}',
+                    statement: 'return null;',
+                  ),
+              ],
             ),
           ],
         ),

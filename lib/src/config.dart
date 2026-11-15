@@ -403,6 +403,7 @@ enum RequiredIndicator { none, asterisk, requiredText, optionalText }
 enum StepperOrientation { vertical, horizontal }
 enum TypeLayout { labeledRow, listTile, listTileReversed, expandable }
 enum DateFieldMode { dialog, inline }
+enum DecimalSeparator { either, dot, comma }
 enum FlutterLabelStyle { bold, muted }
 
 enum FlutterDesignLibrary { flutter, standalone }
@@ -429,6 +430,7 @@ class FlutterConfig {
   final int defaultDateFirstYear;
   final int defaultDateLastYear;
   final DateFieldMode defaultDateMode;
+  final DecimalSeparator defaultDecimalSeparator;
   final bool defaultClearButton;
   final bool persistDrafts;
   final String? sdkVersion;
@@ -456,6 +458,7 @@ class FlutterConfig {
     this.defaultDateFirstYear = 1900,
     this.defaultDateLastYear = 2100,
     this.defaultDateMode = DateFieldMode.dialog,
+    this.defaultDecimalSeparator = DecimalSeparator.either,
     this.defaultClearButton = false,
     this.persistDrafts = false,
     this.sdkVersion,
@@ -525,6 +528,10 @@ class FlutterConfig {
       defaultDateMode: DateFieldMode.values.firstWhere(
         (e) => e.name == (json['defaultDateMode'] as String? ?? 'dialog'),
         orElse: () => DateFieldMode.dialog,
+      ),
+      defaultDecimalSeparator: DecimalSeparator.values.firstWhere(
+        (e) => e.name == (json['defaultDecimalSeparator'] as String? ?? 'either'),
+        orElse: () => DecimalSeparator.either,
       ),
       defaultClearButton: (json['defaultClearButton'] as bool?) ?? false,
       persistDrafts: (json['persistDrafts'] as bool?) ?? false,
