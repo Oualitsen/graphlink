@@ -34,7 +34,7 @@ class JavaMappingSerializer extends GLMappingSerializer {
 
     if (targetIsRecord) {
       // Build positional constructor args in the target type's field declaration order.
-      final targetDef = _owner.grammar.types[targetType];
+      final targetDef = _owner.grammar.types[def.mapsToType!];
       final targetFields = targetDef?.getSerializableFields(_owner.grammar.mode) ?? [];
 
       // Index mappings by target field name for quick lookup.
@@ -104,7 +104,7 @@ class JavaMappingSerializer extends GLMappingSerializer {
   @override
   String fromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan) {
     final targetVar = targetType.firstLow;
-    final targetDef = _owner.grammar.types[targetType]!;
+    final targetDef = _owner.grammar.types[def.mapsToType!]!;
 
     final nullableListDefaultParams =
         plan.nullableListDefaults.map((f) => '${_owner.serializeType(f.sourceField!.type)} default${f.sourceField!.codeName.firstUp}');
