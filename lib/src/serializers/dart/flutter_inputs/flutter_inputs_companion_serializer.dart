@@ -211,6 +211,21 @@ class FlutterInputsCompanionSerializer {
     );
   }
 
+  String serializeNumberConfigClass(String inputName, List<GLField> numberFields) {
+    return _u.createClass(
+      className: '${inputName}NumberConfig',
+      statements: [
+        ...numberFields.map((f) => 'final NumberInputConfig? ${f.codeName};'),
+        _u.createMethod(
+          isConst: true,
+          methodName: '${inputName}NumberConfig',
+          namedArguments: true,
+          arguments: numberFields.map((f) => 'this.${f.codeName}').toList(),
+        ),
+      ],
+    );
+  }
+
   String serializeValidationsClass(String inputName, List<GLField> formFields,
       List<GLField> enumFields, List<GLField> boolFields) {
     return _u.createClass(

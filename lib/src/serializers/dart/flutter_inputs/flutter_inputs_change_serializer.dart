@@ -8,17 +8,18 @@ class FlutterInputsChangeSerializer {
 
   FlutterInputsChangeSerializer(this._u, this._config);
 
-  String onFieldChangedMethod() => _u.createMethod(
+  String onFieldChangedMethod({required bool hasAsyncValidations}) => _u.createMethod(
         returnType: 'void',
         methodName: '_onFieldChanged',
         arguments: [],
         namedArguments: false,
         statements: [
-          _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
+          _u.ifStatement(condition: '!mounted', ifBlockStatements: ['return;']),
           '_notifyContextChange();',
           '_scheduleOnChange();',
           if (_config.persistDrafts) '_scheduleDraftSave();',
-          _u.inlineIfStatement(condition: '!_asyncNotifying', statement: '_scheduleAllAsyncValidations();'),
+          if (hasAsyncValidations)
+            _u.ifStatement(condition: '!_asyncNotifying', ifBlockStatements: ['_scheduleAllAsyncValidations();']),
           '_updateErrorsNotifier();',
         ],
       );
@@ -37,10 +38,10 @@ class FlutterInputsChangeSerializer {
         arguments: [],
         namedArguments: false,
         statements: [
-          _u.inlineIfStatement(condition: '_form.onChange == null', statement: 'return;'),
+          _u.ifStatement(condition: '_form.onChange == null', ifBlockStatements: ['return;']),
           '_debounceTimer?.cancel();',
           '_debounceTimer = Timer(_form.debounceDuration, () ${_u.block([
-            _u.inlineIfStatement(condition: 'mounted', statement: '_form.onChange?.call(tryRead());'),
+            _u.ifStatement(condition: 'mounted', ifBlockStatements: ['_form.onChange?.call(tryRead());']),
           ])});',
         ],
       );
@@ -69,14 +70,14 @@ class FlutterInputsChangeSerializer {
           namedArguments: false,
           statements: [
             '_${name}AsyncTimer?.cancel();',
-            _u.inlineIfStatement(condition: '_form.validations?.$name == null', statement: 'return;'),
+            _u.ifStatement(condition: '_form.validations?.$name == null', ifBlockStatements: ['return;']),
             '_${name}AsyncTimer = Timer(_form.debounceDuration, () async ${_u.block([
-              _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
+              _u.ifStatement(condition: '!mounted', ifBlockStatements: ['return;']),
               '_asyncNotifying = true;',
               'setState(() { _${name}Validating = true; _${name}AsyncError = null; });',
               '_asyncNotifying = false;',
               'final r = await _form.validations!.$name!($valueExpr, _buildContext());',
-              _u.inlineIfStatement(condition: '!mounted', statement: 'return;'),
+              _u.ifStatement(condition: '!mounted', ifBlockStatements: ['return;']),
               '_asyncNotifying = true;',
               'setState(() { _${name}Validating = false; _${name}AsyncError = r; });',
               '_asyncNotifying = false;',

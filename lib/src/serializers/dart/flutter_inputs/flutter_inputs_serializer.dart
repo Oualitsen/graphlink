@@ -62,6 +62,7 @@ class FlutterInputsSerializer {
   String serializeSharedFormStrings() => _shared.serializeSharedFormStrings();
   String serializeSharedDateInputConfig() => _shared.serializeSharedDateInputConfig();
   String serializeSharedDateInputFormatter() => _shared.serializeSharedDateInputFormatter();
+  String serializeSharedNumberInputConfig() => _shared.serializeSharedNumberInputConfig();
   String serializeSharedBooleanLabels() => _shared.serializeSharedBooleanLabels();
   String serializeSharedFieldVisibility() => _shared.serializeSharedFieldVisibility();
   String serializeSharedSimpleFieldForm() => _shared.serializeSharedSimpleFieldForm();
@@ -85,6 +86,7 @@ class FlutterInputsSerializer {
     List<GLField> dateEligibleFields,
     bool hasSubInputs,
   ) {
+    final numberFields = textFields.where(_types.isNumberField).toList();
     final sep = '// ${'=' * 77}';
     final buf = StringBuffer();
 
@@ -169,6 +171,9 @@ class FlutterInputsSerializer {
     if (dateEligibleFields.isNotEmpty) {
       buf.writeln('//   ${inputName}DateConfig     make int/string fields into date pickers');
     }
+    if (numberFields.isNotEmpty) {
+      buf.writeln('//   ${inputName}NumberConfig   NumberInputConfig per int/float field (decimal separator, locale grouping, sign, max decimals)');
+    }
     if (hasSubInputs) {
       buf.writeln('//   ${inputName}StepConfig     per-step title/subtitle for stepper layout');
     }
@@ -205,6 +210,7 @@ class FlutterInputsSerializer {
     final intFields = textFields.where((f) => _types.dartScalarType(f) == 'int').toList();
     final stringDateFields = textFields.where((f) => _types.dartScalarType(f) == 'String').toList();
     final dateEligibleFields = [...intFields, ...stringDateFields];
+    final numberFields = textFields.where(_types.isNumberField).toList();
     final inputFields = fields.where(_types.isInputField).toList();
     final inputListFields = listFields.where(_types.isInputListField).toList();
     final formFields = [...textFields, ...enumFields, ...boolFields, ...inputFields, ...listFields];
@@ -253,6 +259,7 @@ class FlutterInputsSerializer {
         '$importPrefix/widgets/inputs/date_input_config.dart',
         '$importPrefix/widgets/inputs/date_input_formatter.dart',
       },
+      if (numberFields.isNotEmpty) '$importPrefix/widgets/inputs/number_input_config.dart',
       '$importPrefix/widgets/inputs/field_visibility.dart',
       '$importPrefix/widgets/inputs/required_indicator.dart',
       '$importPrefix/widgets/inputs/form_strings.dart',
@@ -292,6 +299,10 @@ class FlutterInputsSerializer {
     }
     if (dateEligibleFields.isNotEmpty) {
       buffer.writeln(_companions.serializeDateConfigClass(inputName, dateEligibleFields));
+      buffer.writeln();
+    }
+    if (numberFields.isNotEmpty) {
+      buffer.writeln(_companions.serializeNumberConfigClass(inputName, numberFields));
       buffer.writeln();
     }
     if (textFields.isNotEmpty) {

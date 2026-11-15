@@ -754,3 +754,21 @@
 ### Fixes
 
 - **`@glMapsTo` to a type whose generated name differs from its schema name** — a target renamed in the generated code (a type called like a standard-library type, such as `Error` becoming `Error_`) crashed Java generation with `Null check operator used on a null value`. Kotlin and Swift did not crash but generated `toError_()` with no constructor arguments, which did not compile. The target is now looked up by its schema name.
+
+## 6.1.0 - 2026-11-15
+
+### New features
+
+- **Flutter: number inputs accept `3,14` and tell the user when a keystroke is refused** — `int` and `double` fields of a generated form only accepted `.` as the decimal separator: the validator and `read()` used `double.tryParse` / `double.parse`, and iOS showed a number keyboard without a decimal key. Every `int` and `double` field now has a `NumberInputConfig` (new generated file `number_input_config.dart`), passed per field through the form's new `numberConfig` (`<Input>NumberConfig`).
+  - The field never rewrites what the user typed. An input formatter accepts an edit as typed or refuses the whole edit (a pasted `1,234.56` included), keeps the text, and shows a short message under the field for two seconds. The message goes away on the next valid edit. The new `FormStrings` entries are `numberCharNotAllowed`, `numberOneSeparator`, `numberTooManyDecimals` and `numberNoNegative`; a separator typed into an `int` field uses `mustBeWholeNumber`.
+  - Options: `decimalSeparator` (`either`, `dot`, `comma`; default `either`, which takes one `.` or one `,` and never a grouping character, so `3,14` is always 3.14), `locale` (accepts grouping in that locale, such as `1 234,5` in French, and shows initial values in the same format; Latin digits only), `allowNegative`, `maxFractionDigits` and `rejectHaptics`. `double` fields now get a keyboard with a decimal key, and `allowNegative` controls the sign key.
+  - The validator, `read()`, the keyboard, and the initial and reset text of a field all use its config. A non-null field whose text cannot be parsed makes `read()` throw `InputReadException` (`<field>: invalid number`) instead of a `FormatException`.
+  - New top-level `flutter.defaultDecimalSeparator` option (default `"either"`) sets the default of every `NumberInputConfig`.
+  - **Behaviour change:** typing `1,234` in a field with the default config now gives 1.234, not a rejection. Use `maxFractionDigits` or a `locale` when users type thousands separators.
+  - A form without `int` or `double` fields generates none of this.
+
+### Fixes
+
+- **Flutter: generated enum labels did not compile with `strictEnums: false`** — the `call` method of an enum's `Labels` class switched over every member except `unknownValue__`, which Dart 3 rejects as a non-exhaustive switch. It now returns `null` for `unknownValue__`, so the field shows the member name, as it does for any enum without a label. With `strictEnums: true` the output is unchanged.
+- **Flutter: forms without text, enum or bool fields no longer generate the async validation members** — the unused `_asyncNotifying` field (flagged by `prefer_final_fields`), the guard that read it, and the empty `_scheduleAllAsyncValidations()` method are left out.
+- **Flutter: guards in generated forms use braces** — the `if` guards of the error summary and change handlers (`mounted`, `state == null`, `errors.isEmpty`, `!_asyncNotifying`, ...) are generated as blocks instead of one-line `if` statements.

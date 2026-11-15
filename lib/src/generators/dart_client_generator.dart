@@ -161,6 +161,13 @@ Future<Set<String>> generateDartClientClasses(
       destinationDir: destinationDir,
     ));
     futures.add(writeToFile(
+      data: inputsSerializer.serializeSharedNumberInputConfig(),
+      fileName: 'number_input_config.dart',
+      subdir: 'widgets/inputs',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+    futures.add(writeToFile(
       data: inputsSerializer.serializeSharedFieldVisibility(),
       fileName: 'field_visibility.dart',
       subdir: 'widgets/inputs',
