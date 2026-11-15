@@ -79,3 +79,6 @@ The full list is in the [changelog](https://github.com/Oualitsen/graphlink/blob/
 
 - Install: <https://graphlink.dev/getting-started.html>
 - REST operations: <https://graphlink.dev/rest-client.html>
+- YouTube: <https://www.youtube.com/@Graphlinkdev>
+- Reddit: <https://www.reddit.com/r/graphlinkdotdev/>
+- X: <https://x.com/graphlinkdev>
