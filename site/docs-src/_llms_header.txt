@@ -229,7 +229,7 @@ arguments with tag invalidation; it has no normalized cache.
 
 Full comparison: https://graphlink.dev/philosophy.html#how-it-compares
 
-## Supported targets (as of v6.0.0)
+## Supported targets (as of v6.0.1)
 
 - Dart client (stable)
 - Flutter client (stable)

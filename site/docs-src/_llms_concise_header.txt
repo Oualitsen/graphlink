@@ -137,7 +137,7 @@ Netflix DGS (Java) and ferry (Dart) each cover one language or framework. Anothe
 normalized client cache or optimistic updates (Apollo, ferry), or your language is not one of the seven.
 Details: https://graphlink.dev/philosophy.html#how-it-compares
 
-## Supported targets (as of v6.0.0)
+## Supported targets (as of v6.0.1)
 
 - Dart client (stable)
 - Flutter client (stable, including UI widget generation)
