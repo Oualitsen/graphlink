@@ -123,5 +123,8 @@ The last part of the video opens the generated query. The client declares the qu
 - Code from the video: [graphlink-demos](https://github.com/Oualitsen/graphlink-demos)
 - The project: [github.com/Oualitsen/graphlink](https://github.com/Oualitsen/graphlink). A star on GitHub is the easiest way to help.
 - Docs: [graphlink.dev](https://graphlink.dev)
+- YouTube: <https://www.youtube.com/@Graphlinkdev>
+- Reddit: <https://www.reddit.com/r/graphlinkdotdev/>
+- X: <https://x.com/graphlinkdev>
 
 The rest of the Dart series covers custom queries, fragments, batching, caching and subscriptions.

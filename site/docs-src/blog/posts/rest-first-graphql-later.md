@@ -123,3 +123,6 @@ If today's REST API omits fields that the schema declares non-null, mark the ope
 - Why REST: <https://graphlink.dev/why-rest.html>
 - REST operations reference: <https://graphlink.dev/rest-client.html>
 - Install: <https://graphlink.dev/getting-started.html>
+- YouTube: <https://www.youtube.com/@Graphlinkdev>
+- Reddit: <https://www.reddit.com/r/graphlinkdotdev/>
+- X: <https://x.com/graphlinkdev>
