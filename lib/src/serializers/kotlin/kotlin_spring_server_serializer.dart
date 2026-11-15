@@ -146,7 +146,7 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
       interface.addImport(SpringImports.jpaRepository);
     }
     var id = gqRepo.getArgValueAsString(glIdType);
-    var onType = gqRepo.getArgValueAsString(glType)!;
+    var onType = serializer.resolveCodeName(gqRepo.getArgValueAsString(glType)!);
 
     var decorators = serializer.serializeDecorators(interface.getDirectives()).trim();
     var buffer = StringBuffer();

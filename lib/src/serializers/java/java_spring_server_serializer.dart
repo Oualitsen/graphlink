@@ -116,7 +116,7 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
       interface.addImport(SpringImports.jpaRepository);
     }
     var id = gqRepo.getArgValueAsString(glIdType);
-    var onType = gqRepo.getArgValueAsString(glType)!;
+    var onType = serializer.resolveCodeName(gqRepo.getArgValueAsString(glType)!);
 
     interface.addInterface(GLInterfaceDefinition(
         name: "$className<$onType, ${id}>".toToken(),
