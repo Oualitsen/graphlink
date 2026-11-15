@@ -237,6 +237,8 @@ class FlutterInputsStateSerializer {
         if (textFields.isNotEmpty) _layout.textDecorationHelper(inputName),
         if (textFields.isNotEmpty) _layout.clearButtonHelper(),
         if (dateEligibleFields.isNotEmpty) _date.clampDateHelper(),
+        if (dateEligibleFields.isNotEmpty) _date.patternIs24HourHelper(),
+        if (dateEligibleFields.isNotEmpty) _date.pickTimeHelper(),
         if (dateEligibleFields.isNotEmpty) _date.isCupertinoHelper(),
         if (dateEligibleFields.isNotEmpty) _date.pickDateHelper(),
         if (dateEligibleFields.isNotEmpty) _date.pickDateMaterialHelper(),

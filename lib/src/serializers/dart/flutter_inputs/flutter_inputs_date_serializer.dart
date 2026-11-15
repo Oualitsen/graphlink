@@ -26,6 +26,38 @@ class FlutterInputsDateSerializer {
         ],
       );
 
+  String patternIs24HourHelper() => _u.createMethod(
+        returnType: 'bool?',
+        methodName: '_patternIs24Hour',
+        namedArguments: false,
+        arguments: ['String pattern'],
+        statements: [
+          _u.constDecl('letters', "pattern.replaceAll(RegExp(r\"'[^']*'\"), '')"),
+          _u.ifStatement(condition: "letters.contains(RegExp('[Hk]'))", ifBlockStatements: ['return true;']),
+          _u.ifStatement(condition: "letters.contains(RegExp('[hK]'))", ifBlockStatements: ['return false;']),
+          'return null;',
+        ],
+      );
+
+  String pickTimeHelper() => _u.createMethod(
+        returnType: 'Future<TimeOfDay?>',
+        methodName: '_pickTime',
+        namedArguments: false,
+        arguments: ['DateTime initial', 'String pattern'],
+        statements: [
+          'return ${_u.callExpression('showTimePicker', [
+            'context: context',
+            'initialTime: TimeOfDay.fromDateTime(initial)',
+            'builder: ${_u.functionLiteral(['ctx', 'child'], [
+              'return ${_u.callExpression('MediaQuery', [
+                'data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: _patternIs24Hour(pattern) ?? MediaQuery.alwaysUse24HourFormatOf(ctx))',
+                'child: child!',
+              ])};',
+            ])}',
+          ])};',
+        ],
+      );
+
   String isCupertinoHelper() => _u.createMethod(
         returnType: 'bool',
         methodName: '_isCupertino',
@@ -73,7 +105,7 @@ class FlutterInputsDateSerializer {
             ifBlockStatements: [
               _u.constDecl('date', 'await ${_u.callExpression('showDatePicker', ['context: context', 'initialDate: initial', 'firstDate: first', 'lastDate: last'])}'),
               _u.inlineIfStatement(condition: 'date == null || !mounted', statement: 'return;'),
-              _u.constDecl('time', 'await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial))'),
+              _u.constDecl('time', 'await _pickTime(initial, config.pattern)'),
               _u.inlineIfStatement(condition: 'time == null', statement: 'return;'),
               'picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);',
             ],
@@ -127,6 +159,7 @@ class FlutterInputsDateSerializer {
                     'child: ${_u.callExpression('CupertinoDatePicker', [
                       'mode: config.type == DateType.dateTime ? CupertinoDatePickerMode.dateAndTime : CupertinoDatePickerMode.date',
                       'initialDateTime: picked',
+                      'use24hFormat: _patternIs24Hour(config.pattern) ?? MediaQuery.alwaysUse24HourFormatOf(ctx)',
                       'minimumDate: first',
                       'maximumDate: last',
                       'onDateTimeChanged: (dt) => picked = dt',
@@ -342,6 +375,7 @@ class FlutterInputsDateSerializer {
       'child: ${_u.callExpression('CupertinoDatePicker', [
         'mode: _form.dateConfig!.$name!.type == DateType.dateTime ? CupertinoDatePickerMode.dateAndTime : CupertinoDatePickerMode.date',
         'initialDateTime: initialDate',
+        'use24hFormat: _patternIs24Hour(_form.dateConfig!.$name!.pattern) ?? MediaQuery.alwaysUse24HourFormatOf(context)',
         'minimumDate: _form.dateConfig!.$name!.firstDate ?? DateTime(${_config.defaultDateFirstYear})',
         'maximumDate: _form.dateConfig!.$name!.lastDate ?? DateTime(${_config.defaultDateLastYear})',
         'onDateTimeChanged: $onCupertinoDateTimeChanged',
@@ -353,7 +387,7 @@ class FlutterInputsDateSerializer {
       _u.ifStatement(
         condition: '_form.dateConfig!.$name!.type == DateType.dateTime && mounted',
         ifBlockStatements: [
-          'final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(dt));',
+          'final time = await _pickTime(dt, _form.dateConfig!.$name!.pattern);',
           _u.inlineIfStatement(
             condition: 'time != null',
             statement: 'picked = DateTime(dt.year, dt.month, dt.day, time.hour, time.minute);',
