@@ -22,7 +22,7 @@ class KotlinMappingSerializer extends GLMappingSerializer {
       ),
     ];
 
-    final targetDef = _owner.grammar.types[targetType];
+    final targetDef = _owner.grammar.types[def.mapsToType!];
     final targetFields = targetDef?.getSerializableFields(_owner.grammar.mode) ?? [];
     final autoByTarget = {for (final f in plan.autoMapped) f.targetField.name.token: f};
     final defaultByTarget = {for (final f in plan.defaultParams) f.targetField.name.token: f};
