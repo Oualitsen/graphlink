@@ -35,10 +35,12 @@ abstract class CodeGenUtilsBase {
     List<String>? finallyStatements,
   });
 
+  /// [type] is the element type; Java requires it (no `var` before Java 10).
   String forEachLoop({
     required String variable,
     required String iterable,
     required List<String> statements,
+    String? type,
   });
 
   String forLoop({

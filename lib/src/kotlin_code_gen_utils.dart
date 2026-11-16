@@ -132,6 +132,7 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     required String variable,
     required String iterable,
     required List<String> statements,
+    String? type,
   }) {
     final buffer = StringBuffer();
     buffer.write('for ($variable in $iterable) ');

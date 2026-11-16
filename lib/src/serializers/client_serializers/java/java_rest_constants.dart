@@ -143,7 +143,11 @@ public final class RestResponse implements Closeable {
 
     public byte[] bytes() {
         try (InputStream in = stream) {
-            return in.readAllBytes();
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int read;
+            while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+            return buffer.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -156,7 +160,8 @@ public final class RestResponse implements Closeable {
 
     public void drain() {
         try (InputStream in = stream) {
-            in.transferTo(OutputStream.nullOutputStream());
+            byte[] chunk = new byte[8192];
+            while (in.read(chunk) != -1) { }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -224,7 +229,11 @@ public final class GLDownload implements Closeable {
 
     public byte[] bytes() {
         try (InputStream in = stream) {
-            return in.readAllBytes();
+            java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[8192];
+            int read;
+            while ((read = in.read(chunk)) != -1) buffer.write(chunk, 0, read);
+            return buffer.toByteArray();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -257,8 +266,8 @@ public final class GLDownload implements Closeable {
             if (matcher.find()) {
                 String raw = matcher.group(1);
                 try {
-                    name = URLDecoder.decode(raw.replace("+", "%2B"), StandardCharsets.UTF_8);
-                } catch (IllegalArgumentException e) {
+                    name = URLDecoder.decode(raw.replace("+", "%2B"), "UTF-8");
+                } catch (IllegalArgumentException | java.io.UnsupportedEncodingException e) {
                     name = raw;
                 }
             }
@@ -359,9 +368,9 @@ public final class GraphLinkRestUtils {
                 if (comma) {
                     StringJoiner joiner = new StringJoiner(",");
                     for (Object item : items) joiner.add(restText(item));
-                    out.add(Map.entry(key, joiner.toString()));
+                    out.add(new java.util.AbstractMap.SimpleImmutableEntry<>(key, joiner.toString()));
                 } else {
-                    for (Object item : items) out.add(Map.entry(key, restText(item)));
+                    for (Object item : items) out.add(new java.util.AbstractMap.SimpleImmutableEntry<>(key, restText(item)));
                 }
             } else {
                 for (int i = 0; i < list.size(); i++) {
@@ -369,7 +378,7 @@ public final class GraphLinkRestUtils {
                 }
             }
         } else {
-            out.add(Map.entry(key, restText(value)));
+            out.add(new java.util.AbstractMap.SimpleImmutableEntry<>(key, restText(value)));
         }
     }
 
@@ -706,7 +715,7 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
     ]),
     _method('private Object restParse(RestResponse response, List<String> path)', [
       'String text = response.text();',
-      _braces('if (text.isBlank())', ['return null;']),
+      _braces('if (text.trim().isEmpty())', ['return null;']),
       'Map<String, Object> wrapper = glDecoder__.decode("{\\"v\\":" + text + "}");',
       'return GraphLinkRestUtils.restNavigate(wrapper.get("v"), path);',
     ]),

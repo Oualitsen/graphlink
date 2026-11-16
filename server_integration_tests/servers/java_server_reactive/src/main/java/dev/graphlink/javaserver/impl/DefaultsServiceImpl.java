@@ -38,7 +38,7 @@ public class DefaultsServiceImpl
 
     @Override
     public Mono<Range> resolveRange(RangeInput input) {
-        return Mono.just(Range.builder().min(input.getMin()).max(input.getMax()).build());
+        return Mono.just(Range.builder().min(input != null && input.getMin() != null ? input.getMin() : 0).max(input != null && input.getMax() != null ? input.getMax() : 100).build());
     }
 
     @Override

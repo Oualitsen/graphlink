@@ -263,6 +263,7 @@ class DartCodeGenUtils implements CodeGenUtilsBase {
     required String variable,
     required String iterable,
     required List<String> statements,
+    String? type,
   }) {
     var buffer = StringBuffer();
     buffer.write("for (var $variable in $iterable) ");

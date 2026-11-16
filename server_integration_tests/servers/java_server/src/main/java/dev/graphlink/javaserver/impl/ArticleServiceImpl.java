@@ -45,10 +45,13 @@ public class ArticleServiceImpl implements ArticleService {
         for (int i = 0; i < Data.articles.size(); i++) {
             var a = Data.articles.get(i);
             if (a.getId().equals(input.getId())) {
-                var updated = Article.builder()
+                Article updated = Article.builder()
                     .id(a.getId())
                     .title(input.getTitle() != null ? input.getTitle() : a.getTitle())
+                    .type(a.getType())
                     .authorId(a.getAuthorId())
+                    .webSite(a.getWebSite())
+                    .published(a.isPublished())
                     .build();
                 Data.articles.set(i, updated);
                 Data.articleUpdatedSink.tryEmitNext(updated);

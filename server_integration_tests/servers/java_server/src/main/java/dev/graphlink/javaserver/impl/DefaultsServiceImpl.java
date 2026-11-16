@@ -37,7 +37,7 @@ public class DefaultsServiceImpl
 
     @Override
     public Range resolveRange(RangeInput input) {
-        return Range.builder().min(input.getMin()).max(input.getMax()).build();
+        return Range.builder().min(input != null && input.getMin() != null ? input.getMin() : 0).max(input != null && input.getMax() != null ? input.getMax() : 100).build();
     }
 
     @Override
