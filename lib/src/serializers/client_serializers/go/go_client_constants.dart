@@ -415,7 +415,8 @@ type GraphLinkEvent[T any] struct {
 const goCache = r'''
 // GraphLinkLock serialises the read-modify-write cycles on one cache tag.
 type GraphLinkLock struct {
-	mu sync.Mutex
+	mu    sync.Mutex
+	epoch atomic.Int64
 }
 
 func (l *GraphLinkLock) Synchronized(fn func() error) error {
@@ -752,12 +753,13 @@ func glExecuteCached[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkR
 		return glDecodeFull[T](map[string]any{"data": responseMap})
 	}
 	payload := r.buildPayload(remaining, operationName, directives)
+	epochs := r.glEpochs(remaining)
 	result, err := func() (T, error) {
 		text, err := r.glCallAdapter(ctx, payload)
 		if err != nil {
 			return zero, err
 		}
-		return glParseAndCache[T](ctx, r, text, responseMap, remaining, captureErrors)
+		return glParseAndCache[T](ctx, r, text, responseMap, r.glCacheable(remaining, epochs), captureErrors)
 	}()
 	if err == nil {
 		return result, nil
@@ -885,9 +887,43 @@ func (r *GraphLinkResolverBase) getFromCache(ctx context.Context, key string, ta
 	return nil, nil
 }
 
+const glAllEpochKey = "\u0000all"
+
+func (r *GraphLinkResolverBase) glEpoch(tags []string) int64 {
+	epoch := r.tagLocks.For(glAllEpochKey).epoch.Load()
+	for _, tag := range tags {
+		epoch += r.tagLocks.For(tag).epoch.Load()
+	}
+	return epoch
+}
+
+func (r *GraphLinkResolverBase) glEpochs(queries []GraphLinkPartialQuery) []int64 {
+	epochs := make([]int64, len(queries))
+	for i, query := range queries {
+		epochs[i] = r.glEpoch(query.Tags)
+	}
+	return epochs
+}
+
+func (r *GraphLinkResolverBase) glCacheable(queries []GraphLinkPartialQuery, epochs []int64) []GraphLinkPartialQuery {
+	var cacheable []GraphLinkPartialQuery
+	for i, query := range queries {
+		if r.glEpoch(query.Tags) == epochs[i] {
+			cacheable = append(cacheable, query)
+		}
+	}
+	return cacheable
+}
+
+func (r *GraphLinkResolverBase) invalidateAllEntries(ctx context.Context) error {
+	r.tagLocks.For(glAllEpochKey).epoch.Add(1)
+	return r.store.InvalidateAll(ctx)
+}
+
 func (r *GraphLinkResolverBase) invalidateByTags(ctx context.Context, tags []string) error {
 	for _, tag := range tags {
 		tagKey := glTagKeyPrefix + tag
+		r.tagLocks.For(tag).epoch.Add(1)
 		err := r.tagLocks.For(tag).Synchronized(func() error {
 			data, found, err := r.store.Get(ctx, tagKey)
 			if err != nil || !found {

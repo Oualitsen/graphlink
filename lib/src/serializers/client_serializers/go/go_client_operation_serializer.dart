@@ -247,7 +247,7 @@ class GoClientOperationSerializer {
     if (def.elements.any((e) => e.cacheInvalidateAll)) {
       return [
         _cg.ifStatement(
-          condition: 'err := $receiver.store.InvalidateAll(ctx); err != nil',
+          condition: 'err := $receiver.invalidateAllEntries(ctx); err != nil',
           ifBlockStatements: ['return $_zero, err'],
         ),
       ];

@@ -353,7 +353,7 @@ class TypeScriptRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['await this.gl_store__.invalidateAll();'];
+    if (op.invalidatesAll) return ['await this._invalidateAllEntries();'];
     if (op.invalidateTags.isNotEmpty) {
       return ['await this._invalidateByTags(${_inlineList(op.invalidateTags)});'];
     }

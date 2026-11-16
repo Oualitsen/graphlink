@@ -385,13 +385,34 @@ actor GraphLinkTagLocks {
     }
 }
 
+public final class GraphLinkEpochs: @unchecked Sendable {
+    private let lock = NSLock()
+    private var counters: [String: Int] = [:]
+
+    public init() {}
+
+    func bump(_ tag: String) {
+        lock.lock()
+        counters[tag, default: 0] += 1
+        lock.unlock()
+    }
+
+    func value(_ tags: [String]) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return tags.reduce(counters["\\u{0000}all", default: 0]) { \$0 + counters[\$1, default: 0] }
+    }
+}
+
 open class GraphLinkResolverBase: @unchecked Sendable {
     private let adapter: GraphLinkClientAdapter
     let fragmentMap: [String: String]
     let store: any GraphLinkCacheStore
+    let epochs: GraphLinkEpochs
     private let tagLocks = GraphLinkTagLocks()${useGet ? '\n    private let getAdapter: GraphLinkClientAdapter?' : ''}${persistedQueries ? '\n    private let persisted = GraphLinkPersistedQueryState()' : ''}
 
-    public init(adapter: @escaping GraphLinkClientAdapter, ${useGet ? 'getAdapter: GraphLinkClientAdapter? = nil, ' : ''}fragmentMap: [String: String], store: any GraphLinkCacheStore) {
+    public init(adapter: @escaping GraphLinkClientAdapter, ${useGet ? 'getAdapter: GraphLinkClientAdapter? = nil, ' : ''}fragmentMap: [String: String], store: any GraphLinkCacheStore, epochs: GraphLinkEpochs = GraphLinkEpochs()) {
+        self.epochs = epochs
         self.adapter = adapter${useGet ? '\n        self.getAdapter = getAdapter' : ''}
         self.fragmentMap = fragmentMap
         self.store = store
@@ -491,9 +512,11 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
             return try fromJson(wrappedResponse)
         }
         let payload = buildPayload(remaining, operationName: operationName, directives: directives)
+        let epochSnapshot = remaining.map { epochs.value(\$0.tags) }
         do {
             let responseData = try await glCallAdapter(payload)
-            return try await parseToObjectAndCache(data: responseData, cachedResponse: responseMap, parser: fromJson, remainingQueries: remaining, captureErrors: captureErrors)
+            let cacheable = zip(remaining, epochSnapshot).filter { epochs.value(\$0.0.tags) == \$0.1 }.map { \$0.0 }
+            return try await parseToObjectAndCache(data: responseData, cachedResponse: responseMap, parser: fromJson, remainingQueries: cacheable, captureErrors: captureErrors)
         } catch {
             for (k, v) in staleData { responseMap[k] = v }
             let remainingCount = partialQueries.filter { !responseMap.keys.contains(\$0.elementKey) }.count
@@ -518,8 +541,14 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         return entry
     }
 
+    func invalidateAllEntries() async {
+        epochs.bump("\\u{0000}all")
+        await store.invalidateAll()
+    }
+
     func invalidateByTags(_ tags: [String]) async throws {
         for tag in tags {
+            epochs.bump(tag)
             try await tagLocks.run(tag) {
                 let tKey = self.tagKey(tag)
                 if let data = await self.store.get(tKey) {

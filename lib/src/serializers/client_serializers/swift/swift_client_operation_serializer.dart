@@ -339,7 +339,7 @@ class SwiftClientOperationSerializer {
   /// method, so the two need different prefixes at the call site.
   String _serializeInvalidationCall(GLQueryDefinition def) {
     for (final e in def.elements) {
-      if (e.cacheInvalidateAll) return 'await $svStore.invalidateAll()';
+      if (e.cacheInvalidateAll) return 'await invalidateAllEntries()';
     }
     final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
     if (tags.isNotEmpty) {

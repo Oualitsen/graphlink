@@ -351,7 +351,7 @@ class KotlinClientOperationSerializer {
 
   String _serializeInvalidationCall(GLQueryDefinition def) {
     for (final e in def.elements) {
-      if (e.cacheInvalidateAll) return '${svStore}.invalidateAll()';
+      if (e.cacheInvalidateAll) return 'invalidateAllEntries()';
     }
     final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();
     if (tags.isNotEmpty) {

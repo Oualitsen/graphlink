@@ -314,7 +314,7 @@ class PythonClientOperationSerializer {
   }
 
   String _invalidationCall(GLQueryDefinition def) {
-    if (_shouldInvalidateAll(def)) return 'await self.$svStore.invalidate_all()';
+    if (_shouldInvalidateAll(def)) return 'await self.invalidate_all_entries()';
     final tags = _invalidationTags(def);
     if (tags.isNotEmpty) return 'await self.invalidate_by_tags(${_stringList(tags)})';
     return '';

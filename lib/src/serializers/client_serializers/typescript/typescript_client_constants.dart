@@ -318,6 +318,7 @@ export function expectArray(value: unknown, path: string): unknown[] {
 const tsLock = r'''
 export class GraphLinkLock {
   private _last: Promise<void> = Promise.resolve();
+  epoch = 0;
 
   synchronized<T>(fn: () => Promise<T>): Promise<T> {
     const next = this._last.then(() => fn());

@@ -464,7 +464,7 @@ class JavaClientOperationSerializer {
   String _serializeInvalidationCall(GLQueryDefinition def) {
     for (var e in def.elements) {
       if (e.cacheInvalidateAll) {
-        return '${svStore}.invalidateAll();';
+        return 'invalidateAllEntries();';
       }
     }
     final tags = def.elements.expand((e) => e.invalidateCacheTags).toSet();

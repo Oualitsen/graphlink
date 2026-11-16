@@ -85,6 +85,7 @@ class TypeScriptClientRuntimeSerializer {
         "import type { GraphLinkError } from '../types/graph-link-error.js';",
         "import { GraphLinkCacheEntry } from './graph-link-cache-entry.js';",
         "import { GraphLinkTagEntry, __GL_TAG_KEY_PREFIX__ } from './graph-link-tag-entry.js';",
+        "import type { GraphLinkPartialQuery } from './graph-link-partial-query.js';",
         "import { GraphLinkLock } from './graph-link-lock.js';",
         if (_client.parser.persistedQueries) ...[
           "import { GraphLinkSha256 } from './graph-link-sha256.js';",
@@ -239,6 +240,50 @@ class TypeScriptClientRuntimeSerializer {
           ],
         ),
         _client.cg.createMethod(
+          methodName: 'protected _glEpoch',
+          arguments: ['tags: string[]'],
+          returnType: 'number',
+          statements: [
+            "let epoch = this.$svTagLocks.get('\\u0000all')?.epoch ?? 0;",
+            _client.cg.forEachLoop(
+              variable: 'tag',
+              iterable: 'tags',
+              statements: ['epoch += this.$svTagLocks.get(tag)?.epoch ?? 0;'],
+            ),
+            'return epoch;',
+          ],
+        ),
+        _client.cg.createMethod(
+          methodName: 'protected _glEpochs',
+          arguments: ['queries: GraphLinkPartialQuery[]'],
+          returnType: 'number[]',
+          statements: ['return queries.map(q => this._glEpoch(q.tags));'],
+        ),
+        _client.cg.createMethod(
+          methodName: 'protected _glCacheable',
+          arguments: ['queries: GraphLinkPartialQuery[]', 'epochs: number[]'],
+          returnType: 'GraphLinkPartialQuery[]',
+          statements: ['return queries.filter((q, i) => this._glEpoch(q.tags) === epochs[i]);'],
+        ),
+        _client.cg.createMethod(
+          methodName: '_invalidateAllEntries',
+          async: true,
+          arguments: [],
+          returnType: 'void',
+          statements: [
+            "let lock = this.$svTagLocks.get('\\u0000all');",
+            _client.cg.ifStatement(
+              condition: '!lock',
+              ifBlockStatements: [
+                'lock = new GraphLinkLock();',
+                "this.$svTagLocks.set('\\u0000all', lock);",
+              ],
+            ),
+            'lock.epoch++;',
+            'await this.$svStore.invalidateAll();',
+          ],
+        ),
+        _client.cg.createMethod(
           methodName: '_invalidateByTags',
           async: true,
           arguments: ['tags: string[]'],
@@ -247,6 +292,7 @@ class TypeScriptClientRuntimeSerializer {
             _client.cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
               r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
               _client.cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
+              'lock.epoch++;',
               'await lock.synchronized(async () => {',
               '  const data = await this.$svStore.get(tagKey);',
               _client.cg.ifStatement(

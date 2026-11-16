@@ -295,7 +295,7 @@ class DartRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['await glStore__.invalidateAll();'];
+    if (op.invalidatesAll) return ['await invalidateAllEntries();'];
     if (op.invalidateTags.isNotEmpty) {
       return ['await invalidateByTags(${op.invalidateTags.map((e) => e.quote()).toList()});'];
     }

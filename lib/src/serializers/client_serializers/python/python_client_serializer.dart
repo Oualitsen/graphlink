@@ -170,12 +170,13 @@ class PythonClientSerializer extends GLClientSerializer {
 
   List<String> buildTagMethods() {
     final cg = codeGenUtils;
-    String tagLoop({required String lockExpr, required List<String> work}) => cg.forEachLoop(
+    String tagLoop({required String lockExpr, required List<String> work, bool bumpEpoch = false}) => cg.forEachLoop(
           variable: 'tag',
           iterable: 'tags',
           statements: [
             cg.constDecl('tag_key', 'TAG_KEY_PREFIX + tag'),
             cg.constDecl('lock', lockExpr),
+            if (bumpEpoch) 'lock.epoch += 1',
             cg.createMethod(async: true, methodName: 'work', arguments: [], returnType: 'None', statements: work),
             'await lock.synchronized(work)',
           ],
@@ -188,7 +189,7 @@ class PythonClientSerializer extends GLClientSerializer {
         arguments: ['self', 'tags: List[str]'],
         returnType: 'None',
         statements: [
-          tagLoop(lockExpr: 'self.$svTagLocks[tag]', work: [
+          tagLoop(lockExpr: 'self.$svTagLocks[tag]', bumpEpoch: true, work: [
             cg.constDecl('data', 'await self.$svStore.get(tag_key)'),
             cg.ifStatement(condition: 'data is not None', ifBlockStatements: [
               cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
@@ -196,6 +197,32 @@ class PythonClientSerializer extends GLClientSerializer {
               'await self.$svStore.invalidate(tag_key)',
             ]),
           ]),
+        ],
+      ),
+      '',
+      cg.createMethod(
+        methodName: '_gl_epoch',
+        arguments: ['self', 'tags: List[str]'],
+        returnType: 'int',
+        statements: [
+          cg.constDecl('all_lock', 'self.$svTagLocks.get(GL_ALL_EPOCH_KEY)'),
+          'epoch = all_lock.epoch if all_lock is not None else 0',
+          cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+            cg.constDecl('lock', 'self.$svTagLocks.get(tag)'),
+            cg.ifStatement(condition: 'lock is not None', ifBlockStatements: ['epoch += lock.epoch']),
+          ]),
+          'return epoch',
+        ],
+      ),
+      '',
+      cg.createMethod(
+        async: true,
+        methodName: 'invalidate_all_entries',
+        arguments: ['self'],
+        returnType: 'None',
+        statements: [
+          'self.$svTagLocks.setdefault(GL_ALL_EPOCH_KEY, GraphLinkLock()).epoch += 1',
+          'await self.$svStore.invalidate_all()',
         ],
       ),
       '',

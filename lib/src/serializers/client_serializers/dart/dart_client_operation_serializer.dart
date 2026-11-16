@@ -308,7 +308,7 @@ class DartClientOperationSerializer {
 
   String _serializeInvalidationCall(GLQueryDefinition def) {
     if (_shouldInvalidateAll(def)) {
-      return 'await $svStore.invalidateAll();';
+      return 'await invalidateAllEntries();';
     }
     final tags = _getInvalidationTags(def);
     if (tags.isNotEmpty) {

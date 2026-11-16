@@ -105,6 +105,7 @@ T = TypeVar("T")
 class GraphLinkLock:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
+        self.epoch = 0
 
     async def synchronized(self, fn: Callable[[], Awaitable[T]]) -> T:
         async with self._lock:

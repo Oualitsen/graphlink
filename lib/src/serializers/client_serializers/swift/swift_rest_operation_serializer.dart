@@ -296,7 +296,7 @@ class SwiftRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['await store.invalidateAll()'];
+    if (op.invalidatesAll) return ['await invalidateAllEntries()'];
     if (op.invalidateTags.isNotEmpty) return ['try await invalidateByTags(${_stringList(op.invalidateTags)})'];
     return const [];
   }
