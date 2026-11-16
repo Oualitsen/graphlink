@@ -1,0 +1,1985 @@
+[
+  {
+    "name": "item_found",
+    "path": "/rest/items/42",
+    "status": 200,
+    "json": {
+      "id": "42",
+      "name": "item-42",
+      "qty": 1,
+      "tags": []
+    }
+  },
+  {
+    "name": "item_missing_is_null",
+    "path": "/rest/items/missing",
+    "status": [
+      200,
+      204
+    ],
+    "empty": true
+  },
+  {
+    "name": "item_percent_encoded_id",
+    "path": "/rest/items/a%20b",
+    "status": 200,
+    "jsonSubset": {
+      "id": "a b",
+      "name": "item-a b"
+    }
+  },
+  {
+    "name": "item_unicode_id",
+    "path": "/rest/items/%C3%A9t%C3%A9",
+    "status": 200,
+    "jsonSubset": {
+      "id": "été"
+    }
+  },
+  {
+    "name": "scalars_path",
+    "path": "/rest/scalars/7/2.5/true?text=hi",
+    "status": 200,
+    "json": {
+      "n": 7,
+      "ratio": 2.5,
+      "flag": true,
+      "text": "hi"
+    }
+  },
+  {
+    "name": "scalars_negative_and_integer_ratio",
+    "path": "/rest/scalars/-3/4/false?text=x",
+    "status": 200,
+    "json": {
+      "n": -3,
+      "ratio": 4,
+      "flag": false,
+      "text": "x"
+    }
+  },
+  {
+    "name": "scalars_bad_int",
+    "path": "/rest/scalars/abc/2.5/true?text=hi",
+    "status": 400
+  },
+  {
+    "name": "scalars_fractional_int",
+    "path": "/rest/scalars/1.5/2.5/true?text=hi",
+    "status": 400
+  },
+  {
+    "name": "scalars_int_overflow",
+    "path": "/rest/scalars/99999999999/2.5/true?text=hi",
+    "status": 400
+  },
+  {
+    "name": "scalars_bad_float",
+    "path": "/rest/scalars/7/x/true?text=hi",
+    "status": 400
+  },
+  {
+    "name": "scalars_bad_bool",
+    "path": "/rest/scalars/7/2.5/maybe?text=hi",
+    "status": 400
+  },
+  {
+    "name": "scalars_missing_required_query",
+    "path": "/rest/scalars/7/2.5/true",
+    "status": 400
+  },
+  {
+    "name": "scalars_query_value_encoded",
+    "path": "/rest/scalars/1/1/true?text=a%26b%3Dc%20d%2Bx",
+    "status": 200,
+    "jsonSubset": {
+      "text": "a&b=c d+x"
+    }
+  },
+  {
+    "name": "scalars_query_value_plus_is_space",
+    "path": "/rest/scalars/1/1/true?text=a+b",
+    "status": 200,
+    "jsonSubset": {
+      "text": "a b"
+    }
+  },
+  {
+    "name": "reserved_words_as_argument_names",
+    "path": "/rest/keywords/sw?class=c&return=r",
+    "headers": {
+      "X-If": "5"
+    },
+    "status": 200,
+    "json": {
+      "class": "c",
+      "return": "r",
+      "if": 5,
+      "switch": "sw"
+    }
+  },
+  {
+    "name": "reserved_words_optional_absent",
+    "path": "/rest/keywords/sw?class=c",
+    "headers": {
+      "X-If": "-1"
+    },
+    "status": 200,
+    "json": {
+      "class": "c",
+      "if": -1,
+      "switch": "sw"
+    }
+  },
+  {
+    "name": "reserved_words_missing_required",
+    "path": "/rest/keywords/sw",
+    "headers": {
+      "X-If": "5"
+    },
+    "status": 400
+  },
+  {
+    "name": "enum_path",
+    "path": "/rest/colors/GREEN",
+    "status": 200,
+    "json": {
+      "id": "green",
+      "name": "color-GREEN",
+      "qty": 1,
+      "color": "GREEN",
+      "tags": [
+        "green"
+      ]
+    }
+  },
+  {
+    "name": "enum_path_unknown_value",
+    "path": "/rest/colors/PURPLE",
+    "status": 400
+  },
+  {
+    "name": "enum_path_wrong_case",
+    "path": "/rest/colors/green",
+    "status": 400
+  },
+  {
+    "name": "enum_list_response",
+    "path": "/rest/colors",
+    "status": 200,
+    "json": [
+      "RED",
+      "GREEN",
+      "BLUE"
+    ]
+  },
+  {
+    "name": "search_defaults",
+    "path": "/rest/search",
+    "status": 200,
+    "json": {
+      "limit": 10
+    }
+  },
+  {
+    "name": "search_every_param",
+    "path": "/rest/search?tag=a&minQty=3&maxPrice=9.5&colors=RED&colors=BLUE&inStock=true&limit=5&offset=2&order=GREEN",
+    "status": 200,
+    "json": {
+      "tag": "a",
+      "minQty": 3,
+      "maxPrice": 9.5,
+      "colors": [
+        "RED",
+        "BLUE"
+      ],
+      "inStock": true,
+      "limit": 5,
+      "offset": 2,
+      "order": "GREEN"
+    }
+  },
+  {
+    "name": "search_comma_separated_list",
+    "path": "/rest/search?colors=RED,GREEN",
+    "status": 200,
+    "jsonSubset": {
+      "colors": [
+        "RED",
+        "GREEN"
+      ],
+      "limit": 10
+    }
+  },
+  {
+    "name": "search_only_offset_and_order",
+    "path": "/rest/search?offset=0&order=BLUE",
+    "status": 200,
+    "json": {
+      "limit": 10,
+      "offset": 0,
+      "order": "BLUE"
+    }
+  },
+  {
+    "name": "search_unknown_enum_in_list",
+    "path": "/rest/search?colors=RED&colors=NOPE",
+    "status": 400
+  },
+  {
+    "name": "search_bad_limit",
+    "path": "/rest/search?limit=x",
+    "status": 400
+  },
+  {
+    "name": "search_fractional_int_field",
+    "path": "/rest/search?minQty=1.5",
+    "status": 400
+  },
+  {
+    "name": "search_bad_float_field",
+    "path": "/rest/search?maxPrice=cheap",
+    "status": 400
+  },
+  {
+    "name": "search_bad_bool_field",
+    "path": "/rest/search?inStock=maybe",
+    "status": 400
+  },
+  {
+    "name": "search_bad_order",
+    "path": "/rest/search?order=PURPLE",
+    "status": 400
+  },
+  {
+    "name": "search_unknown_param_ignored",
+    "path": "/rest/search?nothing=1",
+    "status": 200,
+    "json": {
+      "limit": 10
+    }
+  },
+  {
+    "name": "tags_scalar_lists",
+    "path": "/rest/tags?tags=a&tags=b&ids=1&ids=2",
+    "status": 200,
+    "json": [
+      "a",
+      "b",
+      "#1",
+      "#2"
+    ]
+  },
+  {
+    "name": "tags_optional_list_absent",
+    "path": "/rest/tags?tags=only",
+    "status": 200,
+    "json": [
+      "only"
+    ]
+  },
+  {
+    "name": "tags_required_list_absent",
+    "path": "/rest/tags",
+    "status": 400
+  },
+  {
+    "name": "tags_bad_element",
+    "path": "/rest/tags?tags=a&ids=x",
+    "status": 400
+  },
+  {
+    "name": "json_string_response",
+    "path": "/rest/greeting?name=Zed",
+    "status": 200,
+    "responseType": "application/json",
+    "json": "hello Zed"
+  },
+  {
+    "name": "json_string_unicode",
+    "path": "/rest/greeting?name=%C3%A9%F0%9F%99%82",
+    "status": 200,
+    "json": "hello é🙂"
+  },
+  {
+    "name": "json_string_needs_escaping",
+    "path": "/rest/greeting?name=%22q%22%5Cn",
+    "status": 200,
+    "json": "hello \"q\"\\n"
+  },
+  {
+    "name": "json_string_long_value",
+    "path": "/rest/greeting?name={{repeat:x:4000}}",
+    "status": 200,
+    "json": "hello {{repeat:x:4000}}"
+  },
+  {
+    "name": "text_response",
+    "path": "/rest/plain?name=x",
+    "status": 200,
+    "responseType": "text/plain",
+    "text": "plain x"
+  },
+  {
+    "name": "int_response",
+    "path": "/rest/count",
+    "status": 200,
+    "responseType": "application/json",
+    "json": 42
+  },
+  {
+    "name": "bool_response_true",
+    "path": "/rest/flag?on=true",
+    "status": 200,
+    "json": false
+  },
+  {
+    "name": "bool_response_false",
+    "path": "/rest/flag?on=false",
+    "status": 200,
+    "json": true
+  },
+  {
+    "name": "headers_all",
+    "path": "/rest/headers",
+    "headers": {
+      "X-Token": "t",
+      "X-Trace": "tr",
+      "traceId": "abc",
+      "version": "3"
+    },
+    "status": 200,
+    "json": {
+      "token": "t",
+      "trace": "tr",
+      "traceId": "abc",
+      "version": 3
+    }
+  },
+  {
+    "name": "headers_required_only",
+    "path": "/rest/headers",
+    "headers": {
+      "X-Token": "t"
+    },
+    "status": 200,
+    "json": {
+      "token": "t"
+    }
+  },
+  {
+    "name": "headers_header_names_are_case_insensitive",
+    "path": "/rest/headers",
+    "headers": {
+      "x-token": "t",
+      "TRACEID": "z"
+    },
+    "status": 200,
+    "json": {
+      "token": "t",
+      "traceId": "z"
+    }
+  },
+  {
+    "name": "headers_missing_required",
+    "path": "/rest/headers",
+    "status": 400
+  },
+  {
+    "name": "headers_bad_int",
+    "path": "/rest/headers",
+    "headers": {
+      "X-Token": "t",
+      "version": "x"
+    },
+    "status": 400
+  },
+  {
+    "name": "service_error_is_500_without_leak",
+    "path": "/rest/fail/7",
+    "status": 500,
+    "errorBody": true
+  },
+  {
+    "name": "service_error_does_not_break_next_call",
+    "path": "/rest/count",
+    "status": 200,
+    "json": 42
+  },
+  {
+    "name": "create",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "n",
+      "qty": 2,
+      "color": "BLUE",
+      "tags": [
+        "a",
+        "b"
+      ]
+    },
+    "status": 200,
+    "json": {
+      "id": "new-n",
+      "name": "n",
+      "qty": 2,
+      "color": "BLUE",
+      "tags": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "create_minimal",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "m",
+      "qty": 0
+    },
+    "status": 200,
+    "json": {
+      "id": "new-m",
+      "name": "m",
+      "qty": 0,
+      "tags": []
+    }
+  },
+  {
+    "name": "create_null_optional_fields",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "m",
+      "qty": 1,
+      "color": null,
+      "tags": null
+    },
+    "status": 200,
+    "json": {
+      "id": "new-m",
+      "name": "m",
+      "qty": 1,
+      "tags": []
+    }
+  },
+  {
+    "name": "create_unknown_field_ignored",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "m",
+      "qty": 1,
+      "extra": true
+    },
+    "status": 200,
+    "jsonSubset": {
+      "id": "new-m"
+    }
+  },
+  {
+    "name": "create_unicode",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "é🙂",
+      "qty": 1
+    },
+    "status": 200,
+    "jsonSubset": {
+      "name": "é🙂",
+      "id": "new-é🙂"
+    }
+  },
+  {
+    "name": "create_missing_required",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "qty": 2
+    },
+    "status": 400
+  },
+  {
+    "name": "create_null_required",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": null,
+      "qty": 2
+    },
+    "status": 400
+  },
+  {
+    "name": "create_wrong_type",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "x",
+      "qty": "two"
+    },
+    "status": 400
+  },
+  {
+    "name": "create_fractional_int",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "x",
+      "qty": 1.5
+    },
+    "status": 400
+  },
+  {
+    "name": "create_unknown_enum",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "x",
+      "qty": 1,
+      "color": "PURPLE"
+    },
+    "status": 400
+  },
+  {
+    "name": "create_tags_not_a_list",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "x",
+      "qty": 1,
+      "tags": "a"
+    },
+    "status": 400
+  },
+  {
+    "name": "create_tag_element_wrong_type",
+    "method": "POST",
+    "path": "/rest/items",
+    "body": {
+      "name": "x",
+      "qty": 1,
+      "tags": [
+        1
+      ]
+    },
+    "status": 400
+  },
+  {
+    "name": "create_malformed_json",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "{\"name\": ",
+    "status": 400
+  },
+  {
+    "name": "create_empty_body",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "",
+    "status": 400
+  },
+  {
+    "name": "create_json_null_body",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "null",
+    "status": 400
+  },
+  {
+    "name": "create_array_instead_of_object",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "[]",
+    "status": 400
+  },
+  {
+    "name": "create_scalar_instead_of_object",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "42",
+    "status": 400
+  },
+  {
+    "name": "create_wrong_content_type",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "name=x",
+    "contentType": "text/plain",
+    "status": [
+      400,
+      415
+    ]
+  },
+  {
+    "name": "create_form_content_type",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "name=x&qty=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": [
+      400,
+      415
+    ]
+  },
+  {
+    "name": "create_huge_name",
+    "method": "POST",
+    "path": "/rest/items",
+    "bodyTemplate": {
+      "name": "{{repeat:z:50000}}",
+      "qty": 1
+    },
+    "status": 200,
+    "jsonSubsetLength": {
+      "name": 50000
+    }
+  },
+  {
+    "name": "create_deeply_nested_garbage",
+    "method": "POST",
+    "path": "/rest/items",
+    "rawBody": "{{nested:500}}",
+    "status": 400
+  },
+  {
+    "name": "replace",
+    "method": "PUT",
+    "path": "/rest/items/9",
+    "body": {
+      "name": "r",
+      "qty": 5
+    },
+    "status": 200,
+    "json": {
+      "id": "9",
+      "name": "r",
+      "qty": 5,
+      "tags": []
+    }
+  },
+  {
+    "name": "replace_invalid_body",
+    "method": "PUT",
+    "path": "/rest/items/9",
+    "body": {
+      "name": "r"
+    },
+    "status": 400
+  },
+  {
+    "name": "patch_with_param",
+    "method": "PATCH",
+    "path": "/rest/items/9?name=zz",
+    "status": 200,
+    "jsonSubset": {
+      "id": "9",
+      "name": "zz"
+    }
+  },
+  {
+    "name": "patch_without_param",
+    "method": "PATCH",
+    "path": "/rest/items/9",
+    "status": 200,
+    "jsonSubset": {
+      "id": "9",
+      "name": "item-9"
+    }
+  },
+  {
+    "name": "delete_is_no_content",
+    "method": "DELETE",
+    "path": "/rest/items/9",
+    "status": 204,
+    "empty": true
+  },
+  {
+    "name": "bulk",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "body": [
+      {
+        "name": "a",
+        "qty": 1
+      },
+      {
+        "name": "b",
+        "qty": 2,
+        "color": "RED"
+      }
+    ],
+    "status": 200,
+    "json": [
+      {
+        "id": "bulk-0",
+        "name": "a",
+        "qty": 1,
+        "tags": []
+      },
+      {
+        "id": "bulk-1",
+        "name": "b",
+        "qty": 2,
+        "color": "RED",
+        "tags": []
+      }
+    ]
+  },
+  {
+    "name": "bulk_empty_list",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "rawBody": "[]",
+    "status": 200,
+    "json": []
+  },
+  {
+    "name": "bulk_object_instead_of_list",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "body": {
+      "name": "a",
+      "qty": 1
+    },
+    "status": 400
+  },
+  {
+    "name": "bulk_bad_element",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "body": [
+      {
+        "name": "a",
+        "qty": 1
+      },
+      {
+        "name": "b"
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "bulk_null_element",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "rawBody": "[null]",
+    "status": 400
+  },
+  {
+    "name": "bulk_missing_body",
+    "method": "POST",
+    "path": "/rest/bulk",
+    "rawBody": "",
+    "status": 400
+  },
+  {
+    "name": "optional_body_absent",
+    "method": "POST",
+    "path": "/rest/optional",
+    "status": 200,
+    "json": -1
+  },
+  {
+    "name": "optional_body_empty_with_content_type",
+    "method": "POST",
+    "path": "/rest/optional",
+    "rawBody": "",
+    "status": 200,
+    "json": -1
+  },
+  {
+    "name": "optional_body_present",
+    "method": "POST",
+    "path": "/rest/optional",
+    "body": {
+      "name": "a",
+      "qty": 8
+    },
+    "status": 200,
+    "json": 8
+  },
+  {
+    "name": "optional_body_present_but_invalid",
+    "method": "POST",
+    "path": "/rest/optional",
+    "body": {
+      "name": "a"
+    },
+    "status": 400
+  },
+  {
+    "name": "validated_ok",
+    "method": "POST",
+    "path": "/rest/validated?name=ok",
+    "status": 200,
+    "json": true
+  },
+  {
+    "name": "validated_rejects",
+    "method": "POST",
+    "path": "/rest/validated?name=invalid",
+    "status": 500,
+    "errorBody": true
+  },
+  {
+    "name": "upload_single_file",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "file",
+        "filename": "a.bin",
+        "contentType": "application/octet-stream",
+        "bytes": {
+          "size": 100
+        }
+      }
+    ],
+    "status": 200,
+    "json": {
+      "filename": "a.bin",
+      "contentType": "application/octet-stream",
+      "size": "{{size:file}}",
+      "sha256": "{{sha256:file}}"
+    }
+  },
+  {
+    "name": "upload_with_text_parts",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "label",
+        "value": "x y"
+      },
+      {
+        "name": "kind",
+        "value": "GREEN"
+      },
+      {
+        "name": "times",
+        "value": "3"
+      },
+      {
+        "name": "file",
+        "filename": "b.txt",
+        "contentType": "text/plain",
+        "bytes": {
+          "size": 10,
+          "pattern": "abc"
+        }
+      }
+    ],
+    "status": 200,
+    "json": {
+      "filename": "b.txt",
+      "contentType": "text/plain",
+      "size": 10,
+      "sha256": "{{sha256:file}}",
+      "label": "x y",
+      "kind": "GREEN",
+      "times": 3
+    }
+  },
+  {
+    "name": "upload_unicode_filename_and_text",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "label",
+        "value": "é🙂"
+      },
+      {
+        "name": "file",
+        "filename": "été🙂.txt",
+        "bytes": {
+          "size": 5
+        }
+      }
+    ],
+    "status": 200,
+    "jsonSubset": {
+      "filename": "été🙂.txt",
+      "label": "é🙂",
+      "size": 5
+    }
+  },
+  {
+    "name": "upload_empty_file",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "file",
+        "filename": "empty.bin",
+        "bytes": {
+          "size": 0
+        }
+      }
+    ],
+    "status": 200,
+    "jsonSubset": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  {
+    "name": "upload_large_file",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "file",
+        "filename": "big.bin",
+        "bytes": {
+          "size": 6291456
+        }
+      }
+    ],
+    "status": 200,
+    "jsonSubset": {
+      "size": 6291456,
+      "sha256": "{{sha256:file}}"
+    }
+  },
+  {
+    "name": "upload_all_byte_values_survive",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "file",
+        "filename": "r.bin",
+        "bytes": {
+          "size": 65536
+        }
+      }
+    ],
+    "status": 200,
+    "jsonSubset": {
+      "sha256": "{{sha256:file}}",
+      "size": 65536
+    }
+  },
+  {
+    "name": "upload_missing_file",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "label",
+        "value": "only text"
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "upload_file_sent_as_a_text_field",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "file",
+        "value": "not a file"
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "upload_unknown_enum_part",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "kind",
+        "value": "PURPLE"
+      },
+      {
+        "name": "file",
+        "filename": "a",
+        "bytes": {
+          "size": 1
+        }
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "upload_bad_int_part",
+    "method": "POST",
+    "path": "/rest/upload",
+    "multipart": [
+      {
+        "name": "times",
+        "value": "many"
+      },
+      {
+        "name": "file",
+        "filename": "a",
+        "bytes": {
+          "size": 1
+        }
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "upload_not_multipart",
+    "method": "POST",
+    "path": "/rest/upload",
+    "body": {
+      "file": "x"
+    },
+    "status": [
+      400,
+      415
+    ]
+  },
+  {
+    "name": "upload_no_body",
+    "method": "POST",
+    "path": "/rest/upload",
+    "status": [
+      400,
+      415
+    ]
+  },
+  {
+    "name": "upload_malformed_multipart",
+    "method": "POST",
+    "path": "/rest/upload",
+    "rawBody": "garbage, not multipart",
+    "contentType": "multipart/form-data; boundary=zzz",
+    "status": 400
+  },
+  {
+    "name": "upload_multipart_without_boundary",
+    "method": "POST",
+    "path": "/rest/upload",
+    "rawBody": "x",
+    "contentType": "multipart/form-data",
+    "status": 400
+  },
+  {
+    "name": "upload_many",
+    "method": "POST",
+    "path": "/rest/upload/many",
+    "multipart": [
+      {
+        "name": "label",
+        "value": "L"
+      },
+      {
+        "name": "files",
+        "filename": "1.bin",
+        "bytes": {
+          "size": 3
+        },
+        "key": "f1"
+      },
+      {
+        "name": "files",
+        "filename": "2.bin",
+        "bytes": {
+          "size": 7
+        },
+        "key": "f2"
+      }
+    ],
+    "status": 200,
+    "json": [
+      {
+        "filename": "1.bin",
+        "contentType": "application/octet-stream",
+        "size": 3,
+        "sha256": "{{sha256:f1}}",
+        "label": "L"
+      },
+      {
+        "filename": "2.bin",
+        "contentType": "application/octet-stream",
+        "size": 7,
+        "sha256": "{{sha256:f2}}",
+        "label": "L"
+      }
+    ]
+  },
+  {
+    "name": "upload_many_single_file",
+    "method": "POST",
+    "path": "/rest/upload/many",
+    "multipart": [
+      {
+        "name": "files",
+        "filename": "1.bin",
+        "bytes": {
+          "size": 4
+        }
+      }
+    ],
+    "status": 200,
+    "jsonSubset": {}
+  },
+  {
+    "name": "upload_many_none",
+    "method": "POST",
+    "path": "/rest/upload/many",
+    "multipart": [
+      {
+        "name": "label",
+        "value": "L"
+      }
+    ],
+    "status": 400
+  },
+  {
+    "name": "upload_optional_absent",
+    "method": "POST",
+    "path": "/rest/upload/optional",
+    "multipart": [
+      {
+        "name": "other",
+        "value": "x"
+      }
+    ],
+    "status": 200,
+    "json": -1
+  },
+  {
+    "name": "upload_optional_without_body",
+    "method": "POST",
+    "path": "/rest/upload/optional",
+    "status": 200,
+    "json": -1
+  },
+  {
+    "name": "upload_optional_present",
+    "method": "POST",
+    "path": "/rest/upload/optional",
+    "multipart": [
+      {
+        "name": "file",
+        "filename": "a",
+        "bytes": {
+          "size": 123
+        }
+      }
+    ],
+    "status": 200,
+    "json": 123
+  },
+  {
+    "name": "raw_upload",
+    "method": "PUT",
+    "path": "/rest/upload/raw/r1",
+    "raw": {
+      "size": 1000
+    },
+    "contentType": "image/png",
+    "headers": {
+      "X-Filename": "pic.png"
+    },
+    "status": 200,
+    "json": {
+      "contentType": "image/png",
+      "size": 1000,
+      "sha256": "{{sha256:raw}}",
+      "label": "pic.png"
+    }
+  },
+  {
+    "name": "raw_upload_without_optional_header",
+    "method": "PUT",
+    "path": "/rest/upload/raw/r1",
+    "raw": {
+      "size": 10
+    },
+    "status": 200,
+    "jsonSubset": {
+      "size": 10,
+      "sha256": "{{sha256:raw}}"
+    }
+  },
+  {
+    "name": "raw_upload_large",
+    "method": "PUT",
+    "path": "/rest/upload/raw/r2",
+    "raw": {
+      "size": 6291456
+    },
+    "status": 200,
+    "jsonSubset": {
+      "size": 6291456,
+      "sha256": "{{sha256:raw}}"
+    }
+  },
+  {
+    "name": "raw_upload_chunked",
+    "method": "PUT",
+    "path": "/rest/upload/raw/r3",
+    "raw": {
+      "size": 300000
+    },
+    "chunked": true,
+    "status": 200,
+    "jsonSubset": {
+      "size": 300000,
+      "sha256": "{{sha256:raw}}"
+    }
+  },
+  {
+    "name": "raw_upload_empty",
+    "method": "PUT",
+    "path": "/rest/upload/raw/r4",
+    "raw": {
+      "size": 0
+    },
+    "status": 200,
+    "jsonSubset": {
+      "size": 0
+    }
+  },
+  {
+    "name": "raw_upload_wrong_method",
+    "method": "POST",
+    "path": "/rest/upload/raw/r4",
+    "raw": {
+      "size": 1
+    },
+    "status": 405
+  },
+  {
+    "name": "wrong_method_on_known_path",
+    "method": "POST",
+    "path": "/rest/count",
+    "status": 405
+  },
+  {
+    "name": "get_on_post_only_path",
+    "method": "GET",
+    "path": "/rest/items",
+    "status": 405
+  },
+  {
+    "name": "unknown_path",
+    "path": "/rest/nope",
+    "status": 404
+  },
+  {
+    "name": "unknown_nested_path",
+    "path": "/rest/items/1/extra",
+    "status": 404
+  },
+  {
+    "name": "graphql_op_on_the_same_service",
+    "graphql": "{ restItemGraphql(id: \"5\") { id name qty } }",
+    "status": 200,
+    "json": {
+      "data": {
+        "restItemGraphql": {
+          "id": "5",
+          "name": "item-5",
+          "qty": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "graphql_schema_has_no_rest_operations",
+    "graphqlSchemaHasNoRestOperations": true
+  },
+  {
+    "name": "form_all_fields",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=a+b&qty=3&color=GREEN&flag=true&tags=x&tags=y&memo=hi",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "name": "a b",
+      "qty": 3,
+      "color": "GREEN",
+      "flag": true,
+      "tags": [
+        "x",
+        "y"
+      ],
+      "note": "hi"
+    }
+  },
+  {
+    "name": "form_defaults",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n&qty=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "name": "n",
+      "qty": 1,
+      "flag": false,
+      "tags": []
+    }
+  },
+  {
+    "name": "form_percent_encoding",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=a%20b%2Bc%26d+e&qty=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "jsonSubset": {
+      "name": "a b+c&d e"
+    }
+  },
+  {
+    "name": "form_utf8",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=h%C3%A9llo&qty=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "jsonSubset": {
+      "name": "héllo"
+    }
+  },
+  {
+    "name": "form_list_comma",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n&qty=1&tags=a,b",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "jsonSubset": {
+      "tags": [
+        "a",
+        "b"
+      ]
+    }
+  },
+  {
+    "name": "form_missing_required",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "qty=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_missing_int",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_bad_int",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n&qty=abc",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_bad_enum",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n&qty=1&color=PURPLE",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_bad_boolean",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "name=n&qty=1&flag=maybe",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_empty_body",
+    "method": "POST",
+    "path": "/rest/form",
+    "rawBody": "",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_json_body_rejected",
+    "method": "POST",
+    "path": "/rest/form",
+    "body": {
+      "name": "n",
+      "qty": 1
+    },
+    "status": [
+      400,
+      415
+    ]
+  },
+  {
+    "name": "form_get_not_allowed",
+    "method": "GET",
+    "path": "/rest/form",
+    "status": 405
+  },
+  {
+    "name": "form_put",
+    "method": "PUT",
+    "path": "/rest/form/9",
+    "rawBody": "name=n",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "id": "9",
+      "name": "n",
+      "qty": 1,
+      "flag": false,
+      "tags": []
+    }
+  },
+  {
+    "name": "form_put_with_qty",
+    "method": "PUT",
+    "path": "/rest/form/9",
+    "rawBody": "name=n&qty=5",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "jsonSubset": {
+      "qty": 5
+    }
+  },
+  {
+    "name": "form_put_missing_name",
+    "method": "PUT",
+    "path": "/rest/form/9",
+    "rawBody": "qty=5",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "form_optional_present",
+    "method": "POST",
+    "path": "/rest/form/optional",
+    "rawBody": "note=hello",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": 5
+  },
+  {
+    "name": "form_optional_empty_value",
+    "method": "POST",
+    "path": "/rest/form/optional",
+    "rawBody": "note=",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": 0
+  },
+  {
+    "name": "form_optional_absent",
+    "method": "POST",
+    "path": "/rest/form/optional",
+    "status": 200,
+    "json": -1
+  },
+  {
+    "name": "intercept_runs_before",
+    "path": "/rest/ctx/intercepted?name=a",
+    "status": 200,
+    "json": {
+      "name": "a",
+      "marker": "(runBefore)",
+      "hasContext": true
+    }
+  },
+  {
+    "name": "intercept_denied",
+    "path": "/rest/ctx/intercepted?name=deny",
+    "status": 403
+  },
+  {
+    "name": "intercept_missing_argument_is_400",
+    "path": "/rest/ctx/intercepted",
+    "status": 400
+  },
+  {
+    "name": "inject_context_without_interceptor",
+    "path": "/rest/ctx/injected?name=a",
+    "status": 200,
+    "json": {
+      "name": "a",
+      "hasContext": true
+    }
+  },
+  {
+    "name": "not_intercepted",
+    "path": "/rest/ctx/unguarded?name=a",
+    "status": 200,
+    "json": {
+      "name": "a",
+      "hasContext": false
+    }
+  },
+  {
+    "name": "intercept_from_block_directive",
+    "path": "/rest/block/guarded?name=a",
+    "status": 200,
+    "json": {
+      "name": "a",
+      "marker": "(runBefore)",
+      "hasContext": true
+    }
+  },
+  {
+    "name": "intercept_from_block_directive_denied",
+    "path": "/rest/block/guarded?name=deny",
+    "status": 403
+  },
+  {
+    "name": "intercept_receives_decoded_body",
+    "method": "POST",
+    "path": "/rest/ctx/intercepted-body",
+    "body": {
+      "name": "x",
+      "qty": 1
+    },
+    "status": 200,
+    "json": {
+      "name": "x",
+      "hasContext": true
+    }
+  },
+  {
+    "name": "intercept_void_operation",
+    "method": "POST",
+    "path": "/rest/ctx/intercepted-void?name=a",
+    "status": [
+      200,
+      204
+    ],
+    "empty": true
+  },
+  {
+    "name": "intercept_void_operation_denied",
+    "method": "POST",
+    "path": "/rest/ctx/intercepted-void?name=deny",
+    "status": 403
+  },
+  {
+    "name": "download_text",
+    "path": "/rest/download?name=a",
+    "status": 200,
+    "text": "hello a",
+    "responseType": "text/plain",
+    "responseHeaders": {
+      "content-disposition": "contains:a.txt"
+    }
+  },
+  {
+    "name": "download_is_attachment",
+    "path": "/rest/download?name=a",
+    "status": 200,
+    "responseHeaders": {
+      "content-disposition": "prefix:attachment"
+    }
+  },
+  {
+    "name": "download_unicode_filename",
+    "path": "/rest/download?name=h%C3%A9llo",
+    "status": 200,
+    "text": "hello héllo",
+    "responseHeaders": {
+      "content-disposition": "contains:h%C3%A9llo.txt"
+    }
+  },
+  {
+    "name": "download_binary",
+    "path": "/rest/download?name=a&kind=bin",
+    "status": 200,
+    "bytes": {
+      "size": 1000,
+      "mod": 251
+    },
+    "responseType": "application/octet-stream",
+    "responseHeaders": {
+      "content-disposition": "contains:data.bin",
+      "content-length": "1000"
+    }
+  },
+  {
+    "name": "download_without_filename",
+    "path": "/rest/download?name=a&kind=nofile",
+    "status": 200,
+    "text": "x",
+    "responseType": "application/octet-stream",
+    "responseHeaders": {
+      "content-disposition": null
+    }
+  },
+  {
+    "name": "download_explicit_content_type",
+    "path": "/rest/download?name=a&kind=type",
+    "status": 200,
+    "text": "{\"a\":1}",
+    "responseType": "application/json",
+    "responseHeaders": {
+      "content-disposition": null
+    }
+  },
+  {
+    "name": "download_optional_present",
+    "path": "/rest/download/optional?name=z",
+    "status": 200,
+    "text": "hello z"
+  },
+  {
+    "name": "download_optional_absent_is_no_content",
+    "path": "/rest/download/optional",
+    "status": 204,
+    "empty": true
+  },
+  {
+    "name": "download_large_is_streamed_intact",
+    "path": "/rest/download/large?size=5000000",
+    "status": 200,
+    "bytes": {
+      "size": 5000000,
+      "mod": 251
+    },
+    "responseHeaders": {
+      "content-disposition": "contains:large.bin"
+    }
+  },
+  {
+    "name": "download_empty",
+    "path": "/rest/download/large?size=0",
+    "status": 200,
+    "bytes": {
+      "size": 0,
+      "mod": 251
+    }
+  },
+  {
+    "name": "download_missing_argument",
+    "path": "/rest/download",
+    "status": 400
+  },
+  {
+    "name": "download_wrong_method",
+    "method": "POST",
+    "path": "/rest/download?name=a",
+    "status": 405
+  },
+  {
+    "name": "response_path_nests_object",
+    "path": "/rest/wrap/deep?v=a",
+    "status": 200,
+    "json": {
+      "data": {
+        "item": {
+          "value": "a"
+        }
+      }
+    }
+  },
+  {
+    "name": "response_path_nests_list",
+    "path": "/rest/wrap/list?n=3",
+    "status": 200,
+    "json": {
+      "data": {
+        "items": [
+          {
+            "value": "item-0"
+          },
+          {
+            "value": "item-1"
+          },
+          {
+            "value": "item-2"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "response_path_nests_empty_list",
+    "path": "/rest/wrap/list?n=0",
+    "status": 200,
+    "json": {
+      "data": {
+        "items": []
+      }
+    }
+  },
+  {
+    "name": "response_path_nullable_present",
+    "path": "/rest/wrap/nullable?on=true",
+    "status": 200,
+    "json": {
+      "result": {
+        "value": "on"
+      }
+    }
+  },
+  {
+    "name": "response_path_nullable_null_keeps_the_envelope",
+    "path": "/rest/wrap/nullable?on=false",
+    "status": 200,
+    "text": "{\"result\":null}"
+  },
+  {
+    "name": "response_path_enum",
+    "path": "/rest/wrap/color",
+    "status": 200,
+    "json": {
+      "meta": {
+        "color": "BLUE"
+      }
+    }
+  },
+  {
+    "name": "response_path_string",
+    "path": "/rest/wrap/text?v=x",
+    "status": 200,
+    "json": {
+      "value": "text:x"
+    }
+  },
+  {
+    "name": "nested_spread_full",
+    "path": "/rest/nested/spread?name=ann&age=30&address.city=Paris&address.zip=75001&tags=a&tags=b&kind=RED",
+    "status": 200,
+    "json": {
+      "summary": "ann|30|Paris|75001|a,b|RED"
+    }
+  },
+  {
+    "name": "nested_spread_bracket_keys",
+    "path": "/rest/nested/spread?name=bob&address%5Bcity%5D=Rome",
+    "status": 200,
+    "json": {
+      "summary": "bob|-|Rome|-|-|-"
+    }
+  },
+  {
+    "name": "nested_spread_minimal",
+    "path": "/rest/nested/spread?name=x",
+    "status": 200,
+    "json": {
+      "summary": "x|-|-|-|-|-"
+    }
+  },
+  {
+    "name": "nested_spread_comma_list",
+    "path": "/rest/nested/spread?name=n&tags=a,b",
+    "status": 200,
+    "json": {
+      "summary": "n|-|-|-|a,b|-"
+    }
+  },
+  {
+    "name": "nested_spread_missing_required",
+    "path": "/rest/nested/spread?age=3",
+    "status": 400
+  },
+  {
+    "name": "nested_spread_bad_int",
+    "path": "/rest/nested/spread?name=n&age=abc",
+    "status": 400
+  },
+  {
+    "name": "nested_spread_bad_enum",
+    "path": "/rest/nested/spread?name=n&kind=PURPLE",
+    "status": 400
+  },
+  {
+    "name": "nested_spread_nested_required_missing",
+    "path": "/rest/nested/spread?name=n&address.zip=1",
+    "status": 400
+  },
+  {
+    "name": "nested_spread_nested_bad_int",
+    "path": "/rest/nested/spread?name=n&address.city=c&address.zip=z",
+    "status": 400
+  },
+  {
+    "name": "nested_spread_optional_absent",
+    "path": "/rest/nested/spread/optional",
+    "status": 200,
+    "json": {
+      "summary": "none"
+    }
+  },
+  {
+    "name": "nested_spread_optional_present",
+    "path": "/rest/nested/spread/optional?name=z",
+    "status": 200,
+    "json": {
+      "summary": "z|-|-|-|-|-"
+    }
+  },
+  {
+    "name": "nested_flat_dotted",
+    "path": "/rest/nested/flat?person.name=ann&person.address.city=Oslo",
+    "status": 200,
+    "json": {
+      "summary": "ann|-|Oslo|-|-|-"
+    }
+  },
+  {
+    "name": "nested_flat_bracketed",
+    "path": "/rest/nested/flat?person%5Bname%5D=ann&person%5Baddress%5D%5Bcity%5D=Oslo",
+    "status": 200,
+    "json": {
+      "summary": "ann|-|Oslo|-|-|-"
+    }
+  },
+  {
+    "name": "nested_flat_missing",
+    "path": "/rest/nested/flat",
+    "status": 400
+  },
+  {
+    "name": "nested_flat_unprefixed_keys_are_not_read",
+    "path": "/rest/nested/flat?name=ann",
+    "status": 400
+  },
+  {
+    "name": "nested_lines_indexed",
+    "path": "/rest/nested/lines?lines.0.sku=a&lines.0.qty=1&lines.1.sku=b&lines.1.qty=2",
+    "status": 200,
+    "json": {
+      "summary": "a:1;b:2"
+    }
+  },
+  {
+    "name": "nested_lines_bracketed",
+    "path": "/rest/nested/lines?lines%5B0%5D%5Bsku%5D=a&lines%5B0%5D%5Bqty%5D=1&lines%5B1%5D%5Bsku%5D=b&lines%5B1%5D%5Bqty%5D=2",
+    "status": 200,
+    "json": {
+      "summary": "a:1;b:2"
+    }
+  },
+  {
+    "name": "nested_lines_missing",
+    "path": "/rest/nested/lines",
+    "status": 400
+  },
+  {
+    "name": "nested_lines_bad_qty",
+    "path": "/rest/nested/lines?lines.0.sku=a&lines.0.qty=x",
+    "status": 400
+  },
+  {
+    "name": "nested_lines_item_missing_required",
+    "path": "/rest/nested/lines?lines.0.sku=a",
+    "status": 400
+  },
+  {
+    "name": "nested_json",
+    "path": "/rest/nested/json?person=%7B%22name%22%3A%22j%22%2C%22address%22%3A%7B%22city%22%3A%22Lyon%22%7D%2C%22tags%22%3A%5B%22x%22%5D%7D",
+    "status": 200,
+    "json": {
+      "summary": "j|-|Lyon|-|x|-"
+    }
+  },
+  {
+    "name": "nested_json_absent",
+    "path": "/rest/nested/json",
+    "status": 200,
+    "json": {
+      "summary": "none"
+    }
+  },
+  {
+    "name": "nested_json_invalid",
+    "path": "/rest/nested/json?person=%7Bnope",
+    "status": 400
+  },
+  {
+    "name": "nested_json_wrong_type",
+    "path": "/rest/nested/json?person=%7B%22name%22%3A1%7D",
+    "status": 400
+  },
+  {
+    "name": "nested_json_missing_required",
+    "path": "/rest/nested/json?person=%7B%22age%22%3A1%7D",
+    "status": 400
+  },
+  {
+    "name": "nested_json_bad_enum",
+    "path": "/rest/nested/json?person=%7B%22name%22%3A%22n%22%2C%22kind%22%3A%22PURPLE%22%7D",
+    "status": 400
+  },
+  {
+    "name": "nested_form_object_and_lines",
+    "method": "POST",
+    "path": "/rest/nested/form",
+    "rawBody": "person.name=ann&person.address.city=Oslo&lines.0.sku=a&lines.0.qty=2&lines.1.sku=b&lines.1.qty=3&note=hi",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "summary": "ann|-|Oslo|-|-|-/a:2;b:3/hi"
+    }
+  },
+  {
+    "name": "nested_form_object_only",
+    "method": "POST",
+    "path": "/rest/nested/form",
+    "rawBody": "person.name=ann",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "summary": "ann|-|-|-|-|-/-/-"
+    }
+  },
+  {
+    "name": "nested_form_missing_object",
+    "method": "POST",
+    "path": "/rest/nested/form",
+    "rawBody": "note=hi",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "nested_form_bad_nested_value",
+    "method": "POST",
+    "path": "/rest/nested/form",
+    "rawBody": "person.name=ann&lines.0.sku=a&lines.0.qty=x",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "nested_form_json",
+    "method": "POST",
+    "path": "/rest/nested/form/json",
+    "rawBody": "person=%7B%22name%22%3A%22f%22%2C%22age%22%3A4%7D",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 200,
+    "json": {
+      "summary": "f|4|-|-|-|-"
+    }
+  },
+  {
+    "name": "nested_form_json_invalid",
+    "method": "POST",
+    "path": "/rest/nested/form/json",
+    "rawBody": "person=%7B",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  },
+  {
+    "name": "nested_form_json_missing",
+    "method": "POST",
+    "path": "/rest/nested/form/json",
+    "rawBody": "x=1",
+    "contentType": "application/x-www-form-urlencoded",
+    "status": 400
+  }
+]

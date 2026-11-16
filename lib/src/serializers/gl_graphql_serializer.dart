@@ -16,6 +16,7 @@ import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_union.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -50,6 +51,8 @@ bool _shouldSkipDriectiveValue(GLDirectiveValue def) {
 // this is for skipping generating objects that should be hidden from the client
 const clientMode = CodeGenerationMode.client;
 
+const _restOnlyQueryField = '_glRestOnly';
+
 class GLGraphqlSerializer {
   final GLParser parser;
   final bool escapeDolar;
@@ -67,6 +70,7 @@ class GLGraphqlSerializer {
     var scalars = filterSerialization(parser.scalars.values, clientMode)
         .where((s) => !parser.builtInScalars.contains(s.token))
         .where((s) => !s.hasDirective(glSkipOnServer))
+        .where((s) => !(parser.mode == CodeGenerationMode.server && (s.hasDirective(glVoid) || s.hasDirective(glDownload) || (s.hasDirective(glUpload) && !parser.graphQLUsesUpload))))
         .map(serializeScalarDefinition)
         .join("\n");
     buffer.writeln(scalars);
@@ -235,13 +239,18 @@ ${def.getSerializableFields(mode, skipGenerated: true).map(serializeField).map((
       result.write(directives);
     }
     result.writeln(" {");
-    result.writeln(def
-        .getSerializableFields(mode, skipGenerated: true)
-        .map(serializeField)
-        .map((e) => e.ident())
-        .join("\n"));
+    final fields = _graphqlFields(def, mode);
+    result.writeln(fields.isEmpty && !parser.restOnly && def.token == parser.schema.getByQueryType(GLQueryType.query)
+        ? '$_restOnlyQueryField: Boolean'.ident()
+        : fields.map(serializeField).map((e) => e.ident()).join("\n"));
     result.write("}");
     return result.toString();
+  }
+
+  List<GLField> _graphqlFields(GLTypeDefinition def, CodeGenerationMode mode) {
+    final fields = def.getSerializableFields(mode, skipGenerated: true);
+    if (parser.mode != CodeGenerationMode.server) return fields;
+    return fields.where((f) => !parser.isRestField(f)).toList();
   }
 
   String serializeEnumDefinition(GLEnumDefinition def) {

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:graphlink/src/code_gen_utils.dart';
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_controller.dart';
@@ -43,6 +45,7 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
     _validateFieldArguments();
     _annotateRepositories();
     _ctrl.annotateControllers();
+    _mapDownloadScalars();
     _warnIfUploadScalarsPresent();
     grammar.convertAnnotationsToDecorators(
         _getControllerMixins(),
@@ -51,6 +54,17 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
   }
 
   // ── Initialization ─────────────────────────────────────────────────────────
+
+  /// A `@glDownload` scalar is the `GraphLinkDownload` class generated next to the REST support code.
+  void _mapDownloadScalars() {
+    for (final name in grammar.downloadScalarNames) {
+      final scalar = grammar.scalars[name]!;
+      scalar.addDirectiveIfAbsent(GLDirectiveValue(scalar.tokenInfo.ofNewName(glExternal), [GLDirectiveScope.SCALAR], [
+        GLArgumentValue(scalar.tokenInfo.ofNewName(glExternalArg), 'GraphLinkDownload'),
+        GLArgumentValue(scalar.tokenInfo.ofNewName(glImport), '$packageName.rest.GraphLinkDownload'),
+      ], generated: true));
+    }
+  }
 
   void _warnIfUploadScalarsPresent() {
     if (grammar.uploadScalarNames.isEmpty) return;
@@ -155,7 +169,7 @@ abstract class JvmSpringServerSerializerBase extends ServerSerializer
 
   @override
   String serializeTypeDefs() =>
-      generateSchema ? GLGraphqlSerializer(grammar).generateSchema() : '';
+      generateSchema && !grammar.restOnly ? GLGraphqlSerializer(grammar).generateSchema() : '';
 
   String serializeController(GLController ctrl) =>
       _ctrl.serializeController(ctrl);

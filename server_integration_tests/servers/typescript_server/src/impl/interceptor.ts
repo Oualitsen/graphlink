@@ -1,6 +1,7 @@
 import { GraphLinkInterceptor } from '../generated/interfaces/graph-link-interceptor.js';
 import { GlInterceptorTag } from '../generated/enums/gl-interceptor-tag.js';
 import { GraphLinkContext } from '../generated/context.js';
+import { RestError } from '../generated/rest/support.js';
 
 export class InterceptorImpl implements GraphLinkInterceptor {
   runBefore(
@@ -16,6 +17,10 @@ export class InterceptorImpl implements GraphLinkInterceptor {
     // clones it before handing it to resolvers, breaking the DataLoader
     // closure's view of any mutation). Throwing here rejects the whole
     // field for every parent in the batch.
+    if (operation.startsWith('rest') && args[0] === 'deny') {
+      throw new RestError(403, 'Forbidden');
+    }
+
     if (operation === 'Team.members') {
       const role = args[0];
       if (role !== 'auth') {

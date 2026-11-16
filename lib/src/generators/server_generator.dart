@@ -3,13 +3,18 @@ import 'dart:io';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
+import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/spring_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/java/spring_rest_support.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_spring_rest_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_map_type_resolver_config.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
@@ -149,6 +154,56 @@ Future<Set<String>> generateServerClasses(
       appendStar: true,
     );
   }
+  if (springConfig.generateControllers && grammar.restControllers.isNotEmpty) {
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.restControllers.values,
+      data: springSerializer.serializeRestController,
+      fileName: serializer.getFileNameFor,
+      subdir: 'controllers',
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    );
+    if (grammar.restOperations.values.any((op) => op.bodyKind == RestBodyKind.raw)) {
+      futures.add(writeToFile(
+        data: springConfig.reactive ? springRestReactiveUploadSource : springRestUploadSource,
+        fileName: springRestUploadFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (grammar.restOperations.values.any((op) => op.responseKind == RestResponseKind.binary)) {
+      futures.add(writeToFile(
+        data: springRestDownloadSource,
+        fileName: springRestDownloadFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (grammar.restUsesStructuredParams) {
+      futures.add(writeToFile(
+        data: springRestParamsSource,
+        fileName: springRestParamsFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    futures.add(writeToFile(
+      data: springRestSupportSource,
+      fileName: springRestSupportFileName,
+      subdir: 'rest',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
   if (springConfig.generateRepositories) {
     _writeDefinitions(
       futures: futures,
@@ -162,8 +217,8 @@ Future<Set<String>> generateServerClasses(
     );
   }
 
-  final hasAbstractTypes =
-      grammar.getSerializableInterfaces().isNotEmpty || grammar.unions.isNotEmpty;
+  final hasAbstractTypes = !grammar.restOnly &&
+      (grammar.getSerializableInterfaces().isNotEmpty || grammar.unions.isNotEmpty);
   if (springConfig.generateControllers && hasAbstractTypes) {
     futures.add(writeToFile(
       data: springMapTypeResolverConfigSource,
@@ -284,6 +339,55 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
       packageName: packageName,
     );
   }
+  if (springConfig.generateControllers && grammar.restControllers.isNotEmpty) {
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.restControllers.values,
+      data: springSerializer.serializeRestController,
+      fileName: serializer.getFileNameFor,
+      subdir: 'controllers',
+      destinationDir: destinationDir,
+      packageName: packageName,
+    );
+    if (grammar.restOperations.values.any((op) => op.bodyKind == RestBodyKind.raw)) {
+      futures.add(writeToFile(
+        data: kotlinRestUploadSource,
+        fileName: kotlinRestUploadFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (grammar.restOperations.values.any((op) => op.responseKind == RestResponseKind.binary)) {
+      futures.add(writeToFile(
+        data: kotlinRestDownloadSource,
+        fileName: kotlinRestDownloadFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    if (grammar.restUsesStructuredParams) {
+      futures.add(writeToFile(
+        data: kotlinRestParamsSource,
+        fileName: kotlinRestParamsFileName,
+        subdir: 'rest',
+        imports: const [],
+        destinationDir: destinationDir,
+        packageName: packageName,
+      ));
+    }
+    futures.add(writeToFile(
+      data: kotlinRestSupportSource,
+      fileName: kotlinRestSupportFileName,
+      subdir: 'rest',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
   if (springConfig.generateRepositories) {
     _writeDefinitions(
       futures: futures,
@@ -296,8 +400,8 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     );
   }
 
-  final hasAbstractTypes =
-      grammar.getSerializableInterfaces().isNotEmpty || grammar.unions.isNotEmpty;
+  final hasAbstractTypes = !grammar.restOnly &&
+      (grammar.getSerializableInterfaces().isNotEmpty || grammar.unions.isNotEmpty);
   if (springConfig.generateControllers && hasAbstractTypes) {
     futures.add(writeToFile(
       data: kotlinMapTypeResolverConfigSource,
@@ -334,11 +438,13 @@ Future<Set<String>> _generateExpressApolloClasses(
   final serverSerializer = ExpressApolloServerSerializer(grammar, tsSerializer, apolloConfig);
   final futures = <Future<File>>[];
 
-  futures.add(saveSource(
-    data: serverSerializer.serializeTypeDefs(),
-    path: '$destinationDir/typeDefs.ts',
-    typescriptSource: true,
-  ));
+  if (!grammar.restOnly) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeTypeDefs(),
+      path: '$destinationDir/typeDefs.ts',
+      typescriptSource: true,
+    ));
+  }
 
   grammar.getSerializableEnums().forEach((def) {
     futures.add(saveSource(
@@ -411,12 +517,14 @@ Future<Set<String>> _generateExpressApolloClasses(
     typescriptSource: true,
   ));
 
-  if (serverSerializer.hasUploads) {
+  if (serverSerializer.hasUploads || serverSerializer.hasRestUploads) {
     futures.add(saveSource(
       data: serverSerializer.serializeFileUploadType(),
       path: '$destinationDir/file-upload.ts',
       typescriptSource: true,
     ));
+  }
+  if (serverSerializer.hasUploads) {
     futures.add(saveSource(
       data: serverSerializer.serializeGraphqlUploadDeclarations(),
       path: '$destinationDir/graphql-upload.d.ts',
@@ -424,11 +532,40 @@ Future<Set<String>> _generateExpressApolloClasses(
     ));
   }
 
-  futures.add(saveSource(
-    data: serverSerializer.serializeResolvers().first,
-    path: '$destinationDir/resolvers/build-resolvers.ts',
-    typescriptSource: true,
-  ));
+  if (!grammar.restOnly) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeResolvers().first,
+      path: '$destinationDir/resolvers/build-resolvers.ts',
+      typescriptSource: true,
+    ));
+  }
+
+  if (serverSerializer.hasRest) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeRestSupport(),
+      path: '$destinationDir/rest/$expressRestSupportFileName',
+      typescriptSource: true,
+    ));
+    if (serverSerializer.hasRestUploads) {
+      futures.add(saveSource(
+        data: serverSerializer.serializeRestUploads(),
+        path: '$destinationDir/rest/$expressRestUploadsFileName',
+        typescriptSource: true,
+      ));
+    }
+    if (serverSerializer.hasRestDownloads) {
+      futures.add(saveSource(
+        data: serverSerializer.serializeRestDownloads(),
+        path: '$destinationDir/rest/$expressRestDownloadFileName',
+        typescriptSource: true,
+      ));
+    }
+    futures.add(saveSource(
+      data: serverSerializer.serializeRestRouter(),
+      path: '$destinationDir/rest/build-rest-router.ts',
+      typescriptSource: true,
+    ));
+  }
 
   if (apolloConfig.generateEntryPoint) {
     futures.add(saveSource(

@@ -11,6 +11,8 @@ import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/serializers/jvm_spring_server_serializer_base.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_controller_serializer.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_spring_rest_controller_serializer.dart';
+import 'package:graphlink/src/model/gl_rest_controller.dart';
 
 class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
   @override
@@ -22,6 +24,8 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
   /// `false`, service methods are generated as `suspend fun` so implementations
   /// can call other suspend functions directly.
   final bool blockingServices;
+  late final KotlinSpringRestControllerSerializer _restSerializer = KotlinSpringRestControllerSerializer(grammar,
+      serializer: serializer, packageName: packageName, suspendServices: !blockingServices);
 
   KotlinSpringServerSerializer._(
     super.grammar,
@@ -63,6 +67,8 @@ class KotlinSpringServerSerializer extends JvmSpringServerSerializerBase {
         generateSchema: generateSchema,
         injectDataFetching: injectContext);
   }
+
+  String serializeRestController(GLRestController ctrl) => _restSerializer.serializeRestController(ctrl);
 
   // ── Security ───────────────────────────────────────────────────────────────
 

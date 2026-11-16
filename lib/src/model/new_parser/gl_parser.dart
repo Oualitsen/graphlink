@@ -9,6 +9,7 @@ import 'package:graphlink/src/model/gl_query_element.dart';
 import 'package:graphlink/src/model/gl_schema.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
+import 'package:graphlink/src/model/gl_rest_controller.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -35,6 +36,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart'
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_directive_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_nullable_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_validation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_discriminator_extension.dart';
@@ -232,6 +234,10 @@ class GLParser {
   final Map<String, GLDirectiveDefinition> directiveDefinitions = {};
   final Map<String, GLService> services = {};
   final Map<String, GLController> controllers = {};
+  final Map<String, GLRestController> restControllers = {};
+
+  /// True when the server schema has REST operations and no GraphQL one: nothing GraphQL is generated then.
+  bool restOnly = false;
 
   final Map<String, GLExtensibleTokenList> extensibleTokens = {};
 
@@ -488,7 +494,9 @@ class GLParser {
       // forwarded onto a source field that later becomes nullable, emitting a
       // getter whose body can't satisfy the non-null return type.
       applyServerLenientNullability();
+      resolveServerRestOperations();
       generateServicesAndControllers();
+      generateRestControllers();
       generateSchemaMappings();
     }
     fillTransitiveInterfaceImplementations();

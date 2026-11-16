@@ -555,6 +555,67 @@ public Vehicle addVehicle(AddVehicleInput input) {
 !!! note "@glValidate vs @glIntercept"
     `@glValidate` generates a dedicated `validateX(...)` method per mutation, typed to that mutation's own arguments — use it for mutation-specific input validation. `@glIntercept` generates one schema-wide `runBefore(tag, operation, args, context)` hook shared by every annotated field (queries, mutations, subscriptions, and schema/batch mappings alike) — use it for cross-cutting checks like auth. When both are present on the same field, `runBefore` fires first. → **[Full @glIntercept reference](directives.md#glintercept)**
 
+## REST operations (`@glRest*`)
+
+The operations of the schema marked with the [REST directives](rest-client.md) are served by the same server, next to the GraphQL ones. GraphLink generates a **separate** `@RestController` for every service that has REST operations; it calls the same service interface the GraphQL controller uses, so you implement each operation once.
+
+```graphql title="Schema"
+type Query {
+  product(id: ID!): Product @glRest(path: "/products/{id}")
+  search(filter: ProductFilter @glRestParam, limit: Int = 10 @glRestParam): [Product!]! @glRest(path: "/products")
+  featured: Product                                    # GraphQL only
+}
+type Mutation {
+  createProduct(input: ProductInput! @glRestBody): Product! @glRest(path: "/products")
+  deleteProduct(id: ID!): Void @glRest(path: "/products/{id}", method: DELETE)
+}
+```
+
+```java title="Generated ProductServiceRestController.java (excerpt)"
+@RestController
+public class ProductServiceRestController {
+   private final ProductService productService;
+
+   @GetMapping(value = "/products/{id}")
+   public Map<String, Object> product(@PathVariable(name = "id") String id) {
+      final var __gl_result__ = productService.product(id);
+      return __gl_result__ == null ? null : __gl_result__.toJson();
+   }
+
+   @PostMapping(value = "/products")
+   public Map<String, Object> createProduct(@RequestBody(required = true) Map<String, Object> inputWire) {
+      final var input = GraphLinkRest.decode(() -> ProductInput.fromJson((Map<String, Object>)inputWire));
+      return productService.createProduct(input).toJson();
+   }
+}
+```
+
+Like the GraphQL controllers, the REST ones never see your types: a request value arrives as a number, a string or a `Map` and is converted with the generated `fromJson`, and the result leaves through `toJson()`. The REST operations are **not** part of the GraphQL schema (a schema with REST operations only generates no GraphQL schema or controller at all), and `ProductService` implements both transports (`featured` above stays a GraphQL operation on the same service).
+
+| Request part | Bound as |
+|---|---|
+| `{placeholder}` | `@PathVariable` |
+| `@glRestParam` scalar, enum, list of them | `@RequestParam` (repeated key or comma separated) |
+| `@glRestParam` input object | one `@RequestParam` per field (a missing required field is a `400`) |
+| `@glRestHeader` scalar, input object | `@RequestHeader` / one per field |
+| `@glRestBody` input object, list of input objects | `@RequestBody` (optional when the argument is nullable) |
+
+Responses: an object, a list, a scalar, an enum, `String` (written as a JSON string), `response: TEXT` (`text/plain`) and `Void` (`204`). A `null` result is an empty `200`. A value that cannot be converted (`"abc"` for an `Int`, an unknown enum value, a missing required field, malformed JSON) is a `400`; a wrong method on a known path is a `405`; an exception thrown by your service is a `500` whose body carries no stack trace. `@glValidate` runs before the service call, as for GraphQL.
+
+**Uploads.** `@glRestPart` on an `Upload` or `[Upload!]` binds `@RequestPart` as `MultipartFile` (`FilePart` in reactive mode); scalar and enum `@glRestPart` arguments are the text parts of the same multipart body. `@glRestBody` on an `Upload` streams the raw request body (`GraphLinkRestUpload` wraps the servlet request, or the `Flux<DataBuffer>` in reactive mode) as the same upload type. The service interface takes the upload where the generator left it (last), exactly as for GraphQL uploads. Configure the size limits in the application (`spring.servlet.multipart.max-file-size`, `max-request-size`; Spring's default file limit is 1 MB). A body that is not multipart, or has a malformed envelope, is a `400`; one above the limit a `413`. Known Spring MVC limit: an envelope with no boundary at all is rejected by `DispatcherServlet` before any controller runs, so it answers `500` unless the application adds a `@ControllerAdvice` or a filter.
+
+**Forms.** `@glRestField` binds `@RequestParam` (`application/x-www-form-urlencoded`; `PUT`/`PATCH`/`DELETE` forms work through Spring Boot's `FormContentFilter`). In reactive mode `@RequestParam` only sees the query string, so the handler reads `ServerWebExchange.getFormData()` itself.
+
+**Input objects, lists of objects and JSON text** in a query string or a form (`@glRestParam` / `@glRestField` on an input with nested objects, a `[Input!]`, or `encoding: JSON`) are read by the generated `rest/GraphLinkRestParams`: keys nest with dots (`address.city`, `items.0.name`) or brackets (`address[city]`), whatever `formNesting` the client used, and a missing required field is a `400`. A list of objects is read until the first missing index.
+
+**Downloads.** A `@glDownload` scalar is the generated `rest/GraphLinkDownload`: your service returns `new GraphLinkDownload(resource, "report.pdf", "application/pdf")` (any Spring `Resource`; the file name and content type are optional, the type is then guessed from the name) and the controller answers a `ResponseEntity<Resource>` with `Content-Disposition: attachment`. A nullable download that is `null` (or an empty `Mono`) is `204`. Resources are streamed, an `InputStreamResource` is never read into memory.
+
+**`responsePath`.** The server nests the result under the path, `{"data":{"items":[...]}}` for `responsePath: "data.items"`, which is what a client generated from the same schema unwraps.
+
+**Interceptors and context.** `@glIntercept` (on the operation or on a block) and `@glInjectContext` work on REST operations. A REST request has no GraphQL context, so the generated code builds a fresh `GraphQLContext` per request that holds the HTTP request under the key `request` (`HttpServletRequest`, or `ServerWebExchange` in reactive mode). `runBefore` runs after the arguments are decoded and before `@glValidate` and your service; throw `new ResponseStatusException(HttpStatus.FORBIDDEN)` to deny, any other exception is a `500`. Kotlin handlers of an intercepted operation are `suspend`.
+
+Works for Java (MVC and reactive: `Mono`/`Flux` results) and Kotlin (blocking and `suspend`). Rejected at generation time with a message: an input object as a multipart part, a recursive input object in a query or a form, and lists of lists.
+
 ## Kotlin Spring Boot server
 
 New in v5.0.0: set `"mode": "server"` and use a `"kotlinSpring"` section instead of `"spring"` under `serverConfig` to generate a Kotlin server target — data-class types/inputs/enums, services, controllers, and repositories, mirroring the Java Spring target above (including strict-by-default generation and `Map`-boundary controller serialization).

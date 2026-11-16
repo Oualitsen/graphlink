@@ -137,6 +137,7 @@ serializers/
   server_serializer_utils.dart     # Shared server utilities
   jvm_spring_server_serializer_base.dart      # Shared Java/Kotlin Spring server base
   jvm_spring_controller_serializer_base.dart  # Shared Java/Kotlin Spring controller base
+  jvm_spring_rest_controller_serializer_base.dart  # Shared Java/Kotlin Spring REST controller planning (`@glRest*` on the server)
   dart/
     dart_serializer.dart           # Dart types, inputs, enums
     flutter_api.dart               # Flutter SDK/design-library switches
@@ -165,17 +166,21 @@ serializers/
     java_imports.dart              # Java import resolution
     java_spring_server_serializer.dart      # Spring Boot service interface
     java_spring_controller_serializer.dart  # Spring Boot controllers
+    java_spring_rest_controller_serializer.dart  # Spring Boot REST controllers
     spring_map_type_resolver_config.dart
   kotlin/
     kotlin_serializer.dart         # Kotlin types, inputs, enums
     kotlin_imports.dart            # Kotlin import resolution
     kotlin_spring_server_serializer.dart
     kotlin_spring_controller_serializer.dart
+    kotlin_spring_rest_controller_serializer.dart
     kotlin_map_type_resolver_config.dart
   typescript/
     typescript_serializer.dart     # TypeScript types, inputs, enums
     express_apollo_server_serializer.dart   # Express/Apollo server
     express_apollo_server_constants.dart
+    express_apollo_rest_serializer.dart     # Express REST router (`@glRest*` served by the server)
+    express_apollo_rest_constants.dart      # runtime support of that router (`rest/support.ts`)
   swift/swift_serializer.dart      # Swift types, inputs, enums
   python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
   go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums
@@ -380,6 +385,11 @@ don't confuse them:
   hostile requests (`cases.json`, runner `run_faults.py`) to each server; defects not fixed yet are in `known_defects.json` (remove an entry when
   fixed, a passing known defect fails the run). Run with `make -C server_integration_tests ci-faults-<typescript|java|java-reactive|kotlin-blocking|kotlin-suspend>`.
   Progress and findings: `server_integration_tests/HARDENING.md`.
+- **REST on the server**: `schema_rest/rest.gql` (merged into every server's schema, never into a client's) holds `@glRest*` operations; every
+  server implements them (`impl/RestImpl.*`, `rest-impl.ts`) and `server_rest/` (`cases.json`, runner `run_rest.py`) drives all of them over raw HTTP.
+  Run with `make -C server_integration_tests ci-rest-<typescript|java|java-reactive|kotlin-blocking|kotlin-suspend>`; `ci-http-<server>` runs the fault
+  and the REST suite on one server start (what CI does). Covers paths, query, headers, JSON, forms, nested and JSON-text values, uploads, downloads,
+  `responsePath`, `@glIntercept` / `@glInjectContext`. Design and limits: `server_integration_tests/REST_SERVER.md`.
 
 ```bash
 cd integration_tests && make all-real                              # generated clients vs hand-written Spring server

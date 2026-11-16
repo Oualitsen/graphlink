@@ -12,6 +12,7 @@ schema {
 
 directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
+directive @glUpload on SCALAR
 directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
 input ReservedInput {
    class: String!
@@ -48,6 +49,44 @@ input RangeInput {
    max: Int = 100
 }
 
+input RestItemInput {
+   name: String!
+   qty: Int!
+   color: RestColor
+   tags: [String!]
+}
+
+input RestFilter {
+   tag: String
+   minQty: Int
+   maxPrice: Float
+   colors: [RestColor!]
+   inStock: Boolean
+}
+
+input RestMeta {
+   traceId: String
+   version: Int
+}
+
+input RestAddress {
+   city: String!
+   zip: Int
+}
+
+input RestPerson {
+   name: String!
+   age: Int
+   address: RestAddress
+   tags: [String!]
+   kind: RestColor
+}
+
+input RestLine {
+   sku: String!
+   qty: Int!
+}
+
 type Product {
    id: ID!
    name: String!
@@ -76,7 +115,7 @@ type SearchResult {
    id: ID!
    hits(limit: Int!): [Product!]!
 }
-type Query {
+type Query @glIntercept(tag: "auth") {
    catalog: Catalog!
    feed: Feed!
    store: Store!
@@ -113,6 +152,7 @@ type Query {
    resolveRange(input: RangeInput = {min: 5}): Range!
    greet(name: String = "world", times: Int = 1): String!
    echoPriority(level: Priority = HIGH): Priority!
+   restItemGraphql(id: ID!): RestItem
 }
 type class {
    id: ID!
@@ -248,6 +288,70 @@ type Range {
    min: Int!
    max: Int!
 }
+type RestItem {
+   id: ID!
+   name: String!
+   qty: Int!
+   color: RestColor
+   tags: [String!]!
+}
+type RestScalars {
+   n: Int!
+   ratio: Float!
+   flag: Boolean!
+   text: String!
+}
+type RestFormEcho {
+   id: ID
+   name: String!
+   qty: Int!
+   color: RestColor
+   flag: Boolean!
+   tags: [String!]!
+   note: String
+}
+type RestMarked {
+   name: String!
+   marker: String
+   hasContext: Boolean!
+}
+type RestNested {
+   summary: String!
+}
+type RestWrap {
+   value: String!
+}
+type RestUploadInfo {
+   filename: String
+   contentType: String
+   size: Int!
+   sha256: String!
+   label: String
+   kind: RestColor
+   times: Int
+}
+type RestHeaders {
+   token: String!
+   trace: String
+   traceId: String
+   version: Int
+}
+type RestSearch {
+   tag: String
+   minQty: Int
+   maxPrice: Float
+   colors: [RestColor!]
+   inStock: Boolean
+   limit: Int!
+   offset: Int
+   order: RestColor
+}
+type RestKeywords {
+   class: String!
+   return: String
+   if: Int!
+   switch: String!
+}
 interface Shape {
    id: ID!
    kind: String!
@@ -266,6 +370,10 @@ enum ArticleType {
 
 enum Priority {
 	LOW MEDIUM HIGH
+}
+
+enum RestColor {
+	RED GREEN BLUE
 }
 
 union Media = Photo | Video

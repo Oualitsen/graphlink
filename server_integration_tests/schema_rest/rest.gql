@@ -1,0 +1,238 @@
+# REST operations served next to the GraphQL ones. Consumed only by the generated servers (the client harnesses
+# read ../schema/ alone), so every server exposes the same HTTP surface that server_rest/ exercises.
+# Keep this schema cross-language: no language-specific directives.
+
+scalar Void @glVoid
+
+scalar Download @glDownload
+
+directive @glUpload on SCALAR
+
+scalar Upload @glUpload
+
+enum RestColor {
+    RED
+    GREEN
+    BLUE
+}
+
+input RestItemInput {
+    name: String!
+    qty: Int!
+    color: RestColor
+    tags: [String!]
+}
+
+input RestFilter {
+    tag: String
+    minQty: Int
+    maxPrice: Float
+    colors: [RestColor!]
+    inStock: Boolean
+}
+
+input RestMeta {
+    traceId: String
+    version: Int
+}
+
+type RestItem {
+    id: ID!
+    name: String!
+    qty: Int!
+    color: RestColor
+    tags: [String!]!
+}
+
+type RestScalars {
+    n: Int!
+    ratio: Float!
+    flag: Boolean!
+    text: String!
+}
+
+type RestFormEcho {
+    id: ID
+    name: String!
+    qty: Int!
+    color: RestColor
+    flag: Boolean!
+    tags: [String!]!
+    note: String
+}
+
+type RestMarked {
+    name: String!
+    marker: String
+    hasContext: Boolean!
+}
+
+input RestAddress {
+    city: String!
+    zip: Int
+}
+
+input RestPerson {
+    name: String!
+    age: Int
+    address: RestAddress
+    tags: [String!]
+    kind: RestColor
+}
+
+input RestLine {
+    sku: String!
+    qty: Int!
+}
+
+type RestNested {
+    summary: String!
+}
+
+type RestWrap {
+    value: String!
+}
+
+type RestUploadInfo {
+    filename: String
+    contentType: String
+    size: Int!
+    sha256: String!
+    label: String
+    kind: RestColor
+    times: Int
+}
+
+type RestHeaders {
+    token: String!
+    trace: String
+    traceId: String
+    version: Int
+}
+
+type RestSearch {
+    tag: String
+    minQty: Int
+    maxPrice: Float
+    colors: [RestColor!]
+    inStock: Boolean
+    limit: Int!
+    offset: Int
+    order: RestColor
+}
+
+type RestKeywords {
+    class: String!
+    return: String
+    if: Int!
+    switch: String!
+}
+
+extend type Query @glRestPrefix(path: "/rest") {
+    restKeywords(
+        switch: String!
+        class: String! @glRestParam
+        return: String @glRestParam
+        if: Int! @glRestHeader(name: "X-If")
+    ): RestKeywords! @glRest(path: "/keywords/{switch}")
+    restItem(id: ID!): RestItem @glRest(path: "/items/{id}")
+    restScalars(n: Int!, ratio: Float!, flag: Boolean!, text: String! @glRestParam): RestScalars! @glRest(path: "/scalars/{n}/{ratio}/{flag}")
+    restItemByColor(color: RestColor!): RestItem! @glRest(path: "/colors/{color}")
+    restSearch(
+        filter: RestFilter @glRestParam
+        limit: Int = 10 @glRestParam
+        offset: Int @glRestParam
+        order: RestColor @glRestParam
+    ): RestSearch! @glRest(path: "/search")
+    restTags(tags: [String!]! @glRestParam, ids: [Int!] @glRestParam): [String!]! @glRest(path: "/tags")
+    restGreeting(name: String! @glRestParam): String! @glRest(path: "/greeting")
+    restPlain(name: String! @glRestParam): String! @glRest(path: "/plain", response: TEXT)
+    restCount: Int! @glRest(path: "/count")
+    restFlag(on: Boolean! @glRestParam): Boolean! @glRest(path: "/flag")
+    restColors: [RestColor!]! @glRest(path: "/colors")
+    restHeaders(
+        token: String! @glRestHeader(name: "X-Token")
+        trace: String @glRestHeader(name: "X-Trace")
+        meta: RestMeta @glRestHeader
+    ): RestHeaders! @glRest(path: "/headers")
+    restFail(code: Int!): RestScalars! @glRest(path: "/fail/{code}")
+    restDownload(name: String! @glRestParam, kind: String @glRestParam): Download! @glRest(path: "/download")
+    restDownloadOptional(name: String @glRestParam): Download @glRest(path: "/download/optional")
+    restDownloadLarge(size: Int! @glRestParam): Download! @glRest(path: "/download/large")
+}
+
+extend type Mutation @glRestPrefix(path: "/rest") {
+    restCreate(input: RestItemInput! @glRestBody): RestItem! @glRest(path: "/items")
+    restReplace(id: ID!, input: RestItemInput! @glRestBody): RestItem! @glRest(path: "/items/{id}", method: PUT)
+    restPatch(id: ID!, name: String @glRestParam): RestItem! @glRest(path: "/items/{id}", method: PATCH)
+    restDelete(id: ID!): Void @glRest(path: "/items/{id}", method: DELETE)
+    restBulk(items: [RestItemInput!]! @glRestBody): [RestItem!]! @glRest(path: "/bulk")
+    restOptionalBody(input: RestItemInput @glRestBody): Int! @glRest(path: "/optional")
+    restValidated(name: String! @glRestParam): Boolean! @glValidate @glRest(path: "/validated")
+    restForm(
+        name: String! @glRestField
+        qty: Int! @glRestField
+        color: RestColor @glRestField
+        flag: Boolean = false @glRestField
+        tags: [String!] @glRestField
+        note: String @glRestField(name: "memo")
+    ): RestFormEcho! @glRest(path: "/form")
+    restFormUpdate(id: ID!, name: String! @glRestField, qty: Int = 1 @glRestField): RestFormEcho!
+        @glRest(path: "/form/{id}", method: PUT)
+    restFormOptional(note: String @glRestField): Int! @glRest(path: "/form/optional")
+    restUpload(
+        file: Upload! @glRestPart
+        label: String @glRestPart
+        kind: RestColor @glRestPart
+        times: Int @glRestPart
+    ): RestUploadInfo! @glRest(path: "/upload")
+    restUploadMany(files: [Upload!]! @glRestPart, label: String @glRestPart): [RestUploadInfo!]! @glRest(path: "/upload/many")
+    restUploadOptional(file: Upload @glRestPart): Int! @glRest(path: "/upload/optional")
+    restUploadRaw(id: ID!, file: Upload! @glRestBody, name: String @glRestHeader(name: "X-Filename")): RestUploadInfo!
+        @glRest(path: "/upload/raw/{id}", method: PUT)
+}
+
+# A GraphQL operation on the same service as the REST ones (RestItemService): both controllers live side by side.
+extend type Query {
+    restItemGraphql(id: ID!): RestItem
+}
+
+# Interceptors and the request context on REST operations. The interceptor of the test servers sets the `marker` of the
+# context (and throws a 403 for the name "deny"); the services echo what they saw.
+extend type Query @glRestPrefix(path: "/rest/ctx") {
+    restIntercepted(name: String! @glRestParam): RestMarked! @glRest(path: "/intercepted") @glIntercept(tag: "auth")
+    restInjected(name: String! @glRestParam): RestMarked! @glRest(path: "/injected") @glInjectContext
+    restUnguarded(name: String! @glRestParam): RestMarked! @glRest(path: "/unguarded")
+}
+
+extend type Query @glRestPrefix(path: "/rest/block") @glIntercept(tag: "auth") {
+    restBlockGuarded(name: String! @glRestParam): RestMarked! @glRest(path: "/guarded")
+}
+
+extend type Mutation @glRestPrefix(path: "/rest/ctx") {
+    restInterceptedBody(input: RestItemInput! @glRestBody): RestMarked! @glRest(path: "/intercepted-body") @glIntercept(tag: "auth")
+    restInterceptedVoid(name: String! @glRestParam): Void @glRest(path: "/intercepted-void") @glIntercept(tag: "auth")
+}
+
+# The server nests the result under the response path, the way a client reading the same schema unwraps it.
+extend type Query @glRestPrefix(path: "/rest/wrap") {
+    restWrapDeep(v: String! @glRestParam): RestWrap! @glRest(path: "/deep", responsePath: "data.item")
+    restWrapList(n: Int! @glRestParam): [RestWrap!]! @glRest(path: "/list", responsePath: "data.items")
+    restWrapNullable(on: Boolean! @glRestParam): RestWrap @glRest(path: "/nullable", responsePath: "result")
+    restWrapColor: RestColor! @glRest(path: "/color", responsePath: "meta.color")
+    restWrapText(v: String! @glRestParam): String! @glRest(path: "/text", responsePath: "value")
+}
+
+# Input objects with nested objects and lists of objects, in the query string and in forms.
+extend type Query @glRestPrefix(path: "/rest/nested") {
+    restNestedSpread(person: RestPerson! @glRestParam): RestNested! @glRest(path: "/spread")
+    restNestedSpreadOptional(person: RestPerson @glRestParam): RestNested! @glRest(path: "/spread/optional")
+    restNestedFlat(person: RestPerson! @glRestParam(encoding: FLAT)): RestNested! @glRest(path: "/flat")
+    restNestedLines(lines: [RestLine!]! @glRestParam): RestNested! @glRest(path: "/lines")
+    restNestedJson(person: RestPerson @glRestParam(encoding: JSON)): RestNested! @glRest(path: "/json")
+}
+
+extend type Mutation @glRestPrefix(path: "/rest/nested") {
+    restNestedForm(person: RestPerson! @glRestField, lines: [RestLine!] @glRestField, note: String @glRestField): RestNested! @glRest(path: "/form")
+    restNestedFormJson(person: RestPerson! @glRestField(encoding: JSON)): RestNested! @glRest(path: "/form/json")
+}
