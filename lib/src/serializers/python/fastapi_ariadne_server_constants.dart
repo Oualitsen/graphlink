@@ -148,7 +148,9 @@ const fastapiFileUpload = r'''
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import AsyncIterator, Callable
+from typing import Any, AsyncIterator, Callable, Optional
+
+CHUNK = 64 * 1024
 
 
 @dataclass
@@ -160,6 +162,30 @@ class FileUpload:
 
     def create_read_stream(self) -> AsyncIterator[bytes]:
         return self.open_stream()
+
+
+def _stream_of(upload: Any) -> Callable[[], AsyncIterator[bytes]]:
+    async def chunks() -> AsyncIterator[bytes]:
+        await upload.seek(0)
+        while True:
+            chunk = await upload.read(CHUNK)
+            if not chunk:
+                return
+            yield chunk
+
+    return chunks
+
+
+def to_file_upload(upload: Any) -> Optional[FileUpload]:
+    """Wraps the Starlette `UploadFile` the multipart request parser produced."""
+    if upload is None:
+        return None
+    return FileUpload(
+        filename=upload.filename or "",
+        mimetype=upload.content_type or "application/octet-stream",
+        encoding="7bit",
+        open_stream=_stream_of(upload),
+    )
 ''';
 
 const fastapiContextBase = r'''

@@ -1,0 +1,12 @@
+{
+  "schemaPaths": ["../../upload_schema/upload_schema.gql"],
+  "mode": "server",
+  "outputDir": "generated",
+  "serverConfig": {
+    "fastapiAriadne": {
+      "port": 9974,
+      "graphqlPath": "/graphql",
+      "generateEntryPoint": true
+    }
+  }
+}

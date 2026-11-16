@@ -3,13 +3,14 @@ JAVA_PORT             = 9996
 KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
 PYTHON_FASTAPI_PORT   = 9975
+PYTHON_UPLOAD_PORT    = 9974
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
 .PHONY: faults rest graphql http java8-check ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
         ci-faults-python-fastapi ci-rest-python-fastapi ci-graphql-python-fastapi ci-http-python-fastapi \
         python-fastapi-install python-fastapi-generate python-fastapi-start-server python-fastapi-stop-server \
-        python-fastapi-test-client python-fastapi ci-python-fastapi-client \
+        python-fastapi-test-client python-fastapi ci-python-fastapi-client ci-upload-python \
         ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend \
         ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend \
         setup-client setup-client-install setup-all-clients clean-all generate-all \
@@ -140,6 +141,14 @@ upload-stop-server:
 ci-upload: upload-install upload-start-server
 	$(MAKE) -C clients/dart_upload_client test || ($(MAKE) upload-stop-server && exit 1)
 	$(MAKE) upload-stop-server
+
+# The same dart harness against the Python (FastAPI + Ariadne) upload server.
+ci-upload-python:
+	$(MAKE) -C servers/python_upload_server install
+	$(MAKE) -C clients/dart_upload_client install
+	$(MAKE) -C servers/python_upload_server start-server
+	$(MAKE) -C clients/dart_upload_client test PORT=$(PYTHON_UPLOAD_PORT) || ($(MAKE) -C servers/python_upload_server stop-server && exit 1)
+	$(MAKE) -C servers/python_upload_server stop-server
 
 # ---- Java server, MVC (servers/java_server) ----
 

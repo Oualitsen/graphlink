@@ -274,11 +274,16 @@ class FastapiAriadneServerConfig extends ServerLanguageConfig {
   /// carries `@glInjectContext` do.
   final bool injectContext;
 
+  /// When `true`, resolver-backed service and guard methods also receive the `GraphQLResolveInfo` (`info`), and the
+  /// interceptor gets it as a last parameter (`None` for subscriptions, batch mappings and REST).
+  final bool useResolveInfo;
+
   FastapiAriadneServerConfig({
     this.port = 8000,
     this.graphqlPath = '/graphql',
     this.generateEntryPoint = true,
     this.injectContext = false,
+    this.useResolveInfo = false,
   });
 
   factory FastapiAriadneServerConfig.fromJson(Map<String, dynamic> json) {
@@ -287,6 +292,7 @@ class FastapiAriadneServerConfig extends ServerLanguageConfig {
       graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
       generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
       injectContext: (json['injectContext'] as bool?) ?? false,
+      useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
     );
   }
 }

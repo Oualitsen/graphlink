@@ -184,6 +184,7 @@ class FastapiAriadneRestSerializer {
       py.pythonStringLiteral(op.name),
       '[${rawArgs.join(', ')}]',
       '_context',
+      if (config.useResolveInfo) 'None',
     ];
     return 'await services.interceptor.run_before(${callArgs.join(', ')})';
   }

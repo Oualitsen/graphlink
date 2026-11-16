@@ -84,4 +84,77 @@ void main() {
     expect(app, contains('explorer=ExplorerHttp405()'));
     expect(app, contains('max_depth_rule(max_depth)'));
   });
+
+  test('only the root types the schema declares are bound', () {
+    final queryOnly = GLParser(
+      mode: CodeGenerationMode.server,
+      naming: NamingConvention.python,
+      reservedWords: pythonReservedWords,
+      reservedTypeNames: pythonReservedTypeNames,
+    )..parse('type Query { ping: Boolean! }');
+    final resolvers = _serializer(queryOnly).serializeResolvers().single;
+    expect(resolvers, contains('query = QueryType()'));
+    expect(resolvers, isNot(contains('MutationType()')));
+    expect(resolvers, isNot(contains('SubscriptionType()')));
+    expect(resolvers, contains('make_executable_schema(TYPE_DEFS, query)'));
+  });
+
+  group('uploads', () {
+    const uploadSchema = '''
+      directive @glUpload on SCALAR
+      scalar Upload @glUpload
+      type Query { ping: Boolean! }
+      type Mutation {
+        one(file: Upload!): Boolean!
+        many(files: [Upload!]!): Boolean!
+        maybe(file: Upload): Boolean!
+      }
+    ''';
+
+    late GLParser uploads;
+    setUp(() {
+      uploads = GLParser(
+        mode: CodeGenerationMode.server,
+        naming: NamingConvention.python,
+        reservedWords: pythonReservedWords,
+        reservedTypeNames: pythonReservedTypeNames,
+      )..parse(uploadSchema);
+    });
+
+    test('arguments are wrapped into FileUpload', () {
+      final resolvers = _serializer(uploads).serializeResolvers().single;
+      expect(resolvers, contains('file = to_file_upload(args.get("file"))'));
+      expect(resolvers, contains('files = [to_file_upload(e0) for e0 in args.get("files")]'));
+      expect(resolvers, contains('from .file_upload import to_file_upload'));
+    });
+
+    test('the service takes FileUpload, optional or listed as declared', () {
+      final service = _serializer(uploads).serializeService(uploads.services.values.firstWhere((s) => s.token == 'OneService'));
+      expect(service, contains('file: FileUpload'));
+      final maybe = _serializer(uploads).serializeService(uploads.services.values.firstWhere((s) => s.token == 'MaybeService'));
+      expect(maybe, contains('file: Optional[FileUpload]'));
+    });
+  });
+
+  group('useResolveInfo', () {
+    FastapiAriadneServerSerializer withInfo(GLParser p) => FastapiAriadneServerSerializer(
+          p,
+          PythonSerializer(p, runtimeDir: 'runtime'),
+          FastapiAriadneServerConfig(useResolveInfo: true),
+        );
+
+    test('resolver-backed methods get info, subscriptions do not', () {
+      final p = _parse();
+      final author = withInfo(p).serializeService(p.services.values.firstWhere((s) => s.token == 'AuthorService'));
+      expect(author, contains('info: GraphQLResolveInfo'));
+      final book = withInfo(p).serializeService(p.services.values.firstWhere((s) => s.token == 'BookService'));
+      expect(book, contains('def book_added(self) -> AsyncIterator[Book]:'));
+    });
+
+    test('guards get info too', () {
+      final p = _parse();
+      final guard = withInfo(p).serializeGuard(p.services.values.firstWhere((s) => s.token == 'BookService'))!;
+      expect(guard, contains('info: GraphQLResolveInfo'));
+    });
+  });
 }

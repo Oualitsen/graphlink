@@ -401,8 +401,8 @@ don't confuse them:
 - **Python server (FastAPI + Ariadne)**: `servers/python_fastapi_server` (port 9975, own `.venv`; `graphql-core` is pinned below 3.2.14 because Ariadne's enum
   patch breaks on it). Services return pydantic models and the resolvers hand `to_json()` dicts to Ariadne, with `__glSource__` carrying the real instance to
   schema mappings, like Express. Run with `make -C server_integration_tests ci-http-python-fastapi` (faults, REST and GraphQL suites) and
-  `make -C server_integration_tests ci-python-fastapi-client CLIENT=dart`. GraphQL multipart uploads are not served yet (generation fails with a message);
-  `@glRest*` uploads are.
+  `make -C server_integration_tests ci-python-fastapi-client CLIENT=dart`. GraphQL multipart uploads and `@glRest*` uploads are served; the upload suite runs the Dart harness against
+  `servers/python_upload_server` (port 9974) with `make -C server_integration_tests ci-upload-python`.
 - **Java 8**: `make -C server_integration_tests java8-check` compiles the generated Java clients with `javac --release 8` (`scripts/java8_check.sh`;
   the `java11` transports excepted). Fails today, see `server_integration_tests/reports/JAVA8_COMPAT.md`.
 
