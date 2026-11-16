@@ -2,10 +2,14 @@ TS_PORT              = 9997
 JAVA_PORT             = 9996
 KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
+PYTHON_FASTAPI_PORT   = 9975
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
 .PHONY: faults rest graphql http java8-check ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
+        ci-faults-python-fastapi ci-rest-python-fastapi ci-graphql-python-fastapi ci-http-python-fastapi \
+        python-fastapi-install python-fastapi-generate python-fastapi-start-server python-fastapi-stop-server \
+        python-fastapi-test-client python-fastapi ci-python-fastapi-client \
         ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend \
         ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend \
         setup-client setup-client-install setup-all-clients clean-all generate-all \
@@ -80,6 +84,39 @@ ci-typescript-client: typescript-install typescript-start-server
 	$(MAKE) setup-client-install CLIENT=$(CLIENT)
 	$(MAKE) typescript-test-client CLIENT=$(CLIENT) || ($(MAKE) typescript-stop-server && exit 1)
 	$(MAKE) typescript-stop-server
+
+# ---- Python FastAPI + Ariadne server (servers/python_fastapi_server) ----
+
+python-fastapi-install:
+	$(MAKE) -C servers/python_fastapi_server install
+
+python-fastapi-generate:
+	$(MAKE) -C servers/python_fastapi_server generate
+
+python-fastapi-start-server:
+	$(MAKE) -C servers/python_fastapi_server start-server
+
+python-fastapi-stop-server:
+	$(MAKE) -C servers/python_fastapi_server stop-server
+
+python-fastapi-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(PYTHON_FASTAPI_PORT)
+
+python-fastapi: python-fastapi-install python-fastapi-generate python-fastapi-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do \
+		$(MAKE) python-fastapi-stop-server python-fastapi-start-server || status=1; \
+		$(MAKE) python-fastapi-test-client CLIENT=$$c || status=1; \
+	done; \
+	$(MAKE) python-fastapi-stop-server; \
+	exit $$status
+
+# Single client x the FastAPI server, for CI matrix use. Assumes code has
+# already been generated (e.g. by a prior `make generate-all` job).
+ci-python-fastapi-client: python-fastapi-install python-fastapi-start-server
+	$(MAKE) setup-client-install CLIENT=$(CLIENT)
+	$(MAKE) python-fastapi-test-client CLIENT=$(CLIENT) || ($(MAKE) python-fastapi-stop-server && exit 1)
+	$(MAKE) python-fastapi-stop-server
 
 # ---- Upload suite (servers/typescript_upload_server + clients/dart_upload_client) ----
 # Orthogonal to the client x server matrix above: exercises file uploads with a
@@ -252,14 +289,15 @@ $(eval $(call fault_rule,java,java_server,java-build,$(JAVA_PORT)))
 $(eval $(call fault_rule,java-reactive,java_server_reactive,java-reactive-build,$(JAVA_PORT)))
 $(eval $(call fault_rule,kotlin-blocking,kotlin_server_blocking,kotlin-build,$(KOTLIN_BLOCKING_PORT)))
 $(eval $(call fault_rule,kotlin-suspend,kotlin_server_suspend,kotlin-build,$(KOTLIN_SUSPEND_PORT)))
+$(eval $(call fault_rule,python-fastapi,python_fastapi_server,python-fastapi-install,$(PYTHON_FASTAPI_PORT)))
 
-faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend
+faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend ci-faults-python-fastapi
 
-rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend
+rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend ci-rest-python-fastapi
 
-graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend
+graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend ci-graphql-python-fastapi
 
-http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend
+http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend ci-http-python-fastapi
 
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
 

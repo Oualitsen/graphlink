@@ -136,7 +136,8 @@ abstract class ServerLanguageConfig {
     if (json['spring'] != null) return SpringServerConfig.fromJson(json['spring'] as Map<String, dynamic>);
     if (json['kotlinSpring'] != null) return KotlinSpringServerConfig.fromJson(json['kotlinSpring'] as Map<String, dynamic>);
     if (json['expressApollo'] != null) return ExpressApolloServerConfig.fromJson(json['expressApollo'] as Map<String, dynamic>);
-    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo');
+    if (json['fastapiAriadne'] != null) return FastapiAriadneServerConfig.fromJson(json['fastapiAriadne'] as Map<String, dynamic>);
+    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo, fastapiAriadne');
   }
 }
 
@@ -259,6 +260,32 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
       graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
       generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
       useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
+      injectContext: (json['injectContext'] as bool?) ?? false,
+    );
+  }
+}
+
+class FastapiAriadneServerConfig extends ServerLanguageConfig {
+  final int port;
+  final String graphqlPath;
+  final bool generateEntryPoint;
+
+  /// When `true`, every service method receives the `context` parameter. When `false`, only methods whose field
+  /// carries `@glInjectContext` do.
+  final bool injectContext;
+
+  FastapiAriadneServerConfig({
+    this.port = 8000,
+    this.graphqlPath = '/graphql',
+    this.generateEntryPoint = true,
+    this.injectContext = false,
+  });
+
+  factory FastapiAriadneServerConfig.fromJson(Map<String, dynamic> json) {
+    return FastapiAriadneServerConfig(
+      port: (json['port'] as int?) ?? 8000,
+      graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
+      generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
       injectContext: (json['injectContext'] as bool?) ?? false,
     );
   }
