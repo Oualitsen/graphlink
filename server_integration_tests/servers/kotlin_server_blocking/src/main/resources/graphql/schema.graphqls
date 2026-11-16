@@ -13,7 +13,6 @@ schema {
 directive @glReturnsProjection on FIELD_DEFINITION
 directive @glValidate on FIELD_DEFINITION
 directive @glUpload on SCALAR
-directive @glIntercept(tag: String) on QUERY | MUTATION | SUBSCRIPTION | FIELD_DEFINITION | OBJECT
 input ReservedInput {
    class: String!
    return: Int
@@ -115,7 +114,7 @@ type SearchResult {
    id: ID!
    hits(limit: Int!): [Product!]!
 }
-type Query @glIntercept(tag: "auth") {
+type Query {
    catalog: Catalog!
    feed: Feed!
    store: Store!
@@ -145,7 +144,7 @@ type Query @glIntercept(tag: "auth") {
    listAuthors: [Author!]!
    listArticles: [Article!]!
    getArticleTypes: [ArticleType!]!
-   greetIntercepted(name: String!): Greeting! @glIntercept(tag: "auth")
+   greetIntercepted(name: String!): Greeting!
    greetPlain(name: String!): Greeting!
    listTeams: [Team!]!
    resolveConfig(input: ConfigInput!): Config!
@@ -259,7 +258,7 @@ type Subscription {
    articleCreated: Article!
    articleUpdated(id: ID!): Article!
    articleDeleted: ID!
-   greetingReceived: Greeting! @glIntercept(tag: "auth")
+   greetingReceived: Greeting!
 }
 type Greeting {
    id: ID!
@@ -268,7 +267,7 @@ type Greeting {
 type Team {
    id: ID!
    name: String!
-   members(role: String!): [Member!]!  @glIntercept(tag: "auth")
+   members(role: String!): [Member!]!
 }
 type Member {
    id: ID!

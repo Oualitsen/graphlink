@@ -20,7 +20,9 @@ void main() {
 
   test('java', () {
     final u = JavaCodeGenUtils();
-    expect(u.constDecl('a', '1'), 'final var a = 1;');
+    expect(() => u.constDecl('a', '1'), throwsArgumentError);
+    expect(() => u.forEachLoop(variable: 'x', iterable: 'xs', statements: []), throwsArgumentError);
+    expect(u.forEachLoop(variable: 'x', iterable: 'xs', statements: ['f(x);'], type: 'String'), startsWith('for (String x : xs) '));
     expect(u.constDecl('a', 'new X()', type: 'X'), 'final X a = new X();');
   });
 

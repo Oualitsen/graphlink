@@ -143,7 +143,7 @@ class JavaClientAdaptersSerializer {
               condition: 'headers != null',
               ifBlockStatements: [
                 codeGenUtils.forEachLoop(
-                  variable: 'entry',
+                  variable: 'entry', type: 'Map.Entry<String, String>',
                   iterable: 'headers.entrySet()',
                   statements: ['builder.header(entry.getKey(), entry.getValue());'],
                 ),
@@ -237,7 +237,7 @@ class JavaClientAdaptersSerializer {
               condition: 'headers != null',
               ifBlockStatements: [
                 codeGenUtils.forEachLoop(
-                  variable: 'entry',
+                  variable: 'entry', type: 'Map.Entry<String, String>',
                   iterable: 'headers.entrySet()',
                   statements: ['builder.header(entry.getKey(), entry.getValue());'],
                 ),
@@ -502,7 +502,7 @@ class JavaClientAdaptersSerializer {
           condition: 'mpHeaders != null',
           ifBlockStatements: [
             codeGenUtils.forEachLoop(
-              variable: 'entry',
+              variable: 'entry', type: 'Map.Entry<String, String>',
               iterable: 'mpHeaders.entrySet()',
               statements: ['mpBuilder.header(entry.getKey(), entry.getValue());'],
             ),

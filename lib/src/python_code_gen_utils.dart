@@ -91,6 +91,7 @@ class PythonCodeGenUtils implements CodeGenUtilsBase {
     List<String>? statements,
     List<String> decorators = const [],
     bool async = false,
+    String? type,
   }) {
     final buffer = StringBuffer();
     for (final d in decorators) {
@@ -140,6 +141,7 @@ class PythonCodeGenUtils implements CodeGenUtilsBase {
     required String iterable,
     required List<String> statements,
     bool async = false,
+    String? type,
   }) =>
       '${async ? 'async ' : ''}for $variable in $iterable:\n${block(statements)}';
 

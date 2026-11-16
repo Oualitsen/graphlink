@@ -1,0 +1,497 @@
+{
+  "http": [
+    {
+      "name": "schema_query_root_fields",
+      "query": "{ __type(name: \"Query\") { fields { name args { name } } } }",
+      "expect": {"data": {"__type": {"fields": {"$set": [
+        {"name": "getAuthor", "args": [{"name": "id"}]},
+        {"name": "getArticle", "args": [{"name": "id"}]},
+        {"name": "restItemGraphql", "args": [{"name": "id"}]},
+        {"name": "listAuthors", "args": []},
+        {"name": "listArticles", "args": []},
+        {"name": "getArticleTypes", "args": []},
+        {"name": "resolveConfig", "args": [{"name": "input"}]},
+        {"name": "resolveRange", "args": [{"name": "input"}]},
+        {"name": "greet", "args": [{"name": "name"}, {"name": "times"}]},
+        {"name": "echoPriority", "args": [{"name": "level"}]},
+        {"name": "catalog", "args": []},
+        {"name": "feed", "args": []},
+        {"name": "store", "args": []},
+        {"name": "search", "args": [{"name": "fieldArgs"}]},
+        {"name": "greetIntercepted", "args": [{"name": "name"}]},
+        {"name": "greetPlain", "args": [{"name": "name"}]},
+        {"name": "listTeams", "args": []},
+        {"name": "reserved", "args": []},
+        {"name": "collide", "args": []},
+        {"name": "switch", "args": [{"name": "class"}, {"name": "return"}]},
+        {"name": "_status", "args": []},
+        {"name": "getProjectedArticle", "args": []},
+        {"name": "getArticleWithCount", "args": []},
+        {"name": "getArticleInfo", "args": []},
+        {"name": "getMessageReadList", "args": []},
+        {"name": "colors1", "args": []}, {"name": "colors2", "args": []}, {"name": "colors3", "args": []},
+        {"name": "boxes1", "args": []}, {"name": "boxes2", "args": []}, {"name": "boxes3", "args": []},
+        {"name": "shapes1", "args": []}, {"name": "shapes2", "args": []}, {"name": "shapes3", "args": []},
+        {"name": "media1", "args": []}, {"name": "media2", "args": []}, {"name": "media3", "args": []}
+      ]}}}}
+    },
+    {"name": "schema_mutation_root_fields", "query": "{ __type(name: \"Mutation\") { fields { name } } }",
+     "expect": {"data": {"__type": {"fields": {"$set": [
+       {"name": "createArticle"}, {"name": "updateArticle"}, {"name": "deleteArticle"}, {"name": "bulkCreate"},
+       {"name": "ackPriority"}, {"name": "sendGreeting"}, {"name": "echoReserved"}
+     ]}}}}},
+    {"name": "schema_subscription_root_fields", "query": "{ __type(name: \"Subscription\") { fields { name args { name } } } }",
+     "expect": {"data": {"__type": {"fields": {"$set": [
+       {"name": "articleCreated", "args": []}, {"name": "articleUpdated", "args": [{"name": "id"}]},
+       {"name": "articleDeleted", "args": []}, {"name": "greetingReceived", "args": []}
+     ]}}}}},
+    {
+      "name": "schema_type_fields_keep_wire_names",
+      "steps": [
+        {"query": "{ __type(name: \"Article\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "id"}, {"name": "title"}, {"name": "type"}, {"name": "authorId"}, {"name": "webSite"}, {"name": "author"}, {"name": "authorList"}, {"name": "published"}]}}}}},
+        {"query": "{ __type(name: \"Author\") { fields { name args { name } } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "id", "args": []}, {"name": "name", "args": []}, {"name": "articles", "args": []}, {"name": "latestArticles", "args": [{"name": "limit"}]}]}}}}},
+        {"query": "{ __type(name: \"ReservedFields\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "id"}, {"name": "class"}, {"name": "return"}, {"name": "new"}, {"name": "default"}, {"name": "is"}, {"name": "in"}, {"name": "with"}, {"name": "int"}, {"name": "synchronized"}, {"name": "native"}, {"name": "kind"}, {"name": "nested"}, {"name": "secret"}]}}}}},
+        {"query": "{ __type(name: \"Collide\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "id"}, {"name": "class"}, {"name": "class_"}]}}}}},
+        {"query": "{ __type(name: \"class\") { name kind } }", "expect": {"data": {"__type": {"name": "class", "kind": "OBJECT"}}}},
+        {"query": "{ __type(name: \"_Secret\") { name kind } }", "expect": {"data": {"__type": {"name": "_Secret", "kind": "OBJECT"}}}},
+        {"query": "{ __type(name: \"Keyword\") { enumValues { name } } }",
+         "expect": {"data": {"__type": {"enumValues": {"$set": [{"name": "new"}, {"name": "default"}, {"name": "class"}, {"name": "int"}, {"name": "synchronized"}]}}}}}
+      ]
+    },
+    {
+      "name": "schema_abstract_types",
+      "steps": [
+        {"query": "{ __type(name: \"Media\") { kind possibleTypes { name } } }",
+         "expect": {"data": {"__type": {"kind": "UNION", "possibleTypes": {"$set": [{"name": "Photo"}, {"name": "Video"}]}}}}},
+        {"query": "{ __type(name: \"Shape\") { kind possibleTypes { name } } }",
+         "expect": {"data": {"__type": {"kind": "INTERFACE", "possibleTypes": {"$set": [{"name": "Circle"}, {"name": "Square"}]}}}}}
+      ]
+    },
+    {
+      "name": "schema_mapped_types_exist",
+      "steps": [
+        {"query": "{ __type(name: \"ArticleWithCount\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "article"}, {"name": "count"}]}}}}},
+        {"query": "{ __type(name: \"ArticleInfo\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "id"}, {"name": "title"}, {"name": "type"}, {"name": "webSite"}, {"name": "published"}]}}}}},
+        {"query": "{ __type(name: \"MessageRead\") { fields { name } } }",
+         "expect": {"data": {"__type": {"fields": {"$set": [{"name": "message"}, {"name": "read"}]}}}}},
+        {"query": "{ __type(name: \"CatalogFieldArgs\") { kind fields { name } } }",
+         "expect": {"data": {"__type": {"kind": "OBJECT", "fields": {"$set": [{"name": "id"}, {"name": "label"}]}}}}}
+      ]
+    },
+    {
+      "name": "schema_no_client_only_types",
+      "query": "{ __schema { types { name } } }",
+      "expect": {"data": {"__schema": {"types": {"$absent": [
+        {"name": "CatalogFieldArgs1"}, {"name": "GetAuthorFieldArgs"}, {"name": "FeedFieldArgs"}, {"name": "StoreFieldArgs"},
+        {"name": "SearchFieldArgs"}, {"name": "GetAuthorResponse"}, {"name": "GraphLinkError"}
+      ]}}}}
+    },
+    {
+      "name": "schema_input_defaults",
+      "steps": [
+        {"query": "{ __type(name: \"ConfigInput\") { inputFields { name defaultValue } } }",
+         "expect": {"data": {"__type": {"inputFields": {"$set": [
+           {"name": "pageSize", "defaultValue": "25"},
+           {"name": "ratio", "defaultValue": "1.5"},
+           {"name": "sort", "defaultValue": "\"asc\""},
+           {"name": "verbose", "defaultValue": "false"},
+           {"name": "priority", "defaultValue": "MEDIUM"},
+           {"name": "tags", "defaultValue": {"$squash": "[\"default\",\"seed\"]"}},
+           {"name": "empties", "defaultValue": "[]"},
+           {"name": "note", "defaultValue": null}
+         ]}}}}},
+        {"query": "{ __type(name: \"RangeInput\") { inputFields { name defaultValue } } }",
+         "expect": {"data": {"__type": {"inputFields": {"$set": [{"name": "min", "defaultValue": "0"}, {"name": "max", "defaultValue": "100"}]}}}}},
+        {"query": "{ __type(name: \"Query\") { fields { name args { name defaultValue } } } }",
+         "expect": {"data": {"__type": {"fields": {"$contains": [
+           {"name": "resolveRange", "args": [{"name": "input", "defaultValue": {"$oneOf": [{"$squash": "{min:5}"}, {"$squash": "{min:5,max:100}"}]}}]},
+           {"name": "greet", "args": [{"name": "name", "defaultValue": "\"world\""}, {"name": "times", "defaultValue": "1"}]},
+           {"name": "echoPriority", "args": [{"name": "level", "defaultValue": "HIGH"}]}
+         ]}}}}}
+      ]
+    },
+    {
+      "name": "schema_no_generator_directives",
+      "query": "{ __schema { directives { name } } }",
+      "expect": {"data": {"__schema": {"directives": {"$absent": [
+        {"name": "glSkipOnServer"}, {"name": "glServiceName"}, {"name": "glIntercept"}, {"name": "glRest"}, {"name": "glRestPrefix"}
+      ]}}}}
+    },
+
+    {"name": "core_get_article_types", "query": "{ getArticleTypes }",
+     "expect": {"data": {"getArticleTypes": ["NEWS", "BLOG", "REVIEW"]}}},
+    {"name": "core_get_author_unknown_is_null", "query": "{ getAuthor(id: \"missing\") { id } }",
+     "expect": {"data": {"getAuthor": null}}},
+    {"name": "core_id_argument_accepts_int_literal", "query": "{ getAuthor(id: 1) { id name } }",
+     "expect": {"data": {"getAuthor": {"id": "1", "name": "Ramdane"}}}},
+    {"name": "core_id_variable_accepts_int", "query": "query ($id: ID!) { getAuthor(id: $id) { id } }", "variables": {"id": 2},
+     "expect": {"data": {"getAuthor": {"id": "2"}}}},
+    {"name": "core_get_article_unknown_errors", "query": "{ getArticle(id: \"missing\") { id } }",
+     "expect": {"errors": true, "data": null, "errorPath": ["getArticle"]}},
+    {
+      "name": "core_get_article_every_field",
+      "query": "{ getArticle(id: \"1\") { __typename id title type authorId published webSite { id name } author { id name } authorList { id } } }",
+      "expect": {"data": {"getArticle": {
+        "__typename": "Article", "id": "1", "title": "GraphLink Basics", "type": "NEWS", "authorId": "1", "published": true,
+        "webSite": {"id": "1", "name": "graphlink.dev"}, "author": {"id": "1", "name": "Ramdane"}, "authorList": [{"id": "1"}]
+      }}}
+    },
+    {
+      "name": "core_batch_mapping_groups_per_parent",
+      "query": "{ listAuthors { id articles { id } } }",
+      "expect": {"data": {"listAuthors": [
+        {"id": "1", "articles": {"$all": [{"$contains": [{"id": "1"}, {"id": "2"}]}, {"$absent": [{"id": "3"}]}]}},
+        {"id": "2", "articles": {"$all": [{"$contains": [{"id": "3"}]}, {"$absent": [{"id": "1"}, {"id": "2"}]}]}}
+      ]}}
+    },
+    {
+      "name": "core_batch_mapping_across_root_fields",
+      "query": "{ a: getAuthor(id: \"1\") { articles { id } } b: getAuthor(id: \"2\") { articles { id } } c: getAuthor(id: \"1\") { articles { title } } }",
+      "expect": {"data": {
+        "a": {"articles": {"$all": [{"$contains": [{"id": "1"}, {"id": "2"}]}, {"$absent": [{"id": "3"}]}]}},
+        "b": {"articles": {"$all": [{"$contains": [{"id": "3"}]}, {"$absent": [{"id": "1"}, {"id": "2"}]}]}},
+        "c": {"articles": {"$contains": [{"title": "GraphLink Basics"}, {"title": "Advanced GraphLink"}]}}
+      }}
+    },
+    {
+      "name": "core_mapping_argument_per_alias",
+      "query": "{ getAuthor(id: \"1\") { zero: latestArticles(limit: 0) { id } one: latestArticles(limit: 1) { id } two: latestArticles(limit: 2) { id } } }",
+      "expect": {"data": {"getAuthor": {"zero": [], "one": [{"id": "1"}], "two": [{"id": "1"}, {"id": "2"}]}}}
+    },
+    {
+      "name": "core_mapping_argument_from_variable",
+      "query": "query ($n: Int!) { listAuthors { id latestArticles(limit: $n) { id } } }", "variables": {"n": 1},
+      "expect": {"data": {"listAuthors": [{"id": "1", "latestArticles": [{"id": "1"}]}, {"id": "2", "latestArticles": [{"id": "3"}]}]}}
+    },
+    {
+      "name": "core_non_batch_mapping_per_item",
+      "query": "{ listArticles { id author { id } } }",
+      "expect": {"data": {"listArticles": {"$contains": [
+        {"id": "1", "author": {"id": "1"}}, {"id": "2", "author": {"id": "1"}}, {"id": "3", "author": {"id": "2"}}
+      ]}}}
+    },
+    {
+      "name": "core_deep_cycle_through_mappings",
+      "query": "{ getArticle(id: \"3\") { author { articles { author { name latestArticles(limit: 5) { title } } } } } }",
+      "expect": {"data": {"getArticle": {"author": {"articles": {"$contains": [{"author": {"name": "Alice", "latestArticles": {"$contains": [{"title": "Alice's First Post"}]}}}]}}}}}
+    },
+    {"name": "core_variable_default_value", "query": "query ($id: ID! = \"2\") { getAuthor(id: $id) { name } }",
+     "expect": {"data": {"getAuthor": {"name": "Alice"}}}},
+    {
+      "name": "core_include_and_skip",
+      "query": "query ($yes: Boolean!, $no: Boolean!) { getAuthor(id: \"1\") { id name @include(if: $no) articles @skip(if: $yes) { id } latestArticles(limit: 1) @include(if: $yes) { id } } }",
+      "variables": {"yes": true, "no": false},
+      "expect": {"data": {"getAuthor": {"id": "1", "latestArticles": [{"id": "1"}]}}}
+    },
+    {"name": "core_operation_name_selects_operation", "query": "query A { _status } query B { getArticleTypes }", "operationName": "B",
+     "expect": {"data": {"getArticleTypes": ["NEWS", "BLOG", "REVIEW"]}}},
+    {"name": "core_named_fragment", "query": "fragment F on Author { id name } { listAuthors { ...F } }",
+     "expect": {"data": {"listAuthors": [{"id": "1", "name": "Ramdane"}, {"id": "2", "name": "Alice"}]}}},
+    {"name": "core_get_request_is_answered_or_refused", "method": "GET", "query": "{ _status }", "status": [200, 400, 405], "statusOnly": [400, 405],
+     "expect": {"data": {"_status": "ok"}}},
+    {
+      "name": "core_unicode_and_escapes_round_trip",
+      "query": "query ($n: String!) { greetPlain(name: $n) { message } }",
+      "variables": {"n": "héllo ✓ 😀 \"q\" \\ line\nbreak\ttab"},
+      "expect": {"data": {"greetPlain": {"message": "Hello, héllo ✓ 😀 \"q\" \\ line\nbreak\ttab"}}}
+    },
+    {"name": "core_subscription_over_http_rejected", "query": "subscription { articleDeleted }", "status": [200, 400],
+     "expect": {"errors": true}},
+
+    {"name": "mapping_projected_article", "query": "{ getProjectedArticle { id title } }",
+     "expect": {"data": {"getProjectedArticle": {"id": "1", "title": "GraphLink Basics"}}}},
+    {
+      "name": "mapping_map_to_type",
+      "query": "{ getArticleInfo { __typename id title type published webSite { name } } }",
+      "expect": {"data": {"getArticleInfo": {"__typename": "ArticleInfo", "id": "1", "title": "GraphLink Basics", "type": "NEWS", "published": true, "webSite": {"name": "graphlink.dev"}}}}
+    },
+    {
+      "name": "mapping_map_to_wrapper_with_mapped_field",
+      "query": "{ getArticleWithCount { __typename count article { id title author { name } } } }",
+      "expect": {"data": {"getArticleWithCount": {"__typename": "ArticleWithCount", "count": 1, "article": {"id": "1", "title": "GraphLink Basics", "author": {"name": "Ramdane"}}}}}
+    },
+    {
+      "name": "mapping_map_to_batch_list",
+      "query": "{ getMessageReadList { read message { id content } } }",
+      "expect": {"data": {"getMessageReadList": [
+        {"read": true, "message": {"id": "m1", "content": "hello"}},
+        {"read": false, "message": {"id": "m2", "content": "world"}}
+      ]}}
+    },
+
+    {
+      "name": "nesting_every_depth_exact",
+      "query": "{ colors1 colors2 colors3 boxes1 { id label } boxes2 { id } boxes3 { id label } }",
+      "expect": {"data": {
+        "colors1": ["RED", "GREEN", "BLUE"],
+        "colors2": [["RED"], ["GREEN", "BLUE"]],
+        "colors3": [[["RED"]]],
+        "boxes1": [{"id": "b1", "label": "label-b1"}, {"id": "b2", "label": "label-b2"}],
+        "boxes2": [[{"id": "b1"}], [{"id": "b2"}]],
+        "boxes3": [[[{"id": "b1", "label": "label-b1"}]]]
+      }}
+    },
+    {
+      "name": "nesting_interface_lists_resolve_concrete_types",
+      "query": "{ shapes1 { __typename id kind ... on Circle { radius } ... on Square { side } } shapes2 { __typename id ... on Circle { radius } ... on Square { side } } shapes3 { __typename ... on Circle { radius } ... on Square { side } } }",
+      "expect": {"data": {
+        "shapes1": [{"__typename": "Circle", "id": "c1", "kind": "circle", "radius": 1}, {"__typename": "Square", "id": "s1", "kind": "square", "side": 2}],
+        "shapes2": [[{"__typename": "Circle", "id": "c1", "radius": 1}], [{"__typename": "Square", "id": "s1", "side": 2}]],
+        "shapes3": [[[{"__typename": "Circle", "radius": 1}, {"__typename": "Square", "side": 2}]]]
+      }}
+    },
+    {
+      "name": "nesting_union_lists_resolve_concrete_types",
+      "query": "{ media1 { __typename ... on Photo { id url width } ... on Video { id url durationSec } } media2 { __typename ... on Photo { width } ... on Video { durationSec } } media3 { __typename ... on Photo { id } ... on Video { id } } }",
+      "expect": {"data": {
+        "media1": [{"__typename": "Photo", "id": "p1", "url": "https://x/p1.jpg", "width": 640}, {"__typename": "Video", "id": "v1", "url": "https://x/v1.mp4", "durationSec": 30}],
+        "media2": [[{"__typename": "Photo", "width": 640}], [{"__typename": "Video", "durationSec": 30}]],
+        "media3": [[[{"__typename": "Photo", "id": "p1"}, {"__typename": "Video", "id": "v1"}]]]
+      }}
+    },
+    {"name": "nesting_union_has_no_direct_fields", "query": "{ media1 { id } }", "status": [200, 400],
+     "expect": {"errors": true}},
+
+    {
+      "name": "defaults_server_applies_input_field_defaults",
+      "query": "{ resolveConfig(input: {}) { pageSize ratio sort verbose priority tags empties note } }",
+      "expect": {"data": {"resolveConfig": {"pageSize": 25, "ratio": 1.5, "sort": "asc", "verbose": false, "priority": "MEDIUM", "tags": ["default", "seed"], "empties": [], "note": null}}}
+    },
+    {
+      "name": "defaults_explicit_values_override",
+      "query": "{ resolveConfig(input: {pageSize: 5, ratio: 2, verbose: true, priority: LOW, tags: [], note: \"x\"}) { pageSize ratio sort verbose priority tags empties note } }",
+      "expect": {"data": {"resolveConfig": {"pageSize": 5, "ratio": 2, "sort": "asc", "verbose": true, "priority": "LOW", "tags": [], "empties": [], "note": "x"}}}
+    },
+    {
+      "name": "defaults_applied_to_variable_input",
+      "query": "query ($c: ConfigInput!) { resolveConfig(input: $c) { pageSize sort priority tags } }",
+      "variables": {"c": {"sort": "desc"}},
+      "expect": {"data": {"resolveConfig": {"pageSize": 25, "sort": "desc", "priority": "MEDIUM", "tags": ["default", "seed"]}}}
+    },
+    {"name": "defaults_single_value_coerced_to_list", "query": "{ resolveConfig(input: {tags: \"one\"}) { tags } }",
+     "expect": {"data": {"resolveConfig": {"tags": ["one"]}}}},
+    {"name": "defaults_large_int_and_float", "query": "{ resolveConfig(input: {pageSize: 2147483647, ratio: -0.000001}) { pageSize ratio } }",
+     "expect": {"data": {"resolveConfig": {"pageSize": 2147483647, "ratio": -0.000001}}}},
+    {"name": "defaults_object_argument_default", "query": "{ resolveRange { min max } }",
+     "expect": {"data": {"resolveRange": {"min": 5, "max": 100}}}},
+    {"name": "defaults_empty_object_uses_field_defaults", "query": "{ resolveRange(input: {}) { min max } }",
+     "expect": {"data": {"resolveRange": {"min": 0, "max": 100}}}},
+    {"name": "defaults_partial_object", "query": "{ resolveRange(input: {max: 7}) { min max } }",
+     "expect": {"data": {"resolveRange": {"min": 0, "max": 7}}}},
+    {"name": "defaults_explicit_null_object_argument", "query": "{ resolveRange(input: null) { min max } }",
+     "expect": {"data": {"resolveRange": {"min": 0, "max": 100}}}},
+    {"name": "defaults_scalar_arguments", "query": "{ a: greet b: greet(times: 3) c: greet(name: \"Bob\", times: 2) }",
+     "expect": {"data": {"a": "Hi world!", "b": "Hi world!Hi world!Hi world!", "c": "Hi Bob!Hi Bob!"}}},
+    {"name": "defaults_explicit_null_is_not_the_default", "query": "{ greet(name: null) }",
+     "expect": {"data": {"greet": "Hi null!"}}},
+    {"name": "defaults_unset_variable_falls_back_to_argument_default", "query": "query ($n: String) { greet(name: $n) }",
+     "expect": {"data": {"greet": "Hi world!"}}},
+    {"name": "defaults_enum_argument", "query": "{ a: echoPriority b: echoPriority(level: LOW) }",
+     "expect": {"data": {"a": "HIGH", "b": "LOW"}}},
+    {"name": "defaults_enum_mutation_argument", "query": "mutation ($l: Priority!) { ackPriority(level: $l) }", "variables": {"l": "MEDIUM"},
+     "expect": {"data": {"ackPriority": "OK"}}},
+
+    {"name": "hoist_required_args", "query": "{ catalog { id products(category: \"c\", limit: 2, offset: 1) { id name } } }",
+     "expect": {"data": {"catalog": {"id": "cat1", "products": [{"id": "c-1", "name": "c-1"}, {"id": "c-2", "name": "c-2"}]}}}},
+    {"name": "hoist_optional_arg_omitted", "query": "{ catalog { products(category: \"c\", limit: 1) { id } } }",
+     "expect": {"data": {"catalog": {"products": [{"id": "c-0"}]}}}},
+    {"name": "hoist_defaulted_args_omitted", "query": "{ feed { id items { id } } }",
+     "expect": {"data": {"feed": {"id": "feed1", "items": [{"id": "item-0"}, {"id": "item-1"}, {"id": "item-2"}, {"id": "item-3"}, {"id": "item-4"}, {"id": "item-5"}, {"id": "item-6"}, {"id": "item-7"}, {"id": "item-8"}, {"id": "item-9"}]}}}},
+    {"name": "hoist_defaulted_args_given", "query": "{ feed { items(limit: 2, sort: \"z\") { id } } }",
+     "expect": {"data": {"feed": {"items": [{"id": "z-0"}, {"id": "z-1"}]}}}},
+    {"name": "hoist_nested_depths", "query": "{ store { id shelves(floor: 2) { id products(limit: 1) { id } } } }",
+     "expect": {"data": {"store": {"id": "store1", "shelves": [{"id": "shelf-0", "products": [{"id": "shelf-0-0"}]}, {"id": "shelf-1", "products": [{"id": "shelf-1-0"}]}]}}}},
+    {"name": "hoist_argument_named_field_args", "query": "{ search(fieldArgs: \"q\") { id hits(limit: 2) { id } } }",
+     "expect": {"data": {"search": {"id": "q", "hits": [{"id": "hit-0"}, {"id": "hit-1"}]}}}},
+
+    {"name": "intercept_root_operation", "query": "{ greetIntercepted(name: \"a\") { id message } }",
+     "expect": {"data": {"greetIntercepted": {"id": "1", "message": "Hello, a(runBefore)"}}}},
+    {"name": "intercept_is_opt_in", "query": "{ greetPlain(name: \"a\") { message } }",
+     "expect": {"data": {"greetPlain": {"message": "Hello, a"}}}},
+    {"name": "intercept_and_plain_in_one_request", "query": "{ p1: greetPlain(name: \"y\") { message } i: greetIntercepted(name: \"x\") { message } p2: greetPlain(name: \"z\") { message } }",
+     "expect": {"data": {"p1": {"message": "Hello, y"}, "i": {"message": "Hello, x(runBefore)"}, "p2": {"message": "Hello, z"}}}},
+    {"name": "intercept_mapping_allowed", "query": "{ listTeams { id name members(role: \"auth\") { id name } } }",
+     "expect": {"data": {"listTeams": [{"id": "1", "name": "Core", "members": [{"id": "1", "name": "Ada"}, {"id": "2", "name": "Grace"}]}]}}},
+    {"name": "intercept_mapping_denied", "query": "{ listTeams { members(role: \"guest\") { id } } }",
+     "expect": {"errors": true, "data": null, "errorPath": ["listTeams", 0, "members"]}},
+    {"name": "intercept_denied_does_not_poison_next_request", "query": "{ listTeams { members(role: \"auth\") { id } } }",
+     "expect": {"data": {"listTeams": [{"members": [{"id": "1"}, {"id": "2"}]}]}}},
+
+    {
+      "name": "keywords_reserved_fields",
+      "query": "{ reserved { __typename id class return new default is in with int synchronized native kind nested { __typename id value } secret { __typename id token } } }",
+      "expect": {"data": {"reserved": {"__typename": "ReservedFields", "id": "r1", "class": "cls", "return": 42, "new": true, "default": "def", "is": "yes", "in": "inside", "with": "w", "int": 7, "synchronized": false, "native": "n", "kind": "class", "nested": {"__typename": "class", "id": "c1", "value": "v"}, "secret": {"__typename": "_Secret", "id": "s1", "token": "tok"}}}}
+    },
+    {"name": "keywords_colliding_fields_stay_separate", "query": "{ collide { id class class_ } }",
+     "expect": {"data": {"collide": {"id": "1", "class": "A", "class_": "B"}}}},
+    {"name": "keywords_reserved_operation_and_arguments", "query": "{ a: switch(class: \"x\", return: 5) { class return } b: switch(class: \"y\") { class return } }",
+     "expect": {"data": {"a": {"class": "x", "return": 5}, "b": {"class": "y", "return": 0}}}},
+    {"name": "keywords_reserved_arguments_from_variables", "query": "query ($class: String!, $return: Int) { switch(class: $class, return: $return) { class return } }", "variables": {"class": "v", "return": 9},
+     "expect": {"data": {"switch": {"class": "v", "return": 9}}}},
+    {"name": "keywords_underscore_operation", "query": "{ _status }",
+     "expect": {"data": {"_status": "ok"}}},
+    {"name": "keywords_reserved_input_full", "query": "mutation { echoReserved(input: {class: \"c\", return: 3, default: \"d\", is: true, synchronized: 1}) { class return default } }",
+     "expect": {"data": {"echoReserved": {"class": "c", "return": 3, "default": "d"}}}},
+    {"name": "keywords_reserved_input_minimal", "query": "mutation { echoReserved(input: {class: \"c\"}) { class return default } }",
+     "expect": {"data": {"echoReserved": {"class": "c", "return": -1, "default": "none"}}}},
+    {"name": "keywords_reserved_input_from_variable", "query": "mutation ($i: ReservedInput!) { echoReserved(input: $i) { class return default } }", "variables": {"i": {"class": "k", "return": 4, "default": "dv"}},
+     "expect": {"data": {"echoReserved": {"class": "k", "return": 4, "default": "dv"}}}},
+
+    {
+      "name": "mutation_create_article",
+      "query": "mutation { createArticle(input: {title: \"T1\", authorId: \"2\"}) { id title authorId published type webSite { id } author { id name } authorList { id } } }",
+      "expect": {"data": {"createArticle": {"id": {"$any": true}, "title": "T1", "authorId": "2", "published": false, "type": null, "webSite": null, "author": {"id": "2", "name": "Alice"}, "authorList": [{"id": "2"}]}}}
+    },
+    {"name": "mutation_create_with_reserved_input_field", "query": "mutation { createArticle(input: {title: \"T2\", authorId: \"1\", class: \"k\"}) { title } }",
+     "expect": {"data": {"createArticle": {"title": "T2"}}}},
+    {
+      "name": "mutation_aliases_and_double_delete",
+      "steps": [
+        {"query": "mutation { a: createArticle(input: {title: \"S1\", authorId: \"1\"}) { id } b: updateArticle(input: {id: \"3\", title: \"Alice's First Post\"}) { title } }",
+         "expect": {"data": {"a": {"id": {"$any": true}}, "b": {"title": "Alice's First Post"}}}, "capture": {"a": "a.id"}},
+        {"query": "mutation ($id: ID!) { d: deleteArticle(id: $id) again: deleteArticle(id: $id) }", "variables": {"id": "{{a}}"},
+         "expect": {"data": {"d": true, "again": false}}}
+      ]
+    },
+    {
+      "name": "mutation_update_keeps_other_fields",
+      "query": "mutation { updateArticle(input: {id: \"3\", title: \"Alice's First Post\"}) { id title authorId type published webSite { id } } }",
+      "expect": {"data": {"updateArticle": {"id": "3", "title": "Alice's First Post", "authorId": "2", "type": "REVIEW", "published": true, "webSite": {"id": "3"}}}}
+    },
+    {"name": "mutation_update_without_title_keeps_title", "query": "mutation { updateArticle(input: {id: \"1\"}) { title } }",
+     "expect": {"data": {"updateArticle": {"title": "GraphLink Basics"}}}},
+    {"name": "mutation_update_unknown_errors", "query": "mutation { updateArticle(input: {id: \"missing\", title: \"x\"}) { id } }",
+     "expect": {"errors": true, "data": null, "errorPath": ["updateArticle"]}},
+    {
+      "name": "mutation_create_then_delete",
+      "steps": [
+        {"query": "mutation { createArticle(input: {title: \"D\", authorId: \"1\"}) { id } }", "capture": {"id": "createArticle.id"},
+         "expect": {"data": {"createArticle": {"id": {"$any": true}}}}},
+        {"query": "query ($id: ID!) { getArticle(id: $id) { id title } }", "variables": {"id": "{{id}}"},
+         "expect": {"data": {"getArticle": {"id": "{{id}}", "title": "D"}}}},
+        {"query": "mutation ($id: ID!) { deleteArticle(id: $id) }", "variables": {"id": "{{id}}"},
+         "expect": {"data": {"deleteArticle": true}}},
+        {"query": "mutation ($id: ID!) { deleteArticle(id: $id) }", "variables": {"id": "{{id}}"},
+         "expect": {"data": {"deleteArticle": false}}},
+        {"query": "query ($id: ID!) { getArticle(id: $id) { id } }", "variables": {"id": "{{id}}"},
+         "expect": {"errors": true, "data": null}}
+      ]
+    },
+    {
+      "name": "mutation_mapping_error_on_created_article",
+      "steps": [
+        {"query": "mutation { createArticle(input: {title: \"orphan\", authorId: \"999\"}) { id } }", "capture": {"id": "createArticle.id"},
+         "expect": {"data": {"createArticle": {"id": {"$any": true}}}}},
+        {"query": "query ($id: ID!) { getArticle(id: $id) { id author { id } } }", "variables": {"id": "{{id}}"},
+         "expect": {"errors": true, "data": null, "errorPath": ["getArticle", "author"]}},
+        {"query": "query ($id: ID!) { getArticle(id: $id) { id authorList { id } } }", "variables": {"id": "{{id}}"},
+         "expect": {"data": {"getArticle": {"id": "{{id}}", "authorList": []}}}},
+        {"query": "mutation ($id: ID!) { deleteArticle(id: $id) }", "variables": {"id": "{{id}}"},
+         "expect": {"data": {"deleteArticle": true}}}
+      ]
+    },
+    {"name": "bulk_nested_list_input", "query": "mutation { bulkCreate(matrix: [[{title: \"a\", authorId: \"1\"}, {title: \"b\", authorId: \"1\"}], [{title: \"c\", authorId: \"2\"}]]) }",
+     "expect": {"data": {"bulkCreate": 3}}},
+    {"name": "bulk_null_inner_list", "query": "mutation { bulkCreate(matrix: [[{title: \"a\", authorId: \"1\"}], null, []]) }",
+     "expect": {"data": {"bulkCreate": 1}}},
+    {"name": "bulk_null_and_omitted_matrix", "query": "mutation { a: bulkCreate(matrix: null) b: bulkCreate }",
+     "expect": {"data": {"a": 0, "b": 0}}},
+    {"name": "bulk_single_object_coerced_to_nested_list", "query": "mutation { bulkCreate(matrix: {title: \"a\", authorId: \"1\"}) }",
+     "expect": {"data": {"bulkCreate": 1}}},
+    {"name": "bulk_nested_list_from_variable", "query": "mutation ($m: [[CreateArticleInput!]]) { bulkCreate(matrix: $m) }",
+     "variables": {"m": [[{"title": "a", "authorId": "1", "class": "x"}], [{"title": "b", "authorId": "2"}]]},
+     "expect": {"data": {"bulkCreate": 2}}},
+    {"name": "bulk_validate_guard_rejects", "query": "mutation { bulkCreate(matrix: [[{title: \"ok\", authorId: \"1\"}], [{title: \"invalid\", authorId: \"1\"}]]) }",
+     "expect": {"errors": true, "data": null, "errorPath": ["bulkCreate"]}},
+    {"name": "bulk_null_inside_non_null_inner_list_rejected", "query": "mutation { bulkCreate(matrix: [[null]]) }", "status": [200, 400],
+     "expect": {"errors": true}},
+    {"name": "mutation_send_greeting_not_intercepted", "query": "mutation { sendGreeting(name: \"m\") { message } }",
+     "expect": {"data": {"sendGreeting": {"message": "Hello, m"}}}}
+  ],
+  "ws": [
+    {
+      "name": "ws_finite_stream_completes",
+      "subscribe": [{"id": "d", "query": "subscription { articleDeleted }"}],
+      "expect": {"d": {"next": [{"articleDeleted": "deleted-1"}, {"articleDeleted": "deleted-2"}], "complete": true}}
+    },
+    {
+      "name": "ws_created_event_resolves_mappings",
+      "subscribe": [{"id": "c", "query": "subscription { articleCreated { id title authorId author { id name } authorList { id } } }"}],
+      "trigger": [{"query": "mutation { createArticle(input: {title: \"WS created\", authorId: \"2\"}) { id } }", "capture": {"id": "createArticle.id"},
+                   "expect": {"data": {"createArticle": {"id": {"$any": true}}}}}],
+      "expect": {"c": {"next": [{"articleCreated": {"id": "{{id}}", "title": "WS created", "authorId": "2", "author": {"id": "2", "name": "Alice"}, "authorList": [{"id": "2"}]}}], "complete": false}}
+    },
+    {
+      "name": "ws_argument_filters_events",
+      "setup": [
+        {"query": "mutation { a: createArticle(input: {title: \"A\", authorId: \"1\"}) { id } b: createArticle(input: {title: \"B\", authorId: \"1\"}) { id } }",
+         "capture": {"a": "a.id", "b": "b.id"}, "expect": {"data": {"a": {"id": {"$any": true}}, "b": {"id": {"$any": true}}}}}
+      ],
+      "subscribe": [{"id": "u", "query": "subscription ($id: ID!) { articleUpdated(id: $id) { id title } }", "variables": {"id": "{{b}}"}}],
+      "trigger": [
+        {"query": "mutation ($id: ID!) { updateArticle(input: {id: $id, title: \"A2\"}) { id } }", "variables": {"id": "{{a}}"}, "expect": {"data": {"updateArticle": {"id": "{{a}}"}}}},
+        {"query": "mutation ($id: ID!) { updateArticle(input: {id: $id, title: \"B2\"}) { id } }", "variables": {"id": "{{b}}"}, "expect": {"data": {"updateArticle": {"id": "{{b}}"}}}}
+      ],
+      "expect": {"u": {"next": [{"articleUpdated": {"id": "{{b}}", "title": "B2"}}]}}
+    },
+    {
+      "name": "ws_two_subscriptions_on_one_socket",
+      "subscribe": [
+        {"id": "c", "query": "subscription { articleCreated { title } }"},
+        {"id": "g", "query": "subscription { greetingReceived { message } }"}
+      ],
+      "trigger": [
+        {"query": "mutation { sendGreeting(name: \"ws\") { id } }", "expect": {"data": {"sendGreeting": {"id": "1"}}}},
+        {"query": "mutation { createArticle(input: {title: \"multi\", authorId: \"1\"}) { id } }", "expect": {"data": {"createArticle": {"id": {"$any": true}}}}}
+      ],
+      "expect": {
+        "c": {"next": [{"articleCreated": {"title": "multi"}}]},
+        "g": {"next": [{"greetingReceived": {"message": "Hello, ws(runBefore)"}}]}
+      }
+    },
+    {
+      "name": "ws_complete_stops_only_that_subscription",
+      "subscribe": [
+        {"id": "stopped", "query": "subscription { articleCreated { title } }"},
+        {"id": "live", "query": "subscription { articleCreated { title } }"}
+      ],
+      "stopBeforeTrigger": ["stopped"],
+      "trigger": [{"query": "mutation { createArticle(input: {title: \"after stop\", authorId: \"1\"}) { id } }", "expect": {"data": {"createArticle": {"id": {"$any": true}}}}}],
+      "quiet": 1.5,
+      "expect": {"stopped": {"next": []}, "live": {"next": [{"articleCreated": {"title": "after stop"}}]}}
+    },
+    {
+      "name": "ws_many_subscribers_each_get_the_event",
+      "subscribe": [
+        {"id": "s1", "query": "subscription { greetingReceived { message } }"},
+        {"id": "s2", "query": "subscription { greetingReceived { message } }"},
+        {"id": "s3", "query": "subscription { greetingReceived { id } }"}
+      ],
+      "trigger": [
+        {"query": "mutation { sendGreeting(name: \"one\") { id } }", "expect": {"data": {"sendGreeting": {"id": "1"}}}},
+        {"query": "mutation { sendGreeting(name: \"two\") { id } }", "expect": {"data": {"sendGreeting": {"id": "1"}}}}
+      ],
+      "expect": {
+        "s1": {"next": [{"greetingReceived": {"message": "Hello, one(runBefore)"}}, {"greetingReceived": {"message": "Hello, two(runBefore)"}}]},
+        "s2": {"next": [{"greetingReceived": {"message": "Hello, one(runBefore)"}}, {"greetingReceived": {"message": "Hello, two(runBefore)"}}]},
+        "s3": {"next": [{"greetingReceived": {"id": "1"}}, {"greetingReceived": {"id": "1"}}]}
+      }
+    },
+    {
+      "name": "ws_query_operation_over_socket",
+      "subscribe": [{"id": "q", "query": "{ getAuthor(id: \"2\") { name } }"}],
+      "expect": {"q": {"next": [{"getAuthor": {"name": "Alice"}}], "complete": true}}
+    },
+    {
+      "name": "ws_mutation_operation_over_socket",
+      "subscribe": [{"id": "m", "query": "mutation { ackPriority(level: LOW) }"}],
+      "expect": {"m": {"next": [{"ackPriority": "OK"}], "complete": true}}
+    }
+  ]
+}

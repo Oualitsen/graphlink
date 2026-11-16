@@ -185,7 +185,13 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
   }
 
   @override
-  String constDecl(String name, String value, {String? type}) => 'final ${type ?? 'var'} $name = $value;';
+  String constDecl(String name, String value, {String? type}) =>
+      'final ${_requiredType(type, "constDecl")} $name = $value;';
+
+  static String _requiredType(String? type, String builder) {
+    if (type == null) throw ArgumentError("JavaCodeGenUtils.$builder needs a type: `var` is not Java 8");
+    return type;
+  }
 
   @override
   String callExpression(String name, List<String> args) {
@@ -220,9 +226,10 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     required String variable,
     required String iterable,
     required List<String> statements,
+    String? type,
   }) {
     var buffer = StringBuffer();
-    buffer.write("for (var $variable : $iterable) ");
+    buffer.write("for (${_requiredType(type, "forEachLoop")} $variable : $iterable) ");
     buffer.write(block(statements));
     return buffer.toString();
   }

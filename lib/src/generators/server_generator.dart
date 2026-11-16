@@ -13,9 +13,11 @@ import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/spring_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/java/spring_subscription_transport_config.dart';
 import 'package:graphlink/src/serializers/java/spring_rest_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_rest_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_subscription_transport_config.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
 
@@ -230,6 +232,17 @@ Future<Set<String>> generateServerClasses(
     ));
   }
 
+  if (springConfig.generateControllers && !grammar.restOnly && springSerializer.hasSubscriptions) {
+    futures.add(writeToFile(
+      data: springSubscriptionTransportConfigSource,
+      fileName: springSubscriptionTransportConfigFileName,
+      subdir: 'config',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   final schema = springSerializer.serializeTypeDefs();
   if (schema.isNotEmpty) {
     futures.add(saveSource(
@@ -406,6 +419,17 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     futures.add(writeToFile(
       data: kotlinMapTypeResolverConfigSource,
       fileName: kotlinMapTypeResolverConfigFileName,
+      subdir: 'config',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
+  if (springConfig.generateControllers && !grammar.restOnly && springSerializer.hasSubscriptions) {
+    futures.add(writeToFile(
+      data: kotlinSubscriptionTransportConfigSource,
+      fileName: kotlinSubscriptionTransportConfigFileName,
       subdir: 'config',
       imports: const [],
       destinationDir: destinationDir,

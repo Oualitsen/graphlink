@@ -5,7 +5,7 @@ KOTLIN_SUSPEND_PORT   = 9995
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
-.PHONY: faults rest http ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
+.PHONY: faults rest graphql http java8-check ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
         ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend \
         ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend \
         setup-client setup-client-install setup-all-clients clean-all generate-all \
@@ -221,7 +221,9 @@ ci-kotlin-suspend-client: kotlin-build kotlin-suspend-start-server
 # One fresh server per run. Known server defects live in server_faults/known_defects.json.
 
 # ---- Server REST suite (server_rest/): the REST operations of schema_rest/rest.gql over raw HTTP ----
-# ci-http-<server> runs both suites against one server start, which is what CI does.
+
+# ---- Server GraphQL suite (server_graphql/): exact data, schema, defaults and subscriptions over raw HTTP and WebSocket ----
+# ci-http-<server> runs the three suites against one server start, which is what CI does.
 
 define fault_rule
 ci-faults-$(1): $(3) $(1)-start-server
@@ -232,10 +234,15 @@ ci-rest-$(1): $(3) $(1)-start-server
 	python3 -I server_rest/run_rest.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
 	$(MAKE) $(1)-stop-server
 
+ci-graphql-$(1): $(3) $(1)-start-server
+	python3 -I server_graphql/run_graphql.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
+	$(MAKE) $(1)-stop-server
+
 ci-http-$(1): $(3) $(1)-start-server
 	status=0; \
 	python3 -I server_faults/run_faults.py $(2) $(4) || status=1; \
 	python3 -I server_rest/run_rest.py $(2) $(4) || status=1; \
+	python3 -I server_graphql/run_graphql.py $(2) $(4) || status=1; \
 	$(MAKE) $(1)-stop-server; \
 	exit $$$$status
 endef
@@ -250,6 +257,8 @@ faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-ko
 
 rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend
 
+graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend
+
 http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend
 
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
@@ -259,5 +268,12 @@ generate: typescript-generate
 start-server: typescript-start-server
 stop-server: typescript-stop-server
 test: typescript-test-client
+
+# ---- Java 8 source compatibility of the generated Java clients ----
+
+java8-check:
+	status=0; \
+	for c in java java_reactive; do $(MAKE) -C clients/$${c}_client java8-check || status=1; done; \
+	exit $$status
 
 ci: typescript ci-upload ci-http-typescript

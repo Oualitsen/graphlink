@@ -255,6 +255,10 @@ payload correct even when identifier normalization or keyword-safe renaming make
 TypeScript property name diverge from the GraphQL field name — you never need to think about it from
 inside your service implementation, which still returns plain typed objects.
 
+## CSRF prevention and GET
+
+Apollo's CSRF prevention stays on. A GET without a preflight header gets a 400, which matters to clients using `persistedQueriesUseGet`. See [Persisted queries](persisted-queries.md) for the two ways to handle it.
+
 ## File uploads
 
 When your schema uses the `Upload` scalar, generated resolvers accept the

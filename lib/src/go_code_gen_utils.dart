@@ -133,6 +133,7 @@ class GoCodeGenUtils implements CodeGenUtilsBase {
     required String variable,
     required String iterable,
     required List<String> statements,
+    String? type,
   }) {
     final binding = variable.contains(',') ? variable : '_, $variable';
     return braces('for $binding := range $iterable', statements);

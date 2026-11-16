@@ -390,6 +390,12 @@ don't confuse them:
   Run with `make -C server_integration_tests ci-rest-<typescript|java|java-reactive|kotlin-blocking|kotlin-suspend>`; `ci-http-<server>` runs the fault
   and the REST suite on one server start (what CI does). Covers paths, query, headers, JSON, forms, nested and JSON-text values, uploads, downloads,
   `responsePath`, `@glIntercept` / `@glInjectContext`. Design and limits: `server_integration_tests/REST_SERVER.md`.
+- **GraphQL data on the server**: `server_graphql/` (`cases.json`, runner `run_graphql.py`, `known_defects.json`) checks the exact `data` every server returns:
+  every root field, the emitted schema (introspection), server-side defaults, batch mappings with several parents, mapTo types, null propagation and
+  subscriptions over raw WebSocket. Part of `ci-http-<server>`; alone with `make -C server_integration_tests ci-graphql-<server>`. Open bugs:
+  `server_integration_tests/reports/SERVER_GRAPHQL.md`.
+- **Java 8**: `make -C server_integration_tests java8-check` compiles the generated Java clients with `javac --release 8` (`scripts/java8_check.sh`;
+  the `java11` transports excepted). Fails today, see `server_integration_tests/reports/JAVA8_COMPAT.md`.
 
 ```bash
 cd integration_tests && make all-real                              # generated clients vs hand-written Spring server

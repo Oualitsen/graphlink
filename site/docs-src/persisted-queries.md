@@ -100,6 +100,11 @@ The server must implement APQ: look up the hash, run the stored query, and regis
 
 Spring GraphQL only accepts POST on `/graphql`. To use `persistedQueriesUseGet` you also need a filter that turns `GET /graphql?...` into the POST the handler understands, and you should reject mutations over GET with 405. A reference implementation lives in `integration_tests/persisted_queries/real/spring_persisted_queries_server` in the GraphLink repository.
 
+**Express with Apollo Server** answers a GET that has no preflight header with 400, because of its CSRF prevention. The GET adapter then fails with that error instead of falling back to POST. GraphLink does not add the header for you: a custom header on a cross-origin GET makes browsers send an `OPTIONS` preflight, which defeats the point of a cacheable GET. If you use `persistedQueriesUseGet` against a GraphLink Express server, do one of:
+
+- send `apollo-require-preflight: true` from the client, through the headers provider;
+- or configure Apollo's `csrfPrevention` with `requestHeaders` listing a header your client already sends.
+
 !!! warning "Bound the server cache"
     Any anonymous client can register any query. An unbounded store is a memory-exhaustion risk, so use a size-limited (LRU) cache with a TTL, and consider registering only for authenticated or allow-listed callers. The test server in the repository uses an unbounded map and is not meant for production.
 

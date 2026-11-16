@@ -194,11 +194,12 @@ abstract class JvmSpringRestControllerSerializerBase {
     final intercepted = isIntercepted(op);
     final passesContext = passesContextToService(op, context);
     if (intercepted || passesContext) {
+      context.addImport("graphql.GraphQLContext");
       final request = _requestBinding(context);
       for (final param in request.params) {
         if (!params.contains(param)) params.add(param);
       }
-      declarations.add(codeGenUtils.constDecl(_contextVar, '$restSupportClassName.context(${request.expression})'));
+      declarations.add(codeGenUtils.constDecl(_contextVar, '$restSupportClassName.context(${request.expression})', type: localType("GraphQLContext")));
       if (passesContext) serviceArgs.add(_contextVar);
     }
     return RestHandlerPlan(
@@ -313,7 +314,7 @@ abstract class JvmSpringRestControllerSerializerBase {
     params.add(renderParam('@$annotationName(${attributes.join(', ')})', wireName,
         _wireType(arg.type, nullable: !mustBePresent && arg.type.nullable)));
     if (converts) {
-      declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context))));
+      declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context)), type: localType(serializer.serializeType(arg.type))));
     }
     serviceArgs.add(arg.codeName);
   }
@@ -340,7 +341,8 @@ abstract class JvmSpringRestControllerSerializerBase {
         arg.type.nullable
             ? codeGenUtils.ternaryOp(
                 condition: mapIsEmpty(mapName), positiveStatement: 'null', negativeStatement: decoded)
-            : decoded));
+            : decoded,
+        type: localType(serializer.serializeType(arg.type))));
     serviceArgs.add(arg.codeName);
   }
 
@@ -368,7 +370,7 @@ abstract class JvmSpringRestControllerSerializerBase {
     final wireName = '${arg.codeName}Wire';
     final wireType = serializer.serializeType(_wireType(arg.type, nullable: arg.type.nullable)).replaceAll('? extends ', '');
     declarations.add(codeGenUtils.constDecl(wireName, decodeCall(read), type: wireType));
-    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context))));
+    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context)), type: localType(serializer.serializeType(arg.type))));
     serviceArgs.add(arg.codeName);
   }
 
@@ -436,7 +438,7 @@ abstract class JvmSpringRestControllerSerializerBase {
         context.addImport('org.springframework.http.codec.multipart.Part');
         params.add(renderParam('@RequestPart(name = ${restArg.wireName!.quote()}, required = $required)', wireName,
             GLType('Part'.toToken(), !required)));
-        declarations.add(codeGenUtils.constDecl(arg.codeName, filePartExpression(wireName)));
+        declarations.add(codeGenUtils.constDecl(arg.codeName, filePartExpression(wireName), type: localType("FilePart")));
         serviceArgs.add(arg.codeName);
         return;
       }
@@ -465,12 +467,14 @@ abstract class JvmSpringRestControllerSerializerBase {
     final wireName = '${arg.codeName}Wire';
     params.add(renderParam('@RequestPart(name = ${restArg.wireName!.quote()}, required = ${!arg.type.nullable})', wireName,
         GLType('String'.toToken(), true)));
-    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(textPartExpression(arg.type, wireName, context))));
+    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(textPartExpression(arg.type, wireName, context)), type: localType(serializer.serializeType(arg.type))));
     serviceArgs.add(arg.codeName);
   }
 
   /// The expression checking that a multipart part is a file (WebFlux only).
   String filePartExpression(String part);
+
+  String? localType(String type) => null;
 
   /// The expression parsing the text of a multipart part, null-safe when [type] is nullable.
   String textPartExpression(GLType type, String text, GLToken context);
@@ -493,7 +497,7 @@ abstract class JvmSpringRestControllerSerializerBase {
     context.addImport(SpringRestImports.requestBody);
     final wireName = '${arg.codeName}Wire';
     params.add(renderParam('@RequestBody(required = ${!optional})', wireName, _wireType(arg.type, nullable: optional)));
-    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context))));
+    declarations.add(codeGenUtils.constDecl(arg.codeName, decodeCall(serializer.fromJsonExpr(arg.type, wireName, context: context)), type: localType(serializer.serializeType(arg.type))));
     serviceArgs.add(arg.codeName);
   }
 

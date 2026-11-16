@@ -94,7 +94,7 @@ class JavaSpringRestControllerSerializer extends JvmSpringRestControllerSerializ
       return [
         codeGenUtils.constDecl(wire, '$restSupportClassName.fields($_formVar, $name, $required)', type: 'List<String>'),
         codeGenUtils.constDecl(arg.codeName,
-            decodeCall(type.nullable ? '$wire == null ? null : $converted' : converted)),
+            decodeCall(type.nullable ? '$wire == null ? null : $converted' : converted), type: serializer.serializeType(arg.type)),
       ];
     }
     final read = defaultLiteral == null
@@ -103,7 +103,7 @@ class JavaSpringRestControllerSerializer extends JvmSpringRestControllerSerializ
     final parsed = textPartExpression(defaultLiteral == null ? type : GLType(type.tokenInfo, false), wire, context);
     return [
       codeGenUtils.constDecl(wire, read, type: 'String'),
-      codeGenUtils.constDecl(arg.codeName, decodeCall(parsed)),
+      codeGenUtils.constDecl(arg.codeName, decodeCall(parsed), type: serializer.serializeType(arg.type)),
     ];
   }
 
@@ -142,6 +142,9 @@ class JavaSpringRestControllerSerializer extends JvmSpringRestControllerSerializ
 
   @override
   String decodeCall(String expression) => '$restSupportClassName.decode(() -> $expression)';
+
+  @override
+  String? localType(String type) => type;
 
   @override
   String declareWireMap(String name) => codeGenUtils.constDecl(name, 'new HashMap<>()', type: 'Map<String, Object>');
@@ -238,7 +241,7 @@ class JavaSpringRestControllerSerializer extends JvmSpringRestControllerSerializ
       final resultVar = codeGenUtils.safeLocalVar('result');
       return RestHandlerResult(returnType: 'Object', statements: [
         ...validate,
-        codeGenUtils.constDecl(resultVar, serviceCall),
+        codeGenUtils.constDecl(resultVar, serviceCall, type: serializer.serializeType(field.type)),
         'return ${wrapCall(op, serializer.toJsonExpr(field.type, resultVar, context: context))};',
       ]);
     }
@@ -251,7 +254,7 @@ class JavaSpringRestControllerSerializer extends JvmSpringRestControllerSerializ
     final json = serializer.toJsonExpr(field.type, resultVar, context: context);
     return RestHandlerResult(returnType: returnType, statements: [
       ...validate,
-      codeGenUtils.constDecl(resultVar, serviceCall),
+      codeGenUtils.constDecl(resultVar, serviceCall, type: serializer.serializeType(field.type)),
       'return ${jsonString ? '$restSupportClassName.json($json)' : json};',
     ]);
   }

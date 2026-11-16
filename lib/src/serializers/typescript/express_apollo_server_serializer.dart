@@ -641,13 +641,37 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       }
     }
 
+    final passThrough = _mapToPassThroughFields();
     return [
-      for (final typeName in byType.keys)
+      for (final typeName in {...byType.keys, ...passThrough.keys})
         '$typeName: ${_cg.block([
-          for (final entry in byType[typeName]!)
+          for (final entry in byType[typeName] ?? <_MappingEntry>[])
             '${entry.mapping.field.name}: ${_mappingResolver(entry.mapping, entry.service.token.firstLow)},',
+          for (final name in passThrough[typeName] ?? <String>[])
+            '$name: (parent) => parent,',
         ])}',
     ];
+  }
+
+  /// Fields typed as the `@glSkipOnServer(mapTo:)` source: the service returns the source, so it is the parent
+  /// and the field resolves to it.
+  Map<String, List<String>> _mapToPassThroughFields() {
+    final result = <String, List<String>>{};
+    for (final type in grammar.types.values) {
+      final dir = type.getDirectiveByName(glSkipOnServer);
+      final source = dir?.getArgValueAsString(glMapTo);
+      if (source == null) continue;
+      final mapped = {
+        for (final service in grammar.services.values)
+          for (final mapping in service.mappings)
+            if (mapping.type.token == type.token) mapping.field.name.token,
+      };
+      for (final field in type.fields) {
+        if (field.type is GLListType || field.type.token != source || mapped.contains(field.name.token)) continue;
+        result.putIfAbsent(type.token, () => []).add(field.name.token);
+      }
+    }
+    return result;
   }
 
   /// `runBefore(...)` call for an intercepted mapping field, inserted once

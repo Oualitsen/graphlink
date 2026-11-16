@@ -1,6 +1,7 @@
 # server_integration_tests hardening — progress and findings
 
 REST operations on the servers (design, tests, findings): see `REST_SERVER.md`.
+Exact-data GraphQL suite (`server_graphql/`) and the bugs it found: see `reports/SERVER_GRAPHQL.md`; Java 8 compatibility: `reports/JAVA8_COMPAT.md`.
 
 Autonomous run. Newest status at the top of each section.
 

@@ -162,7 +162,7 @@ class JavaClientRuntimeSerializer {
       statements: [
         'Map<String, Object> variables = new HashMap<>();',
         codeGenUtils.forEachLoop(
-            variable: 'partQuery',
+            variable: 'partQuery', type: 'GraphLinkPartialQuery',
             iterable: 'partQueries',
             statements: [
               'variables.putAll(partQuery.variables);',
@@ -170,7 +170,7 @@ class JavaClientRuntimeSerializer {
         'StringBuilder queryBuilder = new StringBuilder("query " + operationName);',
         'Set<String> args = new HashSet<>();',
         codeGenUtils.forEachLoop(
-            variable: 'partQuery',
+            variable: 'partQuery', type: 'GraphLinkPartialQuery',
             iterable: 'partQueries',
             statements: [
               'args.addAll(partQuery.argumentDeclarations);',
@@ -189,7 +189,7 @@ class JavaClientRuntimeSerializer {
             ]),
         'queryBuilder.append("{");',
         codeGenUtils.forEachLoop(
-            variable: 'partQuery',
+            variable: 'partQuery', type: 'GraphLinkPartialQuery',
             iterable: 'partQueries',
             statements: [
               'queryBuilder.append(partQuery.query);',
@@ -198,14 +198,14 @@ class JavaClientRuntimeSerializer {
         'queryBuilder.append("}");',
         'Set<String> fragmentNames = new HashSet<>();',
         codeGenUtils.forEachLoop(
-            variable: 'partQuery',
+            variable: 'partQuery', type: 'GraphLinkPartialQuery',
             iterable: 'partQueries',
             statements: [
               'fragmentNames.addAll(partQuery.fragmentNames);',
             ]),
         'StringBuilder fragmentsBuilder = new StringBuilder();',
         codeGenUtils.forEachLoop(
-            variable: 'fragName',
+            variable: 'fragName', type: 'String',
             iterable: 'fragmentNames',
             statements: [
               'fragmentsBuilder.append(${svFragmentMap}.get(fragName));',
@@ -266,7 +266,7 @@ class JavaClientRuntimeSerializer {
             'this.$svDecoder = decoder;',
             'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
             codeGenUtils
-                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+                .forEachLoop(variable: 'tag', type: 'String', iterable: 'tags', statements: [
               '$svTagLocks.put(tag, new ReentrantLock());',
             ]),
           ],
@@ -286,7 +286,7 @@ class JavaClientRuntimeSerializer {
             'Map<String, Object> $svRawData = (Map<String, Object>) result.get("data");',
             'Map<String, Object> dataMap = $svRawData != null ? $svRawData : new HashMap<>();',
             codeGenUtils.forEachLoop(
-                variable: 'q',
+                variable: 'q', type: 'GraphLinkPartialQuery',
                 iterable: 'remainingQueries',
                 statements: [
                   codeGenUtils.ifStatement(
@@ -392,7 +392,7 @@ class JavaClientRuntimeSerializer {
             'Map<String, Object> $svResponseMap = new HashMap<>();',
             'Map<String, Object> $svStaleData = new HashMap<>();',
             codeGenUtils.forEachLoop(
-                variable: 'partQuery',
+                variable: 'partQuery', type: 'GraphLinkPartialQuery',
                 iterable: '$svPartialQueries',
                 statements: [
                   codeGenUtils.ifStatement(
@@ -422,7 +422,7 @@ class JavaClientRuntimeSerializer {
                 ]),
             'List<GraphLinkPartialQuery> $svRemaining = new ArrayList<>();',
             codeGenUtils.forEachLoop(
-                variable: 'partQuery',
+                variable: 'partQuery', type: 'GraphLinkPartialQuery',
                 iterable: '$svPartialQueries',
                 statements: [
                   codeGenUtils.ifStatement(
@@ -546,7 +546,7 @@ class JavaClientRuntimeSerializer {
           arguments: ['List<String> tags'],
           statements: [
             codeGenUtils
-                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+                .forEachLoop(variable: 'tag', type: 'String', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = $svTagLocks.get(tag);',
               'lock.lock();',
@@ -556,7 +556,7 @@ class JavaClientRuntimeSerializer {
                     .ifStatement(condition: 'data != null', ifBlockStatements: [
                   'GraphLinkTagEntry entry = GraphLinkTagEntry.fromJson($svDecoder.decode(data));',
                   codeGenUtils.forEachLoop(
-                      variable: 'k',
+                      variable: 'k', type: 'String',
                       iterable: 'entry.keys',
                       statements: ['$svStore.invalidate(k);']),
                   '$svStore.invalidate(tKey);',
@@ -573,7 +573,7 @@ class JavaClientRuntimeSerializer {
           arguments: ['String key', 'List<String> tags'],
           statements: [
             codeGenUtils
-                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+                .forEachLoop(variable: 'tag', type: 'String', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = $svTagLocks.get(tag);',
               'lock.lock();',
@@ -594,7 +594,7 @@ class JavaClientRuntimeSerializer {
           arguments: ['String key', 'List<String> tags'],
           statements: [
             codeGenUtils
-                .forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+                .forEachLoop(variable: 'tag', type: 'String', iterable: 'tags', statements: [
               'String tKey = tagKey(tag);',
               'ReentrantLock lock = $svTagLocks.computeIfAbsent(tag, k -> new ReentrantLock());',
               'lock.lock();',
@@ -628,7 +628,7 @@ class JavaClientRuntimeSerializer {
           statements: [
             'StringBuilder buffer = new StringBuilder(query);',
             codeGenUtils.forEachLoop(
-                variable: 'name',
+                variable: 'name', type: 'String',
                 iterable: 'fragmentNames',
                 statements: [
                   'String frag = ${svFragmentMap}.get(name);',
