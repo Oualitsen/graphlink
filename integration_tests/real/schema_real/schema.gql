@@ -786,6 +786,27 @@ type Query {
   # staleIfOffline: return expired value when network fails.
   getStaleUser(id: ID!): User @glCache(ttl: "1s", staleIfOffline: true, tags: ["users"])
 
+  # The first call per id fails, the next ones succeed. A failure must never be cached.
+  cachedFlaky(id: ID!): User! @glCache(ttl: "1m", tags: ["flaky"])
+
+  # Same, but the failing field is nullable: the response is 200 with `data: {cachedFlakyNullable: null}` and errors.
+  cachedFlakyNullable(id: ID!): User @glCache(ttl: "1m", tags: ["flaky"])
+
+  # How many times the server resolved cachedFlaky / cachedFlakyNullable for this id.
+  cachedFlakyCalls(id: ID!): Int!
+
+  # The value of the request header `name` as the server received it (null when absent).
+  echoHeader(name: String!): String
+
+  # The token of `Authorization: Bearer <token>`; an error when the header is missing or not a Bearer one.
+  whoAmI: String!
+
+  # How many secureTicks subscriptions were started with this token in their connection_init payload.
+  secureTickStarts(token: String!): Int!
+
+  # How many labelTicks subscriptions were started with this label.
+  labelTickStarts(label: String!): Int!
+
 
 # ── 9. Queries — error capture ────────────────────────────────────────────────
 
@@ -955,15 +976,18 @@ type Subscription {
   # Polymorphism coverage: emits an Article, then a Comment.
   entityPublished: Entity!
 
-  # Like counterTick but the server self-restarts after emitting tick stopAt.
-  counterTickRestart(stopAt: Int!): Int!
-
   # Subscription argument shapes: echoes once, then the server completes the stream.
   subEchoArgs(a: [Int!]!, b: [Int], c: [[Int!]!], e: [Spelling!]!, f: [Spelling], g: [Spelling!] = [A, B2], one: OnlyOne = ONLY): ListsEcho!
   subEchoInput(input: ListsInput!): ListsEcho!
 
   # Emits 1..count, then the server completes the stream.
   finiteTicks(count: Int!): Int!
+
+  # Ticks every 100 ms. Needs `Authorization: Bearer <token>` in the connection_init payload, otherwise the stream fails.
+  secureTicks(count: Int!): Int!
+
+  # Emits "<label>-1" .. "<label>-<count>" every 100 ms, then completes. Counted per label by labelTickStarts.
+  labelTicks(label: String!, count: Int!): String!
 
   # Emits 1..failAfter, then the server fails the stream.
   flakyTicks(failAfter: Int!): Int!

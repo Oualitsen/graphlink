@@ -1,5 +1,7 @@
 import asyncio
+import socket
 import subprocess
+import time
 import unittest
 from typing import Optional
 
@@ -9,6 +11,27 @@ from .real_server import DEFAULT_PORT, new_client, new_ws_adapter, server_jar
 def listening_pids(port: int) -> list:
     result = subprocess.run(["lsof", "-ti", f":{port}", "-sTCP:LISTEN"], capture_output=True, text=True)
     return [pid for pid in result.stdout.split() if pid]
+
+
+def kill_port(port: int) -> None:
+    for pid in listening_pids(port):
+        subprocess.run(["kill", "-9", pid])
+
+
+def start_server(port: int) -> subprocess.Popen:
+    kill_port(port)
+    process = subprocess.Popen(
+        ["java", "-jar", server_jar(), f"--server.port={port}", "--management.server.port=-1"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    deadline = time.time() + 30
+    while time.time() < deadline:
+        with socket.socket() as probe:
+            if probe.connect_ex(("localhost", port)) == 0:
+                return process
+        time.sleep(0.5)
+    process.kill()
+    raise RuntimeError(f"server on port {port} did not start within 30 s")
 
 
 @unittest.skipIf(server_jar() is None, "SERVER_JAR env var not set - run via make reconnect-test")
@@ -56,6 +79,55 @@ class SubscriptionReconnectTest(unittest.IsolatedAsyncioTestCase):
             await ws.close()
             if new_process is not None:
                 new_process.kill()
+
+    async def test_the_rotated_token_is_sent_when_the_subscription_resumes(self) -> None:
+        port = 9996
+        first, second = f"py-first-{time.time_ns()}", f"py-second-{time.time_ns()}"
+        current = {"token": first}
+
+        async def provider() -> dict:
+            return {"Authorization": f"Bearer {current['token']}"}
+
+        process = start_server(port)
+        ws = new_ws_adapter(port, headers_provider=provider)
+        client = new_client(port, ws_adapter=ws)
+        first_tick = asyncio.Event()
+
+        async def consume() -> None:
+            try:
+                async for _ in client.subscriptions.secure_ticks(count=1000):
+                    first_tick.set()
+            except Exception:
+                pass
+
+        consumer = asyncio.ensure_future(consume())
+        restarted: Optional[subprocess.Popen] = None
+        try:
+            await asyncio.wait_for(first_tick.wait(), 10)
+            self.assertEqual((await client.queries.secure_tick_starts(token=first)).secure_tick_starts, 1)
+
+            current["token"] = second
+            kill_port(port)
+            await asyncio.sleep(0.5)
+            restarted = start_server(port)
+
+            deadline = time.time() + 60
+            while True:
+                try:
+                    if (await client.queries.secure_tick_starts(token=second)).secure_tick_starts == 1:
+                        break
+                except Exception:
+                    pass
+                self.assertLess(time.time(), deadline, "the subscription was not resumed with the rotated token")
+                await asyncio.sleep(1)
+            self.assertEqual((await client.queries.secure_tick_starts(token=first)).secure_tick_starts, 0)
+        finally:
+            consumer.cancel()
+            await ws.close()
+            for running in (process, restarted):
+                if running is not None:
+                    running.kill()
+            kill_port(port)
 
 
 if __name__ == "__main__":

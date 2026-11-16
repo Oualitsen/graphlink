@@ -534,6 +534,7 @@ class GraphLinkWebSocketAdapter(ABC):
     def __init__(self) -> None:
         self.on_message: Callable[[str], None] = lambda message: None
         self.on_reconnect: Callable[[], None] = lambda: None
+        self.on_give_up: Callable[[], None] = lambda: None
 
     @abstractmethod
     async def connect(self) -> None: ...
@@ -554,7 +555,7 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from typing import Any, AsyncIterator, Dict, Optional, Tuple
+from typing import Any, AsyncIterator, Dict, Optional, Set, Tuple
 
 from .graph_link_exception import GraphLinkException
 from .graph_link_websocket_adapter import GraphLinkWebSocketAdapter
@@ -572,9 +573,11 @@ class GraphLinkSubscriptionHandler:
         self._payloads: Dict[str, Any] = {}
         self._ack: Optional["asyncio.Future[None]"] = None
         self._acknowledged = False
+        self._subscribed: Set[str] = set()
         self._connect_lock = asyncio.Lock()
         adapter.on_message = self._on_message
         adapter.on_reconnect = self._on_reconnect
+        adapter.on_give_up = self._on_give_up
 
     async def _ensure_connected(self) -> None:
         async with self._connect_lock:
@@ -585,14 +588,22 @@ class GraphLinkSubscriptionHandler:
 
     async def _handshake(self) -> None:
         self._acknowledged = False
-        self._ack = asyncio.get_running_loop().create_future()
+        if self._ack is None or self._ack.done():
+            self._ack = asyncio.get_running_loop().create_future()
+        ack = self._ack
         payload = await self.adapter.connection_init_payload()
         init: Dict[str, Any] = {"type": GraphqlWsMessageTypes.CONNECTION_INIT}
         if payload is not None:
             init["payload"] = payload
         await self.adapter.send_message(json.dumps(init))
-        await self._ack
+        await ack
         self._acknowledged = True
+
+    async def _send_subscribe(self, subscription_id: str, payload: Any) -> None:
+        if subscription_id in self._subscribed:
+            return
+        self._subscribed.add(subscription_id)
+        await self.adapter.send_message(self._subscribe_message(subscription_id, payload))
 
     def _subscribe_message(self, subscription_id: str, payload: Any) -> str:
         return json.dumps(
@@ -614,7 +625,7 @@ class GraphLinkSubscriptionHandler:
         self._payloads[subscription_id] = payload
         try:
             await self._ensure_connected()
-            await self.adapter.send_message(self._subscribe_message(subscription_id, payload))
+            await self._send_subscribe(subscription_id, payload)
             while True:
                 kind, value = await queue.get()
                 if kind == _NEXT:
@@ -626,6 +637,7 @@ class GraphLinkSubscriptionHandler:
         finally:
             self._queues.pop(subscription_id, None)
             self._payloads.pop(subscription_id, None)
+            self._subscribed.discard(subscription_id)
             if self._acknowledged:
                 try:
                     await self.adapter.send_message(
@@ -664,12 +676,22 @@ class GraphLinkSubscriptionHandler:
         if not self._payloads:
             return
         try:
+            self._subscribed.clear()
             await self._handshake()
             for subscription_id, payload in list(self._payloads.items()):
-                await self.adapter.send_message(self._subscribe_message(subscription_id, payload))
+                await self._send_subscribe(subscription_id, payload)
         except Exception as error:
             for queue in self._queues.values():
                 queue.put_nowait((_ERROR, [error]))
+
+    def _on_give_up(self) -> None:
+        error = RuntimeError("WebSocket reconnect attempts exhausted")
+        self._acknowledged = False
+        self._subscribed.clear()
+        if self._ack is not None and not self._ack.done():
+            self._ack.set_exception(error)
+        for queue in self._queues.values():
+            queue.put_nowait((_ERROR, [error]))
 ''';
 
 const pythonDefaultWebSocketAdapter = r'''
@@ -755,6 +777,8 @@ class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
                     return
                 except Exception:
                     continue
+            if not self._disposed:
+                self.on_give_up()
         finally:
             self._reconnecting = False
 

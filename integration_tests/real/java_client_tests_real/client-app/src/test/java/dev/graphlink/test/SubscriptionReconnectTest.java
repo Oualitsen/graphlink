@@ -25,8 +25,8 @@ class SubscriptionReconnectTest {
         return "../../spring_server/build/libs/graphlink-test-server-0.0.1.jar";
     }
 
-    private static String wsUrl(int port)   { return "ws://localhost:"   + port + "/graphql"; }
-    private static String httpUrl(int port) { return "http://localhost:" + port + "/graphql"; }
+    static String wsUrl(int port)   { return "ws://localhost:"   + port + "/graphql"; }
+    static String httpUrl(int port) { return "http://localhost:" + port + "/graphql"; }
 
     // ── Test 1: stream resumes after server halt ─────────────────────────────
 
@@ -84,6 +84,63 @@ class SubscriptionReconnectTest {
             assertTrue(resumeTick.await(90, TimeUnit.SECONDS),
                     "counterTick stream did not resume after server restart");
             log("=== counterTick_resumesAfterServerHalt PASSED ===");
+        } finally {
+            ws.close();
+            killPort(PORT_HALT);
+        }
+    }
+
+    // ── Test 1b: the resumed subscription sends the rotated token ────────────
+
+    @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    void secureTicks_sendsTheRotatedTokenOnResume() throws Exception {
+        killPort(PORT_HALT);
+        startJar(PORT_HALT);
+
+        String first = "java-first-" + System.nanoTime();
+        String second = "java-second-" + System.nanoTime();
+        java.util.concurrent.atomic.AtomicReference<String> token = new java.util.concurrent.atomic.AtomicReference<>(first);
+        java.util.function.Supplier<java.util.Map<String, String>> headers =
+                () -> java.util.Map.of("Authorization", "Bearer " + token.get());
+
+        JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
+        DefaultGraphLinkWebSocketAdapter ws = new DefaultGraphLinkWebSocketAdapter(wsUrl(PORT_HALT), headers);
+        GraphLinkClient client = new GraphLinkClient(
+                new DefaultGraphLinkClientAdapter(httpUrl(PORT_HALT), headers, codec),
+                null, codec, codec, ws);
+
+        CountDownLatch firstTick = new CountDownLatch(1);
+        try {
+            client.subscriptions.secureTicks(1000, r -> firstTick.countDown());
+            assertTrue(firstTick.await(10, TimeUnit.SECONDS), "Timed out waiting for the first secureTicks");
+            assertEquals(1, client.queries.secureTickStarts(first).getSecureTickStarts());
+
+            token.set(second);
+            killPort(PORT_HALT);
+            Thread restart = new Thread(() -> {
+                try {
+                    startJar(PORT_HALT);
+                } catch (Exception e) {
+                    log("  ERROR restarting server: %s", e.getMessage());
+                }
+            });
+            restart.setDaemon(true);
+            restart.start();
+
+            long deadline = System.currentTimeMillis() + 60_000;
+            while (true) {
+                int starts;
+                try {
+                    starts = client.queries.secureTickStarts(second).getSecureTickStarts();
+                } catch (RuntimeException e) {
+                    starts = 0;
+                }
+                if (starts == 1) break;
+                assertTrue(System.currentTimeMillis() < deadline, "the subscription was not resumed with the rotated token");
+                Thread.sleep(1000);
+            }
+            assertEquals(0, client.queries.secureTickStarts(first).getSecureTickStarts());
         } finally {
             ws.close();
             killPort(PORT_HALT);
@@ -179,7 +236,7 @@ class SubscriptionReconnectTest {
 
     // ── Server lifecycle helpers ──────────────────────────────────────────────
 
-    private static void killPort(int port) throws Exception {
+    static void killPort(int port) throws Exception {
         log("  [killPort] killing process on port %d...", port);
         Process proc = new ProcessBuilder("bash", "-c",
                 "lsof -ti :" + port + " -sTCP:LISTEN | xargs kill -9 2>/dev/null || true")
@@ -189,7 +246,7 @@ class SubscriptionReconnectTest {
         log("  [killPort] done (port %d)", port);
     }
 
-    private static void startJar(int port) throws Exception {
+    static void startJar(int port) throws Exception {
         log("  [startJar] launching JAR on port %d: %s", port, jarPath());
         ProcessBuilder pb = new ProcessBuilder(
                 "java", "-jar", jarPath(), "--server.port=" + port, "--management.server.port=-1");
@@ -221,7 +278,7 @@ class SubscriptionReconnectTest {
         throw new TimeoutException("Server on port " + port + " did not start within 25 s");
     }
 
-    private static void log(String fmt, Object... args) {
+    static void log(String fmt, Object... args) {
         System.out.printf("[ReconnectTest] " + fmt + "%n", args);
     }
 

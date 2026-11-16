@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 	"sync/atomic"
@@ -119,4 +120,46 @@ func TestSubscriptionReconnectConnectsOnceTheServerBecomesAvailable(t *testing.T
 			t.Fatal("never received a tick once the server was up")
 		}
 	}
+}
+
+func TestSubscriptionReconnectSendsTheRotatedTokenOnConnectionInit(t *testing.T) {
+	if serverJar() == "" {
+		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
+	}
+	const port = 9996
+	first, second := uniqueToken(), uniqueToken()
+	var token atomic.Value
+	token.Store(first)
+
+	startServer(t, port)
+	ws := newWsAdapter(port)
+	ws.HeadersProvider = func(context.Context) (map[string]string, error) {
+		return map[string]string{"Authorization": "Bearer " + token.Load().(string)}, nil
+	}
+	c := clientWithWs(t, ws, port)
+	events := c.Subscriptions.SecureTicks(subscriptionContext(t), 1000)
+	if event := nextEvent(t, events, 10*time.Second); event.Err != nil {
+		t.Fatalf("first event: %v", event.Err)
+	}
+	expectEqual(t, must(c.Queries.SecureTickStarts(ctx(t), first)).SecureTickStarts, 1, "starts with the first token")
+
+	token.Store(second)
+	killPort(port)
+	cmd := exec.Command("java", "-jar", serverJar(), "--server.port=9996", "--management.server.port=-1")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = cmd.Process.Kill() })
+
+	deadline := time.Now().Add(time.Minute)
+	for {
+		if time.Now().After(deadline) {
+			t.Fatal("the subscription was not resumed with the rotated token")
+		}
+		if starts, err := c.Queries.SecureTickStarts(ctx(t), second); err == nil && starts.SecureTickStarts == 1 {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	expectEqual(t, must(c.Queries.SecureTickStarts(ctx(t), first)).SecureTickStarts, 0, "starts with the stale token on the restarted server")
 }

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:test/test.dart';
-import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
+import 'package:graphlink_client_integration_tests/generated/graphlink.dart';
 import 'real_server_adapter.dart';
 
 void main() {
@@ -162,6 +162,58 @@ void main() {
         expect(reconnected, isTrue,
             reason:
                 'onReconnect should fire when the server becomes available');
+      } finally {
+        await subscription.cancel();
+        await ws.close();
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)));
+  });
+
+  // ---------------------------------------------------------------------------
+  // Test 4: the resumed subscription sends the rotated token on connection_init
+  // ---------------------------------------------------------------------------
+  group('reconnect: rotated token', () {
+    const port = 9996;
+    setUpAll(() async => startServer(port));
+    tearDownAll(() async => killPort(port));
+
+    test('connection_init carries the token current at reconnect time', () async {
+      final stamp = DateTime.now().microsecondsSinceEpoch;
+      final first = 'dart-first-$stamp';
+      final second = 'dart-second-$stamp';
+      var token = first;
+      final ws = DefaultGraphLinkWebSocketAdapter(
+        url: 'ws://localhost:$port/graphql',
+        reconnect: true,
+        headersProvider: () async => {'Authorization': 'Bearer $token'},
+      );
+      final client =
+          GraphLinkClient(adapter: httpAdapterForPort(port), wsAdapter: ws);
+      Future<int> startsOf(String t) async =>
+          (await client.queries.secureTickStarts(token: t)).secureTickStarts;
+
+      final firstTick = Completer<void>();
+      final subscription =
+          client.subscriptions.secureTicks(count: 1000).listen((_) {
+        if (!firstTick.isCompleted) firstTick.complete();
+      }, onError: (_) {});
+      try {
+        await firstTick.future.timeout(const Duration(seconds: 10));
+        expect(await startsOf(first), 1);
+
+        token = second;
+        await startServer(port);
+
+        final deadline = DateTime.now().add(const Duration(minutes: 1));
+        while (true) {
+          final starts = await startsOf(second).catchError((_) => 0);
+          if (starts == 1) break;
+          if (DateTime.now().isAfter(deadline)) {
+            fail('the subscription was not resumed with the rotated token');
+          }
+          await Future.delayed(const Duration(seconds: 1));
+        }
+        expect(await startsOf(first), 0);
       } finally {
         await subscription.cancel();
         await ws.close();

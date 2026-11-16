@@ -9,6 +9,9 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Controller
 public class QueryController {
@@ -99,6 +102,31 @@ public class QueryController {
     @QueryMapping
     public AllScalars getCachedConfig() {
         return DataFixtures.ALL_SCALARS_NULL;
+    }
+
+    private static final Map<String, AtomicInteger> FLAKY_CALLS = new ConcurrentHashMap<>();
+
+    private static User failFirstCall(String id) {
+        if (FLAKY_CALLS.computeIfAbsent(id, k -> new AtomicInteger()).incrementAndGet() == 1) {
+            throw GraphqlErrorException.newErrorException().message("flaky: " + id).build();
+        }
+        return DataFixtures.ALICE;
+    }
+
+    @QueryMapping
+    public User cachedFlaky(@Argument String id) {
+        return failFirstCall(id);
+    }
+
+    @QueryMapping
+    public User cachedFlakyNullable(@Argument String id) {
+        return failFirstCall(id);
+    }
+
+    @QueryMapping
+    public int cachedFlakyCalls(@Argument String id) {
+        AtomicInteger calls = FLAKY_CALLS.get(id);
+        return calls == null ? 0 : calls.get();
     }
 
     @QueryMapping

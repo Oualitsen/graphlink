@@ -379,6 +379,7 @@ export interface GraphLinkWsAdapter {
   close(): Promise<void>;
   connectionInitPayload(): Promise<Record<string, unknown> | null>;
   get onReconnect(): AsyncIterable<void>;
+  readonly onGiveUp?: AsyncIterable<void>;
 }
 ''';
 
@@ -479,6 +480,8 @@ export class GraphLinkSubscriptionHandler {
   private _sinkPromise: Promise<{ send: (msg: string) => Promise<void> }> | null = null;
   private _handshakeStatus: _HandshakeStatus = 'none';
   private _handshakePromise: Promise<{ send: (msg: string) => Promise<void> }> | null = null;
+  private _handshakeGeneration = 0;
+  private _abortHandshake: ((error: Error) => void) | null = null;
   private readonly _pongMessage: string;
   // Broadcast fan-out: all listeners receive every incoming message, mirroring
   // Dart's broadcast stream contract on onMessageStream.
@@ -494,36 +497,40 @@ export class GraphLinkSubscriptionHandler {
       }
     })();
     (async () => { for await (const _ of adapter.onReconnect) await this._onReconnect(); })();
+    const giveUps = adapter.onGiveUp;
+    if (giveUps) (async () => { for await (const _ of giveUps) this._onGiveUp(); })();
   }
 
   private _initWs(): Promise<{ send: (msg: string) => Promise<void> }> {
-    this._sinkPromise ??= this._connect();
-    return this._sinkPromise;
+    if (this._sinkPromise) return this._sinkPromise;
+    const promise: Promise<{ send: (msg: string) => Promise<void> }> = this._connect().catch((e) => {
+      if (this._sinkPromise === promise) this._sinkPromise = null;
+      throw e;
+    });
+    this._sinkPromise = promise;
+    return promise;
   }
 
   private async _connect(): Promise<{ send: (msg: string) => Promise<void> }> {
-    try {
-      await this.adapter.connect();
-      return this._handshakeStatus === 'acknowledged'
-        ? { send: (m) => this.adapter.sendMessage(m) }
-        : await this._doHandshake();
-    } catch (e) {
-      this._sinkPromise = null;
-      throw e;
-    }
+    await this.adapter.connect();
+    return this._handshakeStatus === 'acknowledged'
+      ? { send: (m) => this.adapter.sendMessage(m) }
+      : await this._doHandshake();
   }
 
   private _doHandshake(): Promise<{ send: (msg: string) => Promise<void> }> {
     if (this._handshakePromise) return this._handshakePromise;
     this._handshakeStatus = 'progress';
-    this._handshakePromise = this._performHandshake().then(
-      sink => { this._handshakePromise = null; return sink; },
-      err => { this._handshakePromise = null; throw err; },
+    const promise: Promise<{ send: (msg: string) => Promise<void> }> = this._performHandshake().then(
+      sink => { if (this._handshakePromise === promise) this._handshakePromise = null; return sink; },
+      err => { if (this._handshakePromise === promise) this._handshakePromise = null; throw err; },
     );
-    return this._handshakePromise;
+    this._handshakePromise = promise;
+    return promise;
   }
 
   private async _performHandshake(): Promise<{ send: (msg: string) => Promise<void> }> {
+    const generation = ++this._handshakeGeneration;
     try {
       const payload = await this.adapter.connectionInitPayload();
       const initMsg: Record<string, unknown> = { type: _GL_WS.connectionInit };
@@ -533,6 +540,10 @@ export class GraphLinkSubscriptionHandler {
       // Register a temporary listener — runs alongside _dispatch on the same
       // fan-out set, so connection_ack is never stolen by the dispatch loop.
       await new Promise<void>((resolve, reject) => {
+        this._abortHandshake = (error) => {
+          this._msgListeners.delete(listener);
+          reject(error);
+        };
         const listener = (raw: string) => {
           const parsed: _GlWsMsg = JSON.parse(raw);
           if (parsed.type === _GL_WS.connectionAck) {
@@ -546,17 +557,31 @@ export class GraphLinkSubscriptionHandler {
         this._msgListeners.add(listener);
       });
 
+      this._abortHandshake = null;
       this._handshakeStatus = 'acknowledged';
       return { send: (m) => this.adapter.sendMessage(m) };
     } catch (e) {
-      this._handshakeStatus = 'none';
+      if (generation === this._handshakeGeneration) {
+        this._abortHandshake = null;
+        this._handshakeStatus = 'none';
+      }
       throw e;
     }
   }
 
-  private async _onReconnect(): Promise<void> {
-    if (this._handshakeStatus === 'progress') return;
+  private _onGiveUp(): void {
+    const error = new Error('WebSocket reconnect attempts exhausted');
+    this._abortHandshake?.(error);
     this._handshakeStatus = 'none';
+    this._handshakePromise = null;
+    this._sinkPromise = null;
+    for (const ch of this._channels.values()) ch.error(error);
+  }
+
+  private async _onReconnect(): Promise<void> {
+    this._abortHandshake?.(new Error('WebSocket connection lost during the handshake'));
+    this._handshakeStatus = 'none';
+    this._handshakePromise = null;
     if (this._payloads.size === 0) return;
     this._sinkPromise = null;
     try {
@@ -752,6 +777,8 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
   private _ws: WebSocket | null = null;
   private readonly _messageChannel = _makeChannel<string>();
   private readonly _reconnectChannel = _makeBroadcastChannel<void>();
+  private readonly _giveUpChannel = _makeBroadcastChannel<void>();
+  private _gaveUp = false;
   private _connectPromise: Promise<void> | null = null;
   private _reconnectAttempts = 0;
   private _reconnecting = false;
@@ -775,7 +802,7 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
   private async _doConnect(): Promise<void> {
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(this.url, this.protocols);
-      ws.onopen = () => { this._ws = ws; this._reconnectAttempts = 0; resolve(); };
+      ws.onopen = () => { this._ws = ws; this._reconnectAttempts = 0; this._gaveUp = false; resolve(); };
       ws.onerror = (e) => { this._scheduleReconnect(); reject(e); };
       ws.onmessage = (e) => this._messageChannel.push(e.data as string);
       ws.onclose = () => this._scheduleReconnect();
@@ -784,7 +811,13 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
 
   private _scheduleReconnect(): void {
     if (this._closed) return;
-    if (this.maxReconnectAttempts !== null && this._reconnectAttempts >= this.maxReconnectAttempts) return;
+    if (this.maxReconnectAttempts !== null && this._reconnectAttempts >= this.maxReconnectAttempts) {
+      if (!this._gaveUp) {
+        this._gaveUp = true;
+        this._giveUpChannel.push();
+      }
+      return;
+    }
     // Guard against duplicate timers from concurrent onerror + onclose events.
     if (this._reconnecting) return;
     this._reconnecting = true;
@@ -815,6 +848,10 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
 
   get onReconnect(): AsyncIterable<void> {
     return this._reconnectChannel as unknown as AsyncIterable<void>;
+  }
+
+  get onGiveUp(): AsyncIterable<void> {
+    return this._giveUpChannel as unknown as AsyncIterable<void>;
   }
 
   async close(): Promise<void> {
