@@ -1,11 +1,7 @@
 {
   "typescript_server": {},
-  "java_server": {
-    "mapping_map_to_wrapper_with_mapped_field": "Mapping controllers pass the parent as Article.fromJson(map) and generated Java types have no equals/hashCode: the impl's indexOf(parent) finds nothing, count is 0 (reports/SERVER_GRAPHQL.md #6)."
-  },
-  "java_server_reactive": {
-    "mapping_map_to_wrapper_with_mapped_field": "Parent is an Article.fromJson copy without equals/hashCode: count is 0 (reports/SERVER_GRAPHQL.md #6)."
-  },
+  "java_server": {},
+  "java_server_reactive": {},
   "kotlin_server_blocking": {},
   "kotlin_server_suspend": {}
 }

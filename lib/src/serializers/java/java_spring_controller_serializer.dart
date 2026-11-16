@@ -120,7 +120,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
   String _serviceResultToJson(GLField field, String expr, GLToken context) {
     final originalType = field.originalType;
     if (originalType == null) return expr;
-    return serializer.toJsonExpr(originalType, expr, context: context);
+    return serializer.carryingSource(() => serializer.toJsonExpr(originalType, expr, context: context));
   }
 
   /// Like [_serviceResultToJson], but when the conversion mentions [serviceCall]
@@ -273,7 +273,7 @@ class JavaSpringControllerSerializer extends JvmSpringControllerSerializerBase {
       final origArg = arg.originalArg;
       if (origArg == null) continue;
       final declaration = serializer.serializeType(origArg.type);
-      final fromJsonCall = serializer.fromJsonExpr(origArg.type, arg.codeName, context: context);
+      final fromJsonCall = serializer.carryingSource(() => serializer.fromJsonExpr(origArg.type, arg.codeName, context: context));
       final importSource = grammar.inputs[origArg.type.token] ?? grammar.types[origArg.type.token];
       if (importSource != null) {
         context.addImportDependecy(importSource);

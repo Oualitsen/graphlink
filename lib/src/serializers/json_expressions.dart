@@ -1,5 +1,6 @@
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
@@ -9,6 +10,24 @@ import 'package:graphlink/src/serializers/gl_serializer.dart';
 /// list, then scalar codec, then enum, then type/input/interface/union (their own
 /// `toJson`/`fromJson`), then the plain scalar. A language only supplies the leaves.
 mixin JsonExpressions on GLSerializer {
+  bool _carriesSource = false;
+
+  /// True while a server controller builds its conversions: values of a source type then keep the real object
+  /// next to their JSON form, and are read back from it.
+  bool get carriesSource => _carriesSource;
+
+  String carryingSource(String Function() build) {
+    final previous = _carriesSource;
+    _carriesSource = true;
+    try {
+      return build();
+    } finally {
+      _carriesSource = previous;
+    }
+  }
+
+  bool carriesSourceFor(GLType type) => _carriesSource && grammar.sourceTypeNames.contains(type.token);
+
   @override
   String toJsonExpr(GLType type, String value, {int depth = 0, GLImportSink? context}) {
     if (type is GLListType) {

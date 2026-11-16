@@ -486,7 +486,11 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   }
 
   @override
-  String modelToJson(GLType type, String value) => KotlinCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+  String modelToJson(GLType type, String value) {
+    if (!carriesSourceFor(type)) return KotlinCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+    return KotlinCodeGenUtils.letCall(
+        receiver: value, body: 'GraphLinkSource.attach(it.toJson(), it)', nullable: type.nullable);
+  }
 
   @override
   String enumFromJson(GLType type, String json) {
@@ -498,10 +502,13 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
   @override
   String modelFromJson(GLType type, String json) {
     final codeName = resolveCodeName(type.token);
+    String read(String map) => carriesSourceFor(type)
+        ? 'GraphLinkSource.of($map, $codeName::class.java) { $codeName.fromJson(it) }'
+        : '$codeName.fromJson($map)';
     if (type.nullable) {
-      return KotlinCodeGenUtils.letCall(receiver: '($json as Map<*, *>?)', body: '$codeName.fromJson(it as $_mapType)');
+      return KotlinCodeGenUtils.letCall(receiver: '($json as Map<*, *>?)', body: read('it as $_mapType'));
     }
-    return '$codeName.fromJson($json as $_mapType)';
+    return read('$json as $_mapType');
   }
 
   @override

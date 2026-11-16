@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
@@ -13,10 +14,12 @@ import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/spring_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/java/spring_source_support.dart';
 import 'package:graphlink/src/serializers/java/spring_subscription_transport_config.dart';
 import 'package:graphlink/src/serializers/java/spring_rest_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_rest_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_map_type_resolver_config.dart';
+import 'package:graphlink/src/serializers/kotlin/kotlin_source_support.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_subscription_transport_config.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/utils.dart';
@@ -243,6 +246,17 @@ Future<Set<String>> generateServerClasses(
     ));
   }
 
+  if (springConfig.generateControllers && !grammar.restOnly && grammar.carriesSources) {
+    futures.add(writeToFile(
+      data: springSourceSupportSource,
+      fileName: springSourceSupportFileName,
+      subdir: 'controllers',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   final schema = springSerializer.serializeTypeDefs();
   if (schema.isNotEmpty) {
     futures.add(saveSource(
@@ -426,6 +440,17 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     ));
   }
 
+  if (springConfig.generateControllers && !grammar.restOnly && grammar.carriesSources) {
+    futures.add(writeToFile(
+      data: kotlinSourceSupportSource,
+      fileName: kotlinSourceSupportFileName,
+      subdir: 'controllers',
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   if (springConfig.generateControllers && !grammar.restOnly && springSerializer.hasSubscriptions) {
     futures.add(writeToFile(
       data: kotlinSubscriptionTransportConfigSource,
@@ -534,6 +559,14 @@ Future<Set<String>> _generateExpressApolloClasses(
       ));
     }
   });
+
+  if (grammar.carriesSources) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeSourceSupport(),
+      path: '$destinationDir/source.ts',
+      typescriptSource: true,
+    ));
+  }
 
   futures.add(saveSource(
     data: serverSerializer.serializeContext(),

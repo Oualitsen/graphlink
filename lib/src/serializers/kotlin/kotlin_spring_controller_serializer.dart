@@ -348,7 +348,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
       final origArg = arg.originalArg;
       if (origArg == null) continue;
       final declaredType = serializer.serializeType(origArg.type);
-      final fromJsonCall = serializer.fromJsonExpr(origArg.type, arg.codeName);
+      final fromJsonCall = serializer.carryingSource(() => serializer.fromJsonExpr(origArg.type, arg.codeName));
       final importSource =
           grammar.inputs[origArg.type.firstType.token] ?? grammar.types[origArg.type.firstType.token];
       if (importSource != null) {
@@ -368,7 +368,7 @@ class KotlinSpringControllerSerializer extends JvmSpringControllerSerializerBase
   String _serviceResultToJson(GLField field, String expr) {
     final originalType = field.originalType;
     if (originalType == null) return expr;
-    return serializer.toJsonExpr(originalType, expr);
+    return serializer.carryingSource(() => serializer.toJsonExpr(originalType, expr));
   }
 
   /// Wraps a `Flow`-returning [flowExpr] with `.map { … }` to apply the
