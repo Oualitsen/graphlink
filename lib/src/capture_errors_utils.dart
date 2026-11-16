@@ -5,5 +5,6 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 extension GLQueryCaptureErrors on GLQueryDefinition {
   bool isCaptureErrors(GLParser parser) =>
       parser.captureErrors ||
+      hasDirective(glCaptureErrors) ||
       (elements.isNotEmpty && elements.first.hasDirective(glCaptureErrors));
 }

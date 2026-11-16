@@ -124,6 +124,22 @@ public class QueryController {
     }
 
     @QueryMapping
+    public int cachedSlow(@Argument String id, @Argument int delayMs) throws InterruptedException {
+        SLOW_CALLS.computeIfAbsent(id, k -> new AtomicInteger()).incrementAndGet();
+        int version = SlowState.VERSIONS.computeIfAbsent(id, k -> new AtomicInteger()).get();
+        Thread.sleep(delayMs);
+        return version;
+    }
+
+    @QueryMapping
+    public int cachedSlowCalls(@Argument String id) {
+        AtomicInteger calls = SLOW_CALLS.get(id);
+        return calls == null ? 0 : calls.get();
+    }
+
+    private static final Map<String, AtomicInteger> SLOW_CALLS = new ConcurrentHashMap<>();
+
+    @QueryMapping
     public int cachedFlakyCalls(@Argument String id) {
         AtomicInteger calls = FLAKY_CALLS.get(id);
         return calls == null ? 0 : calls.get();
@@ -138,6 +154,13 @@ public class QueryController {
 
     @QueryMapping
     public User getUserOrErrors(@Argument String id) {
+        if ("missing".equals(id)) throw GraphqlErrorException.newErrorException()
+                .message("User not found: " + id)
+                .extensions(java.util.Map.of(
+                        "code", "NOT_FOUND",
+                        "retryable", false,
+                        "detail", java.util.Map.of("id", id, "attempts", 3)))
+                .build();
         return getUser(id);
     }
 

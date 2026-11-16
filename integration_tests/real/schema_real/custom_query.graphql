@@ -319,3 +319,8 @@ query timedProjected {
     ... on Span { opaque }
   }
 }
+
+query partialAliased @glCaptureErrors {
+  ok: getUser(id: "user-1") { id }
+  bad: findUser(id: "error-id") { id }
+}
