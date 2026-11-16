@@ -89,6 +89,7 @@ class PythonClientRuntimeSerializer {
       ],
       body: [
         'TAG_KEY_PREFIX = "__tag__"',
+        'GL_ALL_EPOCH_KEY = "\\u0000all"',
         'TFull = TypeVar("TFull")',
         _buildResolverBaseClass(),
       ].join('\n\n\n'),
@@ -339,10 +340,12 @@ class PythonClientRuntimeSerializer {
           ifBlockStatements: ['return from_json({"data": $svResponseMap})'],
         ),
         cg.constDecl(svPayload, 'self._build_payload($svRemainingQueries, operation_name, directives)'),
+        cg.constDecl('gl_epochs__', '{id(q): self._gl_epoch(q.tags) for q in $svRemainingQueries}'),
         cg.tryCatchFinally(
           tryStatements: [
             cg.constDecl(svResponseText, 'await self.gl_call_adapter($svPayload)'),
-            'return await self._parse_to_object_and_cache($svResponseText, $svResponseMap, from_json, $svRemainingQueries, capture_errors)',
+            cg.constDecl('gl_cacheable__', '[q for q in $svRemainingQueries if self._gl_epoch(q.tags) == gl_epochs__[id(q)]]'),
+            'return await self._parse_to_object_and_cache($svResponseText, $svResponseMap, from_json, gl_cacheable__, capture_errors)',
           ],
           catchStatements: [
             '$svResponseMap.update($svStaleData)',

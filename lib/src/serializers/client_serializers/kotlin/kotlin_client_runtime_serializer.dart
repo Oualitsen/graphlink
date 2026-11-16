@@ -38,6 +38,25 @@ class KotlinClientRuntimeSerializer {
         ],
         'private val tagLocks = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>()',
         '',
+        'private val glEpochs = glEpochsByStore.computeIfAbsent(store) { java.util.concurrent.ConcurrentHashMap() }',
+        '',
+        'private fun glEpochCounter(tag: String) = glEpochs.computeIfAbsent(tag) { java.util.concurrent.atomic.AtomicLong() }',
+        '',
+        'private fun glEpoch(tags: List<String>): Long = glEpochCounter("\\u0000all").get() + tags.sumOf { glEpochCounter(it).get() }',
+        '',
+        'protected fun glEpochs(queries: List<GraphLinkPartialQuery>): List<Long> = queries.map { glEpoch(it.tags) }',
+        '',
+        'protected fun glCacheable(queries: List<GraphLinkPartialQuery>, epochs: List<Long>): List<GraphLinkPartialQuery> = queries.filterIndexed { i, q -> glEpoch(q.tags) == epochs[i] }',
+        '',
+        'protected fun invalidateAllEntries() ${_client.codeGenUtils.block([
+          'glEpochCounter("\\u0000all").incrementAndGet()',
+          'store.invalidateAll()',
+        ])}',
+        '',
+        'private companion object ${_client.codeGenUtils.block([
+          'val glEpochsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
+        ])}',
+        '',
         'init ${_client.codeGenUtils.block([
           'val tags = listOf<String>(${allTags.map((t) => '"$t"').join(', ')})',
           _client.codeGenUtils.forEachLoop(
@@ -341,10 +360,11 @@ class KotlinClientRuntimeSerializer {
           ],
         ),
         _client.codeGenUtils.constDecl('payload', _client.codeGenUtils.callExpression('buildPayload', ['remaining', 'operationName', 'directives'])),
+        _client.codeGenUtils.constDecl('epochs', 'glEpochs(remaining)'),
         _client.codeGenUtils.tryCatchFinally(
           tryStatements: [
             _client.codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
-            'return ${_client.codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'remaining', 'captureErrors'])}',
+            'return ${_client.codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'glCacheable(remaining, epochs)', 'captureErrors'])}',
           ],
           catchVariable: 'exception',
           catchStatements: [
@@ -401,6 +421,7 @@ class KotlinClientRuntimeSerializer {
           iterable: 'tags',
           statements: [
             _client.codeGenUtils.constDecl('tKey', 'tagKey(tag)'),
+            'glEpochCounter(tag).incrementAndGet()',
             _client.codeGenUtils.constDecl('lock', 'tagLocks[tag] ?: continue'),
             'lock.lock()',
             _client.codeGenUtils.tryCatchFinally(

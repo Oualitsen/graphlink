@@ -107,12 +107,13 @@ class SwiftClientSerializer extends GLClientSerializer {
 
     final initBody = <String>[
       'self.fragmentMap = $fragmentMapLiteral',
+      'let glEpochs = GraphLinkEpochs()',
       if (_hasOperations(GLQueryType.query))
-        'let glQueries = GraphLinkQueries(adapter: $adapterArg, ${grammar.persistedQueriesUseGet ? 'getAdapter: getAdapter, ' : ''}fragmentMap: fragmentMap, store: store)${restWiring('glQueries', GLQueryType.query)}\nself.queries = glQueries',
+        'let glQueries = GraphLinkQueries(adapter: $adapterArg, ${grammar.persistedQueriesUseGet ? 'getAdapter: getAdapter, ' : ''}fragmentMap: fragmentMap, store: store, epochs: glEpochs)${restWiring('glQueries', GLQueryType.query)}\nself.queries = glQueries',
       if (_hasOperations(GLQueryType.mutation))
-        'let glMutations = GraphLinkMutations(adapter: $adapterArg${grammar.persistedQueriesUseGet ? ', getAdapter: getAdapter' : ''}${grammar.hasUploadMutations ? ', multipartAdapter: multipartAdapter' : ''}, fragmentMap: fragmentMap, store: store)${restWiring('glMutations', GLQueryType.mutation)}\nself.mutations = glMutations',
+        'let glMutations = GraphLinkMutations(adapter: $adapterArg${grammar.persistedQueriesUseGet ? ', getAdapter: getAdapter' : ''}${grammar.hasUploadMutations ? ', multipartAdapter: multipartAdapter' : ''}, fragmentMap: fragmentMap, store: store, epochs: glEpochs)${restWiring('glMutations', GLQueryType.mutation)}\nself.mutations = glMutations',
       if (grammar.hasSubscriptions)
-        'self.subscriptions = GraphLinkSubscriptions(adapter: adapter, wsAdapter: wsAdapter, fragmentMap: fragmentMap, store: store)',
+        'self.subscriptions = GraphLinkSubscriptions(adapter: adapter, wsAdapter: wsAdapter, fragmentMap: fragmentMap, store: store, epochs: glEpochs)',
     ];
 
     final initDecl = 'public init(${ctorParams.join(', ')}) ${codeGenUtils.block(initBody)}';
@@ -307,6 +308,7 @@ class SwiftClientSerializer extends GLClientSerializer {
       if (type == GLQueryType.mutation && grammar.hasUploadMutations) 'multipartAdapter: @escaping GraphLinkMultipartAdapter',
       'fragmentMap: [String: String]',
       'store: any GraphLinkCacheStore',
+      'epochs: GraphLinkEpochs = GraphLinkEpochs()',
     ];
   }
 
@@ -319,6 +321,7 @@ class SwiftClientSerializer extends GLClientSerializer {
         if (type != GLQueryType.subscription && grammar.persistedQueriesUseGet) 'getAdapter: getAdapter',
         'fragmentMap: fragmentMap',
         'store: store',
+        'epochs: epochs',
       ]),
     ];
   }

@@ -345,7 +345,7 @@ class GoRestOperationSerializer {
     if (op.invalidatesAll) {
       return [
         _cg.ifStatement(
-          condition: 'err := $receiver.store.InvalidateAll(ctx); err != nil',
+          condition: 'err := $receiver.invalidateAllEntries(ctx); err != nil',
           ifBlockStatements: [failure],
         ),
       ];

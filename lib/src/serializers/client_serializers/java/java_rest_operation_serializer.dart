@@ -371,7 +371,7 @@ class JavaRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['glStore__.invalidateAll();'];
+    if (op.invalidatesAll) return ['invalidateAllEntries();'];
     if (op.invalidateTags.isNotEmpty) {
       _container.imports.add(JavaImports.arrays);
       return ['invalidateByTags(${_listOf(op.invalidateTags)});'];

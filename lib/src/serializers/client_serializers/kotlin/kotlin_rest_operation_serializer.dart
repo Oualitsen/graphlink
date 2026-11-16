@@ -306,7 +306,7 @@ class KotlinRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['store.invalidateAll()'];
+    if (op.invalidatesAll) return ['invalidateAllEntries()'];
     if (op.invalidateTags.isNotEmpty) {
       return ['invalidateByTags(${_listOf(op.invalidateTags)})'];
     }

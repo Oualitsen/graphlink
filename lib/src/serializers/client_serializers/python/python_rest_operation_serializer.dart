@@ -326,7 +326,7 @@ class PythonRestOperationSerializer {
 
   List<String> _invalidation(GLRestOperation op) {
     if (op.type != GLQueryType.mutation) return const [];
-    if (op.invalidatesAll) return ['await self.gl_store__.invalidate_all()'];
+    if (op.invalidatesAll) return ['await self.invalidate_all_entries()'];
     if (op.invalidateTags.isNotEmpty) return ['await self.invalidate_by_tags(${_stringList(op.invalidateTags)})'];
     return const [];
   }

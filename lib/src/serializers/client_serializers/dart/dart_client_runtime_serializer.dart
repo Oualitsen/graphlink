@@ -184,6 +184,7 @@ class DartClientRuntimeSerializer {
         statements: [
           'late final $cacheStoreClassName $svStore;',
           'late final Map<String, GraphLinkLock> $svTagLocks;',
+          "static const glAllEpochKey__ = '\\u0000all';",
                     'late final Map<String, String> $svFragMap;',
           _client.declareHttpAdapter(),
           if (_client.parser.persistedQueries) ...[
@@ -335,9 +336,11 @@ class DartClientRuntimeSerializer {
                     ]),
                 _client.codeGenUtils.constDecl(svRemainingQueries, "partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).toList()"),
                 _client.codeGenUtils.constDecl(svPayload, _client.codeGenUtils.callExpression("_buildPayload", ["$svRemainingQueries", "operationName", "directives"])),
+                _client.codeGenUtils.constDecl('glEpochs__', '{for (final q in $svRemaining) q: _glEpoch(q.tags)}'),
                 _client.codeGenUtils.tryCatchFinally(tryStatements: [
                   _client.codeGenUtils.constDecl(svResponseText, 'await glCallAdapter($svPayload)'),
-                  'return ${_client.codeGenUtils.callExpression('_parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', '$svRemaining', 'captureErrors'])};',
+                  _client.codeGenUtils.constDecl('glCacheable__', '$svRemaining.where((q) => _glEpoch(q.tags) == glEpochs__[q]).toSet()'),
+                  'return ${_client.codeGenUtils.callExpression('_parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', 'glCacheable__', 'captureErrors'])};',
                 ], catchStatements: [
                   "$svResponseMap.addAll($svStaleData);",
                   _client.codeGenUtils.constDecl('remainingCount', 'partialQueries.where((e) => !$svResponseMap.containsKey(e.elementKey)).length'),
@@ -469,6 +472,29 @@ class DartClientRuntimeSerializer {
                 'return null;'
               ]),
           _client.codeGenUtils.createMethod(
+              methodName: "_glEpoch",
+              namedArguments: false,
+              arguments: ["Iterable<String> tags"],
+              returnType: "int",
+              statements: [
+                'var epoch = $svTagLocks[glAllEpochKey__]?.epoch ?? 0;',
+                _client.codeGenUtils.forEachLoop(
+                    variable: 'tag',
+                    iterable: 'tags',
+                    statements: ['epoch += $svTagLocks[tag]?.epoch ?? 0;']),
+                'return epoch;',
+              ]),
+          _client.codeGenUtils.createMethod(
+              methodName: "invalidateAllEntries",
+              namedArguments: false,
+              arguments: [],
+              returnType: "Future<void>",
+              async: true,
+              statements: [
+                '$svTagLocks.putIfAbsent(glAllEpochKey__, () => GraphLinkLock()).epoch++;',
+                'await $svStore.invalidateAll();',
+              ]),
+          _client.codeGenUtils.createMethod(
               methodName: "invalidateByTags",
               namedArguments: false,
               arguments: ["List<String> tags"],
@@ -481,6 +507,7 @@ class DartClientRuntimeSerializer {
                     statements: [
                       _client.codeGenUtils.constDecl('tagKey', '"\${tagKeyPrefix}\${tag}"'),
                       _client.codeGenUtils.constDecl('lock', '$svTagLocks[tag]!'),
+                      'lock.epoch++;',
                       'await lock.synchronized(() async',
                       _client.codeGenUtils.block([
                         _client.codeGenUtils.constDecl('data', 'await $svStore.get(tagKey)'),

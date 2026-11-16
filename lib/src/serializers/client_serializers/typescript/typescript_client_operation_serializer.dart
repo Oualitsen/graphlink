@@ -149,7 +149,7 @@ class TypeScriptClientOperationSerializer {
     final parseAndCacheCall = _cg.callExpression('this._parseAndCache', [
       svResponseText,
       svResponseMap,
-      svRemaining,
+      'this._glCacheable($svRemaining, glEpochs__)',
       if (isCE) 'true',
     ]);
 
@@ -200,6 +200,7 @@ class TypeScriptClientOperationSerializer {
           directives.isEmpty ? "''" : "'$directives'",
         ]),
       ),
+      _cg.constDecl('glEpochs__', 'this._glEpochs($svRemaining)'),
       _cg.tryCatchFinally(
         tryStatements: [
           _cg.constDecl(svResponseText, 'await this._glCallAdapter($svPayload)'),
@@ -595,7 +596,7 @@ class TypeScriptClientOperationSerializer {
 
   String _serializeInvalidation(GLQueryDefinition def) {
     if (_shouldInvalidateAll(def)) {
-      return 'await this.$svStore.invalidateAll();';
+      return 'await this._invalidateAllEntries();';
     }
     final tags = _getInvalidationTags(def);
     if (tags.isNotEmpty) {

@@ -114,13 +114,13 @@ real package a WS fault test.
 | close `4500` / `1011` / abrupt TCP close | Reconnect with backoff |
 | binary frame | Ignored or error, no crash |
 
-## 6. Many cached requests at the same time — tests written, 1 defect open
+## 6. Many cached requests at the same time — DONE (1 defect fixed, coalescing left out)
 
 Server: `cachedSlow(id, delayMs)` (`@glCache`, tag `slow`; returns the id's version as it was when the request arrived, then waits), `cachedSlowCalls(id)`, `bumpSlow(id)` (`@glCacheInvalidate(tags: ["slow"])`). Tests, in all 7: `cache_concurrency_test.dart`, `cache-concurrency.test.ts`, `test_cache_concurrency.py`, `cache_concurrency_test.go`, `CacheConcurrencyTest.{java,kt,swift}`.
 
 - Two keys at the same time make two calls: passes in all 7.
 - Five identical requests at the same time make **five** calls, not one. No runtime coalesces in-flight requests (the locks only guard the tag store). That is a missing feature, not a regression, so there is no test for "1 call".
-- A response still in flight when its tag is invalidated **is stored**: the next call is served the stale value. Fails in all 7 (`expected 1 but was 0`). Needs a fix in each runtime: remember an invalidation counter before sending, and skip the store when it changed.
+- A response still in flight when its tag is invalidated **is stored**: the next call is served the stale value. Failed in all 7 (`expected 1 but was 0`). Fixed in all 7 runtimes: an in-memory invalidation counter per tag plus one for `all: true` is read before the request is sent, and the cache write is skipped when it changed (the caller still gets the response). Dart, TypeScript, Python and Go keep the counters on the per-tag lock objects; Java and Kotlin keep them per cache store (the query and mutation classes do not share their lock maps); Swift passes a shared `GraphLinkEpochs` object to the query, mutation and subscription classes. All `invalidateAll` call sites (GraphQL and REST) now go through `invalidateAllEntries`. Not covered: the REST cached-response writes do not check the counter, and the gap between `store.set` and `addKeyToTags` is not closed.
 
 The original proposal follows.
 
