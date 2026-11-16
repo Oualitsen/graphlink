@@ -108,3 +108,19 @@ const expressSubscribeGuard = r'''function subscribeErrors(query: unknown, maxDe
    return undefined;
 }
 ''';
+
+const expressSourceSupport = r'''export const sourceKey = '__glSource__';
+
+type Json = Record<string, unknown>;
+
+// Keeps the object a service returned next to its JSON form, so a schema mapping gets that same instance.
+export function attachSource<T>(toJson: (value: T) => Json, value: T | null | undefined): Json | null | undefined {
+  if (value == null) return value as null | undefined;
+  return { ...toJson(value), [sourceKey]: value };
+}
+
+export function sourceOf<T>(json: unknown): T {
+  const source = (json as Json | null | undefined)?.[sourceKey];
+  return (source ?? json) as T;
+}
+''';

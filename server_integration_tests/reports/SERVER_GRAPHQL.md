@@ -99,7 +99,7 @@ carries `type Query @glIntercept(tag: "auth")`: the type-level directive of `ext
 - Fix: strip `@glIntercept` usages and its declaration from the emitted schema, as for `@glSkipOnServer`.
 - Fixed: `glIntercept` is in `_skippedDirectives` of `gl_graphql_serializer.dart`, and its declaration is no longer emitted. Case: `schema_no_generator_directives`.
 
-### 6. Java (MVC + reactive): mapping parents are copies without `equals`/`hashCode` (medium)
+### 6. Mapping parents are copies without `equals`/`hashCode` (medium) - FIXED
 
 Generated mapping controllers receive the parent as a `Map` and call `Article.fromJson(map)`, so the service gets a new
 instance. Generated Java types have no `equals`/`hashCode`, so user code that looks the parent up in its own data
@@ -108,6 +108,7 @@ Kotlin works (data classes compare by value), TS works (same object).
 
 - Fix (either): generate `equals`/`hashCode` for Java server types, or document that parents are copies.
 - Case: `mapping_map_to_wrapper_with_mapped_field` on the two Java servers.
+- Fixed on every server: a controller keeps the real object next to its map under `__glSource__` (`GraphLinkSource` in Java and Kotlin, `source.ts` in Express) for the types that are parents of a mapping, and the mapping gets that instance back. Applies to types in `GLParser.sourceTypeNames`. The TypeScript test impl is back to `indexOf` and passes.
 
 ### 7. Generated Java is not Java 8 compatible
 

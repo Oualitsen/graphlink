@@ -407,8 +407,14 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
       JavaCodeGenUtils.nullSafeExpr(json, '${resolveCodeName(type.token)}.fromJson((String)$json)', type.nullable);
 
   @override
-  String modelFromJson(GLType type, String json) => JavaCodeGenUtils.nullSafeExpr(
-      json, '${resolveCodeName(type.token)}.fromJson((${mapOf('String', 'Object')})$json)', type.nullable);
+  String modelFromJson(GLType type, String json) {
+    final codeName = resolveCodeName(type.token);
+    final map = '(${mapOf('String', 'Object')})$json';
+    final call = carriesSourceFor(type)
+        ? 'GraphLinkSource.of($map, $codeName.class, $codeName::fromJson)'
+        : '$codeName.fromJson($map)';
+    return JavaCodeGenUtils.nullSafeExpr(json, call, type.nullable);
+  }
 
   @override
   String plainFromJson(GLType type, String json) {
@@ -490,7 +496,10 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
   }
 
   @override
-  String modelToJson(GLType type, String value) => JavaCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+  String modelToJson(GLType type, String value) {
+    if (!carriesSourceFor(type)) return JavaCodeGenUtils.safeCall(value, 'toJson()', type.nullable);
+    return JavaCodeGenUtils.nullSafeExpr(value, 'GraphLinkSource.attach($value.toJson(), $value)', type.nullable);
+  }
 
   static const _jsonTypeCasts = {
     'String': 'java.util.Objects.requireNonNull((String)@)',

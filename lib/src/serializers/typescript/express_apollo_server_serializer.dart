@@ -1,5 +1,6 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
@@ -295,12 +296,18 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       imports: [
         "import DataLoader from 'dataloader';",
         if (batchMappings.any((m) => _injectsContext(m.field))) "import { GraphLinkContext } from '../context.js';",
+        if (_carriesSource(batchMappings.first.type.token) || batchMappings.any((m) => _carriesSource(m.type.token)))
+          "import { sourceOf } from '../source.js';",
         "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
         if (imp.isNotEmpty) imp,
       ],
       body: batchMappings.map((m) => _loaderFactory(m, service.token)).join('\n'),
     ).toFileContent()}\n';
   }
+
+  bool _carriesSource(String typeName) => grammar.sourceTypeNames.contains(typeName);
+
+  String serializeSourceSupport() => expressSourceSupport;
 
   String _loaderFactory(GLSchemaMapping mapping, String serviceName) {
     final parentName = tsSerializer.resolveCodeName(mapping.type.token);
@@ -311,16 +318,17 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final argCodeNames = realArgs.map((a) => a.codeName).toList();
 
     final String mapCallback;
+    final lookup = _carriesSource(mapping.type.token) ? 'map.get(sourceOf(v))' : 'map.get(v)';
     if (mapping.field.type.nullable) {
       // A nullable batch field legitimately resolves to null when the service
       // has no entry for a parent.
-      mapCallback = 'v => map.get(v) ?? null';
+      mapCallback = 'v => $lookup ?? null';
     } else {
       // A non-nullable field requires a value per key. Returning an Error (not
       // throwing) rejects only this key's promise, not the whole batch. Keep the
       // client-facing message generic and log the full parent object server-side.
       final callbackBody = _cg.block([
-        _cg.constDecl('r', 'map.get(v)'),
+        _cg.constDecl('r', lookup),
         _cg.ifStatement(
           condition: 'r == null',
           ifBlockStatements: [
@@ -333,9 +341,10 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       mapCallback = 'v => $callbackBody';
     }
     final ctx = _injectsContext(mapping.field);
+    final sourced = _carriesSource(mapping.type.token);
     final serviceCallArgs = [
       ...argCodeNames,
-      '[...items]',
+      sourced ? 'items.map(sourceOf)' : '[...items]',
       if (ctx) 'context',
     ].join(', ');
     final loaderBody = _cg.block([
@@ -402,6 +411,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       _hasBatchLoaders
           ? "import { GraphLinkContext, GraphLinkLoaders } from '../context.js';"
           : "import { GraphLinkContext } from '../context.js';",
+      if (grammar.carriesSources) "import { attachSource, sourceOf } from '../source.js';",
       if (hasUploads) "import GraphQLUpload from 'graphql-upload/GraphQLUpload.mjs';",
       if (resolverTypeImports.isNotEmpty) resolverTypeImports,
       // service + guard imports (guard only if service has @glValidate fields)
@@ -564,7 +574,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
       final callArgs = [...resolvedArgNames, if (e.contextInjected) 'context', if (e.needsInfo) 'info'].join(', ');
       final serviceCall = '$sVar.${e.fieldName}($callArgs)';
-      final toJsonExpr = tsSerializer.toJsonExpr(e.returnType, '_r');
+      final toJsonExpr = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(e.returnType, '_r'));
       final needsWrap = e.returnType is GLListType ||
           grammar.isEnum(e.returnType.firstType.token) ||
           grammar.isProjectableType(e.returnType.firstType.token);
@@ -619,7 +629,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           _argsDestructure(e.argNames, e.argCodeNames, '__');
       final callArgs = [...e.argCodeNames, if (e.contextInjected) 'context'].join(', ');
       final subscribeSignature = _resolverSignature('_', argsDestructure, e.contextInjected, false);
-      final toJsonExpr = tsSerializer.toJsonExpr(e.returnType, 'payload');
+      final toJsonExpr = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(e.returnType, 'payload'));
       final runBefore = _runBeforeStatement(e);
       final subscribeBody = runBefore == null
           ? '$sVar.${e.fieldName}($callArgs)'
@@ -714,7 +724,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       final loaderAccess = realArgs.isEmpty
           ? 'context.loaders.${m.key}'
           : 'context.loaders.${m.key}(${argCodeNames.join(', ')})';
-      final toJsonExpr = tsSerializer.toJsonExpr(m.field.type, '_r');
+      final toJsonExpr = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(m.field.type, '_r'));
       const contextType = 'GraphLinkContext & { loaders: GraphLinkLoaders }';
       if (runBefore == null) {
         return '(parent, $argsDestructure, context: $contextType) => $loaderAccess.load(parent).then((_r) => $toJsonExpr)';
@@ -738,12 +748,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final ctx = _injectsContext(m.field) || intercepted;
     final mappingCallArgs = [
       ...m.field.arguments
-          .map((a) => a.skipOnGraphqlSerialization ? 'parent' : a.codeName),
+          .map((a) => a.skipOnGraphqlSerialization ? (_carriesSource(m.type.token) ? 'sourceOf(parent)' : 'parent') : a.codeName),
       if (ctx) 'context',
       if (needsInfo) 'info',
     ].join(', ');
     final mappingResolverArgs = _resolverSignature('parent', argsDestructure, ctx, needsInfo);
-    final toJsonExpr = tsSerializer.toJsonExpr(m.field.type, '_r');
+    final toJsonExpr = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(m.field.type, '_r'));
     final serviceCall = '$sVar.${m.key}($mappingCallArgs)';
     if (runBefore == null) {
       return '$mappingResolverArgs => $serviceCall.then((_r) => $toJsonExpr)';

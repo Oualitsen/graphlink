@@ -601,6 +601,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
 
   @override
   String modelToJson(GLType type, String value) {
+    if (carriesSourceFor(type)) return 'attachSource(${resolveCodeName(type.token)}.toJson, $value)';
     final call = '${resolveCodeName(type.token)}.toJson($value)';
     return type.nullable ? '$value != null ? $call : $value' : call;
   }

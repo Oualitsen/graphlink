@@ -18,6 +18,6 @@ export class ArticleSchemaMappingsServiceImpl
   }
 
   async articleWithCountCount(value: Article): Promise<number> {
-    return articles.findIndex((a) => a.id === value.id) + 1;
+    return articles.indexOf(value) + 1;
   }
 }
