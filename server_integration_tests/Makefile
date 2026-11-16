@@ -5,7 +5,8 @@ KOTLIN_SUSPEND_PORT   = 9995
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
-.PHONY: setup-client setup-client-install setup-all-clients clean-all generate-all \
+.PHONY: faults ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
+        setup-client setup-client-install setup-all-clients clean-all generate-all \
         typescript-install typescript-generate typescript-start-server typescript-stop-server \
         typescript-test-client typescript ci-typescript-client \
         upload-install upload-generate upload-start-server upload-stop-server ci-upload \
@@ -64,7 +65,10 @@ typescript-test-client:
 
 typescript: typescript-install typescript-generate typescript-start-server setup-all-clients
 	status=0; \
-	for c in $(CLIENTS); do $(MAKE) typescript-test-client CLIENT=$$c || status=1; done; \
+	for c in $(CLIENTS); do \
+		$(MAKE) typescript-stop-server typescript-start-server || status=1; \
+		$(MAKE) typescript-test-client CLIENT=$$c || status=1; \
+	done; \
 	$(MAKE) typescript-stop-server; \
 	exit $$status
 
@@ -117,7 +121,10 @@ java-test-client:
 
 java: java-generate java-build java-start-server setup-all-clients
 	status=0; \
-	for c in $(CLIENTS); do $(MAKE) java-test-client CLIENT=$$c || status=1; done; \
+	for c in $(CLIENTS); do \
+		$(MAKE) java-stop-server java-start-server || status=1; \
+		$(MAKE) java-test-client CLIENT=$$c || status=1; \
+	done; \
 	$(MAKE) java-stop-server; \
 	exit $$status
 
@@ -144,7 +151,10 @@ java-reactive-stop-server:
 
 java-reactive: java-reactive-generate java-reactive-build java-reactive-start-server setup-all-clients
 	status=0; \
-	for c in $(CLIENTS); do $(MAKE) java-test-client CLIENT=$$c || status=1; done; \
+	for c in $(CLIENTS); do \
+		$(MAKE) java-reactive-stop-server java-reactive-start-server || status=1; \
+		$(MAKE) java-test-client CLIENT=$$c || status=1; \
+	done; \
 	$(MAKE) java-reactive-stop-server; \
 	exit $$status
 
@@ -183,6 +193,7 @@ kotlin-test-client:
 kotlin: kotlin-generate kotlin-build kotlin-blocking-start-server kotlin-suspend-start-server setup-all-clients
 	status=0; \
 	for c in $(CLIENTS); do \
+		$(MAKE) kotlin-blocking-stop-server kotlin-blocking-start-server kotlin-suspend-stop-server kotlin-suspend-start-server || status=1; \
 		$(MAKE) kotlin-test-client CLIENT=$$c PORT=$(KOTLIN_BLOCKING_PORT) || status=1; \
 		$(MAKE) kotlin-test-client CLIENT=$$c PORT=$(KOTLIN_SUSPEND_PORT) || status=1; \
 	done; \
@@ -204,6 +215,23 @@ ci-kotlin-suspend-client: kotlin-build kotlin-suspend-start-server
 	$(MAKE) kotlin-test-client CLIENT=$(CLIENT) PORT=$(KOTLIN_SUSPEND_PORT) || ($(MAKE) kotlin-suspend-stop-server && exit 1)
 	$(MAKE) kotlin-suspend-stop-server
 
+# ---- Server fault suite (server_faults/): malformed and hostile requests against each server ----
+# One fresh server per run. Known server defects live in server_faults/known_defects.json.
+
+define fault_rule
+ci-faults-$(1): $(3) $(1)-start-server
+	python3 -I server_faults/run_faults.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
+	$(MAKE) $(1)-stop-server
+endef
+
+$(eval $(call fault_rule,typescript,typescript_server,typescript-install,$(TS_PORT)))
+$(eval $(call fault_rule,java,java_server,java-build,$(JAVA_PORT)))
+$(eval $(call fault_rule,java-reactive,java_server_reactive,java-reactive-build,$(JAVA_PORT)))
+$(eval $(call fault_rule,kotlin-blocking,kotlin_server_blocking,kotlin-build,$(KOTLIN_BLOCKING_PORT)))
+$(eval $(call fault_rule,kotlin-suspend,kotlin_server_suspend,kotlin-build,$(KOTLIN_SUSPEND_PORT)))
+
+faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend
+
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
 
 install: typescript-install
@@ -212,4 +240,4 @@ start-server: typescript-start-server
 stop-server: typescript-stop-server
 test: typescript-test-client
 
-ci: typescript ci-upload
+ci: typescript ci-upload ci-faults-typescript
