@@ -666,9 +666,6 @@ Future<Set<String>> _generateFastapiAriadneClasses(
     typeMapOverrides: config.typeMappings ?? {},
   );
   final serverSerializer = FastapiAriadneServerSerializer(grammar, py, fastapiConfig);
-  if (serverSerializer.hasUploads) {
-    throw UnsupportedError('fastapiAriadne does not serve GraphQL file uploads yet: use @glUpload on @glRest* operations.');
-  }
   final files = <String, String>{};
   final exports = <String>[];
   final models = <String>[];
@@ -732,7 +729,9 @@ Future<Set<String>> _generateFastapiAriadneClasses(
   if (grammar.services.values.any((s) => s.mappings.any((m) => m.isBatch))) {
     add('$fastapiRuntimeDir/graph_link_loader.py', wrap(serverSerializer.serializeLoaderRuntime()));
   }
-  if (serverSerializer.hasRestUploads) add('file_upload.py', wrap(serverSerializer.serializeFileUpload()));
+  if (serverSerializer.hasUploads || serverSerializer.hasRestUploads) {
+    add('file_upload.py', wrap(serverSerializer.serializeFileUpload()));
+  }
 
   if (!grammar.restOnly) {
     add('type_defs.py', serverSerializer.serializeTypeDefs());

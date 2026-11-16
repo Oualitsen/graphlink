@@ -62,6 +62,14 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
 
   bool injectsContext(GLField field) => config.injectContext || field.hasDirective(glInjectContext);
 
+  bool _guardPassesInfo(GLField field) => config.useResolveInfo && !grammar.isRestField(field);
+
+  bool _passesInfo(GLService service, GLField field) {
+    if (!config.useResolveInfo || grammar.isRestField(field)) return false;
+    if (service.getTypeByFieldName(field.name.token) == GLQueryType.subscription) return false;
+    return !service.mappings.any((m) => m.isBatch && m.key == field.name.token);
+  }
+
   bool _hasGuard(GLService service) => service.fields.any(fieldHasValidation);
 
   bool _carriesSource(String typeName) => grammar.sourceTypeNames.contains(typeName);
@@ -102,6 +110,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       'from typing import Any, List, Optional, Protocol',
       '',
       'from ..context import GraphLinkContext',
+      if (config.useResolveInfo) 'from graphql import GraphQLResolveInfo',
       if (tagEnum != null) 'from ..enums.${py.moduleNameFor(tagEnum)} import ${tagEnum.codeName}',
     ];
     final runBefore = _cg.createMethod(
@@ -113,6 +122,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
         'operation: str',
         'args: List[Any]',
         'context: GraphLinkContext',
+        if (config.useResolveInfo) 'info: Optional[GraphQLResolveInfo]',
       ],
       returnType: 'None',
       statements: ['...'],
@@ -151,6 +161,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
               : py.serializeType(field.type);
       if (injectsContext(field)) params.add('context: GraphLinkContext');
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
+      if (_passesInfo(service, field)) params.add('info: GraphQLResolveInfo');
       methods.add(_cg.createMethod(
         async: !isSubscription,
         methodName: methodName(field.name.token),
@@ -168,6 +179,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       body: body,
       imports: [
         if (service.fields.any(injectsContext)) 'from ..context import GraphLinkContext',
+        if (service.fields.any((f) => _passesInfo(service, f))) 'from graphql import GraphQLResolveInfo',
         if (hasUpload) 'from ..file_upload import FileUpload',
         if (hasDownload) 'from ..rest.download import GraphLinkDownload',
         ..._importLines(types),
@@ -189,6 +201,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
         params.add('${arg.codeName}: ${isUploadScalar(arg.type) ? _uploadType(arg.type) : py.serializeType(arg.type)}');
       }
       if (injectsContext(field)) params.add('context: GraphLinkContext');
+      if (_guardPassesInfo(field)) params.add('info: GraphQLResolveInfo');
       methods.add(_cg.createMethod(
         async: true,
         methodName: methodName(GLService.getValidationMethodName(field.name.token)),
@@ -206,6 +219,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       ),
       imports: [
         if (guardedFields.any(injectsContext)) 'from ..context import GraphLinkContext',
+        if (guardedFields.any(_guardPassesInfo)) 'from graphql import GraphQLResolveInfo',
         if (guardedFields.any((f) => f.arguments.any((a) => isUploadScalar(a.type)))) 'from ..file_upload import FileUpload',
         ..._importLines(types),
       ],
@@ -344,15 +358,18 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       if (hasInterceptor) 'interceptor: Optional[$interceptorClassName] = None',
     ];
 
-    final statements = <String>[
-      'query = QueryType()',
-      'mutation = MutationType()',
-      'subscription = SubscriptionType()',
-      ..._serializeRoot(services, GLQueryType.query, 'query'),
-      ..._serializeRoot(services, GLQueryType.mutation, 'mutation'),
-      ..._serializeSubscriptions(services),
-    ];
-    final bindings = <String>['query', 'mutation', 'subscription'];
+    final statements = <String>[];
+    final bindings = <String>[];
+    void addRoot(String variable, String constructor, List<String> resolvers) {
+      if (resolvers.isEmpty) return;
+      statements.add('$variable = $constructor()');
+      statements.addAll(resolvers);
+      bindings.add(variable);
+    }
+
+    addRoot('query', 'QueryType', _serializeRoot(services, GLQueryType.query, 'query'));
+    addRoot('mutation', 'MutationType', _serializeRoot(services, GLQueryType.mutation, 'mutation'));
+    addRoot('subscription', 'SubscriptionType', _serializeSubscriptions(services));
     final typeMappings = _serializeTypeMappings(services);
     statements.addAll(typeMappings.statements);
     bindings.addAll(typeMappings.bindings);
@@ -375,6 +392,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       '',
       'from .context import GraphLinkContext',
       if (grammar.carriesSources) 'from .source import attach_source, source_of',
+      if (hasUploads) 'from .file_upload import to_file_upload',
       'from .type_defs import TYPE_DEFS',
       ..._importLines(types, root: true),
       for (final service in services) ...[
@@ -399,23 +417,28 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
     return ['${tagEnum.codeName}.$member'];
   }
 
-  String _runBefore(GLField field, GLQueryType? type, String operation, List<String> args) {
+  String _runBefore(GLField field, GLQueryType? type, String operation, List<String> args, {bool info = false}) {
     final callArgs = [
       ..._interceptorTagCallArg(field, type),
       py.pythonStringLiteral(operation),
       '[${args.join(', ')}]',
       'context',
+      if (config.useResolveInfo) info ? 'info' : 'None',
     ].join(', ');
     return 'await interceptor.run_before($callArgs)';
   }
 
   String _argAccess(String wire) => 'args.get(${py.pythonStringLiteral(wire)})';
 
-  List<String> _decodeArgs(GLField field, {Set<String> skip = const {}}) => [
-        for (final arg in field.arguments)
-          if (!skip.contains(arg.token))
-            _cg.constDecl(arg.codeName, py.fromJsonExpr(arg.type, _argAccess(arg.token))),
-      ];
+  List<String> _decodeArgs(GLField field) => _decodeRealArgs(field.arguments);
+
+  String _decodeArg(GLArgumentDefinition arg) {
+    final access = _argAccess(arg.token);
+    if (!isUploadScalar(arg.type)) return py.fromJsonExpr(arg.type, access);
+    if (arg.type is! GLListType) return 'to_file_upload($access)';
+    final list = _cg.listComprehension(expression: 'to_file_upload(e0)', variable: 'e0', iterable: access);
+    return arg.type.nullable ? _cg.nullSafe(access, list, true) : list;
+  }
 
   List<String> _serializeRoot(List<GLService> services, GLQueryType type, String binding) {
     final result = <String>[];
@@ -434,11 +457,12 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
     final intercepted = grammar.isIntercepted(field, type);
     final ctx = injectsContext(field) || intercepted;
     final argNames = field.arguments.map((a) => a.codeName).toList();
-    final callArgs = [...argNames, if (injectsContext(field)) 'context'].join(', ');
+    final callArgs = [...argNames, if (injectsContext(field)) 'context', if (_passesInfo(service, field)) 'info'].join(', ');
+    final guardArgs = [...argNames, if (injectsContext(field)) 'context', if (_guardPassesInfo(field)) 'info'].join(', ');
     final method = methodName(field.name.token);
     final call = '${serviceVar(service)}.$method($callArgs)';
     final guardCall = fieldHasValidation(field)
-        ? 'await ${guardVar(service)}.${methodName(GLService.getValidationMethodName(field.name.token))}($callArgs)'
+        ? 'await ${guardVar(service)}.${methodName(GLService.getValidationMethodName(field.name.token))}($guardArgs)'
         : null;
     final resultExpr = py.carryingSource(() => py.toJsonExpr(field.type, 'result'));
     final name = '${binding}_$method';
@@ -450,7 +474,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       statements: [
         if (ctx) 'context: GraphLinkContext = info.context',
         ..._decodeArgs(field),
-        if (intercepted) _runBefore(field, type, field.name.token, argNames),
+        if (intercepted) _runBefore(field, type, field.name.token, argNames, info: true),
         if (guardCall != null) guardCall,
         'result = await $call',
         'return $resultExpr',
@@ -603,6 +627,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
       for (final a in m.field.arguments)
         a.skipOnGraphqlSerialization ? (_carriesSource(m.type.token) ? 'source_of(parent)' : 'parent') : a.codeName,
       if (injectsContext(m.field)) 'context',
+      if (config.useResolveInfo) 'info',
     ].join(', ');
     return _cg.createMethod(
       decorators: [decorator],
@@ -620,7 +645,7 @@ class FastapiAriadneServerSerializer extends ServerSerializer with ServerSeriali
   }
 
   List<String> _decodeRealArgs(List<GLArgumentDefinition> args) => [
-        for (final arg in args) _cg.constDecl(arg.codeName, py.fromJsonExpr(arg.type, _argAccess(arg.token))),
+        for (final arg in args) _cg.constDecl(arg.codeName, _decodeArg(arg)),
       ];
 
   // ── app.py ────────────────────────────────────────────────────────────────

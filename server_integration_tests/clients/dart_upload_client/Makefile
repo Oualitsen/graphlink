@@ -1,3 +1,5 @@
+PORT ?= 9996
+
 .PHONY: install generate test ci remove-generated
 
 install:
@@ -10,6 +12,6 @@ generate: remove-generated
 	dart run ../../generate.dart
 
 test:
-	dart test -j 1
+	SERVER_PORT=$(PORT) dart test -j 1
 
 ci: install generate test

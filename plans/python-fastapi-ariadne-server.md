@@ -1,6 +1,6 @@
 # Python server target: FastAPI + Ariadne
 
-Status: implemented 2026-11-16, phases 1 to 4 and 6 (GraphQL upload scalar, phase 5, not served yet: generation fails with a message).
+Status: implemented 2026-11-16, all phases. GraphQL uploads run against `servers/python_upload_server` (Dart upload harness).
 `server_integration_tests/servers/python_fastapi_server` passes the faults, REST and GraphQL suites with no known defect, and the Dart, TypeScript,
 Python and Go client harnesses against it.
 
