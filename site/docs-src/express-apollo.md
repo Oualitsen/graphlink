@@ -315,6 +315,33 @@ the service interface, called by the generated resolver before the main method. 
 mutation before any business logic runs. See [Spring Boot Server → Validation with `@glValidate`](spring-server.md#validation-with-glvalidate)
 for the full write-up — the contract is identical, only the language differs.
 
+## REST operations (`@glRest*`)
+
+The operations marked with the [REST directives](rest-client.md) are served by the same server. GraphLink generates one Express router, `rest/build-rest-router.ts`, that `createServer` mounts next to the GraphQL endpoint; every route calls the same service interface as the GraphQL resolvers. REST operations are not part of the GraphQL schema, and their service methods take no `GraphQLResolveInfo`.
+
+```ts title="Generated rest/build-rest-router.ts (excerpt)"
+router.get("/products/:id", handle(async (req, res) => {
+   const id = pathArg(req, "id", S.string);
+   const context = await restContext(services, req, res);
+   const result = await services.productService.product(id, context);
+   sendJson(res, result != null ? Product.toJson(result) : result);
+}));
+```
+
+Values are read from the part of the request the directive names and validated before your code runs: `Int` must be a 32-bit integer, `Boolean` is `true`/`false`, an enum must be one of its values, a JSON body is checked field by field against the input type (`required`, types, enums, lists). Anything wrong is a `400`, a body that is not JSON a `415`, a wrong method on a known path a `405`, an unknown path under the REST prefix a `404`, and an exception thrown by a service a `500`; none of them carries a stack trace. A `null` result is an empty `200`, `Void` is `204`, `response: TEXT` is `text/plain`. `contextFactory(req, res)` supplies the `context` argument exactly as it does for GraphQL.
+
+**Uploads.** `@glRestPart` on an `Upload` / `[Upload!]` (plus scalar and enum text parts) is read by `rest/uploads.ts` with [`busboy`](https://github.com/mscdex/busboy): each file is spooled to a temporary directory (removed when the response closes, files above 100 MB are a `413`) and reaches the service as a `FileUpload` whose `createReadStream()` can be called more than once. `@glRestBody` on an `Upload` hands the request stream itself to the service (`createReadStream()` once). Add `busboy` and `@types/busboy` to the server's `package.json` when a schema has multipart parts; raw bodies need nothing. These uploads are independent of GraphQL uploads: a schema with REST uploads only does not need `graphql-upload`.
+
+**Forms** (`@glRestField`) are read with `express.text` for `application/x-www-form-urlencoded` and `URLSearchParams`; a body of another type is a `415`. **Input objects, lists of objects and JSON text** in the query string or a form are read from nested keys (`address.city`, `items[0][name]`) or parsed from JSON and then validated against the input's shape (`nestedArg`, `jsonArg`).
+
+**Downloads.** A `@glDownload` scalar is the generated `GraphLinkDownload` (`rest/download.ts`): return `{ data, filename?, contentType?, length? }` where `data` is a `Readable`, a `Uint8Array` or a string. A stream is piped (a failure destroys the response), `Content-Disposition: attachment` is written with an RFC 5987 `filename*` for non-ASCII names, and `null` is `204`. `Range` requests are not served.
+
+**`responsePath`** nests the result (`{"data":{"items":[...]}}` for `responsePath: "data.items"`).
+
+**Interceptors.** `@glIntercept` (on the operation or on a block) calls `interceptor.runBefore(tag, operation, args, context)` with the decoded arguments before `@glValidate` and the service; pass `interceptor` in the services you give `createServer`. Throw `new RestError(403, 'Forbidden')` (exported by `rest/support`) to deny; any other error is a `500`. `contextFactory(req, res)` supplies `context`, as for GraphQL.
+
+Rejected at generation time with a message: an input object as a multipart part, a recursive input object in a query or a form, and lists of lists. The shapes otherwise match [Spring Boot](spring-server.md#rest-operations-glrest).
+
 ## Development workflow
 
 ```bash

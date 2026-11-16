@@ -12,7 +12,11 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
+import 'package:graphlink/src/serializers/typescript/express_apollo_rest_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_constants.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
@@ -24,6 +28,22 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   final _cg = TypeScriptCodeGenUtils();
 
   ExpressApolloServerSerializer(super.grammar, this.tsSerializer, this.apolloConfig);
+
+  late final ExpressApolloRestSerializer _rest = ExpressApolloRestSerializer(grammar, tsSerializer, apolloConfig);
+
+  bool get hasRest => _rest.hasRest;
+
+  bool get hasRestUploads => _rest.hasUploads;
+
+  String serializeRestUploads() => _rest.serializeUploads();
+
+  bool get hasRestDownloads => _rest.hasDownloads;
+
+  String serializeRestDownloads() => _rest.serializeDownloads();
+
+  String serializeRestRouter() => _rest.serializeRestRouter();
+
+  String serializeRestSupport() => expressRestSupport;
 
   // ── uploads ───────────────────────────────────────────────────────────────
 
@@ -170,6 +190,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final importedTypes = <String>{};
     final methods = <String>[];
     var hasUpload = false;
+    var hasDownload = false;
 
     // A batch mapping resolves many parents in one call, so it has no single
     // GraphQLResolveInfo — exclude `info` from its signature (as subscriptions do).
@@ -186,11 +207,17 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         _collectType(arg.type, importedTypes);
         return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
       }).toList();
-      final returnTs = tsSerializer.serializeType(field.type);
+      final isDownload = grammar.downloadScalarNames.contains(field.type.firstType.token);
+      if (isDownload) hasDownload = true;
+      final returnTs = grammar.voidScalarNames.contains(field.type.firstType.token)
+          ? 'void'
+          : isDownload
+              ? 'GraphLinkDownload${field.type.nullable ? ' | null' : ''}'
+              : tsSerializer.serializeType(field.type);
       _collectType(field.type, importedTypes);
       final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
       final isBatch = batchKeys.contains(field.name.token);
-      final needsInfo = apolloConfig.useResolveInfo && !isSubscription && !isBatch;
+      final needsInfo = apolloConfig.useResolveInfo && !isSubscription && !isBatch && !grammar.isRestField(field);
       final params = [
         ...argList,
         if (_injectsContext(field)) 'context: GraphLinkContext',
@@ -204,6 +231,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         service.fields.any((f) =>
             f.getDirectiveByName(glValidate)?.generated != true &&
             service.getTypeByFieldName(f.name.token) != GLQueryType.subscription &&
+            !grammar.isRestField(f) &&
             !batchKeys.contains(f.name.token));
     final needsContextImport = service.fields.any(_injectsContext);
 
@@ -212,6 +240,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
       if (needsResolveInfoImport) "import { GraphQLResolveInfo } from 'graphql';",
       if (hasUpload) "import type { FileUpload } from '../file-upload.js';",
+      if (hasDownload) "import type { GraphLinkDownload } from '../rest/download.js';",
       if (imp.isNotEmpty) imp,
     ];
     return '${lines.join('\n')}\n\n${_cg.createInterface(interfaceName: service.token, fields: methods)}';
@@ -230,14 +259,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         _collectType(arg.type, importedTypes);
         return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
       }).toList();
-      final guardParams = [...argList, if (_injectsContext(field)) 'context: GraphLinkContext', if (apolloConfig.useResolveInfo) 'info: GraphQLResolveInfo'];
+      final guardParams = [...argList, if (_injectsContext(field)) 'context: GraphLinkContext', if (apolloConfig.useResolveInfo && !grammar.isRestField(field)) 'info: GraphQLResolveInfo'];
       methods.add('${validationMethodName(field.name.token)}(${guardParams.join(', ')}): Promise<void>;');
     }
 
     if (methods.isEmpty) return null;
 
     final imp = _imports(importedTypes);
-    final resolveInfoImport = apolloConfig.useResolveInfo ? "import { GraphQLResolveInfo } from 'graphql';" : '';
+    final resolveInfoImport = apolloConfig.useResolveInfo && service.fields.where(fieldHasValidation).any((f) => !grammar.isRestField(f))
+        ? "import { GraphQLResolveInfo } from 'graphql';"
+        : '';
     final needsContextImport = service.fields.where(fieldHasValidation).any(_injectsContext);
     final lines = [
       if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
@@ -399,7 +430,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final mutation = _serializeRootBlock(services, GLQueryType.mutation, 'Mutation');
     final subscription = _serializeSubscriptionBlock(services);
     final resolverMap = [
-      for (final name in grammar.uploadScalarNames) '$name: GraphQLUpload',
+      if (hasUploads)
+        for (final name in grammar.uploadScalarNames) '$name: GraphQLUpload',
       if (query != null) query,
       if (mutation != null) mutation,
       if (subscription != null) subscription,
@@ -485,6 +517,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     for (final service in services) {
       for (final field in service.fields) {
         if (field.getDirectiveByName(glValidate)?.generated == true) continue;
+        if (grammar.isRestField(field)) continue;
         if (service.getTypeByFieldName(field.name.token) != type) continue;
         final intercepted = grammar.isIntercepted(field, type);
         entries.add(_RootEntry(
@@ -702,6 +735,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   @override
   String serializeEntryPoint() {
+    if (grammar.restOnly) return _restOnlyEntryPoint();
     final services = grammar.services.values.toList();
 
     final interceptorDef = hasInterceptor ? grammar.interfaces[glInterceptorInterfaceName]! : null;
@@ -722,6 +756,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       "import { GraphLinkContext } from './context.js';",
       "import { typeDefs } from './typeDefs.js';",
       "import { buildResolvers } from './resolvers/build-resolvers.js';",
+      if (_rest.hasRest) "import { buildRestRouter } from './rest/build-rest-router.js';",
       if (interceptorDef != null)
         "import { ${interceptorDef.codeName} } from './interfaces/${tsSerializer.getFileNameFor(interceptorDef).replaceAll('.ts', '.js')}';",
       for (final service in services) ...[
@@ -850,6 +885,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         '',
         'await server.start();',
         _registerMiddleware(),
+        if (_rest.hasRest) 'app.use(buildRestRouter(services));',
         'app.use(graphLinkErrorHandler);',
         'return httpServer;',
       ];
@@ -872,6 +908,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         '',
         'await server.start();',
         _registerMiddleware(),
+        if (_rest.hasRest) 'app.use(buildRestRouter(services));',
         'app.use(graphLinkErrorHandler);',
         'return app;',
       ];
@@ -887,6 +924,43 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     ));
 
     return '${GLClassModel(imports: imports, body: buf.toString()).toFileContent()}\n';
+  }
+
+  /// A schema with REST operations only: an Express app with the REST router, no Apollo, no schema, no resolvers.
+  String _restOnlyEntryPoint() {
+    final services = grammar.services.values.toList();
+    final guarded = services.where(_hasGuard).toList();
+    final imports = [
+      "import express, { Express, Request, Response } from 'express';",
+      "import cors from 'cors';",
+      "import { GraphLinkContext } from './context.js';",
+      "import { buildRestRouter } from './rest/build-rest-router.js';",
+      "import { restErrorHandler } from './rest/support.js';",
+      for (final service in services) "import { ${service.token} } from './services/${_kebabJs(service.token)}';",
+      for (final service in guarded) "import { ${_guardName(service)} } from './guards/${_kebabJs(_guardName(service))}';",
+    ];
+    final body = StringBuffer()
+      ..writeln(_cg.createInterface(interfaceName: 'GraphLinkServices', fields: [
+        for (final service in services) '${service.token.firstLow}: ${service.token};',
+        for (final service in guarded) '${_guardName(service).firstLow}: ${_guardName(service)};',
+        'contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;',
+      ]))
+      ..writeln()
+      ..writeln(_cg.createFunction(
+        functionName: 'createServer',
+        arguments: ['services: GraphLinkServices'],
+        returnType: 'Express',
+        async: true,
+        exported: true,
+        statements: [
+          _cg.constDecl('app', 'express()'),
+          'app.use(cors());',
+          'app.use(buildRestRouter(services));',
+          'app.use(restErrorHandler);',
+          'return app;',
+        ],
+      ));
+    return '${GLClassModel(imports: imports, body: body.toString()).toFileContent()}\n';
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -938,8 +1012,10 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}queryDepthGuard(maxQueryDepth), expressMiddleware(server, $options));";
   }
 
-  String _tsUploadType(GLType type) =>
-      type is GLListType ? 'FileUpload[]' : 'FileUpload';
+  String _tsUploadType(GLType type) {
+    final upload = type is GLListType ? 'FileUpload[]' : 'FileUpload';
+    return type.nullable ? '$upload | null' : upload;
+  }
 
   String _guardName(GLService service) =>
       '${service.token.replaceFirst('Service', '')}Guard';

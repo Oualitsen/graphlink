@@ -13,7 +13,9 @@
     "ws_subscribe_without_payload": "Spring GraphQL closes the socket with 1011 instead of 4400 for a subscribe message without payload.",
     "ws_unknown_variable_type": "Spring GraphQL: a subscription whose variable cannot be coerced never answers (no error, no complete); the client waits forever.",
     "unknown_operation_name": "graphql.execution.UnknownOperationException escapes Spring GraphQL: 500 instead of 400/200 with errors.",
-    "ambiguous_operation": "graphql.execution.UnknownOperationException ('Must provide operation name') escapes Spring GraphQL: 500 instead of 400/200 with errors."
+    "ambiguous_operation": "graphql.execution.UnknownOperationException ('Must provide operation name') escapes Spring GraphQL: 500 instead of 400/200 with errors.",
+    "empty_body": "Spring GraphQL on WebFlux: an empty body is answered 200 with an empty body instead of a 400 with an errors array. Framework behaviour.",
+    "huge_body": "Spring GraphQL on WebFlux: a body above the codec limit (256 KB) is a 500 instead of a 413. Framework behaviour (spring.codec.max-in-memory-size)."
   },
   "kotlin_server_blocking": {
     "json_null_body": "Spring GraphQL: a body of `null` gives 500 (NullPointerException in the HTTP handler) instead of 400. Framework behaviour, not generated code.",

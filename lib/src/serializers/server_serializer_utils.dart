@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_field.dart';
@@ -10,10 +11,7 @@ mixin ServerSerializerUtils on ServerSerializer {
   bool isUploadScalar(GLType type) =>
       grammar.uploadScalarNames.contains(type.firstType.token);
 
-  bool get hasUploads =>
-      grammar.uploadScalarNames.isNotEmpty &&
-      grammar.services.values.any(
-          (s) => s.fields.any((f) => f.arguments.any((a) => isUploadScalar(a.type))));
+  bool get hasUploads => grammar.uploadScalarNames.isNotEmpty && grammar.graphQLUsesUpload;
 
   bool get hasSubscriptions =>
       grammar.services.values.any((s) =>

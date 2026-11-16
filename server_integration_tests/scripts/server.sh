@@ -26,6 +26,17 @@ kill_group() {
 
 port_owners() { lsof -ti "tcp:$1" -sTCP:LISTEN 2>/dev/null; }
 
+# Prints the owners still listening after the grace period (nothing when the port is free).
+wait_for_port_release() {
+  local owners
+  for _ in $(seq 1 30); do
+    owners=$(port_owners "$1")
+    [[ -z $owners ]] && return 0
+    sleep 1
+  done
+  echo "$owners"
+}
+
 http_ready() {
   local body
   body=$(curl -s --max-time 3 -X POST -H 'Content-Type: application/json' \
@@ -55,8 +66,9 @@ start() {
   [[ ${1:-} == -- ]] && shift
   stop
 
+  # A previous server may still be shutting down: Gradle's bootRun JVM is stopped by the daemon, after our group is gone.
   local owners
-  owners=$(port_owners "$port")
+  if [[ ${FORCE_KILL_PORT:-0} == 1 ]]; then owners=$(port_owners "$port"); else owners=$(wait_for_port_release "$port"); fi
   if [[ -n $owners ]]; then
     if [[ ${FORCE_KILL_PORT:-0} == 1 ]]; then
       echo "$owners" | xargs kill -9 2>/dev/null

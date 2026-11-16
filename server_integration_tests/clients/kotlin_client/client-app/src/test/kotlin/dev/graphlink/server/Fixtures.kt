@@ -16,7 +16,7 @@ object Fixtures {
     fun newClient(): GraphLinkClient {
         val codec = KotlinxSerializationGraphLinkJsonCodec()
         return GraphLinkClient(
-            DefaultGraphLinkClientAdapter(SERVER_URL, codec),
+            DefaultGraphLinkClientAdapter(SERVER_URL),
             DefaultGraphLinkWebSocketAdapter(WS_URL),
             codec, codec,
         )

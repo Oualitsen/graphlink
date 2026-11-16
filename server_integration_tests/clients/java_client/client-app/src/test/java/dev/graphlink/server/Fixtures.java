@@ -24,7 +24,7 @@ public final class Fixtures {
     public static GraphLinkClient newClient() {
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
         return new GraphLinkClient(
-                new DefaultGraphLinkClientAdapter(SERVER_URL, codec),
+                new DefaultGraphLinkClientAdapter(SERVER_URL),
                 codec, codec,
                 new DefaultGraphLinkWebSocketAdapter(WS_URL));
     }

@@ -4,6 +4,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
+import 'package:graphlink/src/model/gl_rest_controller.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -12,6 +13,7 @@ import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_spring_controller_serializer.dart';
+import 'package:graphlink/src/serializers/java/java_spring_rest_controller_serializer.dart';
 import 'package:graphlink/src/serializers/jvm_spring_server_serializer_base.dart';
 
 class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
@@ -20,6 +22,8 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
   @override
   final JavaCodeGenUtils codeGenUtils = JavaCodeGenUtils();
   final String? defaultRepositoryBase;
+  late final JavaSpringRestControllerSerializer _restSerializer =
+      JavaSpringRestControllerSerializer(grammar, serializer: serializer, reactive: reactive, packageName: packageName);
 
   JavaSpringServerSerializer._(
     super.grammar,
@@ -64,6 +68,8 @@ class JavaSpringServerSerializer extends JvmSpringServerSerializerBase {
         reactive: reactive,
         useSpringSecurity: useSpringSecurity);
   }
+
+  String serializeRestController(GLRestController ctrl) => _restSerializer.serializeRestController(ctrl);
 
   // ── interfaces/GraphLinkInterceptor.java ────────────────────────────────────
 

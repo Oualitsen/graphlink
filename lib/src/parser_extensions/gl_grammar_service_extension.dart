@@ -11,6 +11,7 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 
 extension GLGrammarServiceExtension on GLParser {
   void generateServicesAndControllers() {
@@ -19,7 +20,8 @@ extension GLGrammarServiceExtension on GLParser {
           types[schema.getByQueryType(type)]?.fields ?? [], type);
     }
     for (var s in services.values) {
-      var ctrl = GLController.ofService(s, this);
+      var ctrl = GLController.ofService(s, this, skip: isRestField);
+      if (ctrl.fields.isEmpty) continue;
       controllers[ctrl.token] = ctrl;
     }
   }

@@ -1,5 +1,7 @@
 # server_integration_tests hardening — progress and findings
 
+REST operations on the servers (design, tests, findings): see `REST_SERVER.md`.
+
 Autonomous run. Newest status at the top of each section.
 
 ## What was done

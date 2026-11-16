@@ -1,0 +1,11 @@
+{
+  "java_server": {
+    "upload_multipart_without_boundary": "Spring rejects a multipart envelope without a boundary in DispatcherServlet.checkMultipart, before any controller or its @ExceptionHandler is reached: 500. Needs a global @ControllerAdvice or a filter."
+  },
+  "kotlin_server_blocking": {
+    "upload_multipart_without_boundary": "Same as java_server: the envelope is rejected before the controller is reached."
+  },
+  "kotlin_server_suspend": {
+    "upload_multipart_without_boundary": "Same as java_server: the envelope is rejected before the controller is reached."
+  }
+}

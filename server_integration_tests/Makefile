@@ -5,7 +5,9 @@ KOTLIN_SUSPEND_PORT   = 9995
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
-.PHONY: faults ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
+.PHONY: faults rest http ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
+        ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend \
+        ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend \
         setup-client setup-client-install setup-all-clients clean-all generate-all \
         typescript-install typescript-generate typescript-start-server typescript-stop-server \
         typescript-test-client typescript ci-typescript-client \
@@ -218,10 +220,24 @@ ci-kotlin-suspend-client: kotlin-build kotlin-suspend-start-server
 # ---- Server fault suite (server_faults/): malformed and hostile requests against each server ----
 # One fresh server per run. Known server defects live in server_faults/known_defects.json.
 
+# ---- Server REST suite (server_rest/): the REST operations of schema_rest/rest.gql over raw HTTP ----
+# ci-http-<server> runs both suites against one server start, which is what CI does.
+
 define fault_rule
 ci-faults-$(1): $(3) $(1)-start-server
 	python3 -I server_faults/run_faults.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
 	$(MAKE) $(1)-stop-server
+
+ci-rest-$(1): $(3) $(1)-start-server
+	python3 -I server_rest/run_rest.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
+	$(MAKE) $(1)-stop-server
+
+ci-http-$(1): $(3) $(1)-start-server
+	status=0; \
+	python3 -I server_faults/run_faults.py $(2) $(4) || status=1; \
+	python3 -I server_rest/run_rest.py $(2) $(4) || status=1; \
+	$(MAKE) $(1)-stop-server; \
+	exit $$$$status
 endef
 
 $(eval $(call fault_rule,typescript,typescript_server,typescript-install,$(TS_PORT)))
@@ -232,6 +248,10 @@ $(eval $(call fault_rule,kotlin-suspend,kotlin_server_suspend,kotlin-build,$(KOT
 
 faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend
 
+rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend
+
+http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend
+
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
 
 install: typescript-install
@@ -240,4 +260,4 @@ start-server: typescript-start-server
 stop-server: typescript-stop-server
 test: typescript-test-client
 
-ci: typescript ci-upload ci-faults-typescript
+ci: typescript ci-upload ci-http-typescript

@@ -326,6 +326,10 @@ err = client.Mutations.Avatar(ctx, "p1", generated.GLUploadFromBytes(data, "p1.p
 - A `GLUpload` is an `io.Reader`; `Length: -1` streams chunked and reports no progress. A `*GLDownload` wraps the response body: read it or call `Close()`.
 - Floats print as Go does (`3`, not `3.0`); `nil` results are returned as nil pointers or nil slices.
 
+## Serving the same operations
+
+The generated Spring Boot (Java, Kotlin) and Express servers serve `@glRest*` operations too, from the same schema: [Spring Boot](spring-server.md#rest-operations-glrest), [Express](express-apollo.md#rest-operations-glrest). A schema can therefore describe a REST API once and produce both its server and its typed clients.
+
 ## Known limitations
 
 - Dart, TypeScript, Java, Kotlin, Python, Swift and Go clients only.

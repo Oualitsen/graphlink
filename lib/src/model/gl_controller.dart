@@ -22,7 +22,7 @@ class GLController extends GLService {
     required super.parser,
   });
 
-  static GLController ofService(GLService service, GLParser parser) {
+  static GLController ofService(GLService service, GLParser parser, {bool Function(GLField field)? skip}) {
     var ctrl = GLController(
       serviceName: service.token,
       name: "${service.token}Controller".toToken(),
@@ -33,6 +33,7 @@ class GLController extends GLService {
       parser: parser,
     );
     for (var f in service.fields) {
+      if (skip != null && skip(f)) continue;
       var validationDirective = f.getDirectiveByName(glValidate);
       if (validationDirective == null || !validationDirective.generated) {
         var targetField = GLField(

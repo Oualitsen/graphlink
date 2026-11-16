@@ -3,11 +3,17 @@ package dev.graphlink.kotlinserversuspend.impl
 import dev.graphlink.kotlinserversuspend.generated.enums.GlInterceptorTag
 import dev.graphlink.kotlinserversuspend.generated.interfaces.GraphLinkInterceptor
 import graphql.GraphQLContext
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import org.springframework.web.server.ResponseStatusException
 
 @Component
 class InterceptorImpl : GraphLinkInterceptor {
     override suspend fun runBefore(tag: GlInterceptorTag?, operation: String, args: List<Any>, context: GraphQLContext) {
+        if (operation.startsWith("rest") && args.isNotEmpty() && args[0] == "deny") {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "denied")
+        }
+
         // `Team.members(role: String!)` demonstrates the throw-to-deny contract
         // directly: this is the batch-mapping equivalent of the marker approach
         // used everywhere else, but sidesteps the fact that batch mappings can't

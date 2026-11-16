@@ -571,8 +571,8 @@ jobs:
             java-reactive)    make ci-java-reactive-client CLIENT=${{ matrix.client }} ;;
           esac
 
-  # Server fault suite: malformed and hostile requests against each generated server.
-  # One job per server (not per client), so it adds 5 jobs rather than 35.
+  # Server HTTP suites: malformed and hostile requests (server_faults/) and the REST operations (server_rest/)
+  # against each generated server, on one server start. One job per server (not per client), so it adds 5 jobs rather than 35.
   server-faults:
     runs-on: ubuntu-latest
     needs: server-integration-tests-generate
@@ -599,7 +599,7 @@ jobs:
         with:
           name: server-integration-tests-generated
           path: server_integration_tests
-      - run: make ci-faults-${{ matrix.server }}
+      - run: make ci-http-${{ matrix.server }}
 
   # swift client x java server only — not folded into the full matrix above
   # to avoid a 5x job-count blowup for one extra client. Runs on macos-latest
