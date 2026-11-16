@@ -21,7 +21,6 @@ import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/serializers/python/python_mapping_serializer.dart';
 
 const pythonModelBaseName = 'GraphLinkModel';
-const pythonModelBaseModule = 'client/graph_link_model';
 
 class PythonSerializer extends GLSerializer with JsonExpressions {
   @override
@@ -30,6 +29,8 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = PythonCodeGenUtils();
 
   final bool immutableTypeFields;
+
+  final String runtimeDir;
 
   @override
   Map<String, String> get defaultTypeMap => const {
@@ -48,6 +49,7 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   PythonSerializer(
     super.grammar, {
     this.immutableTypeFields = true,
+    this.runtimeDir = 'client',
     super.typeMapOverrides = const {},
     super.importPrefix = '',
   });
@@ -449,7 +451,10 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
   }
 
   @override
-  String modelToJson(GLType type, String value) => codeGenUtils.nullSafe(value, '$value.to_json()', type.nullable);
+  String modelToJson(GLType type, String value) {
+    if (carriesSourceFor(type)) return 'attach_source($value)';
+    return codeGenUtils.nullSafe(value, '$value.to_json()', type.nullable);
+  }
 
   @override
   String enumFromJson(GLType type, String json) => modelFromJson(type, json);
@@ -606,9 +611,9 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
       '',
       if (pydantic.isNotEmpty) 'from pydantic import ${pydantic.join(', ')}',
       if (usesModelBase && body.contains(pythonModelBaseName))
-        'from ..$pythonModelBaseModule import $pythonModelBaseName'.replaceAll('/', '.'),
+        'from ..$runtimeDir.graph_link_model import $pythonModelBaseName',
       ...{...runtimeImports},
-      if (body.contains('graph_link_json.')) 'from ..client import graph_link_json',
+      if (body.contains('graph_link_json.')) 'from ..$runtimeDir import graph_link_json',
       if (typeCheckingImports.isNotEmpty) ...[
         '',
         'if TYPE_CHECKING:',

@@ -41,14 +41,14 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   parser.enums.forEach((_, def) {
     final content = serializer.serializeEnumDefinition(def);
     add('enums', serializer.getFileNameFor(def), content);
-    if (content.trim().isNotEmpty) exports.add(_exportLine('enums', serializer, def.codeName, def));
+    if (content.trim().isNotEmpty) exports.add(pythonExportLine('enums', serializer, def.codeName, def));
   });
 
   parser.inputs.forEach((_, def) {
     final content = serializer.serializeInputDefinition(def);
     add('inputs', serializer.getFileNameFor(def), content);
     if (content.trim().isNotEmpty) {
-      exports.add(_exportLine('inputs', serializer, def.codeName, def));
+      exports.add(pythonExportLine('inputs', serializer, def.codeName, def));
       models.add(def.codeName);
     }
   });
@@ -61,7 +61,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     final content = serializer.serializeTypeDefinition(def);
     add(subdir, serializer.getFileNameFor(def), content);
     if (content.trim().isNotEmpty) {
-      exports.add(_exportLine(subdir, serializer, def.codeName, def));
+      exports.add(pythonExportLine(subdir, serializer, def.codeName, def));
       models.add(def.codeName);
     }
   });
@@ -116,7 +116,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'client']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
   }
-  files['__init__.py'] = _barrel(exports, models);
+  files['__init__.py'] = pythonBarrel(exports, models);
 
   final written = <Future<File>>[];
   files.forEach((path, content) {
@@ -129,7 +129,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   return paths;
 }
 
-String _exportLine(String subdir, PythonSerializer serializer, String className, dynamic def) =>
+String pythonExportLine(String subdir, PythonSerializer serializer, String className, dynamic def) =>
     'from .$subdir.${serializer.moduleNameFor(def)} import $className';
 
 String _operationFileName(GLQueryType type) {
@@ -143,7 +143,7 @@ String _operationFileName(GLQueryType type) {
   }
 }
 
-String _barrel(List<String> exports, List<String> models) {
+String pythonBarrel(List<String> exports, List<String> models) {
   final buffer = StringBuffer();
   buffer.writeln('import sys as _sys');
   buffer.writeln();

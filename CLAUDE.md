@@ -183,6 +183,10 @@ serializers/
     express_apollo_rest_constants.dart      # runtime support of that router (`rest/support.ts`)
   swift/swift_serializer.dart      # Swift types, inputs, enums
   python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
+  python/fastapi_ariadne_server_serializer.dart  # FastAPI + Ariadne server: Protocol services/guards, resolvers, loaders, app
+  python/fastapi_ariadne_server_constants.dart   # static runtime of that server (loader, source support, depth guard, WS handler)
+  python/fastapi_ariadne_rest_serializer.dart    # FastAPI APIRouter for `@glRest*` served by the server
+  python/fastapi_ariadne_rest_constants.dart     # runtime of that router (`rest/support.py`, uploads, downloads)
   go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums
   client_serializers/              # one subdirectory per language
     <lang>/<lang>_client_serializer.dart   # client methods (queries/mutations/subs)
@@ -373,11 +377,11 @@ don't confuse them:
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
   `typescript_upload_server`, `java_server`, `java_server_reactive`,
-  `kotlin_server_blocking`, `kotlin_server_suspend`) — flat, not grouped by language.
+  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`) — flat, not grouped by language.
   `clients/` holds one subdirectory per generated client harness (`dart_client`,
   `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
   upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
-  server (parameterized by `CLIENT=dart|ts|java|kotlin`) so any client can be pointed at
+  server (parameterized by `CLIENT=dart|ts|java|kotlin|...`) so any client can be pointed at
   any server. This validates **generated server code**.
 
 - **Server start/stop and the fault suite**: every server Makefile includes `server_integration_tests/scripts/server.mk` (`scripts/server.sh`
@@ -394,6 +398,11 @@ don't confuse them:
   every root field, the emitted schema (introspection), server-side defaults, batch mappings with several parents, mapTo types, null propagation and
   subscriptions over raw WebSocket. Part of `ci-http-<server>`; alone with `make -C server_integration_tests ci-graphql-<server>`. Open bugs:
   `server_integration_tests/reports/SERVER_GRAPHQL.md`.
+- **Python server (FastAPI + Ariadne)**: `servers/python_fastapi_server` (port 9975, own `.venv`; `graphql-core` is pinned below 3.2.14 because Ariadne's enum
+  patch breaks on it). Services return pydantic models and the resolvers hand `to_json()` dicts to Ariadne, with `__glSource__` carrying the real instance to
+  schema mappings, like Express. Run with `make -C server_integration_tests ci-http-python-fastapi` (faults, REST and GraphQL suites) and
+  `make -C server_integration_tests ci-python-fastapi-client CLIENT=dart`. GraphQL multipart uploads are not served yet (generation fails with a message);
+  `@glRest*` uploads are.
 - **Java 8**: `make -C server_integration_tests java8-check` compiles the generated Java clients with `javac --release 8` (`scripts/java8_check.sh`;
   the `java11` transports excepted). Fails today, see `server_integration_tests/reports/JAVA8_COMPAT.md`.
 

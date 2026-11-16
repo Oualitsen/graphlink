@@ -1,0 +1,128 @@
+import uvicorn
+
+from generated.app import GraphLinkServices, create_app
+from impl.core import (
+    ArticleSchemaMappingsServiceImpl,
+    ArticleServiceImpl,
+    AuthorSchemaMappingsServiceImpl,
+    AuthorServiceImpl,
+    BulkCreateGuardImpl,
+    BulkCreateServiceImpl,
+    CollideServiceImpl,
+    DefaultsServiceImpl,
+    DeleteArticleServiceImpl,
+    GreetingServiceImpl,
+    MessageServiceImpl,
+    NestingServiceImpl,
+    ReservedFieldsServiceImpl,
+    StatusServiceImpl,
+    TeamSchemaMappingsServiceImpl,
+    TeamServiceImpl,
+)
+from impl.hoist import HoistServiceImpl
+from impl.interceptor import InterceptorImpl
+from impl.rest_impl import (
+    RestColorsServiceImpl,
+    RestCountServiceImpl,
+    RestDeleteServiceImpl,
+    RestDownloadLargeServiceImpl,
+    RestDownloadOptionalServiceImpl,
+    RestDownloadServiceImpl,
+    RestFlagServiceImpl,
+    RestFormEchoServiceImpl,
+    RestFormOptionalServiceImpl,
+    RestGreetingServiceImpl,
+    RestHeadersServiceImpl,
+    RestInterceptedVoidServiceImpl,
+    RestItemServiceImpl,
+    RestKeywordsServiceImpl,
+    RestMarkedServiceImpl,
+    RestNestedServiceImpl,
+    RestOptionalBodyServiceImpl,
+    RestPlainServiceImpl,
+    RestScalarsServiceImpl,
+    RestSearchServiceImpl,
+    RestTagsServiceImpl,
+    RestUploadInfoServiceImpl,
+    RestUploadOptionalServiceImpl,
+    RestValidatedGuardImpl,
+    RestValidatedServiceImpl,
+    RestWrapColorServiceImpl,
+    RestWrapServiceImpl,
+    RestWrapTextServiceImpl,
+)
+
+PORT = 9975
+
+defaults = DefaultsServiceImpl()
+hoist = HoistServiceImpl()
+message = MessageServiceImpl()
+article_mappings = ArticleSchemaMappingsServiceImpl()
+
+services = GraphLinkServices(
+    article_service=ArticleServiceImpl(),
+    author_service=AuthorServiceImpl(),
+    delete_article_service=DeleteArticleServiceImpl(),
+    bulk_create_service=BulkCreateServiceImpl(),
+    bulk_create_guard=BulkCreateGuardImpl(),
+    collide_service=CollideServiceImpl(),
+    status_service=StatusServiceImpl(),
+    nesting_service=NestingServiceImpl(),
+    reserved_fields_service=ReservedFieldsServiceImpl(),
+    greeting_service=GreetingServiceImpl(),
+    interceptor=InterceptorImpl(),
+    team_service=TeamServiceImpl(),
+    team_schema_mappings_service=TeamSchemaMappingsServiceImpl(),
+    rest_item_service=RestItemServiceImpl(),
+    rest_upload_info_service=RestUploadInfoServiceImpl(),
+    rest_upload_optional_service=RestUploadOptionalServiceImpl(),
+    rest_keywords_service=RestKeywordsServiceImpl(),
+    rest_scalars_service=RestScalarsServiceImpl(),
+    rest_search_service=RestSearchServiceImpl(),
+    rest_tags_service=RestTagsServiceImpl(),
+    rest_greeting_service=RestGreetingServiceImpl(),
+    rest_plain_service=RestPlainServiceImpl(),
+    rest_count_service=RestCountServiceImpl(),
+    rest_flag_service=RestFlagServiceImpl(),
+    rest_download_service=RestDownloadServiceImpl(),
+    rest_download_optional_service=RestDownloadOptionalServiceImpl(),
+    rest_download_large_service=RestDownloadLargeServiceImpl(),
+    rest_form_echo_service=RestFormEchoServiceImpl(),
+    rest_nested_service=RestNestedServiceImpl(),
+    rest_wrap_service=RestWrapServiceImpl(),
+    rest_wrap_color_service=RestWrapColorServiceImpl(),
+    rest_wrap_text_service=RestWrapTextServiceImpl(),
+    rest_intercepted_void_service=RestInterceptedVoidServiceImpl(),
+    rest_marked_service=RestMarkedServiceImpl(),
+    rest_form_optional_service=RestFormOptionalServiceImpl(),
+    rest_colors_service=RestColorsServiceImpl(),
+    rest_headers_service=RestHeadersServiceImpl(),
+    rest_delete_service=RestDeleteServiceImpl(),
+    rest_optional_body_service=RestOptionalBodyServiceImpl(),
+    rest_validated_service=RestValidatedServiceImpl(),
+    rest_validated_guard=RestValidatedGuardImpl(),
+    config_service=defaults,
+    range_service=defaults,
+    greet_service=defaults,
+    echo_priority_service=defaults,
+    ack_priority_service=defaults,
+    catalog_service=hoist,
+    feed_service=hoist,
+    store_service=hoist,
+    search_result_service=hoist,
+    catalog_schema_mappings_service=hoist,
+    feed_schema_mappings_service=hoist,
+    store_schema_mappings_service=hoist,
+    shelf_schema_mappings_service=hoist,
+    search_result_schema_mappings_service=hoist,
+    message_service=message,
+    message_read_schema_mappings_service=message,
+    author_schema_mappings_service=AuthorSchemaMappingsServiceImpl(),
+    article_schema_mappings_service=article_mappings,
+    article_with_count_schema_mappings_service=article_mappings,
+)
+
+app = create_app(services)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="warning")

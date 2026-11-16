@@ -8,6 +8,12 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
+import 'package:graphlink/src/generators/python_client_generator.dart' show pythonBarrel, pythonExportLine;
+import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/serializers/client_serializers/python/python_client_constants.dart' show pythonJsonChecks, pythonModelBase;
+import 'package:graphlink/src/serializers/python/fastapi_ariadne_server_constants.dart';
+import 'package:graphlink/src/serializers/python/fastapi_ariadne_server_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
@@ -56,6 +62,9 @@ Future<Set<String>> generateServerClasses(
   final serverLang = config.serverConfig!.language;
   if (serverLang is ExpressApolloServerConfig) {
     return _generateExpressApolloClasses(grammar, config, started);
+  }
+  if (serverLang is FastapiAriadneServerConfig) {
+    return _generateFastapiAriadneClasses(grammar, config, serverLang, started);
   }
   if (serverLang is KotlinSpringServerConfig) {
     return _generateKotlinSpringClasses(grammar, config, serverLang, started);
@@ -643,6 +652,116 @@ Future<Set<String>> _generateExpressApolloClasses(
 
   final result = await Future.wait(futures);
   stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
+  final paths = result.map((f) => f.path).toSet();
+  await cleanUpObsoleteFiles(paths);
+  return paths;
+}
+
+Future<Set<String>> _generateFastapiAriadneClasses(
+    GLParser grammar, GeneratorConfig config, FastapiAriadneServerConfig fastapiConfig, DateTime started) async {
+  final destinationDir = config.outputDir;
+  final py = PythonSerializer(
+    grammar,
+    runtimeDir: fastapiRuntimeDir,
+    typeMapOverrides: config.typeMappings ?? {},
+  );
+  final serverSerializer = FastapiAriadneServerSerializer(grammar, py, fastapiConfig);
+  if (serverSerializer.hasUploads) {
+    throw UnsupportedError('fastapiAriadne does not serve GraphQL file uploads yet: use @glUpload on @glRest* operations.');
+  }
+  final files = <String, String>{};
+  final exports = <String>[];
+  final models = <String>[];
+
+  void add(String path, String content) {
+    if (content.trim().isEmpty) return;
+    files[path] = content;
+  }
+
+  String wrap(String body) => py.serializeGlClass(GLClassModel(body: body.trim()));
+
+  add('$fastapiRuntimeDir/graph_link_model.py', wrap(pythonModelBase));
+  add('$fastapiRuntimeDir/graph_link_json.py', wrap(pythonJsonChecks));
+  files['$fastapiRuntimeDir/__init__.py'] = '';
+
+  grammar.getSerializableEnums().forEach((def) {
+    final content = py.serializeEnumDefinition(def);
+    add('enums/${py.getFileNameFor(def)}', content);
+    if (content.trim().isNotEmpty) exports.add(pythonExportLine('enums', py, def.codeName, def));
+  });
+  grammar.getSerializableInputs().forEach((def) {
+    final content = py.serializeInputDefinition(def);
+    add('inputs/${py.getFileNameFor(def)}', content);
+    if (content.trim().isNotEmpty) {
+      exports.add(pythonExportLine('inputs', py, def.codeName, def));
+      models.add(def.codeName);
+    }
+  });
+  grammar.getSerializableTypes().forEach((def) {
+    final content = py.serializeTypeDefinition(def);
+    add('types/${py.getFileNameFor(def)}', content);
+    if (content.trim().isNotEmpty) {
+      exports.add(pythonExportLine('types', py, def.codeName, def));
+      models.add(def.codeName);
+    }
+  });
+  grammar.getSerializableInterfaces().forEach((def) {
+    if (def.token == glInterceptorInterfaceName) return;
+    final content = py.serializeTypeDefinition(def);
+    add('interfaces/${py.getFileNameFor(def)}', content);
+    if (content.trim().isNotEmpty) {
+      exports.add(pythonExportLine('interfaces', py, def.codeName, def));
+      models.add(def.codeName);
+    }
+  });
+  final interceptorInterface = serverSerializer.serializeInterceptorInterface();
+  if (interceptorInterface != null) {
+    add('interfaces/${serverSerializer.interceptorFileName}.py', wrap(interceptorInterface));
+  }
+
+  grammar.services.forEach((_, service) {
+    add('services/${serverSerializer.serviceFileName(service)}.py', wrap(serverSerializer.serializeService(service)));
+    final guard = serverSerializer.serializeGuard(service);
+    if (guard != null) add('guards/${serverSerializer.guardFileName(service)}.py', wrap(guard));
+    final loader = serverSerializer.serializeLoader(service);
+    if (loader != null) add('loaders/${serverSerializer.loaderFileName(service)}.py', wrap(loader));
+  });
+
+  if (grammar.carriesSources) add('source.py', wrap(serverSerializer.serializeSourceSupport()));
+  add('context.py', wrap(serverSerializer.serializeContext()));
+  if (grammar.services.values.any((s) => s.mappings.any((m) => m.isBatch))) {
+    add('$fastapiRuntimeDir/graph_link_loader.py', wrap(serverSerializer.serializeLoaderRuntime()));
+  }
+  if (serverSerializer.hasRestUploads) add('file_upload.py', wrap(serverSerializer.serializeFileUpload()));
+
+  if (!grammar.restOnly) {
+    add('type_defs.py', serverSerializer.serializeTypeDefs());
+    add('$fastapiRuntimeDir/graph_link_guards.py', wrap(serverSerializer.serializeGuards()));
+    add('$fastapiRuntimeDir/graph_link_ws.py', wrap(serverSerializer.serializeWsHandler()));
+    add('resolvers.py', serverSerializer.serializeResolvers().first);
+  }
+
+  if (serverSerializer.hasRest) {
+    add('rest/support.py', wrap(serverSerializer.rest.serializeSupport()));
+    if (serverSerializer.hasRestUploads) add('rest/uploads.py', wrap(serverSerializer.rest.serializeUploads()));
+    if (serverSerializer.hasRestDownloads) add('rest/download.py', wrap(serverSerializer.rest.serializeDownloads()));
+    add('rest/router.py', serverSerializer.rest.serializeRestRouter());
+    files['rest/__init__.py'] = '';
+  }
+
+  if (fastapiConfig.generateEntryPoint) add('app.py', serverSerializer.serializeEntryPoint());
+
+  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'services', 'guards', 'loaders']) {
+    if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
+  }
+  files['__init__.py'] = pythonBarrel(exports, models);
+
+  final written = <Future<File>>[];
+  files.forEach((path, content) {
+    written.add(saveSource(data: content, path: '$destinationDir/$path', hashCommentSource: true));
+  });
+  final result = await Future.wait(written);
+  stdout.writeln('Generated ${written.length} files in ${formatElapsedTime(started)}');
   final paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;

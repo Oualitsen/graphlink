@@ -80,13 +80,11 @@ void main() {
     test("type mapping resolver destructures + calls with the safe identifier",
         () {
       final ser = serializer(mappingSchema);
-      
       final out = ser.serializeResolvers().join('\n');
-      print(out);
       // destructure renames the wire property; call uses the safe identifier.
       expect(out, contains('{ return: return_ }'));
       // context is not injected by default (no @glInjectContext / flag off).
-      expect(out, contains('carRelated(return_, parent)'));
+      expect(out, contains('carRelated(return_, sourceOf(parent))'));
 
       // never a bare `return` binding/reference.
 
