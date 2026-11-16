@@ -795,6 +795,12 @@ type Query {
   # How many times the server resolved cachedFlaky / cachedFlakyNullable for this id.
   cachedFlakyCalls(id: ID!): Int!
 
+  # Returns the id's version as it was when the request arrived, then waits delayMs before answering.
+  cachedSlow(id: ID!, delayMs: Int!): Int! @glCache(ttl: "1m", tags: ["slow"])
+
+  # How many times the server resolved cachedSlow for this id.
+  cachedSlowCalls(id: ID!): Int!
+
   # The value of the request header `name` as the server received it (null when absent).
   echoHeader(name: String!): String
 
@@ -909,6 +915,9 @@ type Mutation {
   # Evicts both "users" and "posts".
   transferPost(postId: ID!, newAuthorId: ID!): Post!
     @glCacheInvalidate(tags: ["users", "posts"])
+
+  # Bumps the version cachedSlow returns and evicts the "slow" cache entries.
+  bumpSlow(id: ID!): Int! @glCacheInvalidate(tags: ["slow"])
 
   # Wipes the entire cache.
   resetAll: Boolean! @glCacheInvalidate(all: true)

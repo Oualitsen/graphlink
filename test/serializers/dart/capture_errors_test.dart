@@ -52,6 +52,18 @@ type Subscription { userAdded: User! @glCaptureErrors }
     setUpAll(() => g = _parse(_schema));
 
     test('returns true for annotated query', () => expect(g.queries[const GLOperationKey('getUser', GLQueryType.query)]!.isCaptureErrors(g), isTrue));
+    test('returns true for a custom operation annotated at operation level', () {
+      const schema = '''
+type User { id: ID! }
+type Query { getUser(id: ID!): User  findUser(id: ID!): User }
+query pair @glCaptureErrors { ok: getUser(id: "1") { id } bad: findUser(id: "2") { id } }
+query plain { getUser(id: "1") { id } }
+''';
+      final p = _parse(schema);
+      expect(p.queries[const GLOperationKey('pair', GLQueryType.query)]!.isCaptureErrors(p), isTrue);
+      expect(p.queries[const GLOperationKey('plain', GLQueryType.query)]!.isCaptureErrors(p), isFalse);
+    });
+
     test('returns false for non-annotated query', () => expect(g.queries[const GLOperationKey('listUsers', GLQueryType.query)]!.isCaptureErrors(g), isFalse));
 
     test('returns true for all operations when global flag is set', () {

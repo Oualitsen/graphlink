@@ -657,6 +657,8 @@ type Query {
   cachedFlaky(id: ID!): User!
   cachedFlakyNullable(id: ID!): User
   cachedFlakyCalls(id: ID!): Int!
+  cachedSlow(id: ID!, delayMs: Int!): Int!
+  cachedSlowCalls(id: ID!): Int!
   echoHeader(name: String!): String
   whoAmI: String!
   secureTickStarts(token: String!): Int!
@@ -723,6 +725,8 @@ type Query {
 }
 
 type Mutation {
+
+  bumpSlow(id: ID!): Int!
 
   bulkAttachments(n: Int!): [Attachment!]!
   bulkEntities: [Entity!]!

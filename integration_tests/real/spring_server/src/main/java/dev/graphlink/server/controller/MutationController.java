@@ -61,6 +61,11 @@ public class MutationController {
     }
 
     @MutationMapping
+    public int bumpSlow(@Argument String id) {
+        return SlowState.VERSIONS.computeIfAbsent(id, k -> new java.util.concurrent.atomic.AtomicInteger()).incrementAndGet();
+    }
+
+    @MutationMapping
     public User createCachedUser(@Argument CreateUserInput input) {
         return createUser(input);
     }

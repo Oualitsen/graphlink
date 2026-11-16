@@ -114,7 +114,15 @@ real package a WS fault test.
 | close `4500` / `1011` / abrupt TCP close | Reconnect with backoff |
 | binary frame | Ignored or error, no crash |
 
-## 6. Many cached requests at the same time
+## 6. Many cached requests at the same time — tests written, 1 defect open
+
+Server: `cachedSlow(id, delayMs)` (`@glCache`, tag `slow`; returns the id's version as it was when the request arrived, then waits), `cachedSlowCalls(id)`, `bumpSlow(id)` (`@glCacheInvalidate(tags: ["slow"])`). Tests, in all 7: `cache_concurrency_test.dart`, `cache-concurrency.test.ts`, `test_cache_concurrency.py`, `cache_concurrency_test.go`, `CacheConcurrencyTest.{java,kt,swift}`.
+
+- Two keys at the same time make two calls: passes in all 7.
+- Five identical requests at the same time make **five** calls, not one. No runtime coalesces in-flight requests (the locks only guard the tag store). That is a missing feature, not a regression, so there is no test for "1 call".
+- A response still in flight when its tag is invalidated **is stored**: the next call is served the stale value. Fails in all 7 (`expected 1 but was 0`). Needs a fix in each runtime: remember an invalidation counter before sending, and skip the store when it changed.
+
+The original proposal follows.
 
 The runtimes have a cache lock, but no real test sends identical cached requests at the same time.
 
@@ -124,7 +132,11 @@ The runtimes have a cache lock, but no real test sends identical cached requests
 - Same with an invalidation in the middle: start a cached query, run `createCachedUser` before it answers; the
   value stored afterwards must not be the stale one.
 
-## 7. GraphQL error details from a real server
+## 7. GraphQL error details from a real server — DONE
+
+Server: `getUserOrErrors("missing")` throws a `GraphqlErrorException` with `extensions {code: NOT_FOUND, retryable: false, detail: {id, attempts: 3}}`, and a new `GraphqlErrorResolver` passes it through with its path, location and extensions (Spring masked it as `INTERNAL_ERROR` before, so every earlier error message check only saw a generated id). New custom operation `partialAliased` (`ok: getUser`, `bad: findUser("error-id")`, `@glCaptureErrors`). Tests: `error_details_test.dart`, `error-details.test.ts`, `test_error_details.py`, `error_details_test.go`, `ErrorDetailsTest.{java,kt,swift}`. All pass.
+
+Generator defect found: `@glCaptureErrors` on a custom operation (`query x @glCaptureErrors { ... }`) was accepted by the parser but ignored; `isCaptureErrors` only looked at the first root field. Fixed in `capture_errors_utils.dart`, unit test in `test/serializers/dart/capture_errors_test.dart`. The original proposal follows.
 
 Error `path`, `locations` and `extensions` are barely asserted against Spring (Swift, Python and Go never).
 
