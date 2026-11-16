@@ -375,6 +375,12 @@ don't confuse them:
   server (parameterized by `CLIENT=dart|ts|java|kotlin`) so any client can be pointed at
   any server. This validates **generated server code**.
 
+- **Server start/stop and the fault suite**: every server Makefile includes `server_integration_tests/scripts/server.mk` (`scripts/server.sh`
+  waits for HTTP and WebSocket readiness, stops by process group, never kills a port it did not start). `server_faults/` sends malformed and
+  hostile requests (`cases.json`, runner `run_faults.py`) to each server; defects not fixed yet are in `known_defects.json` (remove an entry when
+  fixed, a passing known defect fails the run). Run with `make -C server_integration_tests ci-faults-<typescript|java|java-reactive|kotlin-blocking|kotlin-suspend>`.
+  Progress and findings: `server_integration_tests/HARDENING.md`.
+
 ```bash
 cd integration_tests && make all-real                              # generated clients vs hand-written Spring server
 cd server_integration_tests && make ci-java-client CLIENT=kotlin    # one client x one server

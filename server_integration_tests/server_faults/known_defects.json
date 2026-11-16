@@ -1,0 +1,36 @@
+{
+  "java_server": {
+    "json_null_body": "Spring GraphQL: a body of `null` gives 500 (NullPointerException in the HTTP handler) instead of 400. Framework behaviour, not generated code.",
+    "ws_unknown_message_type": "Spring GraphQL closes the socket with 1011 instead of the protocol's 4400 for an unknown message type.",
+    "ws_invalid_json": "Spring GraphQL closes the socket with 1011 instead of 4400 for a text frame that is not JSON.",
+    "ws_subscribe_without_payload": "Spring GraphQL closes the socket with 1011 instead of 4400 for a subscribe message without payload.",
+    "ws_unknown_variable_type": "Spring GraphQL: a subscription whose variable cannot be coerced never answers (no error, no complete); the client waits forever."
+  },
+  "java_server_reactive": {
+    "json_null_body": "Spring GraphQL: a body of `null` gives 500 (NullPointerException in the HTTP handler) instead of 400. Framework behaviour, not generated code.",
+    "ws_unknown_message_type": "Spring GraphQL closes the socket with 1011 instead of the protocol's 4400 for an unknown message type.",
+    "ws_invalid_json": "Spring GraphQL closes the socket with 1011 instead of 4400 for a text frame that is not JSON.",
+    "ws_subscribe_without_payload": "Spring GraphQL closes the socket with 1011 instead of 4400 for a subscribe message without payload.",
+    "ws_unknown_variable_type": "Spring GraphQL: a subscription whose variable cannot be coerced never answers (no error, no complete); the client waits forever.",
+    "unknown_operation_name": "graphql.execution.UnknownOperationException escapes Spring GraphQL: 500 instead of 400/200 with errors.",
+    "ambiguous_operation": "graphql.execution.UnknownOperationException ('Must provide operation name') escapes Spring GraphQL: 500 instead of 400/200 with errors."
+  },
+  "kotlin_server_blocking": {
+    "json_null_body": "Spring GraphQL: a body of `null` gives 500 (NullPointerException in the HTTP handler) instead of 400. Framework behaviour, not generated code.",
+    "ws_unknown_message_type": "Spring GraphQL closes the socket with 1011 instead of the protocol's 4400 for an unknown message type.",
+    "ws_invalid_json": "Spring GraphQL closes the socket with 1011 instead of 4400 for a text frame that is not JSON.",
+    "ws_subscribe_without_payload": "Spring GraphQL closes the socket with 1011 instead of 4400 for a subscribe message without payload.",
+    "ws_unknown_variable_type": "Spring GraphQL: a subscription whose variable cannot be coerced never answers (no error, no complete); the client waits forever.",
+    "unknown_operation_name": "graphql.execution.UnknownOperationException escapes Spring GraphQL: 500 instead of 400/200 with errors.",
+    "ambiguous_operation": "graphql.execution.UnknownOperationException ('Must provide operation name') escapes Spring GraphQL: 500 instead of 400/200 with errors."
+  },
+  "kotlin_server_suspend": {
+    "json_null_body": "Spring GraphQL: a body of `null` gives 500 (NullPointerException in the HTTP handler) instead of 400. Framework behaviour, not generated code.",
+    "ws_unknown_message_type": "Spring GraphQL closes the socket with 1011 instead of the protocol's 4400 for an unknown message type.",
+    "ws_invalid_json": "Spring GraphQL closes the socket with 1011 instead of 4400 for a text frame that is not JSON.",
+    "ws_subscribe_without_payload": "Spring GraphQL closes the socket with 1011 instead of 4400 for a subscribe message without payload.",
+    "ws_unknown_variable_type": "Spring GraphQL: a subscription whose variable cannot be coerced never answers (no error, no complete); the client waits forever.",
+    "unknown_operation_name": "graphql.execution.UnknownOperationException escapes Spring GraphQL: 500 instead of 400/200 with errors.",
+    "ambiguous_operation": "graphql.execution.UnknownOperationException ('Must provide operation name') escapes Spring GraphQL: 500 instead of 400/200 with errors."
+  }
+}

@@ -1,0 +1,609 @@
+{
+  "http": [
+    {
+      "name": "control_valid",
+      "body": {
+        "query": "{ listAuthors { id name } }"
+      },
+      "status": [
+        200
+      ],
+      "errors": false
+    },
+    {
+      "name": "malformed_json",
+      "rawBody": "{\"query\": ",
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "empty_body",
+      "rawBody": "",
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "json_null_body",
+      "rawBody": "null",
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "json_string_body",
+      "rawBody": "\"{ listAuthors { id } }\"",
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "missing_query",
+      "body": {},
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "query_is_number",
+      "body": {
+        "query": 123
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "variables_is_string",
+      "body": {
+        "query": "{ listAuthors { id } }",
+        "variables": "oops"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "syntax_error",
+      "body": {
+        "query": "{ listAuthors { id "
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "unknown_field",
+      "body": {
+        "query": "{ listAuthors { nope } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "unknown_root_field",
+      "body": {
+        "query": "{ nope }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "missing_required_argument",
+      "body": {
+        "query": "{ getArticle { id } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "missing_required_variable",
+      "body": {
+        "query": "query($id: ID!) { getArticle(id: $id) { id } }",
+        "variables": {}
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "null_for_non_null_variable",
+      "body": {
+        "query": "query($id: ID!) { getArticle(id: $id) { id } }",
+        "variables": {
+          "id": null
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "object_for_id_variable",
+      "body": {
+        "query": "query($id: ID!) { getArticle(id: $id) { id } }",
+        "variables": {
+          "id": {
+            "a": 1
+          }
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "invalid_enum_variable",
+      "body": {
+        "query": "mutation($l: Priority!) { ackPriority(level: $l) }",
+        "variables": {
+          "l": "BOGUS"
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "invalid_enum_literal",
+      "body": {
+        "query": "mutation { ackPriority(level: BOGUS) }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "input_missing_required_field",
+      "body": {
+        "query": "mutation { createArticle(input: {title: \"x\"}) { id } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "input_unknown_field",
+      "body": {
+        "query": "mutation { createArticle(input: {title: \"x\", authorId: \"1\", bogus: 1}) { id } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "int_overflow_literal",
+      "body": {
+        "query": "{ getAuthor(id: \"1\") { latestArticles(limit: 99999999999) { id } } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "int_overflow_variable",
+      "body": {
+        "query": "query($n: Int!) { getAuthor(id: \"1\") { latestArticles(limit: $n) { id } } }",
+        "variables": {
+          "n": 99999999999
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "string_for_int",
+      "body": {
+        "query": "{ getAuthor(id: \"1\") { latestArticles(limit: \"abc\") { id } } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "float_for_int_variable",
+      "body": {
+        "query": "query($n: Int!) { getAuthor(id: \"1\") { latestArticles(limit: $n) { id } } }",
+        "variables": {
+          "n": 1.5
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "list_for_scalar_variable",
+      "body": {
+        "query": "query($id: ID!) { getArticle(id: $id) { id } }",
+        "variables": {
+          "id": [
+            "1",
+            "2"
+          ]
+        }
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "unknown_operation_name",
+      "body": {
+        "query": "query A { listAuthors { id } } query B { listArticles { id } }",
+        "operationName": "Nope"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "ambiguous_operation",
+      "body": {
+        "query": "query A { listAuthors { id } } query B { listArticles { id } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "fragment_cycle",
+      "body": {
+        "query": "fragment A on Author { ...B } fragment B on Author { ...A } { listAuthors { ...A } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "unused_fragment_unknown_type",
+      "body": {
+        "query": "fragment A on Nope { id } { listAuthors { id } }"
+      },
+      "status": [
+        400,
+        200
+      ],
+      "errors": true
+    },
+    {
+      "name": "resolver_error_non_null_field",
+      "body": {
+        "query": "{ getArticle(id: \"missing-id\") { id } }"
+      },
+      "status": [
+        200,
+        400
+      ],
+      "errors": true,
+      "noLeak": true,
+      "statusNote": "a resolver error is an execution error: GraphQL over HTTP expects 200 with errors"
+    },
+    {
+      "name": "wrong_content_type",
+      "contentType": "text/plain",
+      "body": {
+        "query": "{ listAuthors { id } }"
+      },
+      "status": [
+        200,
+        400,
+        415
+      ],
+      "errors": null
+    },
+    {
+      "name": "get_without_query",
+      "method": "GET",
+      "status": [
+        405,
+        400,
+        200
+      ],
+      "errors": "unless400"
+    },
+    {
+      "name": "get_mutation_rejected",
+      "method": "GET",
+      "query": "mutation { deleteArticle(id: \"x\") }",
+      "status": [
+        405,
+        400,
+        200
+      ],
+      "errors": "unless400",
+      "statusNote": "spec: a mutation over GET must be rejected"
+    },
+    {
+      "name": "put_method",
+      "method": "PUT",
+      "body": {
+        "query": "{ listAuthors { id } }"
+      },
+      "status": [
+        405,
+        400,
+        404,
+        200
+      ],
+      "errors": null
+    },
+    {
+      "name": "deep_query_within_limit",
+      "bodyTemplate": {
+        "query": "{{deep:5}}"
+      },
+      "status": [
+        200
+      ],
+      "errors": false
+    },
+    {
+      "name": "deep_query",
+      "bodyTemplate": {
+        "query": "{{deep:300}}"
+      },
+      "status": [
+        200,
+        400,
+        413
+      ],
+      "errors": null,
+      "allowClose": true
+    },
+    {
+      "name": "huge_body",
+      "bodyTemplate": {
+        "query": "mutation($t: String!) { createArticle(input: {title: $t, authorId: \"1\"}) { id } }",
+        "variables": {
+          "t": "{{repeat:a:6000000}}"
+        }
+      },
+      "status": [
+        200,
+        400,
+        413
+      ],
+      "errors": null,
+      "allowClose": true
+    },
+    {
+      "name": "nul_and_emoji_in_string",
+      "body": {
+        "query": "mutation($t: String!) { createArticle(input: {title: $t, authorId: \"1\"}) { id title } }",
+        "variables": {
+          "t": "a\u0000b \ud83d\ude00 \u202e"
+        }
+      },
+      "status": [
+        200,
+        400
+      ],
+      "errors": null
+    },
+    {
+      "name": "many_aliases",
+      "bodyTemplate": {
+        "query": "{{aliases:2000}}"
+      },
+      "status": [
+        200,
+        400,
+        413
+      ],
+      "errors": null,
+      "allowClose": true
+    }
+  ],
+  "ws": [
+    {
+      "name": "ws_subscribe_before_init",
+      "send": [
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription { articleCreated { id } }"
+          }
+        }
+      ],
+      "expectClose": [
+        4401
+      ]
+    },
+    {
+      "name": "ws_unknown_message_type",
+      "send": [
+        "init",
+        {
+          "type": "bogus"
+        }
+      ],
+      "expectClose": [
+        4400
+      ]
+    },
+    {
+      "name": "ws_message_without_type",
+      "send": [
+        "init",
+        {
+          "id": "1"
+        }
+      ],
+      "expectClose": [
+        4400
+      ]
+    },
+    {
+      "name": "ws_invalid_json",
+      "send": [
+        "init",
+        "{not json"
+      ],
+      "expectClose": [
+        4400
+      ]
+    },
+    {
+      "name": "ws_double_init",
+      "send": [
+        "init",
+        {
+          "type": "connection_init"
+        }
+      ],
+      "expectClose": [
+        4429
+      ]
+    },
+    {
+      "name": "ws_duplicate_subscription_id",
+      "send": [
+        "init",
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription { articleCreated { id } }"
+          }
+        },
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription { articleCreated { id } }"
+          }
+        }
+      ],
+      "expectClose": [
+        4409
+      ]
+    },
+    {
+      "name": "ws_invalid_subscription_query",
+      "send": [
+        "init",
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription { nope }"
+          }
+        }
+      ],
+      "expectMessage": "error"
+    },
+    {
+      "name": "ws_query_syntax_error",
+      "send": [
+        "init",
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription {"
+          }
+        }
+      ],
+      "expectMessage": "error"
+    },
+    {
+      "name": "ws_subscribe_without_payload",
+      "send": [
+        "init",
+        {
+          "id": "1",
+          "type": "subscribe"
+        }
+      ],
+      "expectAnyOf": {
+        "close": [
+          4400
+        ],
+        "message": "error"
+      }
+    },
+    {
+      "name": "ws_unknown_variable_type",
+      "send": [
+        "init",
+        {
+          "id": "1",
+          "type": "subscribe",
+          "payload": {
+            "query": "subscription($id: ID!) { articleUpdated(id: $id) { id } }",
+            "variables": {
+              "id": {
+                "x": 1
+              }
+            }
+          }
+        }
+      ],
+      "expectAnyOf": {
+        "close": [
+          4400
+        ],
+        "message": "error"
+      }
+    }
+  ]
+}

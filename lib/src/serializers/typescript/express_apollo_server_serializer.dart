@@ -5,6 +5,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
@@ -43,13 +44,13 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final def = grammar.interfaces[glInterceptorInterfaceName]!;
     _addInterceptorTargetArgs(def);
 
-    final buf = StringBuffer();
-    buf.writeln("import { GraphLinkContext } from '../context.js';");
-    if (apolloConfig.useResolveInfo) {
-      buf.writeln("import { GraphQLResolveInfo } from 'graphql';");
-    }
-    buf.write(tsSerializer.serializeTypeDefinition(def));
-    return buf.toString();
+    return GLClassModel(
+      imports: [
+        "import { GraphLinkContext } from '../context.js';",
+        if (apolloConfig.useResolveInfo) "import { GraphQLResolveInfo } from 'graphql';",
+      ],
+      body: tsSerializer.serializeTypeDefinition(def),
+    ).toFileContent();
   }
 
   void _addInterceptorTargetArgs(GLInterfaceDefinition def) {
@@ -258,21 +259,16 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       _collectType(m.field.type, importedTypes);
     }
 
-    final serviceImport = _kebabJs(service.token);
-    final buf = StringBuffer();
-    buf.writeln("import DataLoader from 'dataloader';");
-    if (batchMappings.any((m) => _injectsContext(m.field))) {
-      buf.writeln("import { GraphLinkContext } from '../context.js';");
-    }
-    buf.writeln("import { ${service.token} } from '../services/$serviceImport';");
     final imp = _imports(importedTypes);
-    if (imp.isNotEmpty) buf.writeln(imp);
-    buf.writeln();
-
-    for (final mapping in batchMappings) {
-      buf.writeln(_loaderFactory(mapping, service.token));
-    }
-    return buf.toString();
+    return '${GLClassModel(
+      imports: [
+        "import DataLoader from 'dataloader';",
+        if (batchMappings.any((m) => _injectsContext(m.field))) "import { GraphLinkContext } from '../context.js';",
+        "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
+        if (imp.isNotEmpty) imp,
+      ],
+      body: batchMappings.map((m) => _loaderFactory(m, service.token)).join('\n'),
+    ).toFileContent()}\n';
   }
 
   String _loaderFactory(GLSchemaMapping mapping, String serviceName) {
@@ -708,43 +704,38 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   String serializeEntryPoint() {
     final services = grammar.services.values.toList();
 
-    // service + guard imports
+    final interceptorDef = hasInterceptor ? grammar.interfaces[glInterceptorInterfaceName]! : null;
+    final imports = <String>[
+      "import express, { Express, NextFunction, Request, RequestHandler, Response } from 'express';",
+      "import { DocumentNode, GraphQLError, Kind, parse, SelectionSetNode } from 'graphql';",
+      "import cors from 'cors';",
+      "import { ApolloServer } from '@apollo/server';",
+      "import { expressMiddleware } from '@apollo/server/express4';",
+      if (hasSubscriptions) ...[
+        "import { createServer as createHttpServer, Server } from 'http';",
+        "import { WebSocketServer } from 'ws';",
+        "import { useServer } from 'graphql-ws/lib/use/ws';",
+        "import { makeExecutableSchema } from '@graphql-tools/schema';",
+        "import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';",
+      ],
+      if (hasUploads) "import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';",
+      "import { GraphLinkContext } from './context.js';",
+      "import { typeDefs } from './typeDefs.js';",
+      "import { buildResolvers } from './resolvers/build-resolvers.js';",
+      if (interceptorDef != null)
+        "import { ${interceptorDef.codeName} } from './interfaces/${tsSerializer.getFileNameFor(interceptorDef).replaceAll('.ts', '.js')}';",
+      for (final service in services) ...[
+        "import { ${service.token} } from './services/${_kebabJs(service.token)}';",
+        if (_hasGuard(service)) "import { ${_guardName(service)} } from './guards/${_kebabJs(_guardName(service))}';",
+      ],
+      for (final service in services)
+        for (final m in service.mappings.where((m) => m.isBatch))
+          "import { create${m.key.firstUp}Loader } from './loaders/${_loaderFileJs(service)}';",
+    ];
+
     final buf = StringBuffer();
-    buf.writeln("import express, { Express, Request, Response } from 'express';");
-    buf.writeln("import cors from 'cors';");
-    buf.writeln("import { ApolloServer } from '@apollo/server';");
-    buf.writeln("import { expressMiddleware } from '@apollo/server/express4';");
-    if (hasSubscriptions) {
-      buf.writeln("import { createServer as createHttpServer, Server } from 'http';");
-      buf.writeln("import { WebSocketServer } from 'ws';");
-      buf.writeln("import { useServer } from 'graphql-ws/lib/use/ws';");
-      buf.writeln("import { makeExecutableSchema } from '@graphql-tools/schema';");
-      buf.writeln("import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';");
-    }
-    if (hasUploads) {
-      buf.writeln("import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';");
-    }
-    buf.writeln("import { GraphLinkContext } from './context.js';");
-    buf.writeln("import { typeDefs } from './typeDefs.js';");
-    buf.writeln("import { buildResolvers } from './resolvers/build-resolvers.js';");
-    if (hasInterceptor) {
-      final interceptorDef = grammar.interfaces[glInterceptorInterfaceName]!;
-      buf.writeln(
-          "import { ${interceptorDef.codeName} } from './interfaces/${tsSerializer.getFileNameFor(interceptorDef).replaceAll('.ts', '.js')}';");
-    }
-    for (final service in services) {
-      buf.writeln("import { ${service.token} } from './services/${_kebabJs(service.token)}';");
-      if (_hasGuard(service)) {
-        final guard = _guardName(service);
-        buf.writeln("import { $guard } from './guards/${_kebabJs(guard)}';");
-      }
-    }
-    for (final service in services) {
-      for (final m in service.mappings.where((m) => m.isBatch)) {
-        buf.writeln("import { create${m.key.firstUp}Loader } from './loaders/${_loaderFileJs(service)}';");
-      }
-    }
-    buf.writeln();
+    buf.writeln(expressRequestGuards);
+    if (hasSubscriptions) buf.writeln(expressSubscribeGuard);
 
     // GraphLinkServices interface
     final serviceFields = <String>[];
@@ -759,6 +750,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       serviceFields.add(
           'interceptor?: ${grammar.interfaces[glInterceptorInterfaceName]!.codeName};');
     }
+    serviceFields.add('maxQueryDepth?: number;');
     serviceFields.add('contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;');
     buf.writeln(_cg.createInterface(
       interfaceName: 'GraphLinkServices',
@@ -831,6 +823,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       ]);
       createServerBody = [
         if (interceptorGuard != null) interceptorGuard,
+        _cg.constDecl('maxQueryDepth', 'services.maxQueryDepth ?? defaultMaxQueryDepth'),
         _cg.constDecl('app', 'express()'),
         'app.use(cors());',
         'app.use(express.json());',
@@ -844,10 +837,11 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           'server: httpServer,',
           "path: '${apolloConfig.graphqlPath}',",
         ])})'),
-        _cg.constDecl('cleanup', 'useServer({ schema${_wsContextOption()} }, wsServer as any)'),
+        _cg.constDecl('cleanup', 'useServer({ schema${_wsContextOption()}, onSubscribe: (_ctx, message) => subscribeErrors(message.payload?.query, maxQueryDepth) }, wsServer as any)'),
         '',
         _cg.constDecl('server', 'new ApolloServer<GraphLinkContext>(${_cg.block([
           'schema,',
+          'includeStacktraceInErrorResponses: false,',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
@@ -856,11 +850,13 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         '',
         'await server.start();',
         _registerMiddleware(),
+        'app.use(graphLinkErrorHandler);',
         'return httpServer;',
       ];
     } else {
       createServerBody = [
         if (interceptorGuard != null) interceptorGuard,
+        _cg.constDecl('maxQueryDepth', 'services.maxQueryDepth ?? defaultMaxQueryDepth'),
         _cg.constDecl('app', 'express()'),
         'app.use(cors());',
         'app.use(express.json());',
@@ -868,6 +864,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         _cg.constDecl('server', 'new ApolloServer<GraphLinkContext>(${_cg.block([
           'typeDefs,',
           'resolvers: buildResolvers($resolverArgs),',
+          'includeStacktraceInErrorResponses: false,',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
@@ -875,6 +872,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         '',
         'await server.start();',
         _registerMiddleware(),
+        'app.use(graphLinkErrorHandler);',
         'return app;',
       ];
     }
@@ -888,7 +886,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       statements: createServerBody,
     ));
 
-    return buf.toString();
+    return '${GLClassModel(imports: imports, body: buf.toString()).toFileContent()}\n';
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -937,7 +935,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     }
     final options = _cg.block([contextCallback]);
     final uploadHandler = hasUploads ? 'graphqlUploadExpress(), ' : '';
-    return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}expressMiddleware(server, $options));";
+    return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}queryDepthGuard(maxQueryDepth), expressMiddleware(server, $options));";
   }
 
   String _tsUploadType(GLType type) =>
