@@ -1,5 +1,6 @@
 package dev.graphlink.test
 
+import dev.graphlink.test.generated.client.DefaultGraphLinkClientAdapter
 import dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter
 import dev.graphlink.test.generated.client.GraphLinkClient
 import dev.graphlink.test.generated.client.KotlinxSerializationGraphLinkJsonCodec
@@ -12,6 +13,7 @@ import java.net.Socket
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class SubscriptionReconnectTest {
@@ -24,8 +26,39 @@ class SubscriptionReconnectTest {
             System.getenv("SERVER_JAR")?.takeIf { it.isNotBlank() }
                 ?: "../../spring_server/build/libs/graphlink-test-server-0.0.1.jar"
 
-        private fun wsUrl(port: Int)   = "ws://localhost:$port/graphql"
-        private fun httpUrl(port: Int) = "http://localhost:$port/graphql"
+        internal fun wsUrl(port: Int)   = "ws://localhost:$port/graphql"
+        internal fun httpUrl(port: Int) = "http://localhost:$port/graphql"
+
+        // ── Server lifecycle helpers ───────────────────────────────────────────
+
+        internal fun killPort(port: Int) {
+            ProcessBuilder("bash", "-c",
+                "lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null || true")
+                .start().waitFor()
+            Thread.sleep(500)
+        }
+
+        internal fun startJar(port: Int) {
+            ProcessBuilder("java", "-jar", jarPath(), "--server.port=$port", "--management.server.port=-1")
+                .apply {
+                    redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    redirectError(ProcessBuilder.Redirect.DISCARD)
+                }
+                .start()
+            waitForPort(port)
+        }
+
+        private fun waitForPort(port: Int) {
+            val deadline = System.currentTimeMillis() + 25_000
+            while (System.currentTimeMillis() < deadline) {
+                try {
+                    Socket().use { it.connect(InetSocketAddress("localhost", port), 1_000); return }
+                } catch (_: IOException) {
+                    Thread.sleep(500)
+                }
+            }
+            throw TimeoutException("Server on port $port did not start within 25 s")
+        }
     }
 
     // ── Test 1: stream resumes after server halt ─────────────────────────────
@@ -73,6 +106,62 @@ class SubscriptionReconnectTest {
                 }
 
                 withTimeout(90_000) { resumeDeferred.await() }
+            } finally {
+                collectJob.cancel()
+                wsAdapter.close()
+                withContext(Dispatchers.IO) { killPort(PORT_HALT) }
+            }
+        }
+    }
+
+    // ── Test 1b: the resumed subscription sends the rotated token ────────────
+
+    @Test
+    @Timeout(value = 2, unit = TimeUnit.MINUTES)
+    fun secureTicks_sendsTheRotatedTokenOnResume() {
+        runBlocking {
+            withContext(Dispatchers.IO) {
+                killPort(PORT_HALT)
+                startJar(PORT_HALT)
+            }
+
+            val first = "kotlin-first-${System.nanoTime()}"
+            val second = "kotlin-second-${System.nanoTime()}"
+            val token = java.util.concurrent.atomic.AtomicReference(first)
+            val headers = { mapOf("Authorization" to "Bearer ${token.get()}") }
+
+            val codec = KotlinxSerializationGraphLinkJsonCodec()
+            val wsAdapter = DefaultGraphLinkWebSocketAdapter(wsUrl(PORT_HALT), headers)
+            val client = GraphLinkClient(
+                DefaultGraphLinkClientAdapter(httpUrl(PORT_HALT), codec, headers),
+                wsAdapter,
+                MockMultipartAdapter(),
+                codec, codec,
+            )
+
+            val firstTick = CompletableDeferred<Unit>()
+            val collectJob = launch {
+                client.subscriptions.secureTicks(1000).collect { _ -> firstTick.complete(Unit) }
+            }
+
+            try {
+                withTimeout(10_000) { firstTick.await() }
+                assertEquals(1, client.queries.secureTickStarts(first).secureTickStarts)
+
+                token.set(second)
+                withContext(Dispatchers.IO) { killPort(PORT_HALT) }
+                launch(Dispatchers.IO) {
+                    try { startJar(PORT_HALT) } catch (_: Exception) {}
+                }
+
+                withTimeout(60_000) {
+                    while (true) {
+                        val starts = try { client.queries.secureTickStarts(second).secureTickStarts } catch (_: Exception) { 0 }
+                        if (starts == 1) break
+                        delay(1000)
+                    }
+                }
+                assertEquals(0, client.queries.secureTickStarts(first).secureTickStarts)
             } finally {
                 collectJob.cancel()
                 wsAdapter.close()
@@ -165,36 +254,5 @@ class SubscriptionReconnectTest {
                 wsAdapter.close()
             }
         }
-    }
-
-    // ── Server lifecycle helpers ──────────────────────────────────────────────
-
-    private fun killPort(port: Int) {
-        ProcessBuilder("bash", "-c",
-            "lsof -ti :$port -sTCP:LISTEN | xargs kill -9 2>/dev/null || true")
-            .start().waitFor()
-        Thread.sleep(500)
-    }
-
-    private fun startJar(port: Int) {
-        ProcessBuilder("java", "-jar", jarPath(), "--server.port=$port", "--management.server.port=-1")
-            .apply {
-                redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                redirectError(ProcessBuilder.Redirect.DISCARD)
-            }
-            .start()
-        waitForPort(port)
-    }
-
-    private fun waitForPort(port: Int) {
-        val deadline = System.currentTimeMillis() + 25_000
-        while (System.currentTimeMillis() < deadline) {
-            try {
-                Socket().use { it.connect(InetSocketAddress("localhost", port), 1_000); return }
-            } catch (_: IOException) {
-                Thread.sleep(500)
-            }
-        }
-        throw TimeoutException("Server on port $port did not start within 25 s")
     }
 }

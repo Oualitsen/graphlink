@@ -5,6 +5,8 @@ enum GraphLinkHandshakeStatus { none, progress, acknowledged }
 """;
 
 const subscriptionHandler = """
+class _GraphLinkHandshakeAborted implements Exception {}
+
 class GraphLinkSubscriptionHandler {
   static const hexDigits = '0123456789abcdef';
   final _random = Random();
@@ -17,11 +19,14 @@ class GraphLinkSubscriptionHandler {
 
   GraphLinkSubscriptionHandler(this.adapter) {
     adapter.onReconnect.listen((_) => _onReconnect());
+    adapter.onGiveUp.listen((_) => _onGiveUp());
   }
 
   Completer<GraphLinkStreamSink>? _sinkCompleter;
   GraphLinkHandshakeStatus _handshakeStatus = GraphLinkHandshakeStatus.none;
   Completer<GraphLinkStreamSink>? _handshakeCompleter;
+  Completer<void>? _handshakeAbort;
+  int _handshakeGeneration = 0;
 
   late final _onMessageStream = adapter.onMessageStream;
 
@@ -43,25 +48,29 @@ class GraphLinkSubscriptionHandler {
       }
     } catch (e) {
       completer?.completeError(e);
-      _sinkCompleter = null;
+      if (identical(_sinkCompleter, completer)) _sinkCompleter = null;
     }
   }
 
   Future<GraphLinkStreamSink> _doHandshake() {
     if (_handshakeCompleter != null) return _handshakeCompleter!.future;
-    _handshakeCompleter = Completer();
+    final completer = Completer<GraphLinkStreamSink>();
+    _handshakeCompleter = completer;
     _handshakeStatus = GraphLinkHandshakeStatus.progress;
     _performHandshake().then((sink) {
-      _handshakeCompleter?.complete(sink);
-      _handshakeCompleter = null;
+      completer.complete(sink);
+      if (identical(_handshakeCompleter, completer)) _handshakeCompleter = null;
     }).catchError((e) {
-      _handshakeCompleter?.completeError(e);
-      _handshakeCompleter = null;
+      completer.completeError(e);
+      if (identical(_handshakeCompleter, completer)) _handshakeCompleter = null;
     });
-    return _handshakeCompleter!.future;
+    return completer.future;
   }
 
   Future<GraphLinkStreamSink> _performHandshake() async {
+    final generation = ++_handshakeGeneration;
+    final abort = Completer<void>();
+    _handshakeAbort = abort;
     try {
       final payload = await adapter.connectionInitPayload();
       final initMsg = jsonEncode({
@@ -69,24 +78,49 @@ class GraphLinkSubscriptionHandler {
         if (payload != null) 'payload': payload,
       });
       await adapter.sendMessage(initMsg);
-      await _onMessageStream
-          .map(_parseEvent)
-          .firstWhere(
-            (msg) => msg.type == GraphqlWsMessageTypes.connectionAck,
-            orElse: () => throw StateError('WebSocket closed before receiving connection_ack'),
-          )
-          .catchError((_) => GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionAck));
+      await Future.any<void>([
+        _onMessageStream
+            .map(_parseEvent)
+            .firstWhere(
+              (msg) => msg.type == GraphqlWsMessageTypes.connectionAck,
+              orElse: () => throw StateError('WebSocket closed before receiving connection_ack'),
+            )
+            .catchError((_) => GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionAck))
+            .then((_) {}),
+        abort.future,
+      ]);
+      _handshakeAbort = null;
       _handshakeStatus = GraphLinkHandshakeStatus.acknowledged;
       return GraphLinkStreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
     } catch (e) {
-      _handshakeStatus = GraphLinkHandshakeStatus.none;
+      if (generation == _handshakeGeneration) {
+        _handshakeAbort = null;
+        _handshakeStatus = GraphLinkHandshakeStatus.none;
+      }
       rethrow;
     }
   }
 
-  Future<void> _onReconnect() async {
-    if (_handshakeStatus == GraphLinkHandshakeStatus.progress) return;
+  void _abortHandshake() {
+    final abort = _handshakeAbort;
+    _handshakeAbort = null;
+    if (abort != null && !abort.isCompleted) abort.completeError(_GraphLinkHandshakeAborted());
+    _handshakeCompleter = null;
     _handshakeStatus = GraphLinkHandshakeStatus.none;
+  }
+
+  void _onGiveUp() {
+    _abortHandshake();
+    _sinkCompleter = null;
+    for (final uuid in _map.keys.toList()) {
+      final controller = _map[uuid]!;
+      if (!controller.isClosed) controller.addError(StateError('WebSocket reconnect attempts exhausted'));
+      _removeController(uuid);
+    }
+  }
+
+  Future<void> _onReconnect() async {
+    _abortHandshake();
     if (_payloads.isEmpty) return;
     _sinkCompleter = Completer();
     final completer = _sinkCompleter;
@@ -154,7 +188,7 @@ class GraphLinkSubscriptionHandler {
           ));
       await streamSink.sendMessage(json.encode(message.toJson()));
     }).catchError((e) {
-      if (!controller.isClosed) controller.addError(e);
+      if (e is! _GraphLinkHandshakeAborted && !controller.isClosed) controller.addError(e);
       _subs.remove(uuid)?.cancel();
       // Keep _payloads[uuid] and _map[uuid] alive — _onReconnect will
       // re-establish the listener and re-send the subscribe message.
@@ -250,6 +284,9 @@ abstract class GraphLinkWebSocketAdapter {
 
   // Fires after a successful reconnect; used by the handler to re-subscribe
   Stream<void> get onReconnect => const Stream.empty();
+
+  // Fires when the adapter stops reconnecting; the handler then fails every open subscription
+  Stream<void> get onGiveUp => const Stream.empty();
 }
 """;
 
@@ -266,6 +303,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   WebSocketChannel? _channel;
   final _messageController = StreamController<String>.broadcast();
   final _reconnectController = StreamController<void>.broadcast();
+  final _giveUpController = StreamController<void>.broadcast();
   StreamSubscription<dynamic>? _subscription;
   Completer<void>? _connectionCompleter;
   int _reconnectAttempts = 0;
@@ -354,6 +392,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
           // retry
         }
       }
+      if (!_disposed) _giveUpController.add(null);
     } finally {
       _reconnecting = false;
     }
@@ -372,6 +411,9 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
 
   @override
   Stream<void> get onReconnect => _reconnectController.stream;
+
+  @override
+  Stream<void> get onGiveUp => _giveUpController.stream;
 
   @override
   Future<Map<String, dynamic>?> connectionInitPayload() async {

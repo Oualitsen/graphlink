@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
+import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.ts';
 import {
   httpAdapterForPort,
   newWsAdapterForPort,
   newWsAdapterNeverStop,
+  wsUrlForPort,
   killPort,
   startServer,
 } from './real-server-adapter.ts';
@@ -137,6 +139,47 @@ describe.skipIf(!RUN_RECONNECT)('reconnect: null maxReconnectAttempts retries in
       }
       expect(ws.reconnectAttempts).toBeGreaterThanOrEqual(targetAttempts);
       expect(reconnected).toBe(false);
+    } finally {
+      unsub();
+      await ws.close();
+    }
+  }, 120_000);
+});
+
+// ---------------------------------------------------------------------------
+// Test 4: the resumed subscription sends the rotated token on connection_init
+// ---------------------------------------------------------------------------
+describe.skipIf(!RUN_RECONNECT)('reconnect: rotated token', () => {
+  const port = 9996;
+  beforeAll(() => startServer(port), 40_000);
+  afterAll(() => killPort(port));
+
+  it('connection_init carries the token current at reconnect time', async () => {
+    const first = `ts-first-${Date.now()}`;
+    const second = `ts-second-${Date.now()}`;
+    let token = first;
+    const ws = new DefaultGraphLinkWsAdapter(wsUrlForPort(port), async () => ({ Authorization: `Bearer ${token}` }));
+    const client = new GraphLinkClient(httpAdapterForPort(port), ws);
+    const startsOf = async (t: string) => (await client.queries.secureTickStarts({ token: t })).secureTickStarts;
+
+    let firstTick!: () => void;
+    const gotFirstTick = new Promise<void>(res => { firstTick = res; });
+    const unsub = client.subscriptions.secureTicks({ count: 1000 }, () => firstTick(), () => {});
+    try {
+      await gotFirstTick;
+      expect(await startsOf(first)).toBe(1);
+
+      token = second;
+      await startServer(port);
+
+      const deadline = Date.now() + 60_000;
+      for (;;) {
+        const starts = await startsOf(second).catch(() => 0);
+        if (starts === 1) break;
+        if (Date.now() > deadline) throw new Error('the subscription was not resumed with the rotated token');
+        await new Promise(res => setTimeout(res, 1000));
+      }
+      expect(await startsOf(first)).toBe(0);
     } finally {
       unsub();
       await ws.close();

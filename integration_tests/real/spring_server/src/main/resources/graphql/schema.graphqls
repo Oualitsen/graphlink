@@ -654,6 +654,13 @@ type Query {
   listCachedUsers: [User!]!
   getCachedPost(id: ID!): Post!
   getCachedConfig: AllScalars!
+  cachedFlaky(id: ID!): User!
+  cachedFlakyNullable(id: ID!): User
+  cachedFlakyCalls(id: ID!): Int!
+  echoHeader(name: String!): String
+  whoAmI: String!
+  secureTickStarts(token: String!): Int!
+  labelTickStarts(label: String!): Int!
   getStaleUser(id: ID!): User
   getUserOrErrors(id: ID!): User!
   findUserOrErrors(id: ID!): User
@@ -758,6 +765,8 @@ type Subscription {
 
   # Emits 1..count, then the server completes the stream.
   finiteTicks(count: Int!): Int!
+  secureTicks(count: Int!): Int!
+  labelTicks(label: String!, count: Int!): String!
 
   # Emits 1..failAfter, then the server fails the stream.
   flakyTicks(failAfter: Int!): Int!

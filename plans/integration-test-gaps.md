@@ -45,7 +45,6 @@ Still open:
 
 - `getCachedConfig` in the Dart, Java and Kotlin real packages (their cache tests count calls on a mock adapter; the Dart mock suite
   has it, check the Java and Kotlin mock suites).
-- `counterTickRestart` (the server restarts itself after tick N) is used only by Swift.
 - `enum_spellings` has its own file only in Dart and Go; the other languages test the spellings inside `identifiers`/`list_shapes`.
 - Python `subscription_reconnect` has 1 case against 3 (Go 3, Dart/Java/Kotlin/TypeScript 3); Python and Go upload have 3 GraphQL
   cases against 6.

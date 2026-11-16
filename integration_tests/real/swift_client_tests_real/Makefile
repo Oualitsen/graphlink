@@ -6,7 +6,7 @@ UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0
 # must point at a full Xcode install for `swift test` to resolve `import XCTest`.
 XCODE_DEVELOPER_DIR = /Applications/Xcode.app/Contents/Developer
 
-.PHONY: generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server
+.PHONY: generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server reconnect-test
 
 clean:
 	rm -rf $(GENERATED_DIR)
@@ -39,3 +39,6 @@ test:
 ci: start-server start-upload-server generate test stop-server stop-upload-server
 
 ci-no-generate: start-server start-upload-server test stop-server stop-upload-server
+
+reconnect-test: generate start-server
+	SERVER_JAR=$(shell pwd)/$(SERVER_JAR) DEVELOPER_DIR=$(XCODE_DEVELOPER_DIR) swift test --filter ReconnectCasesTest

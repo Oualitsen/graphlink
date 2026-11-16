@@ -1053,6 +1053,9 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
             guard let self else { return }
             switch result {
             case .success(let message):
+                self.lock.lock()
+                self.reconnectAttempts = 0
+                self.lock.unlock()
                 switch message {
                 case .string(let text): self.messageListener?(text)
                 case .data(let data): self.messageListener?(String(data: data, encoding: .utf8) ?? "")
@@ -1088,9 +1091,6 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
             if wasDisposed { return }
             self.connectInternal(
                 onConnect: {
-                    self.lock.lock()
-                    self.reconnectAttempts = 0
-                    self.lock.unlock()
                     self.reconnectListener?()
                 },
                 onFailure: onFailure

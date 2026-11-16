@@ -1263,6 +1263,12 @@ type GraphLinkWebSocketAdapter interface {
 	// SetReconnectHandler registers the callback fired after a successful reconnect.
 	SetReconnectHandler(handler func())
 }
+
+// GraphLinkGiveUpNotifier is implemented by adapters that stop reconnecting after a limit;
+// the subscription handler then fails every open subscription instead of leaving it hanging.
+type GraphLinkGiveUpNotifier interface {
+	SetGiveUpHandler(handler func())
+}
 ''';
 
 const goSubscriptionHandler = r'''
@@ -1311,6 +1317,8 @@ type glWsMessage struct {
 
 const glHandshakeTimeout = 30 * time.Second
 
+var errGlHandshakeAborted = errors.New("WebSocket connection lost during the handshake")
+
 type GraphLinkSubscriptionHandler struct {
 	adapter      GraphLinkWebSocketAdapter
 	mu           sync.Mutex
@@ -1318,6 +1326,7 @@ type GraphLinkSubscriptionHandler struct {
 	connMu       sync.Mutex
 	acknowledged bool
 	ackCh        chan struct{}
+	abort        chan struct{}
 }
 
 func NewGraphLinkSubscriptionHandler(adapter GraphLinkWebSocketAdapter) *GraphLinkSubscriptionHandler {
@@ -1328,6 +1337,9 @@ func NewGraphLinkSubscriptionHandler(adapter GraphLinkWebSocketAdapter) *GraphLi
 	}
 	adapter.SetMessageHandler(handler.onMessage)
 	adapter.SetReconnectHandler(handler.onReconnect)
+	if notifier, ok := adapter.(GraphLinkGiveUpNotifier); ok {
+		notifier.SetGiveUpHandler(handler.onGiveUp)
+	}
 	return handler
 }
 
@@ -1346,7 +1358,9 @@ func (h *GraphLinkSubscriptionHandler) Handle(ctx context.Context, payload Graph
 
 	go func() {
 		if err := h.ensureConnected(ctx); err != nil {
-			sub.emit(GraphLinkRawEvent{Err: err})
+			if !errors.Is(err, errGlHandshakeAborted) {
+				sub.emit(GraphLinkRawEvent{Err: err})
+			}
 			return
 		}
 		if err := h.sendSubscribe(ctx, sub); err != nil {
@@ -1375,7 +1389,27 @@ func (h *GraphLinkSubscriptionHandler) ensureConnected(ctx context.Context) erro
 	return h.handshake(ctx)
 }
 
+func (h *GraphLinkSubscriptionHandler) abortHandshake() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.abort != nil {
+		close(h.abort)
+		h.abort = nil
+	}
+}
+
 func (h *GraphLinkSubscriptionHandler) handshake(ctx context.Context) error {
+	abort := make(chan struct{})
+	h.mu.Lock()
+	h.abort = abort
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		if h.abort == abort {
+			h.abort = nil
+		}
+		h.mu.Unlock()
+	}()
 	select {
 	case <-h.ackCh:
 	default:
@@ -1399,6 +1433,8 @@ func (h *GraphLinkSubscriptionHandler) handshake(ctx context.Context) error {
 	case <-h.ackCh:
 		h.acknowledged = true
 		return nil
+	case <-abort:
+		return errGlHandshakeAborted
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-time.After(glHandshakeTimeout):
@@ -1424,6 +1460,7 @@ func (h *GraphLinkSubscriptionHandler) sendSubscribe(ctx context.Context, sub *g
 }
 
 func (h *GraphLinkSubscriptionHandler) onReconnect() {
+	h.abortHandshake()
 	go func() {
 		h.connMu.Lock()
 		h.acknowledged = false
@@ -1451,6 +1488,23 @@ func (h *GraphLinkSubscriptionHandler) onReconnect() {
 			}
 		}
 	}()
+}
+
+func (h *GraphLinkSubscriptionHandler) onGiveUp() {
+	h.abortHandshake()
+	h.connMu.Lock()
+	h.acknowledged = false
+	h.connMu.Unlock()
+	h.mu.Lock()
+	subs := make([]*glSubscription, 0, len(h.subs))
+	for _, sub := range h.subs {
+		subs = append(subs, sub)
+	}
+	h.mu.Unlock()
+	for _, sub := range subs {
+		sub.emit(GraphLinkRawEvent{Err: errors.New("WebSocket reconnect attempts exhausted")})
+		h.remove(sub)
+	}
 }
 
 func (h *GraphLinkSubscriptionHandler) cancel(sub *glSubscription) {
@@ -1566,6 +1620,7 @@ type DefaultGraphLinkWebSocketAdapter struct {
 	readCancel        context.CancelFunc
 	onMessage         func(string)
 	onReconnect       func()
+	onGiveUp          func()
 	reconnectListeners []func()
 	reconnectAttempts int
 	reconnecting      bool
@@ -1586,6 +1641,12 @@ func (a *DefaultGraphLinkWebSocketAdapter) SetMessageHandler(handler func(messag
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	a.onMessage = handler
+}
+
+func (a *DefaultGraphLinkWebSocketAdapter) SetGiveUpHandler(handler func()) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.onGiveUp = handler
 }
 
 func (a *DefaultGraphLinkWebSocketAdapter) SetReconnectHandler(handler func()) {
@@ -1690,8 +1751,13 @@ func (a *DefaultGraphLinkWebSocketAdapter) reconnectLoop() {
 		if !stop {
 			a.reconnectAttempts++
 		}
+		disposedNow := a.disposed
+		giveUp := a.onGiveUp
 		a.mu.Unlock()
 		if stop {
+			if !disposedNow && giveUp != nil {
+				giveUp()
+			}
 			return
 		}
 		time.Sleep(a.backoff(attempt))
