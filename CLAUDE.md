@@ -183,10 +183,13 @@ serializers/
     express_apollo_rest_constants.dart      # runtime support of that router (`rest/support.ts`)
   swift/swift_serializer.dart      # Swift types, inputs, enums
   python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
-  python/fastapi_ariadne_server_serializer.dart  # FastAPI + Ariadne server: Protocol services/guards, resolvers, loaders, app
-  python/fastapi_ariadne_server_constants.dart   # static runtime of that server (loader, source support, depth guard, WS handler)
-  python/fastapi_ariadne_rest_serializer.dart    # FastAPI APIRouter for `@glRest*` served by the server
-  python/fastapi_ariadne_rest_constants.dart     # runtime of that router (`rest/support.py`, uploads, downloads)
+  python/python_ariadne_server_serializer.dart  # shared Ariadne server base: Protocol services/guards, resolvers, loaders, GraphLinkServices
+  python/fastapi_ariadne_server_serializer.dart  # FastAPI entry point (create_app)
+  python/django_ariadne_server_serializer.dart   # Django entry point (create_urlpatterns with the GraphQL view, create_app for WebSocket)
+  python/fastapi_rest_serializer.dart, django_rest_serializer.dart  # request/response types of the shared REST handlers
+  python/python_ariadne_server_constants.dart    # static runtime (loader, source support, depth guard, WS handler, Django view and WebSocket wrapper)
+  python/python_rest_serializer.dart             # abstract: framework-neutral route table for `@glRest*`
+  python/python_rest_constants.dart              # REST runtime: framework-neutral core, Starlette and Django support/uploads/downloads, FastAPI router, Django urls
   go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums
   client_serializers/              # one subdirectory per language
     <lang>/<lang>_client_serializer.dart   # client methods (queries/mutations/subs)
@@ -380,7 +383,7 @@ don't confuse them:
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
   `typescript_upload_server`, `java_server`, `java_server_reactive`,
-  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`) — flat, not grouped by language.
+  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`) — flat, not grouped by language.
   `clients/` holds one subdirectory per generated client harness (`dart_client`,
   `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
   upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
@@ -406,6 +409,8 @@ don't confuse them:
   schema mappings, like Express. Run with `make -C server_integration_tests ci-http-python-fastapi` (faults, REST and GraphQL suites) and
   `make -C server_integration_tests ci-python-fastapi-client CLIENT=dart`. GraphQL multipart uploads and `@glRest*` uploads are served; the upload suite runs the Dart harness against
   `servers/python_upload_server` (port 9974) with `make -C server_integration_tests ci-upload-python`.
+  The Django flavor (`djangoAriadne`, `servers/python_django_server` port 9972, upload server 9971) shares `servers/python_impl/` with both and runs with `ci-http-python-django`, `ci-python-django-client CLIENT=dart` and `ci-upload-python-django`.
+  Both frameworks also have GraphQL-only and REST-only servers (`python_{fastapi,django}_{graphql,rest}_server`, ports 9923/9922/9921/9920; `ci-http-python-<framework>-<graphql|rest>`, all at once with `ci-http-python-modes`): the REST schema is `schema_rest/rest.gql`, the GraphQL one next to it is `rest_graphql.gql`.
 - **Java 8**: `make -C server_integration_tests java8-check` compiles the generated Java clients with `javac --release 8` (`scripts/java8_check.sh`;
   the `java11` transports excepted). Fails today, see `server_integration_tests/reports/JAVA8_COMPAT.md`.
 

@@ -1,0 +1,12 @@
+{
+  "schemaPaths": ["../../upload_schema/upload_schema.gql"],
+  "mode": "server",
+  "outputDir": "generated",
+  "serverConfig": {
+    "djangoAriadne": {
+      "port": 9971,
+      "graphqlPath": "/graphql",
+      "generateEntryPoint": true
+    }
+  }
+}

@@ -1,6 +1,6 @@
-const fastapiRuntimeDir = 'runtime';
+const ariadneRuntimeDir = 'runtime';
 
-const fastapiSourceSupport = r'''
+const ariadneSourceSupport = r'''
 from __future__ import annotations
 
 from typing import Any, Dict, Optional
@@ -20,7 +20,7 @@ def source_of(json: Any) -> Any:
     return json
 ''';
 
-const fastapiLoaderRuntime = r'''
+const ariadneLoaderRuntime = r'''
 from __future__ import annotations
 
 import asyncio
@@ -70,7 +70,7 @@ class GraphLinkLoader(Generic[K, V]):
                 future.set_result(value)
 ''';
 
-const fastapiGuards = r'''
+const ariadneGuards = r'''
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Set, Tuple, Type
@@ -144,10 +144,11 @@ def format_error(error: GraphQLError, debug: bool = False) -> Dict[str, Any]:
     return formatted
 ''';
 
-const fastapiFileUpload = r'''
+const ariadneFileUpload = r'''
 from __future__ import annotations
 
 from dataclasses import dataclass
+from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional
 
 CHUNK = 64 * 1024
@@ -164,11 +165,15 @@ class FileUpload:
         return self.open_stream()
 
 
+async def _settled(value: Any) -> Any:
+    return await value if isawaitable(value) else value
+
+
 def _stream_of(upload: Any) -> Callable[[], AsyncIterator[bytes]]:
     async def chunks() -> AsyncIterator[bytes]:
-        await upload.seek(0)
+        await _settled(upload.seek(0))
         while True:
-            chunk = await upload.read(CHUNK)
+            chunk = await _settled(upload.read(CHUNK))
             if not chunk:
                 return
             yield chunk
@@ -177,18 +182,18 @@ def _stream_of(upload: Any) -> Callable[[], AsyncIterator[bytes]]:
 
 
 def to_file_upload(upload: Any) -> Optional[FileUpload]:
-    """Wraps the Starlette `UploadFile` the multipart request parser produced."""
+    """Wraps the file the multipart request parser produced (a Starlette `UploadFile` or a Django `UploadedFile`)."""
     if upload is None:
         return None
     return FileUpload(
-        filename=upload.filename or "",
+        filename=getattr(upload, "filename", None) or getattr(upload, "name", None) or "",
         mimetype=upload.content_type or "application/octet-stream",
         encoding="7bit",
         open_stream=_stream_of(upload),
     )
 ''';
 
-const fastapiContextBase = r'''
+const ariadneContextBase = r'''
 from __future__ import annotations
 
 from typing import Any, Optional
@@ -209,7 +214,7 @@ class GraphLinkContext:
         self.loaders = GraphLinkLoaders()
 ''';
 
-const fastapiWsHandler = r'''
+const ariadneWsHandler = r'''
 from __future__ import annotations
 
 import json
@@ -249,4 +254,156 @@ class GraphLinkWSHandler(GraphQLTransportWSHandler):
             await websocket.close(code=4400)
             return
         await super().handle_websocket_subscribe(websocket, data, operation_id, client_context)
+''';
+
+const ariadneDjangoGraphQLView = r'''
+from __future__ import annotations
+
+import json
+from typing import Any, Callable, Dict, List
+
+from ariadne import graphql
+from ariadne.file_uploads import combine_multipart_data
+from asgiref.sync import sync_to_async
+from django.core.exceptions import RequestDataTooBig
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+JSON = "application/json"
+MULTIPART = "multipart/form-data"
+TEXT = "text/plain; charset=utf-8"
+
+
+class BadRequest(Exception):
+    pass
+
+
+def _plain(status: int, message: str = "") -> HttpResponse:
+    return HttpResponse(message, status=status, content_type=TEXT)
+
+
+def _not_allowed(request: HttpRequest) -> HttpResponse:
+    allow = {"Allow": "OPTIONS, POST, GET"}
+    if request.method == "OPTIONS":
+        return HttpResponse(headers=allow)
+    return HttpResponse(status=405, headers=allow)
+
+
+def _from_json(request: HttpRequest) -> Any:
+    try:
+        return json.loads(request.body)
+    except (TypeError, ValueError):
+        raise BadRequest("Request body is not a valid JSON")
+
+
+async def _from_multipart(request: HttpRequest) -> Any:
+    try:
+        fields, files = await sync_to_async(lambda: (request.POST, request.FILES))()
+    except Exception:
+        raise BadRequest("Request body is not a valid multipart/form-data")
+    try:
+        operations = json.loads(fields.get("operations"))
+    except (TypeError, ValueError):
+        raise BadRequest("Request 'operations' multipart field is not a valid JSON")
+    try:
+        files_map = json.loads(fields.get("map"))
+    except (TypeError, ValueError):
+        raise BadRequest("Request 'map' multipart field is not a valid JSON")
+    return combine_multipart_data(operations, files_map, {key: value for key, value in files.items()})
+
+
+def _from_query(request: HttpRequest) -> Dict[str, Any]:
+    variables = request.GET.get("variables", "").strip()
+    try:
+        parsed = json.loads(variables) if variables else None
+    except (TypeError, ValueError):
+        raise BadRequest("Variables query arg is not a valid JSON")
+    return {
+        "query": request.GET["query"].strip(),
+        "operationName": request.GET.get("operationName", "").strip() or None,
+        "variables": parsed,
+    }
+
+
+async def _read(request: HttpRequest) -> Any:
+    kind = request.headers.get("content-type", "").split(";")[0]
+    try:
+        if kind == JSON:
+            return _from_json(request)
+        if kind == MULTIPART:
+            return await _from_multipart(request)
+    except RequestDataTooBig:
+        raise BadRequest("Request body is too large")
+    if request.method == "GET" and request.GET.get("query"):
+        return _from_query(request)
+    raise BadRequest(f"Posted content must be of type {JSON} or {MULTIPART}")
+
+
+def build_graphql_view(
+    schema: Any,
+    create_context: Callable[[Any], Any],
+    validation_rules: List[Any],
+    error_formatter: Callable[..., Any],
+) -> Callable[[HttpRequest], Any]:
+    async def view(request: HttpRequest) -> HttpResponse:
+        if request.method == "GET":
+            if not request.GET.get("query"):
+                return _not_allowed(request)
+        elif request.method != "POST":
+            return _not_allowed(request)
+        try:
+            data = await _read(request)
+        except BadRequest as error:
+            return _plain(400, str(error))
+        success, result = await graphql(
+            schema,
+            data,
+            context_value=create_context(request),
+            validation_rules=validation_rules,
+            require_query=request.method == "GET",
+            debug=False,
+            error_formatter=error_formatter,
+        )
+        return JsonResponse(result, status=200 if success else 400)
+
+    return csrf_exempt(view)
+''';
+
+const ariadneDjangoWebSocket = r'''
+from typing import Any, Awaitable, Callable, Dict
+
+Scope = Dict[str, Any]
+Receive = Callable[[], Awaitable[Dict[str, Any]]]
+Send = Callable[[Dict[str, Any]], Awaitable[None]]
+
+
+class GraphLinkWebSocketRouter:
+    """Django serves HTTP only: this wrapper hands the GraphQL WebSocket path to Ariadne and answers `lifespan` itself."""
+
+    def __init__(self, django_app: Any, graphql_path: str, graphql_app: Any) -> None:
+        self.django_app = django_app
+        self.graphql_path = graphql_path
+        self.graphql_app = graphql_app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        kind = scope["type"]
+        if kind == "lifespan":
+            await self._lifespan(receive, send)
+        elif kind == "websocket":
+            if scope.get("path") == self.graphql_path:
+                await self.graphql_app(scope, receive, send)
+            else:
+                await receive()
+                await send({"type": "websocket.close", "code": 1000})
+        else:
+            await self.django_app(scope, receive, send)
+
+    async def _lifespan(self, receive: Receive, send: Send) -> None:
+        while True:
+            message = await receive()
+            if message["type"] == "lifespan.startup":
+                await send({"type": "lifespan.startup.complete"})
+            elif message["type"] == "lifespan.shutdown":
+                await send({"type": "lifespan.shutdown.complete"})
+                return
 ''';

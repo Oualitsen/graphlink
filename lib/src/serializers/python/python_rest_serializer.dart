@@ -10,10 +10,8 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.d
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
-import 'package:graphlink/src/serializers/python/fastapi_ariadne_rest_constants.dart';
+import 'package:graphlink/src/serializers/python/python_rest_constants.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
-
-const _allMethods = '["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]';
 
 class _RouteBinding {
   final GLRestOperation op;
@@ -22,15 +20,15 @@ class _RouteBinding {
   _RouteBinding(this.op, this.service);
 }
 
-/// The REST adapter of a FastAPI server: one router holding every REST operation, bound to the same service
+/// The REST adapter of an Ariadne server: a framework-neutral route table holding every REST operation, bound to the same service
 /// protocols the GraphQL resolvers use.
-class FastapiAriadneRestSerializer {
+abstract class PythonRestSerializer {
   final GLParser grammar;
   final PythonSerializer py;
-  final FastapiAriadneServerConfig config;
+  final AriadneServerConfig config;
   final _cg = PythonCodeGenUtils();
 
-  FastapiAriadneRestSerializer(this.grammar, this.py, this.config);
+  PythonRestSerializer(this.grammar, this.py, this.config);
 
   bool get hasRest => grammar.restOperations.isNotEmpty;
 
@@ -40,72 +38,68 @@ class FastapiAriadneRestSerializer {
 
   bool get hasMultipart => grammar.restOperations.values.any((op) => op.bodyKind == RestBodyKind.multipart);
 
-  String serializeSupport() => fastapiRestSupport.trimLeft();
+  String get requestType;
 
-  String serializeDownloads() => fastapiRestDownload.trimLeft();
+  String get responseType;
 
-  String serializeUploads() =>
-      '${fastapiRestUploadsRaw.trimLeft()}${hasMultipart ? fastapiRestUploadsMultipart : ''}';
+  List<String> get requestImports;
+
+  String get supportRuntime;
+
+  String get downloadRuntime;
+
+  String get rawUploadRuntime;
+
+  String get multipartUploadRuntime;
+
+  String serializeCore() => pythonRestCore.trimLeft();
+
+  String serializeSupport() => supportRuntime.trimLeft();
+
+  String serializeDownloads() => downloadRuntime.trimLeft();
+
+  String serializeUploads() => '${rawUploadRuntime.trimLeft()}${hasMultipart ? multipartUploadRuntime : ''}';
 
   String methodName(String wire) {
     final name = wire.toSnakeCaseWords();
     return _keywords.contains(name) ? '${name}_' : name;
   }
 
-  String serializeRestRouter() {
+  String serializeRestRoutes() {
     final bindings = _bindings();
     final intercepted = bindings.any((b) => _intercepted(b.op));
     final interceptor = intercepted ? grammar.interfaces[glInterceptorInterfaceName]! : null;
     final tagEnum = intercepted ? grammar.enums[glInterceptorTagEnumName] : null;
     final multipart = bindings.any((b) => b.op.bodyKind == RestBodyKind.multipart);
 
-    final handlers = <String>[];
-    final registrations = <String>[];
-    for (final binding in bindings) {
-      handlers.add(_handler(binding));
-      registrations.add(
-          'router.add_api_route(${py.pythonStringLiteral(_path(binding.op))}, handle(${_handlerName(binding.op)}), methods=[${py.pythonStringLiteral(binding.op.method.wireName)}])');
-    }
+    final handlers = [for (final binding in bindings) _handler(binding)];
 
     final body = _cg.createMethod(
-      methodName: 'build_rest_router',
+      methodName: 'build_rest_routes',
       arguments: ['services: Any', 'create_context: Callable[[Any], GraphLinkContext]'],
-      returnType: 'APIRouter',
+      returnType: 'List[RestRoute]',
       statements: [
-        'router = APIRouter()',
         _shapes(bindings),
         for (final handler in handlers) ...['', handler],
         '',
-        ...registrations,
-        ..._methodNotAllowedRoutes(bindings),
-        ..._notFoundRoute(bindings),
-        'return router',
+        'return [\n${[..._routeEntries(bindings), ..._notFoundEntries(bindings)].map((e) => e.identPy()).join('\n')}\n]',
       ],
     );
 
     final imports = <String>[
       'from typing import Any, Callable, Dict, List, Optional',
       '',
-      'from fastapi import APIRouter',
-      'from starlette.requests import Request',
-      'from starlette.responses import Response',
+      ...requestImports,
       '',
       'from ..context import GraphLinkContext',
       if (interceptor != null) 'from ..interfaces.${py.moduleNameFor(interceptor)} import ${interceptor.codeName}',
       if (tagEnum != null) 'from ..enums.${py.moduleNameFor(tagEnum)} import ${tagEnum.codeName}',
+      'from .core import RestRoute, S, checked, form_arg, form_list_arg, json_arg, nested_arg, wrap',
       'from .support import (',
-      '    S,',
       '    body_arg,',
-      '    checked,',
-      '    form_arg,',
-      '    form_list_arg,',
       '    handle,',
       '    header_arg,',
       '    header_list_arg,',
-      '    json_arg,',
-      '    method_not_allowed,',
-      '    nested_arg,',
-      '    not_found,',
       '    path_arg,',
       '    query_arg,',
       '    query_list_arg,',
@@ -114,7 +108,6 @@ class FastapiAriadneRestSerializer {
       '    send_json,',
       '    send_no_content,',
       '    send_text,',
-      '    wrap,',
       ')',
       if (hasDownloads) 'from .download import send_download',
       if (hasUploads) 'from .uploads import raw_upload_arg${multipart ? ', read_multipart, file_arg, file_list_arg' : ''}',
@@ -168,8 +161,8 @@ class FastapiAriadneRestSerializer {
     return _cg.createMethod(
       async: true,
       methodName: _handlerName(op),
-      arguments: ['request: Request'],
-      returnType: 'Response',
+      arguments: ['request: $requestType'],
+      returnType: responseType,
       statements: statements,
     );
   }
@@ -371,20 +364,21 @@ class FastapiAriadneRestSerializer {
     return _cg.constDecl('shapes', '{\n${entries.map((e) => e.identPy()).join('\n')}\n}', type: 'Dict[str, Any]');
   }
 
-  // ── routes that exist for another method only ─────────────────────────────
+  // ── route table ───────────────────────────────────────────────────────────
 
-  List<String> _methodNotAllowedRoutes(List<_RouteBinding> bindings) {
-    final methodsByPath = <String, List<String>>{};
+  List<String> _routeEntries(List<_RouteBinding> bindings) {
+    final handlersByPath = <String, List<String>>{};
     for (final binding in bindings) {
-      methodsByPath.putIfAbsent(_path(binding.op), () => []).add(binding.op.method.wireName);
+      handlersByPath.putIfAbsent(_path(binding.op), () => []).add(
+          '${py.pythonStringLiteral(binding.op.method.wireName)}: handle(${_handlerName(binding.op)})');
     }
     return [
-      for (final entry in methodsByPath.entries)
-        'router.add_api_route(${py.pythonStringLiteral(entry.key)}, method_not_allowed([${entry.value.map(py.pythonStringLiteral).join(', ')}]), methods=$_allMethods)',
+      for (final entry in handlersByPath.entries)
+        'RestRoute(${py.pythonStringLiteral(entry.key)}, {${entry.value.join(', ')}}),',
     ];
   }
 
-  List<String> _notFoundRoute(List<_RouteBinding> bindings) {
+  List<String> _notFoundEntries(List<_RouteBinding> bindings) {
     final prefixes = [
       for (final binding in bindings)
         _path(binding.op).split('/').where((s) => s.isNotEmpty).takeWhile((s) => !s.startsWith('{')).toList(),
@@ -400,8 +394,8 @@ class FastapiAriadneRestSerializer {
     if (common.isEmpty) return const [];
     final base = '/${common.join('/')}';
     return [
-      'router.add_api_route(${py.pythonStringLiteral(base)}, not_found, methods=$_allMethods)',
-      'router.add_api_route(${py.pythonStringLiteral('$base/{rest_path:path}')}, not_found, methods=$_allMethods)',
+      'RestRoute(${py.pythonStringLiteral(base)}, {}),',
+      'RestRoute(${py.pythonStringLiteral('$base/{rest_path:path}')}, {}),',
     ];
   }
 

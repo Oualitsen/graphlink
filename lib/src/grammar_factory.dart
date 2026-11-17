@@ -22,7 +22,7 @@ Set<String> _reservedWordsFor(GeneratorConfig config) {
     return kotlinReservedWords;
   }
   if (lang is SwiftClientConfig) return swiftReservedWords;
-  if (lang is PythonClientConfig || lang is FastapiAriadneServerConfig) return pythonReservedWords;
+  if (lang is PythonClientConfig || lang is AriadneServerConfig) return pythonReservedWords;
   if (lang is GoClientConfig) return goReservedWords;
   // TypeScript accesses fields as object properties; reserved words are legal
   // there, so fields need no sanitizing (parameters are handled separately,
@@ -42,7 +42,7 @@ NamingConvention _namingConventionFor(GeneratorConfig config) {
   if (lang is JavaClientConfig || lang is SpringServerConfig) return NamingConvention.java;
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return NamingConvention.kotlin;
   if (lang is SwiftClientConfig) return NamingConvention.swift;
-  if (lang is PythonClientConfig || lang is FastapiAriadneServerConfig) return NamingConvention.python;
+  if (lang is PythonClientConfig || lang is AriadneServerConfig) return NamingConvention.python;
   if (lang is GoClientConfig) return NamingConvention.go;
   // TypeScript / Express Apollo
   return NamingConvention.typescript;
@@ -56,7 +56,7 @@ Set<String> _reservedTypeNamesFor(GeneratorConfig config) {
   if (lang is JavaClientConfig || lang is SpringServerConfig) return javaReservedTypeNames;
   if (lang is KotlinClientConfig || lang is KotlinSpringServerConfig) return kotlinReservedTypeNames;
   if (lang is SwiftClientConfig) return swiftReservedTypeNames;
-  if (lang is PythonClientConfig || lang is FastapiAriadneServerConfig) return pythonReservedTypeNames;
+  if (lang is PythonClientConfig || lang is AriadneServerConfig) return pythonReservedTypeNames;
   if (lang is GoClientConfig) return const {};
   return typescriptReservedTypeNames;
 }

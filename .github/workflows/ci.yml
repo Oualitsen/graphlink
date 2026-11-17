@@ -536,7 +536,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi]
+        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django]
         client: [dart, ts, java, kotlin, java_reactive, python, go]
     defaults:
       run:
@@ -570,6 +570,7 @@ jobs:
             java)             make ci-java-client CLIENT=${{ matrix.client }} ;;
             java-reactive)    make ci-java-reactive-client CLIENT=${{ matrix.client }} ;;
             python-fastapi)   make ci-python-fastapi-client CLIENT=${{ matrix.client }} ;;
+            python-django)    make ci-python-django-client CLIENT=${{ matrix.client }} ;;
           esac
 
   # Server HTTP suites: malformed and hostile requests (server_faults/) and the REST operations (server_rest/)
@@ -580,7 +581,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi]
+        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django, python-fastapi-graphql, python-fastapi-rest, python-django-graphql, python-django-rest]
     defaults:
       run:
         working-directory: server_integration_tests
@@ -661,6 +662,7 @@ jobs:
           name: server-integration-tests-generated
           path: server_integration_tests
       - run: make ci-upload-python
+      - run: make ci-upload-python-django
 
   build-spring-servers:
     runs-on: ubuntu-latest

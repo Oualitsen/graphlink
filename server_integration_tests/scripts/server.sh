@@ -39,6 +39,10 @@ wait_for_port_release() {
 
 http_ready() {
   local body
+  if [[ -n ${READY_PATH:-} ]]; then
+    [[ $(curl -s -o /dev/null --max-time 3 -w '%{http_code}' "http://localhost:$1$READY_PATH") == 200 ]]
+    return
+  fi
   body=$(curl -s --max-time 3 -X POST -H 'Content-Type: application/json' \
     -d '{"query":"{__typename}"}' "http://localhost:$1/graphql") || return 1
   [[ "$body" == *'"__typename"'* ]]

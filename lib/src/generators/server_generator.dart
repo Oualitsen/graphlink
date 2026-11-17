@@ -11,8 +11,11 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.d
 import 'package:graphlink/src/generators/python_client_generator.dart' show pythonBarrel, pythonExportLine;
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_constants.dart' show pythonJsonChecks, pythonModelBase;
-import 'package:graphlink/src/serializers/python/fastapi_ariadne_server_constants.dart';
+import 'package:graphlink/src/serializers/python/python_ariadne_server_constants.dart';
 import 'package:graphlink/src/serializers/python/fastapi_ariadne_server_serializer.dart';
+import 'package:graphlink/src/serializers/python/django_ariadne_server_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_ariadne_server_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_rest_constants.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
@@ -63,8 +66,8 @@ Future<Set<String>> generateServerClasses(
   if (serverLang is ExpressApolloServerConfig) {
     return _generateExpressApolloClasses(grammar, config, started);
   }
-  if (serverLang is FastapiAriadneServerConfig) {
-    return _generateFastapiAriadneClasses(grammar, config, serverLang, started);
+  if (serverLang is AriadneServerConfig) {
+    return _generateAriadneClasses(grammar, config, serverLang, started);
   }
   if (serverLang is KotlinSpringServerConfig) {
     return _generateKotlinSpringClasses(grammar, config, serverLang, started);
@@ -657,15 +660,18 @@ Future<Set<String>> _generateExpressApolloClasses(
   return paths;
 }
 
-Future<Set<String>> _generateFastapiAriadneClasses(
-    GLParser grammar, GeneratorConfig config, FastapiAriadneServerConfig fastapiConfig, DateTime started) async {
+Future<Set<String>> _generateAriadneClasses(
+    GLParser grammar, GeneratorConfig config, AriadneServerConfig ariadneConfig, DateTime started) async {
   final destinationDir = config.outputDir;
   final py = PythonSerializer(
     grammar,
-    runtimeDir: fastapiRuntimeDir,
+    runtimeDir: ariadneRuntimeDir,
     typeMapOverrides: config.typeMappings ?? {},
   );
-  final serverSerializer = FastapiAriadneServerSerializer(grammar, py, fastapiConfig);
+  final isDjango = ariadneConfig is DjangoAriadneServerConfig;
+  final PythonAriadneServerSerializer serverSerializer = isDjango
+      ? DjangoAriadneServerSerializer(grammar, py, ariadneConfig)
+      : FastapiAriadneServerSerializer(grammar, py, ariadneConfig);
   final files = <String, String>{};
   final exports = <String>[];
   final models = <String>[];
@@ -677,9 +683,9 @@ Future<Set<String>> _generateFastapiAriadneClasses(
 
   String wrap(String body) => py.serializeGlClass(GLClassModel(body: body.trim()));
 
-  add('$fastapiRuntimeDir/graph_link_model.py', wrap(pythonModelBase));
-  add('$fastapiRuntimeDir/graph_link_json.py', wrap(pythonJsonChecks));
-  files['$fastapiRuntimeDir/__init__.py'] = '';
+  add('$ariadneRuntimeDir/graph_link_model.py', wrap(pythonModelBase));
+  add('$ariadneRuntimeDir/graph_link_json.py', wrap(pythonJsonChecks));
+  files['$ariadneRuntimeDir/__init__.py'] = '';
 
   grammar.getSerializableEnums().forEach((def) {
     final content = py.serializeEnumDefinition(def);
@@ -727,7 +733,7 @@ Future<Set<String>> _generateFastapiAriadneClasses(
   if (grammar.carriesSources) add('source.py', wrap(serverSerializer.serializeSourceSupport()));
   add('context.py', wrap(serverSerializer.serializeContext()));
   if (grammar.services.values.any((s) => s.mappings.any((m) => m.isBatch))) {
-    add('$fastapiRuntimeDir/graph_link_loader.py', wrap(serverSerializer.serializeLoaderRuntime()));
+    add('$ariadneRuntimeDir/graph_link_loader.py', wrap(serverSerializer.serializeLoaderRuntime()));
   }
   if (serverSerializer.hasUploads || serverSerializer.hasRestUploads) {
     add('file_upload.py', wrap(serverSerializer.serializeFileUpload()));
@@ -735,20 +741,30 @@ Future<Set<String>> _generateFastapiAriadneClasses(
 
   if (!grammar.restOnly) {
     add('type_defs.py', serverSerializer.serializeTypeDefs());
-    add('$fastapiRuntimeDir/graph_link_guards.py', wrap(serverSerializer.serializeGuards()));
-    add('$fastapiRuntimeDir/graph_link_ws.py', wrap(serverSerializer.serializeWsHandler()));
+    add('$ariadneRuntimeDir/graph_link_guards.py', wrap(serverSerializer.serializeGuards()));
+    add('$ariadneRuntimeDir/graph_link_ws.py', wrap(serverSerializer.serializeWsHandler()));
+    if (isDjango) {
+      add('$ariadneRuntimeDir/graph_link_view.py', wrap(ariadneDjangoGraphQLView));
+      add('$ariadneRuntimeDir/graph_link_websocket.py', wrap(ariadneDjangoWebSocket));
+    }
     add('resolvers.py', serverSerializer.serializeResolvers().first);
   }
 
   if (serverSerializer.hasRest) {
+    add('rest/core.py', wrap(serverSerializer.rest.serializeCore()));
     add('rest/support.py', wrap(serverSerializer.rest.serializeSupport()));
     if (serverSerializer.hasRestUploads) add('rest/uploads.py', wrap(serverSerializer.rest.serializeUploads()));
     if (serverSerializer.hasRestDownloads) add('rest/download.py', wrap(serverSerializer.rest.serializeDownloads()));
-    add('rest/router.py', serverSerializer.rest.serializeRestRouter());
+    add('rest/routes.py', serverSerializer.rest.serializeRestRoutes());
+    if (isDjango) {
+      add('rest/urls.py', wrap(pythonRestDjangoUrls));
+    } else {
+      add('rest/router.py', wrap(pythonRestFastapiRouter));
+    }
     files['rest/__init__.py'] = '';
   }
 
-  if (fastapiConfig.generateEntryPoint) add('app.py', serverSerializer.serializeEntryPoint());
+  if (ariadneConfig.generateEntryPoint) add('app.py', serverSerializer.serializeEntryPoint());
 
   for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'services', 'guards', 'loaders']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';

@@ -272,9 +272,36 @@ def concurrency(port):
     return failures[:3]
 
 
+def served(port, method, path, body=None, headers=None):
+    try:
+        status, _, _ = request(port, method, path, body, headers or {})
+    except Exception as e:
+        return f"no response: {type(e).__name__}: {e}"
+    return status
+
+
+def check_absent(port, mode):
+    if mode == "rest-only":
+        status = served(port, "POST", "/graphql", json.dumps({"query": "{ __typename }"}).encode(), {"Content-Type": "application/json"})
+        what = "GraphQL endpoint"
+    else:
+        status = served(port, "GET", "/rest/count")
+        what = "REST route"
+    if status != 404:
+        print(f"FAIL absent_{mode}: the {what} answers {status}, expected 404")
+        return 1
+    print(f"  ok      absent_{mode}")
+    return 0
+
+
 def main():
     name, port = sys.argv[1], int(sys.argv[2])
+    mode = sys.argv[3] if len(sys.argv) > 3 else "mix"
+    if mode == "graphql-only":
+        sys.exit(check_absent(port, mode))
     cases = json.load(open(os.path.join(HERE, "cases.json")))
+    if mode == "rest-only":
+        cases = [c for c in cases if "graphql" not in c and not c.get("graphqlSchemaHasNoRestOperations")]
     defects_file = os.path.join(HERE, "known_defects.json")
     known = json.load(open(defects_file)).get(name, {}) if os.path.exists(defects_file) else {}
     failed, passed, known_hit = [], 0, 0
@@ -302,6 +329,8 @@ def main():
     if problems:
         failed.append(("concurrency", problems))
         print(f"FAIL concurrency: {problems}")
+    if mode == "rest-only" and check_absent(port, mode):
+        failed.append(("absent_rest-only", ["the GraphQL endpoint answers"]))
     print(f"{name}: {passed} ok, {known_hit} known defects, {len(failed)} failed of {len(cases) + 1}")
     sys.exit(1 if failed else 0)
 

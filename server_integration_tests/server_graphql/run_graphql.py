@@ -301,10 +301,24 @@ def run_ws_case(case, port):
     return problems
 
 
+REST_SCHEMA_FIELDS = {"restItemGraphql"}
+
+
+def without_rest_schema_fields(value):
+    if isinstance(value, list):
+        return [without_rest_schema_fields(v) for v in value
+                if not (isinstance(v, dict) and v.get("name") in REST_SCHEMA_FIELDS)]
+    if isinstance(value, dict):
+        return {k: without_rest_schema_fields(v) for k, v in value.items()}
+    return value
+
+
 def main():
     server, port = sys.argv[1], int(sys.argv[2])
     only = sys.argv[3] if len(sys.argv) > 3 else None
     cases = json.load(open(os.path.join(HERE, "cases.json")))
+    if os.environ.get("GRAPHQL_ONLY") == "1":
+        cases = without_rest_schema_fields(cases)
     known = json.load(open(os.path.join(HERE, "known_defects.json"))).get(server, {})
     runs = [(c["name"], c, run_http_case) for c in cases["http"]]
     runs += [(c["name"], c, run_ws_case) for c in cases["ws"]]

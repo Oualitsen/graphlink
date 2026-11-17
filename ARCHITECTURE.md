@@ -222,8 +222,10 @@ Under `serializers/client_serializers/`:
 | `java/java_spring_server_serializer.dart`, `kotlin/kotlin_spring_server_serializer.dart` | — | Spring Boot services + interfaces |
 | `java/java_spring_controller_serializer.dart`, `kotlin/kotlin_spring_controller_serializer.dart` | — | Spring controllers |
 | `typescript/express_apollo_server_serializer.dart` | `ExpressApolloServerSerializer` | Express/Apollo resolvers |
-| `python/fastapi_ariadne_server_serializer.dart` | `FastapiAriadneServerSerializer` | FastAPI/Ariadne: `Protocol` services and guards, `build_schema` resolvers, batch loaders, `app.py`. Types come from `PythonSerializer` (server mode, runtime dir `runtime/`) |
-| `python/fastapi_ariadne_rest_serializer.dart` | `FastapiAriadneRestSerializer` | The FastAPI `APIRouter` of the `@glRest*` operations (runtime in `fastapi_ariadne_rest_constants.dart`) |
+| `python/python_ariadne_server_serializer.dart` | `PythonAriadneServerSerializer` | Shared Ariadne server base: `Protocol` services and guards, `build_schema` resolvers, batch loaders, `GraphLinkServices`. Types come from `PythonSerializer` (server mode, runtime dir `runtime/`) |
+| `python/fastapi_ariadne_server_serializer.dart` | `FastapiAriadneServerSerializer` | FastAPI `create_app` |
+| `python/django_ariadne_server_serializer.dart` | `DjangoAriadneServerSerializer` | Django `create_urlpatterns` (GraphQL view + REST views) and `create_app` (WebSocket wrapper) |
+| `python/python_rest_serializer.dart` | `PythonRestSerializer` (abstract; `FastapiRestSerializer`, `DjangoRestSerializer`) | The handlers and route table (`build_rest_routes`) of the `@glRest*` operations; request/response runtimes per framework live in `python_rest_constants.dart` |
 
 ### Flutter serializers
 
@@ -254,7 +256,9 @@ GeneratorConfig
 ├── GoClientConfig        (.go)
 ├── SpringServerConfig    (Spring Boot)
 ├── ExpressApolloServerConfig (Express)
-├── FastapiAriadneServerConfig (FastAPI + Ariadne)
+├── AriadneServerConfig (abstract, shared options)
+│   ├── FastapiAriadneServerConfig (FastAPI + Ariadne)
+│   └── DjangoAriadneServerConfig (Django + Ariadne)
 └── FlutterConfig         (Flutter widgets + forms)
 ```
 
@@ -355,7 +359,7 @@ have been caught.
 `server_integration_tests/` is a **client x server matrix**, not organized by language.
 `servers/` holds one subdirectory per generated server target (`typescript_server`,
 `typescript_upload_server`, `java_server`, `java_server_reactive`,
-`kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`) — flat, no per-language grouping.
+`kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`) — flat, no per-language grouping.
 `clients/` holds one subdirectory per generated client harness (`dart_client`,
 `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
 upload-only suite). The top-level `Makefile` exposes one `ci-<server>-client` target per

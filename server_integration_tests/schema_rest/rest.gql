@@ -192,11 +192,6 @@ extend type Mutation @glRestPrefix(path: "/rest") {
         @glRest(path: "/upload/raw/{id}", method: PUT)
 }
 
-# A GraphQL operation on the same service as the REST ones (RestItemService): both controllers live side by side.
-extend type Query {
-    restItemGraphql(id: ID!): RestItem
-}
-
 # Interceptors and the request context on REST operations. The interceptor of the test servers sets the `marker` of the
 # context (and throws a 403 for the name "deny"); the services echo what they saw.
 extend type Query @glRestPrefix(path: "/rest/ctx") {

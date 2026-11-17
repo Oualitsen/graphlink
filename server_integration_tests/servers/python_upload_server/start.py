@@ -1,7 +1,12 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "python_impl"))
+
 import uvicorn
 
 from generated.app import GraphLinkServices, create_app
-from impl.services import PingServiceImpl, UploadFileListServiceImpl, UploadOneFileServiceImpl
+from impl.upload_services import PingServiceImpl, UploadFileListServiceImpl, UploadOneFileServiceImpl
 
 PORT = 9974
 
