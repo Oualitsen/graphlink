@@ -924,7 +924,7 @@ jobs:
           name: spring-server-jars
           path: integration_tests/real
       - run: |
-          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          ( sleep 480; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: sockets ==='; ss -tanp | head -40; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f 'bin/java -jar .*surefirebooter'); do kill -3 "$p"; timeout 60 jcmd "$p" Thread.print; done; sleep 5; pkill -f surefire ) &
           WATCHDOG=$!
           trap 'kill $WATCHDOG 2>/dev/null' EXIT
           make ci-no-generate
@@ -952,7 +952,7 @@ jobs:
           name: spring-server-jars
           path: integration_tests/real
       - run: |
-          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          ( sleep 480; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: sockets ==='; ss -tanp | head -40; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f 'bin/java -jar .*surefirebooter'); do kill -3 "$p"; timeout 60 jcmd "$p" Thread.print; done; sleep 5; pkill -f surefire ) &
           WATCHDOG=$!
           trap 'kill $WATCHDOG 2>/dev/null' EXIT
           make ci-no-generate
@@ -980,7 +980,7 @@ jobs:
           name: spring-server-jars
           path: integration_tests/real
       - run: |
-          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          ( sleep 480; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: sockets ==='; ss -tanp | head -40; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f 'bin/java -jar .*surefirebooter'); do kill -3 "$p"; timeout 60 jcmd "$p" Thread.print; done; sleep 5; pkill -f surefire ) &
           WATCHDOG=$!
           trap 'kill $WATCHDOG 2>/dev/null' EXIT
           make ci-no-generate
