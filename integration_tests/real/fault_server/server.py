@@ -18,6 +18,7 @@ import struct
 import sys
 import threading
 import time
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, urlsplit
 
@@ -57,6 +58,27 @@ def graphql_only(build):
     def wrapped(ctx):
         return build(ctx) if ctx.kind == 'graphql' else None
     return wrapped
+
+
+HUGE_CASE = json.loads((Path(__file__).parent / 'huge_case.json').read_text())
+HUGE_BODY = []
+
+
+def huge_users_body():
+    if not HUGE_BODY:
+        statuses = ('ACTIVE', 'INACTIVE', 'SUSPENDED')
+        users = [{
+            'id': f'user-{i}',
+            'name': f'User {i} Ünï 日本',
+            'email': f'user-{i}@example.com',
+            'status': statuses[i % 3],
+            'tags': ['alpha', 'beta'],
+            'address': {'street': '1 Long Street', 'city': 'Paris', 'country': 'FR', 'zip': None},
+        } for i in range(HUGE_CASE['users'])]
+        body = json.dumps({'data': {'bigUsers': users}}, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
+        assert len(body) >= HUGE_CASE['minBytes'], len(body)
+        HUGE_BODY.append(body)
+    return HUGE_BODY[0]
 
 
 HTML = '<html><body><h1>502 Bad Gateway</h1></body></html>'
@@ -102,6 +124,7 @@ FAULTS = {
     'status-503-retry-after': lambda c: response(503, '{"error":"busy"}', headers=[('Retry-After', '30')]),
     'repeated-headers': lambda c: response(200, c.ok_text(), headers=[('X-Dup', 'one'), ('x-dup', 'two'), ('Set-Cookie', 'a=1'), ('Set-Cookie', 'b=2')]),
     'slow': lambda c: response(200, c.ok_text(), delay=1.0),
+    'huge-users': graphql_only(lambda c: response(200, huge_users_body())),
     'slow-body': lambda c: response(200, c.ok_text(), delay_mid_body=1.0, split_at=4),
     'hang': lambda c: response(200, c.ok_text(), delay=30.0),
     'gql-errors-only': graphql_only(lambda c: response(200, '{"errors":[{"message":"boom","path":["getCount"],"extensions":{"code":"BAD"}}]}')),

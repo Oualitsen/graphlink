@@ -185,8 +185,7 @@ Nothing to port.
 - **Cancelling an in-flight query/mutation**: no real test cancels a request while the server is slow (task cancel,
   context cancel, `AbortSignal`, coroutine cancel). Use `fault_server`'s `slow` on GraphQL and assert the cancel
   returns quickly and the next request works.
-- **Large responses**: no GraphQL response above a few KB. Add `bigUsers(count: Int!)` and fetch about 5 MB (decoding
-  speed, no truncation, the TS/Python/Go readers buffer correctly).
+- **Large responses**: **DONE (7 targets, no defects).** The fault server serves a 10.3 MB GraphQL response (`huge-users`, 50,000 users, built in memory by `server.py` from `fault_server/huge_case.json`, with non-ASCII names). Each client fetches it through the custom query `fetchBigUsers` and checks the count, first and last element, UTF-8, an enum, a list, a null, a 30 s ceiling, and a second call on the same client. All decode it in 0.6 to 1.4 s with nothing lost. The reactive Java packages run the derived test.
 - **Variables with very large / special values over the real wire**: `Int` limits (`2147483647`, `-2147483648`),
   `Float` `1e308`, `-0.0`, a string with `\u0000` and lone surrogates (the server may reject; the client must
   serialize them without crashing).

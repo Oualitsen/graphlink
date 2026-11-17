@@ -750,6 +750,9 @@ type Query {
   # Enum argument — tests enum serialization in variables.
   listUsersByStatus(status: UserStatus!): [User!]!
 
+  # Not implemented by the Spring server: served only by fault_server (huge-users) for the large-response test.
+  bigUsers(count: Int!): [User!]!
+
   # Multiple scalar arguments.
   searchUsers(name: String!, limit: Int!): [User!]!
 
