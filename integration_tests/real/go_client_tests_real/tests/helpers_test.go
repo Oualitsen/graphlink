@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"os/exec"
 	"testing"
 	"time"
@@ -122,7 +121,14 @@ func minimalInput() gl.CreateUserInput {
 	}
 }
 
-func serverJar() string { return os.Getenv("SERVER_JAR") }
+func launchServer(t *testing.T, port int) {
+	t.Helper()
+	cmd := exec.Command("python3", "../../fault_server/server.py", "--port", fmt.Sprint(port), "--live")
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = cmd.Process.Kill() })
+}
 
 func killPort(port int) {
 	_ = exec.Command("bash", "-c", fmt.Sprintf("lsof -ti :%d -sTCP:LISTEN | xargs kill -9 2>/dev/null || true", port)).Run()
@@ -131,16 +137,9 @@ func killPort(port int) {
 
 func startServer(t *testing.T, port int) {
 	t.Helper()
-	jar := serverJar()
-	if jar == "" {
-		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
-	}
 	killPort(port)
-	cmd := exec.Command("java", "-jar", jar, fmt.Sprintf("--server.port=%d", port), "--management.server.port=-1")
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = cmd.Process.Kill(); killPort(port) })
+	launchServer(t, port)
+	t.Cleanup(func() { killPort(port) })
 	deadline := time.Now().Add(30 * time.Second)
 	for time.Now().Before(deadline) {
 		if conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), time.Second); err == nil {

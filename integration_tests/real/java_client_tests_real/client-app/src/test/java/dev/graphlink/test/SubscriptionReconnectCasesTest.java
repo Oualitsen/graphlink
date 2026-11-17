@@ -51,7 +51,7 @@ class SubscriptionReconnectCasesTest {
     @BeforeEach
     void setUp() throws Exception {
         killPort(PORT);
-        startJar(PORT);
+        startServer(PORT);
     }
 
     @AfterEach
@@ -86,7 +86,7 @@ class SubscriptionReconnectCasesTest {
 
     private void restart() throws Exception {
         killPort(PORT);
-        startJar(PORT);
+        startServer(PORT);
     }
 
     @Test

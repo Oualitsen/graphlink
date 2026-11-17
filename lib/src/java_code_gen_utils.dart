@@ -38,12 +38,19 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
 
   @override
   String method(
-      {required String returnType, required methodName, List<String>? arguments, required List<String> statements}) {
+      {required String returnType,
+      required methodName,
+      List<String>? arguments,
+      required List<String> statements,
+      List<String>? throwsTypes}) {
     var buffer = StringBuffer();
     buffer.write(returnType);
     buffer.write(" ");
     buffer.write(methodName);
     buffer.write(parentheses(arguments));
+    if (throwsTypes != null && throwsTypes.isNotEmpty) {
+      buffer.write(" throws ${throwsTypes.join(", ")}");
+    }
     buffer.write(" ");
 
     buffer.write(block(statements));
@@ -142,13 +149,24 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     required List<String> statements,
     List<String>? interfaceNames,
     bool staticClass = false,
+    bool finalClass = false,
+    bool packagePrivate = false,
+    String? superClass,
   }) {
     var buffer = StringBuffer();
-    buffer.write("public ");
+    if (!packagePrivate) {
+      buffer.write("public ");
+    }
     if (staticClass) {
       buffer.write("static ");
     }
+    if (finalClass) {
+      buffer.write("final ");
+    }
     buffer.write("class ${className} ");
+    if (superClass != null) {
+      buffer.write("extends $superClass ");
+    }
     if (interfaceNames != null && interfaceNames.isNotEmpty) {
       buffer.write("implements ");
       buffer.write(interfaceNames.join(", "));
@@ -220,6 +238,25 @@ class JavaCodeGenUtils implements CodeGenUtilsBase {
     }
     return buffer.toString();
   }
+
+  String tryCatch({
+    required List<String> tryStatements,
+    required List<JavaCatch> catches,
+    List<String>? finallyStatements,
+  }) {
+    final buffer = StringBuffer("try ${block(tryStatements)}");
+    for (final c in catches) {
+      buffer.write(" catch (${c.type} ${c.variable}) ${block(c.statements)}");
+    }
+    if (finallyStatements != null) {
+      buffer.write(" finally ${block(finallyStatements)}");
+    }
+    return buffer.toString();
+  }
+
+  /// [open] is a call that already ends in `-> {` (see `JavaReactiveFlavor.*Open`); the body is indented under it and closed with `});`.
+  String lambdaBlock(String open, List<String> statements) =>
+      "$open\n${statements.join('\n').ident()}\n});";
 
   @override
   String forEachLoop({
@@ -357,4 +394,11 @@ class JavaCaseStatement extends CaseStatement {
     }
     return buffer.toString();
   }
+}
+class JavaCatch {
+  final String type;
+  final String variable;
+  final List<String> statements;
+
+  const JavaCatch(this.type, this.variable, this.statements);
 }

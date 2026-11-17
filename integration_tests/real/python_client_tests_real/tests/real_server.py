@@ -39,6 +39,3 @@ def new_upload_client() -> GraphLinkClient:
 def new_ws_adapter(port: int = DEFAULT_PORT, **kwargs) -> DefaultGraphLinkWebSocketAdapter:
     return DefaultGraphLinkWebSocketAdapter(url=ws_url(port), reconnect=True, **kwargs)
 
-
-def server_jar() -> Optional[str]:
-    return os.environ.get("SERVER_JAR")

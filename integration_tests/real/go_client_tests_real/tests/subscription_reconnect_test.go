@@ -2,18 +2,12 @@ package tests
 
 import (
 	"context"
-	"os/exec"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestSubscriptionReconnectCounterTickResumesAfterServerKill(t *testing.T) {
-	jar := serverJar()
-	if jar == "" {
-		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
-	}
 	const port = 9996
 	startServer(t, port)
 	ws := newWsAdapter(port)
@@ -38,11 +32,7 @@ func TestSubscriptionReconnectCounterTickResumesAfterServerKill(t *testing.T) {
 			if tick == 4 && !restarted {
 				restarted = true
 				killPort(port)
-				cmd := exec.Command("java", "-jar", jar, "--server.port=9996", "--management.server.port=-1")
-				if err := cmd.Start(); err != nil {
-					t.Fatal(err)
-				}
-				t.Cleanup(func() { _ = cmd.Process.Kill() })
+				launchServer(t, port)
 			}
 			if seen[tick] {
 				if !reconnected.Load() {
@@ -87,9 +77,6 @@ func TestSubscriptionReconnectRetriesIndefinitelyWhenCapIsDisabled(t *testing.T)
 }
 
 func TestSubscriptionReconnectConnectsOnceTheServerBecomesAvailable(t *testing.T) {
-	if serverJar() == "" || strings.TrimSpace(serverJar()) == "" {
-		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
-	}
 	const port = 9997
 	killPort(port)
 	ws := newWsAdapter(port)
@@ -123,9 +110,6 @@ func TestSubscriptionReconnectConnectsOnceTheServerBecomesAvailable(t *testing.T
 }
 
 func TestSubscriptionReconnectSendsTheRotatedTokenOnConnectionInit(t *testing.T) {
-	if serverJar() == "" {
-		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
-	}
 	const port = 9996
 	first, second := uniqueToken(), uniqueToken()
 	var token atomic.Value
@@ -145,11 +129,7 @@ func TestSubscriptionReconnectSendsTheRotatedTokenOnConnectionInit(t *testing.T)
 
 	token.Store(second)
 	killPort(port)
-	cmd := exec.Command("java", "-jar", serverJar(), "--server.port=9996", "--management.server.port=-1")
-	if err := cmd.Start(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = cmd.Process.Kill() })
+	launchServer(t, port)
 
 	deadline := time.Now().Add(time.Minute)
 	for {

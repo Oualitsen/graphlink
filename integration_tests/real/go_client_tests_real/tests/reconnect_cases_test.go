@@ -14,9 +14,6 @@ const reconnectPort = 9930
 
 func reconnectClient(t *testing.T, configure func(*gl.DefaultGraphLinkWebSocketAdapter)) (*gl.GraphLinkClient, *atomic.Int32) {
 	t.Helper()
-	if serverJar() == "" {
-		t.Skip("SERVER_JAR env var not set — run via make reconnect-test")
-	}
 	startServer(t, reconnectPort)
 	ws := newWsAdapter(reconnectPort)
 	var reconnects atomic.Int32

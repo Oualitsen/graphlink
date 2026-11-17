@@ -37,9 +37,6 @@ final class ReconnectCasesTest: XCTestCase {
     private var streams: [Stream] = []
 
     override func setUpWithError() throws {
-        guard ProcessInfo.processInfo.environment["SERVER_JAR"] != nil else {
-            throw XCTSkip("SERVER_JAR env var not set — run via make reconnect-test")
-        }
         try startServer()
     }
 
@@ -75,7 +72,7 @@ final class ReconnectCasesTest: XCTestCase {
         killPort()
         let server = Process()
         server.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        server.arguments = ["java", "-jar", ProcessInfo.processInfo.environment["SERVER_JAR"]!, "--server.port=\(port)", "--management.server.port=-1"]
+        server.arguments = ["python3", FileManager.default.currentDirectoryPath + "/../fault_server/server.py", "--port", "\(port)", "--live"]
         server.standardOutput = FileHandle.nullDevice
         server.standardError = FileHandle.nullDevice
         try server.run()
@@ -85,7 +82,6 @@ final class ReconnectCasesTest: XCTestCase {
             if Date() > deadline { throw XCTSkip("server on port \(port) did not start within 30 s") }
             Thread.sleep(forTimeInterval: 0.5)
         }
-        Thread.sleep(forTimeInterval: 2)
     }
 
     private func until(_ what: String, timeout: TimeInterval = 60, _ check: () -> Bool) async throws {

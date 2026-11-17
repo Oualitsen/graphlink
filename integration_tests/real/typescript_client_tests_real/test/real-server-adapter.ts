@@ -41,7 +41,7 @@ export function newWsAdapterNeverStop(port: number): DefaultGraphLinkWsAdapter {
 // Server lifecycle utilities
 // ---------------------------------------------------------------------------
 
-const JAR_PATH = new URL('../../spring_server/build/libs/graphlink-test-server-0.0.1.jar', import.meta.url).pathname;
+const SERVER_SCRIPT = new URL('../../fault_server/server.py', import.meta.url).pathname;
 
 export function killPort(port: number): void {
   try {
@@ -67,7 +67,7 @@ function waitForPort(port: number, timeoutMs = 30_000): Promise<void> {
 
 export async function startServer(port: number): Promise<void> {
   killPort(port);
-  const proc = spawn('java', ['-jar', JAR_PATH, `--server.port=${port}`, '--management.server.port=-1'], { stdio: 'ignore', detached: true });
+  const proc = spawn('python3', [SERVER_SCRIPT, '--port', String(port), '--live'], { stdio: 'ignore', detached: true });
   proc.unref();
   await waitForPort(port);
 }

@@ -1,11 +1,14 @@
 import asyncio
+import os
 import socket
 import subprocess
 import time
 import unittest
 from typing import Optional
 
-from .real_server import DEFAULT_PORT, new_client, new_ws_adapter, server_jar
+from .real_server import new_client, new_ws_adapter
+
+SERVER_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fault_server", "server.py")
 
 
 def listening_pids(port: int) -> list:
@@ -21,7 +24,7 @@ def kill_port(port: int) -> None:
 def start_server(port: int) -> subprocess.Popen:
     kill_port(port)
     process = subprocess.Popen(
-        ["java", "-jar", server_jar(), f"--server.port={port}", "--management.server.port=-1"],
+        ["python3", SERVER_SCRIPT, "--port", str(port), "--live"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
     deadline = time.time() + 30
@@ -34,11 +37,12 @@ def start_server(port: int) -> subprocess.Popen:
     raise RuntimeError(f"server on port {port} did not start within 30 s")
 
 
-@unittest.skipIf(server_jar() is None, "SERVER_JAR env var not set - run via make reconnect-test")
 class SubscriptionReconnectTest(unittest.IsolatedAsyncioTestCase):
     async def test_counter_tick_resumes_after_server_restart(self) -> None:
-        ws = new_ws_adapter()
-        client = new_client(ws_adapter=ws)
+        port = 9993
+        await asyncio.to_thread(start_server, port)
+        ws = new_ws_adapter(port)
+        client = new_client(port, ws_adapter=ws)
         reconnected = asyncio.Event()
         original = ws.on_reconnect
 
@@ -65,20 +69,17 @@ class SubscriptionReconnectTest(unittest.IsolatedAsyncioTestCase):
                 pass
 
         consumer = asyncio.ensure_future(consume())
-        new_process: Optional[subprocess.Popen] = None
         try:
             await asyncio.wait_for(first_tick.wait(), 10)
-            for pid in listening_pids(DEFAULT_PORT):
-                subprocess.run(["kill", "-9", pid])
+            kill_port(port)
             await asyncio.sleep(0.5)
-            new_process = subprocess.Popen(["java", "-jar", server_jar()], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            start_server(port)
             await asyncio.wait_for(reconnected.wait(), 30)
             await asyncio.wait_for(after_reconnect.wait(), 15)
         finally:
             consumer.cancel()
             await ws.close()
-            if new_process is not None:
-                new_process.kill()
+            kill_port(port)
 
     async def test_the_rotated_token_is_sent_when_the_subscription_resumes(self) -> None:
         port = 9996

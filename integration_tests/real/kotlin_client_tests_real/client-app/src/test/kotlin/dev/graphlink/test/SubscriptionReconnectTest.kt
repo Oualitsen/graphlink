@@ -22,9 +22,7 @@ class SubscriptionReconnectTest {
         private const val PORT_HALT   = 9996
         private const val PORT_BEFORE = 9993
 
-        private fun jarPath(): String =
-            System.getenv("SERVER_JAR")?.takeIf { it.isNotBlank() }
-                ?: "../../spring_server/build/libs/graphlink-test-server-0.0.1.jar"
+        private const val SERVER_SCRIPT = "../../fault_server/server.py"
 
         internal fun wsUrl(port: Int)   = "ws://localhost:$port/graphql"
         internal fun httpUrl(port: Int) = "http://localhost:$port/graphql"
@@ -38,8 +36,8 @@ class SubscriptionReconnectTest {
             Thread.sleep(500)
         }
 
-        internal fun startJar(port: Int) {
-            ProcessBuilder("java", "-jar", jarPath(), "--server.port=$port", "--management.server.port=-1")
+        internal fun startServer(port: Int) {
+            ProcessBuilder("python3", SERVER_SCRIPT, "--port", port.toString(), "--live")
                 .apply {
                     redirectOutput(ProcessBuilder.Redirect.DISCARD)
                     redirectError(ProcessBuilder.Redirect.DISCARD)
@@ -69,7 +67,7 @@ class SubscriptionReconnectTest {
         runBlocking {
             withContext(Dispatchers.IO) {
                 killPort(PORT_HALT)
-                startJar(PORT_HALT)
+                startServer(PORT_HALT)
             }
 
             val codec = KotlinxSerializationGraphLinkJsonCodec()
@@ -102,7 +100,7 @@ class SubscriptionReconnectTest {
                 serverKilled = true
 
                 launch(Dispatchers.IO) {
-                    try { startJar(PORT_HALT) } catch (_: Exception) {}
+                    try { startServer(PORT_HALT) } catch (_: Exception) {}
                 }
 
                 withTimeout(90_000) { resumeDeferred.await() }
@@ -122,7 +120,7 @@ class SubscriptionReconnectTest {
         runBlocking {
             withContext(Dispatchers.IO) {
                 killPort(PORT_HALT)
-                startJar(PORT_HALT)
+                startServer(PORT_HALT)
             }
 
             val first = "kotlin-first-${System.nanoTime()}"
@@ -151,7 +149,7 @@ class SubscriptionReconnectTest {
                 token.set(second)
                 withContext(Dispatchers.IO) { killPort(PORT_HALT) }
                 launch(Dispatchers.IO) {
-                    try { startJar(PORT_HALT) } catch (_: Exception) {}
+                    try { startServer(PORT_HALT) } catch (_: Exception) {}
                 }
 
                 withTimeout(60_000) {
@@ -199,7 +197,7 @@ class SubscriptionReconnectTest {
                 delay(1_000)
 
                 launch(Dispatchers.IO) {
-                    try { startJar(PORT_BEFORE) } catch (_: Exception) {}
+                    try { startServer(PORT_BEFORE) } catch (_: Exception) {}
                 }
 
                 val tick = withTimeout(60_000) { firstTickDeferred.await() }

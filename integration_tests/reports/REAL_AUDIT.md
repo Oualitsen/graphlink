@@ -54,10 +54,11 @@ No GraphQL real suite sends a header, in any language. The REST suites test head
 
 Server: `labelTicks(label, count)` (100 ms ticks, then completes), `labelTickStarts(label)` (per-label start counter, reset by a server restart) and an `Ack-Delay` entry in the `connection_init` payload that delays `connection_ack`.
 
-Tests, one per case, in all 7 clients (own port 9930 to 9936, so the suites can run in parallel; each needs `SERVER_JAR`):
-`reconnect_cases_test.go`, `test_reconnect_cases.py`, `subscription-reconnect-cases.test.ts`, `subscription_reconnect_cases_test.dart`, `SubscriptionReconnectCasesTest.{java,kt}`, `ReconnectCasesTest.swift` (`make reconnect-test` in the Swift package).
+Tests, one per case, in all 7 clients (own port 9930 to 9936, so the suites can run in parallel). They start and kill `real/fault_server/server.py --live` per port (it serves `labelTicks`, `secureTicks`, the `*Starts` queries, `Ack-Delay` and a ticking `counterTick` like the Spring server), not the Spring JAR, so they run in every `make test`:
+`reconnect_cases_test.go`, `test_reconnect_cases.py`, `subscription-reconnect-cases.test.ts`, `subscription_reconnect_cases_test.dart`, `SubscriptionReconnectCasesTest.{java,kt}`, `ReconnectCasesTest.swift`; the older `SubscriptionReconnectTest` files (resume after halt, subscribe before the server is up, endless retries, rotated token) use the same server.
 Cases: same variables on resubscribe, completed subscription not resubscribed, cancelled subscription not revived, two subscriptions on one socket both resume, restart during `connection_init` subscribes once, give-up after `maxReconnectAttempts` ends the stream with an error.
 Not covered: the cancelled case in Java, because the callback API (`labelTicks(..., listener)` returns `void`) has no way to cancel a subscription.
+Open defect (Python): a server that is back within a second of the restart while `connection_init` is pending leaves the reconnect handshake without a subscription (`test_a_restart_during_connection_init_subscribes_once` is skipped; it passes after 5 s of downtime, and passes in the other 6 clients). Spring's slow boot used to hide it.
 
 Client defects the tests found, all fixed in the runtime templates (`lib/src/serializers/client_serializers/<lang>/*_client_constants.dart`):
 

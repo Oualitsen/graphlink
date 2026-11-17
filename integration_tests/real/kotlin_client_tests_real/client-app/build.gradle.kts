@@ -26,12 +26,4 @@ kotlin {
 
 tasks.test {
     useJUnitPlatform()
-    exclude("**/SubscriptionReconnectTest.class")
-}
-
-tasks.register<Test>("reconnectTest") {
-    useJUnitPlatform()
-    include("**/SubscriptionReconnectTest.class")
-    testClassesDirs = sourceSets["test"].output.classesDirs
-    classpath = sourceSets["test"].runtimeClasspath
 }

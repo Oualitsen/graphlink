@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:test/test.dart';
 import 'package:graphlink_client_integration_tests/generated/client/graph_link_client.dart';
 import 'package:graphlink_client_integration_tests/generated/enums/user_status.dart';
@@ -38,86 +37,6 @@ void main() {
         expect(events[0].userCreated.id, equals('user-1'));
         expect(events[1].userCreated.id, equals('user-2'));
       } finally {
-      }
-    });
-  });
-
-  // ── reconnect ─────────────────────────────────────────────────────────────
-
-  group('reconnect', () {
-    test('counterTick resumes after server shutdown and restart', () async {
-      final serverJar = Platform.environment['SERVER_JAR'];
-      if (serverJar == null) {
-        markTestSkipped(
-            'SERVER_JAR env var not set — run via make reconnect-test');
-        return;
-      }
-
-      final ws = newWsAdapter();
-      final client = GraphLinkClient(adapter: realHttpAdapter, wsAdapter: ws);
-
-      final firstCompleter = Completer<void>();
-      final afterReconnectCompleter = Completer<void>();
-      var firstDone = false;
-      Process? newProc;
-
-      final sub = client.subscriptions.counterTick().listen(
-        (event) {
-          if (!firstDone) {
-            firstDone = true;
-            firstCompleter.complete();
-          } else if (!afterReconnectCompleter.isCompleted) {
-            afterReconnectCompleter.complete();
-          }
-        },
-        onError: (_) {},
-      );
-
-      try {
-        // confirm subscription is live
-        print('TEST: waiting for first tick...');
-        await firstCompleter.future.timeout(const Duration(seconds: 10));
-        print('TEST: first tick received');
-
-        // SIGKILL the server — abrupt drop, no close frame, triggers _onError → reconnect.
-        // (actuator shutdown sends close code 1000 which the adapter skips for reconnect)
-        // -sTCP:LISTEN ensures we only get the server, not our own client connection
-        final lsof =
-            await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
-        final pidOutput = lsof.stdout.toString().trim();
-        final pids = pidOutput.isEmpty ? <String>[] : pidOutput.split('\n');
-        print('TEST: lsof found server pids=$pids');
-        for (final pid in pids) {
-          if (pid.isNotEmpty) {
-            final killResult = await Process.run('kill', ['-9', pid]);
-            print('TEST: kill -9 $pid exit=${killResult.exitCode}');
-          }
-        }
-        // Verify all are dead
-        await Future.delayed(const Duration(milliseconds: 500));
-        final lsof2 =
-            await Process.run('lsof', ['-ti', ':9999', '-sTCP:LISTEN']);
-        print(
-            'TEST: after kill, port 9999 pids="${lsof2.stdout.toString().trim()}"');
-
-        // restart the server in the background
-        print('TEST: starting new server...');
-        newProc = await Process.start('java', ['-jar', serverJar]);
-        print('TEST: new server PID ${newProc.pid}');
-
-        // adapter detects the drop and reconnects once the server is back up
-        print('TEST: waiting for onReconnect...');
-        await ws.onReconnect.first.timeout(const Duration(seconds: 30));
-
-        // existing stream resumes delivering ticks
-        print('TEST: onReconnect received, waiting for next tick...');
-        await afterReconnectCompleter.future
-            .timeout(const Duration(seconds: 15));
-        print('TEST: next tick received, test passed!');
-      } finally {
-        await sub.cancel();
-        await ws.close();
-        newProc?.kill(ProcessSignal.sigkill);
       }
     });
   });

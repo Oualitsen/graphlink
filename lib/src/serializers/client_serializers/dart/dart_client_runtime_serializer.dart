@@ -592,7 +592,7 @@ class DartClientRuntimeSerializer {
                             'await $svTagLocks.putIfAbsent(names[i], () => GraphLinkLock()).synchronized(() => run(i + 1));',
                             'return;',
                           ]),
-                      'if (glEpoch(tags) != epoch) return;',
+                      _client.codeGenUtils.inlineIfStatement(condition: 'glEpoch(tags) != epoch', statement: 'return;'),
                       'await $svStore.set(key, value);',
                       _client.codeGenUtils.forEachLoop(
                           variable: 'tag',

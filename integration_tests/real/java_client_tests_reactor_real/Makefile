@@ -5,7 +5,7 @@ GENERATED_DIR = client-app/src/main/java/dev/graphlink/test/generated
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
 
-.PHONY: generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server reconnect-test
+.PHONY: generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server
 
 clean:
 	rm -rf $(GENERATED_DIR)
@@ -25,7 +25,7 @@ stop-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
 
 test:
-	cd $(CLIENT_DIR) && mvn test -Dexcludes='**/SubscriptionReconnectTest.java'
+	cd $(CLIENT_DIR) && mvn test
 
 start-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
@@ -40,8 +40,5 @@ ci: start-server start-upload-server start-fault-server generate test stop-serve
 
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
 ci-no-generate: start-server start-upload-server start-fault-server test stop-server stop-upload-server stop-fault-server
-
-reconnect-test: generate
-	cd $(CLIENT_DIR) && SERVER_JAR=$(abspath $(SERVER_JAR)) mvn test -Dtest=SubscriptionReconnectTest
 
 include ../fault_server/fault.mk

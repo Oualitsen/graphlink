@@ -12,10 +12,8 @@ final class ServerProcess {
 
     static String httpUrl(int port) { return "http://localhost:" + port + "/graphql"; }
 
-    private static String jarPath() {
-        String env = System.getenv("SERVER_JAR");
-        if (env != null && !env.isBlank()) return env;
-        return "../../spring_server/build/libs/graphlink-test-server-0.0.1.jar";
+    private static String serverScript() {
+        return "../../fault_server/server.py";
     }
 
     static void killPort(int port) throws Exception {
@@ -23,13 +21,12 @@ final class ServerProcess {
         Thread.sleep(500);
     }
 
-    static void startJar(int port) throws Exception {
-        ProcessBuilder pb = new ProcessBuilder("java", "-jar", jarPath(), "--server.port=" + port, "--management.server.port=-1");
+    static void startServer(int port) throws Exception {
+        ProcessBuilder pb = new ProcessBuilder("python3", serverScript(), "--port", String.valueOf(port), "--live");
         pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         pb.start();
         waitForPort(port);
-        Thread.sleep(2000);
     }
 
     private static void waitForPort(int port) throws Exception {
