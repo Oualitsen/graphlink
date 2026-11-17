@@ -785,7 +785,7 @@ func glExecuteCached[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkR
 		if err != nil {
 			return zero, err
 		}
-		return glParseAndCache[T](ctx, r, text, responseMap, r.glCacheable(remaining, epochs), captureErrors)
+		return glParseAndCache[T](ctx, r, text, responseMap, remaining, epochs, captureErrors)
 	}()
 	if err == nil {
 		return result, nil
@@ -799,7 +799,7 @@ func glExecuteCached[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkR
 	return glDecodeFull[T](map[string]any{"data": responseMap})
 }
 
-func glParseAndCache[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkResolverBase, text string, cachedResponse map[string]json.RawMessage, remaining []GraphLinkPartialQuery, captureErrors bool) (T, error) {
+func glParseAndCache[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkResolverBase, text string, cachedResponse map[string]json.RawMessage, remaining []GraphLinkPartialQuery, epochs []int64, captureErrors bool) (T, error) {
 	var zero T
 	var result struct {
 		Data   map[string]json.RawMessage `json:"data"`
@@ -813,17 +813,14 @@ func glParseAndCache[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkR
 	if dataMap == nil {
 		dataMap = map[string]json.RawMessage{}
 	}
-	for _, query := range remaining {
+	for i, query := range remaining {
 		element, ok := dataMap[query.ElementKey]
 		if query.TTL <= 0 || !ok || glIsNull(element) {
 			continue
 		}
 		entry := NewGraphLinkCacheEntry(string(element), time.Now().UnixMilli()+int64(query.TTL)*1000)
 		if encoded, err := entry.Encode(); err == nil {
-			_ = r.store.Set(ctx, query.CacheKey, encoded)
-		}
-		if len(query.Tags) > 0 {
-			_ = r.addKeyToTags(ctx, query.CacheKey, query.Tags)
+			_ = r.glStoreIfCurrent(ctx, query.CacheKey, encoded, query.Tags, epochs[i])
 		}
 	}
 	for key, value := range cachedResponse {
@@ -931,16 +928,6 @@ func (r *GraphLinkResolverBase) glEpochs(queries []GraphLinkPartialQuery) []int6
 	return epochs
 }
 
-func (r *GraphLinkResolverBase) glCacheable(queries []GraphLinkPartialQuery, epochs []int64) []GraphLinkPartialQuery {
-	var cacheable []GraphLinkPartialQuery
-	for i, query := range queries {
-		if r.glEpoch(query.Tags) == epochs[i] {
-			cacheable = append(cacheable, query)
-		}
-	}
-	return cacheable
-}
-
 func (r *GraphLinkResolverBase) glCallCached(ctx context.Context, payload GraphLinkPayload, queries []GraphLinkPartialQuery, epochs []int64) (string, error) {
 	keys := make([]string, len(queries))
 	var epoch int64
@@ -968,8 +955,56 @@ func (r *GraphLinkResolverBase) glFlightText(ctx context.Context, key string, se
 }
 
 func (r *GraphLinkResolverBase) invalidateAllEntries(ctx context.Context) error {
-	r.tagLocks.For(glAllEpochKey).epoch.Add(1)
-	return r.store.InvalidateAll(ctx)
+	lock := r.tagLocks.For(glAllEpochKey)
+	lock.epoch.Add(1)
+	return lock.Synchronized(func() error { return r.store.InvalidateAll(ctx) })
+}
+
+func (r *GraphLinkResolverBase) glStoreIfCurrent(ctx context.Context, key, value string, tags []string, epoch int64) error {
+	seen := map[string]bool{glAllEpochKey: true}
+	names := []string{glAllEpochKey}
+	for _, tag := range tags {
+		if !seen[tag] {
+			seen[tag] = true
+			names = append(names, tag)
+		}
+	}
+	sort.Strings(names)
+	var run func(i int) error
+	run = func(i int) error {
+		if i < len(names) {
+			return r.tagLocks.For(names[i]).Synchronized(func() error { return run(i + 1) })
+		}
+		if r.glEpoch(tags) != epoch {
+			return nil
+		}
+		if err := r.store.Set(ctx, key, value); err != nil {
+			return err
+		}
+		for _, tag := range tags {
+			tagKey := glTagKeyPrefix + tag
+			data, found, err := r.store.Get(ctx, tagKey)
+			if err != nil {
+				return err
+			}
+			entry := NewGraphLinkTagEntry()
+			if found {
+				if entry, err = DecodeGraphLinkTagEntry(data); err != nil {
+					return err
+				}
+			}
+			entry.Add(key)
+			encoded, err := entry.Encode()
+			if err != nil {
+				return err
+			}
+			if err := r.store.Set(ctx, tagKey, encoded); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return run(0)
 }
 
 func (r *GraphLinkResolverBase) invalidateByTags(ctx context.Context, tags []string) error {

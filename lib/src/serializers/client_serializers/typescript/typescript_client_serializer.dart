@@ -362,30 +362,29 @@ class TypeScriptClientSerializer extends GLClientSerializer {
 
   String _parseAndCacheMethod() {
     return _cg.createMethod(
-      methodName: 'private _parseAndCache',
-      returnType: 'Record<string, unknown>',
+      methodName: 'private async _parseAndCache',
+      returnType: 'Promise<Record<string, unknown>>',
       arguments: [
         'data: string',
         'cachedResponse: Record<string, unknown>',
         'remainingQueries: GraphLinkPartialQuery[]',
+        'epochs: number[]',
         'captureErrors = false',
       ],
       statements: [
         _cg.constDecl('result', 'JSON.parse(data)'),
         _cg.constDecl("dataMap", "(result['data'] as Record<string, unknown>) ?? {}", type: "Record<string, unknown>"),
-        _cg.forEachLoop(
-          variable: 'q',
-          iterable: 'remainingQueries',
+        _cg.forLoop(
+          init: 'let i = 0',
+          condition: 'i < remainingQueries.length',
+          increment: 'i++',
           statements: [
+            _cg.constDecl('q', 'remainingQueries[i]!'),
             _cg.ifStatement(
               condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
               ifBlockStatements: [
                 _cg.constDecl('entry', 'new GraphLinkCacheEntry(JSON.stringify(dataMap[q.elementKey]), Date.now() + q.ttl * 1000)'),
-                'void this.$svStore.set(q.cacheKey!, JSON.stringify(entry.toJson()));',
-                _cg.ifStatement(
-                  condition: 'q.tags.length > 0',
-                  ifBlockStatements: ['void this._addKeyToTags(q.cacheKey!, q.tags);'],
-                ),
+                'await this._glStoreIfCurrent(q.cacheKey!, JSON.stringify(entry.toJson()), q.tags, epochs[i]!);',
               ],
             ),
           ],

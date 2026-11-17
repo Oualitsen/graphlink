@@ -271,10 +271,9 @@ open class GraphLinkRestResolver(
             throw e
         }
         val value = decode(json)
-        if (json != null && glEpoch(tags) == epoch) {
+        if (json != null) {
             val entry = GraphLinkCacheEntry(encoder.encode(mapOf("__gl_v__" to json)), System.currentTimeMillis() + ttl * 1000L)
-            store.set(key, encoder.encode(entry.toJson()))
-            if (tags.isNotEmpty()) addKeyToTags(key, tags)
+            glStoreIfCurrent(key, encoder.encode(entry.toJson()), tags, epoch)
         }
         return value
     }

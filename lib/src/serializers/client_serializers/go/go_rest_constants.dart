@@ -593,18 +593,13 @@ func restCached[T any](
 	if err != nil {
 		return zero, err
 	}
-	if !glIsNull(raw) && r.glEpoch(tags) == epoch {
+	if !glIsNull(raw) {
 		encoded, err := NewGraphLinkCacheEntry(string(raw), time.Now().UnixMilli()+int64(ttl)*1000).Encode()
 		if err != nil {
 			return zero, err
 		}
-		if err := r.store.Set(ctx, key, encoded); err != nil {
+		if err := r.glStoreIfCurrent(ctx, key, encoded, tags, epoch); err != nil {
 			return zero, err
-		}
-		if len(tags) > 0 {
-			if err := r.addKeyToTags(ctx, key, tags); err != nil {
-				return zero, err
-			}
 		}
 	}
 	return value, nil

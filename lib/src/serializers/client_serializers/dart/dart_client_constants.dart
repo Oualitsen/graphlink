@@ -908,10 +908,9 @@ mixin GraphLinkRestResolver on GraphLinkResolverBase {
       rethrow;
     }
     final value = decode(json);
-    if (json != null && glEpoch(tags) == epoch) {
+    if (json != null) {
       final entry = GraphLinkCacheEntry(jsonEncode(json), DateTime.now().millisecondsSinceEpoch + ttl * 1000);
-      await glStore__.set(key, jsonEncode(entry.toJson()));
-      if (tags.isNotEmpty) await addKeyToTags(key, tags);
+      await glStoreIfCurrent(key, jsonEncode(entry.toJson()), tags, epoch);
     }
     return value;
   }

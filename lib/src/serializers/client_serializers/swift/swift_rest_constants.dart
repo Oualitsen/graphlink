@@ -419,14 +419,13 @@ open class GraphLinkRestResolver: GraphLinkResolverBase, @unchecked Sendable {
             throw error
         }
         let value = try decode(json)
-        if let json, epochs.value(tags) == epoch {
+        if let json {
             let wrapped: [String: Any?] = ["__gl_v__": json]
             let entry = GraphLinkCacheEntry(
                 data: String(decoding: try GraphLinkJson.encode(wrapped), as: UTF8.self),
                 expiry: Int(Date().timeIntervalSince1970 * 1000) + ttl * 1000
             )
-            await store.set(key, value: String(decoding: try GraphLinkJson.encode(entry.toJson()), as: UTF8.self))
-            if !tags.isEmpty { try await addKeyToTags(key, tags: tags) }
+            try await glStoreIfCurrent(key, value: String(decoding: try GraphLinkJson.encode(entry.toJson()), as: UTF8.self), tags: tags, epoch: epoch)
         }
         return value
     }

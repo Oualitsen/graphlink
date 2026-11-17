@@ -657,12 +657,11 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
   final storeBody = [
     'Object json = fetched.orElse(null);',
     'T value = decode.apply(json);',
-    _braces('if (json != null && glEpoch(tags) == epoch)', [
+    _braces('if (json != null)', [
       'Map<String, Object> wrapper = new HashMap<>();',
       'wrapper.put("__gl_v__", json);',
       'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(glEncoder__.encode(wrapper), System.currentTimeMillis() + ttl * 1000L);',
-      'glStore__.set(key, glEncoder__.encode(entry.toJson()));',
-      _braces('if (!tags.isEmpty())', ['addKeyToTags(key, tags);']),
+      'glStoreIfCurrent(key, glEncoder__.encode(entry.toJson()), tags, epoch);',
     ]),
     'return value;',
   ];

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { InMemoryGraphLinkCacheStore, type GraphLinkClient } from '../lib/generated/graphlink';
+import { InMemoryGraphLinkCacheStore, type GraphLinkCacheStore, type GraphLinkClient } from '../lib/generated/graphlink';
 import { newClient, resetServer } from './support';
 
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,5 +40,35 @@ describe('cached REST calls under concurrency', () => {
     await client.mutations.touchSlow({ name });
     expect((await slow).n).toBe(1);
     expect((await client.queries.counterSlow({ name, delayMs: 600 })).n).toBe(2);
+  });
+
+  it('an invalidation that arrives while the response is being stored removes it', async () => {
+    let reached!: () => void;
+    const reachedPromise = new Promise<void>((resolve) => { reached = resolve; });
+    let release!: () => void;
+    const releasePromise = new Promise<void>((resolve) => { release = resolve; });
+    let paused = false;
+    const inner = new InMemoryGraphLinkCacheStore();
+    const store: GraphLinkCacheStore = {
+      get: (key) => inner.get(key),
+      invalidate: (key) => inner.invalidate(key),
+      invalidateAll: () => inner.invalidateAll(),
+      set: async (key, value) => {
+        if (!key.startsWith('__tag__') && !paused) {
+          paused = true;
+          reached();
+          await releasePromise;
+        }
+        await inner.set(key, value);
+      },
+    };
+    const pausing = newClient({ store });
+    const first = pausing.queries.counterSlow({ name, delayMs: 50 });
+    await reachedPromise;
+    const touch = pausing.mutations.touchSlow({ name });
+    await delay(300);
+    release();
+    await Promise.all([first, touch]);
+    expect((await pausing.queries.counterSlow({ name, delayMs: 50 })).n).toBe(2);
   });
 });
