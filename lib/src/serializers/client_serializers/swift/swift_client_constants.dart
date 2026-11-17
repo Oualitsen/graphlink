@@ -1075,10 +1075,12 @@ public protocol GraphLinkWebSocketAdapter: AnyObject, Sendable {
     func close()
     func setMessageListener(_ listener: @escaping @Sendable (String) -> Void)
     func setReconnectListener(_ onReconnect: @escaping @Sendable () -> Void)
+    func setDisconnectListener(_ onDisconnect: @escaping @Sendable () -> Void)
     func connectionInitPayload() -> [String: Any?]?
 }
 
 public extension GraphLinkWebSocketAdapter {
+    func setDisconnectListener(_ onDisconnect: @escaping @Sendable () -> Void) {}
     func connectionInitPayload() -> [String: Any?]? { nil }
 }
 ''';
@@ -1116,6 +1118,7 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
     private var webSocketTask: URLSessionWebSocketTask?
     private var messageListener: (@Sendable (String) -> Void)?
     private var reconnectListener: (@Sendable () -> Void)?
+    private var disconnectListener: (@Sendable () -> Void)?
     private var disposed = false
     private var reconnectAttempts = 0
     private static let fatalCloseCodes: Set<Int> = [4400, 4401, 4403, 4409]
@@ -1178,6 +1181,7 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
                 let wasDisposed = self.disposed
                 self.lock.unlock()
                 if wasDisposed { return }
+                self.disconnectListener?()
                 let code = task.closeCode.rawValue
                 if Self.fatalCloseCodes.contains(code) {
                     onFailure(NSError(domain: "GraphLinkWebSocketAdapter", code: code, userInfo: [NSLocalizedDescriptionKey: "WebSocket closed by the server with code \\(code), not retrying", NSUnderlyingErrorKey: error]))
@@ -1238,6 +1242,10 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
         lock.lock(); reconnectListener = onReconnect; lock.unlock()
     }
 
+    public func setDisconnectListener(_ onDisconnect: @escaping @Sendable () -> Void) {
+        lock.lock(); disconnectListener = onDisconnect; lock.unlock()
+    }
+
     public func connectionInitPayload() -> [String: Any?]? {
         guard let headers = headersProvider?(), !headers.isEmpty else { return nil }
         return headers
@@ -1268,6 +1276,7 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
         self.adapter = adapter
         self.adapter.setMessageListener { [weak self] msg in self?.onMessage(msg) }
         self.adapter.setReconnectListener { [weak self] in self?.handleReconnect() }
+        self.adapter.setDisconnectListener { [weak self] in self?.invalidateAckTimeout() }
     }
 
     public func handle(_ payload: GraphLinkPayload) -> AsyncThrowingStream<[String: Any?], Error> {
@@ -1315,6 +1324,12 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
         } else if shouldSend {
             adapter.sendMessage(getSubscriptionMessage(id: id, payload: payload))
         }
+    }
+
+    private func invalidateAckTimeout() {
+        lock.lock()
+        ackGeneration += 1
+        lock.unlock()
     }
 
     private func armAckTimeout() {

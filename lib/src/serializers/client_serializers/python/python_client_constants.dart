@@ -536,6 +536,7 @@ class GraphLinkWebSocketAdapter(ABC):
     def __init__(self) -> None:
         self.on_message: Callable[[str], None] = lambda message: None
         self.on_reconnect: Callable[[], None] = lambda: None
+        self.on_disconnect: Callable[[], None] = lambda: None
         self.on_give_up: Callable[[], None] = lambda: None
 
     @abstractmethod
@@ -575,11 +576,13 @@ class GraphLinkSubscriptionHandler:
         self._queues: Dict[str, "asyncio.Queue[Tuple[str, Any]]"] = {}
         self._payloads: Dict[str, Any] = {}
         self._ack: Optional["asyncio.Future[None]"] = None
+        self._ack_timer: Optional[asyncio.TimerHandle] = None
         self._acknowledged = False
         self._subscribed: Set[str] = set()
         self._connect_lock = asyncio.Lock()
         adapter.on_message = self._on_message
         adapter.on_reconnect = self._on_reconnect
+        adapter.on_disconnect = self._cancel_ack_timer
         adapter.on_give_up = self._on_give_up
 
     async def _ensure_connected(self) -> None:
@@ -599,11 +602,23 @@ class GraphLinkSubscriptionHandler:
         if payload is not None:
             init["payload"] = payload
         await self.adapter.send_message(json.dumps(init))
-        try:
-            await asyncio.wait_for(ack, _ACK_TIMEOUT)
-        except asyncio.TimeoutError:
-            raise RuntimeError(f"WebSocket server did not send connection_ack within {_ACK_TIMEOUT:g} s") from None
+        self._arm_ack_timeout(ack)
+        await ack
         self._acknowledged = True
+
+    def _arm_ack_timeout(self, ack: "asyncio.Future[None]") -> None:
+        self._cancel_ack_timer()
+        self._ack_timer = asyncio.get_running_loop().call_later(_ACK_TIMEOUT, self._ack_timed_out, ack)
+
+    def _cancel_ack_timer(self) -> None:
+        if self._ack_timer is not None:
+            self._ack_timer.cancel()
+            self._ack_timer = None
+
+    def _ack_timed_out(self, ack: "asyncio.Future[None]") -> None:
+        self._ack_timer = None
+        if not ack.done():
+            ack.set_exception(RuntimeError(f"WebSocket server did not send connection_ack within {_ACK_TIMEOUT:g} s"))
 
     async def _send_subscribe(self, subscription_id: str, payload: Any) -> None:
         if subscription_id in self._subscribed:
@@ -661,6 +676,7 @@ class GraphLinkSubscriptionHandler:
             return
         message_type = message.get("type")
         if message_type == GraphqlWsMessageTypes.CONNECTION_ACK:
+            self._cancel_ack_timer()
             if self._ack is not None and not self._ack.done():
                 self._ack.set_result(None)
             return
@@ -699,6 +715,7 @@ class GraphLinkSubscriptionHandler:
         error = RuntimeError("WebSocket closed for good: reconnect attempts exhausted or the server closed it with a fatal code")
         self._acknowledged = False
         self._subscribed.clear()
+        self._cancel_ack_timer()
         if self._ack is not None and not self._ack.done():
             self._ack.set_exception(error)
         for queue in self._queues.values():
@@ -767,6 +784,7 @@ class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
             pass
         if self._connection is connection:
             self._connection = None
+            self.on_disconnect()
             if self._disposed:
                 return
             if connection.close_code in self._FATAL_CLOSE_CODES:
