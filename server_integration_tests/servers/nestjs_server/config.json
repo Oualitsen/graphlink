@@ -1,0 +1,22 @@
+{
+  "schemaPaths": ["../../schema/*.gql", "../../schema_rest/*.gql"],
+  "mode": "server",
+  "typeMappings": {
+    "ID":      "string",
+    "String":  "string",
+    "Float":   "number",
+    "Int":     "number",
+    "Boolean": "boolean",
+    "Null":    "null"
+  },
+  "outputDir": "src/generated",
+  "serverConfig": {
+    "nestApollo": {
+      "port": 9926,
+      "graphqlPath": "/graphql",
+      "generateEntryPoint": true,
+      "useResolveInfo": true,
+      "injectContext": true
+    }
+  }
+}

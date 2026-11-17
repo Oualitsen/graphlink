@@ -181,6 +181,10 @@ serializers/
     express_apollo_server_constants.dart
     express_apollo_rest_serializer.dart     # Express REST router (`@glRest*` served by the server)
     express_apollo_rest_constants.dart      # runtime support of that router (`rest/support.ts`)
+    typescript_apollo_server_base.dart      # shared by Express and NestJS: contracts, loaders, context, import helpers
+    nest_apollo_server_serializer.dart      # NestJS: abstract-class services, @Resolver/@ResolveField classes, GraphLinkModule
+    nest_apollo_rest_serializer.dart        # NestJS @Controller per service for `@glRest*`, 404/405 fallback
+    nest_apollo_server_constants.dart       # NestJS runtime (REST support derived from Express, request guards)
   swift/swift_serializer.dart      # Swift types, inputs, enums
   python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
   python/python_ariadne_server_serializer.dart  # shared Ariadne server base: Protocol services/guards, resolvers, loaders, GraphLinkServices
@@ -383,7 +387,7 @@ don't confuse them:
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
   `typescript_upload_server`, `java_server`, `java_server_reactive`,
-  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`) — flat, not grouped by language.
+  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`, `nestjs_server`) — flat, not grouped by language.
   `clients/` holds one subdirectory per generated client harness (`dart_client`,
   `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
   upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
@@ -411,6 +415,10 @@ don't confuse them:
   `servers/python_upload_server` (port 9974) with `make -C server_integration_tests ci-upload-python`.
   The Django flavor (`djangoAriadne`, `servers/python_django_server` port 9972, upload server 9971) shares `servers/python_impl/` with both and runs with `ci-http-python-django`, `ci-python-django-client CLIENT=dart` and `ci-upload-python-django`.
   Both frameworks also have GraphQL-only and REST-only servers (`python_{fastapi,django}_{graphql,rest}_server`, ports 9923/9922/9921/9920; `ci-http-python-<framework>-<graphql|rest>`, all at once with `ci-http-python-modes`): the REST schema is `schema_rest/rest.gql`, the GraphQL one next to it is `rest_graphql.gql`.
+- **NestJS server**: `servers/nestjs_server` (port 9926; Nest 11, `@nestjs/apollo` 13 on Apollo Server 5; its `impl/` is a copy of the Express one, keep them in step).
+  Services are abstract classes provided in `app.module.ts`; the app needs `rawBody: true` for form-encoded REST. Run with `make -C server_integration_tests ci-http-nestjs`
+  (faults, REST and GraphQL suites) and `make -C server_integration_tests ci-nestjs-client CLIENT=dart`; uploads with `make -C server_integration_tests ci-upload-nestjs`
+  (`servers/nestjs_upload_server`, port 9927). Express and NestJS share `typescript_apollo_server_base.dart`: change shared output once and regenerate both.
 - **Java 8**: `make -C server_integration_tests java8-check` compiles the generated Java clients with `javac --release 8` (`scripts/java8_check.sh`;
   the `java11` transports excepted). Fails today, see `server_integration_tests/reports/JAVA8_COMPAT.md`.
 

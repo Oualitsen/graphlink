@@ -3,6 +3,8 @@ JAVA_PORT             = 9996
 KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
 PYTHON_FASTAPI_PORT   = 9975
+NESTJS_PORT           = 9926
+NESTJS_UPLOAD_PORT    = 9927
 PYTHON_UPLOAD_PORT    = 9974
 PYTHON_DJANGO_PORT    = 9972
 PYTHON_DJANGO_UPLOAD_PORT = 9971
@@ -15,8 +17,10 @@ CLIENTS = dart ts java kotlin java_reactive swift python go
 
 .PHONY: faults rest graphql http java8-check ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend \
         ci-faults-python-fastapi ci-rest-python-fastapi ci-graphql-python-fastapi ci-http-python-fastapi \
+        ci-faults-nestjs ci-rest-nestjs ci-graphql-nestjs ci-http-nestjs \
+        nestjs-install nestjs-generate nestjs-start-server nestjs-stop-server nestjs-test-client nestjs ci-nestjs-client \
         python-fastapi-install python-fastapi-generate python-fastapi-start-server python-fastapi-stop-server \
-        python-fastapi-test-client python-fastapi ci-python-fastapi-client ci-upload-python \
+        python-fastapi-test-client python-fastapi ci-python-fastapi-client ci-upload-python ci-upload-nestjs \
         ci-faults-python-django ci-rest-python-django ci-graphql-python-django ci-http-python-django \
         python-django-install python-django-generate python-django-start-server python-django-stop-server \
         python-django-test-client python-django ci-python-django-client ci-upload-python-django \
@@ -161,6 +165,39 @@ ci-python-django-client: python-django-install python-django-start-server
 	$(MAKE) python-django-test-client CLIENT=$(CLIENT) || ($(MAKE) python-django-stop-server && exit 1)
 	$(MAKE) python-django-stop-server
 
+# ---- NestJS + Apollo server (servers/nestjs_server) ----
+
+nestjs-install:
+	$(MAKE) -C servers/nestjs_server install
+
+nestjs-generate:
+	$(MAKE) -C servers/nestjs_server generate
+
+nestjs-start-server:
+	$(MAKE) -C servers/nestjs_server start-server
+
+nestjs-stop-server:
+	$(MAKE) -C servers/nestjs_server stop-server
+
+nestjs-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(NESTJS_PORT)
+
+nestjs: nestjs-install nestjs-generate nestjs-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do \
+		$(MAKE) nestjs-stop-server nestjs-start-server || status=1; \
+		$(MAKE) nestjs-test-client CLIENT=$$c || status=1; \
+	done; \
+	$(MAKE) nestjs-stop-server; \
+	exit $$status
+
+# Single client x the NestJS server, for CI matrix use. Assumes code has
+# already been generated (e.g. by a prior `make generate-all` job).
+ci-nestjs-client: nestjs-install nestjs-start-server
+	$(MAKE) setup-client-install CLIENT=$(CLIENT)
+	$(MAKE) nestjs-test-client CLIENT=$(CLIENT) || ($(MAKE) nestjs-stop-server && exit 1)
+	$(MAKE) nestjs-stop-server
+
 # ---- Upload suite (servers/typescript_upload_server + clients/dart_upload_client) ----
 # Orthogonal to the client x server matrix above: exercises file uploads with a
 # single dedicated Dart harness, not all four clients.
@@ -198,6 +235,14 @@ ci-upload-python-django:
 	$(MAKE) -C servers/python_django_upload_server start-server
 	$(MAKE) -C clients/dart_upload_client test PORT=$(PYTHON_DJANGO_UPLOAD_PORT) || ($(MAKE) -C servers/python_django_upload_server stop-server && exit 1)
 	$(MAKE) -C servers/python_django_upload_server stop-server
+
+# The same dart harness against the NestJS upload server.
+ci-upload-nestjs:
+	$(MAKE) -C servers/nestjs_upload_server install
+	$(MAKE) -C clients/dart_upload_client install
+	$(MAKE) -C servers/nestjs_upload_server start-server
+	$(MAKE) -C clients/dart_upload_client test PORT=$(NESTJS_UPLOAD_PORT) || ($(MAKE) -C servers/nestjs_upload_server stop-server && exit 1)
+	$(MAKE) -C servers/nestjs_upload_server stop-server
 
 # ---- Java server, MVC (servers/java_server) ----
 
@@ -349,6 +394,7 @@ $(eval $(call fault_rule,kotlin-blocking,kotlin_server_blocking,kotlin-build,$(K
 $(eval $(call fault_rule,kotlin-suspend,kotlin_server_suspend,kotlin-build,$(KOTLIN_SUSPEND_PORT)))
 $(eval $(call fault_rule,python-fastapi,python_fastapi_server,python-fastapi-install,$(PYTHON_FASTAPI_PORT)))
 $(eval $(call fault_rule,python-django,python_django_server,python-django-install,$(PYTHON_DJANGO_PORT)))
+$(eval $(call fault_rule,nestjs,nestjs_server,nestjs-install,$(NESTJS_PORT)))
 
 # ---- Python servers generated from the GraphQL operations alone and from the REST operations alone ----
 # GraphQL only: fault and GraphQL suites, and no REST route answers. REST only: REST suite, and no GraphQL endpoint answers.
@@ -379,13 +425,13 @@ $(eval $(call python_mode_rule,python-django-rest,python_django_rest_server,$(PY
 
 ci-http-python-modes: ci-http-python-fastapi ci-http-python-fastapi-graphql ci-http-python-fastapi-rest ci-http-python-django ci-http-python-django-graphql ci-http-python-django-rest
 
-faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend ci-faults-python-fastapi ci-faults-python-django
+faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend ci-faults-python-fastapi ci-faults-python-django ci-faults-nestjs
 
-rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend ci-rest-python-fastapi ci-rest-python-django
+rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend ci-rest-python-fastapi ci-rest-python-django ci-rest-nestjs
 
-graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend ci-graphql-python-fastapi ci-graphql-python-django
+graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend ci-graphql-python-fastapi ci-graphql-python-django ci-graphql-nestjs
 
-http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend ci-http-python-fastapi ci-http-python-django
+http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend ci-http-python-fastapi ci-http-python-django ci-http-nestjs
 
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
 

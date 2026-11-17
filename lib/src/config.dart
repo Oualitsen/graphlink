@@ -136,9 +136,10 @@ abstract class ServerLanguageConfig {
     if (json['spring'] != null) return SpringServerConfig.fromJson(json['spring'] as Map<String, dynamic>);
     if (json['kotlinSpring'] != null) return KotlinSpringServerConfig.fromJson(json['kotlinSpring'] as Map<String, dynamic>);
     if (json['expressApollo'] != null) return ExpressApolloServerConfig.fromJson(json['expressApollo'] as Map<String, dynamic>);
+    if (json['nestApollo'] != null) return NestApolloServerConfig.fromJson(json['nestApollo'] as Map<String, dynamic>);
     if (json['fastapiAriadne'] != null) return FastapiAriadneServerConfig.fromJson(json['fastapiAriadne'] as Map<String, dynamic>);
     if (json['djangoAriadne'] != null) return DjangoAriadneServerConfig.fromJson(json['djangoAriadne'] as Map<String, dynamic>);
-    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo, fastapiAriadne, djangoAriadne');
+    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo, nestApollo, fastapiAriadne, djangoAriadne');
   }
 }
 
@@ -236,7 +237,7 @@ class ServerConfig {
       ServerConfig(ServerLanguageConfig.fromJson(json));
 }
 
-class ExpressApolloServerConfig extends ServerLanguageConfig {
+abstract class TypeScriptApolloServerConfig extends ServerLanguageConfig {
   final int port;
   final String graphqlPath;
   final bool generateEntryPoint;
@@ -247,17 +248,47 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
   /// `@glInjectContext` do. Mirrors `SpringServerConfigBase.injectContext`.
   final bool injectContext;
 
+  TypeScriptApolloServerConfig({
+    required this.port,
+    required this.graphqlPath,
+    required this.generateEntryPoint,
+    required this.useResolveInfo,
+    required this.injectContext,
+  });
+}
+
+class ExpressApolloServerConfig extends TypeScriptApolloServerConfig {
   ExpressApolloServerConfig({
-    this.port = 4000,
-    this.graphqlPath = '/graphql',
-    this.generateEntryPoint = true,
-    this.useResolveInfo = false,
-    this.injectContext = false,
+    super.port = 4000,
+    super.graphqlPath = '/graphql',
+    super.generateEntryPoint = true,
+    super.useResolveInfo = false,
+    super.injectContext = false,
   });
 
   factory ExpressApolloServerConfig.fromJson(Map<String, dynamic> json) {
     return ExpressApolloServerConfig(
       port: (json['port'] as int?) ?? 4000,
+      graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
+      generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
+      useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
+      injectContext: (json['injectContext'] as bool?) ?? false,
+    );
+  }
+}
+
+class NestApolloServerConfig extends TypeScriptApolloServerConfig {
+  NestApolloServerConfig({
+    super.port = 3000,
+    super.graphqlPath = '/graphql',
+    super.generateEntryPoint = true,
+    super.useResolveInfo = false,
+    super.injectContext = false,
+  });
+
+  factory NestApolloServerConfig.fromJson(Map<String, dynamic> json) {
+    return NestApolloServerConfig(
+      port: (json['port'] as int?) ?? 3000,
       graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
       generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
       useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,

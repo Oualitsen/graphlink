@@ -149,6 +149,7 @@ Details: https://graphlink.dev/philosophy.html#how-it-compares
 - Python client (stable — pydantic v2 models, asyncio client, httpx and websockets adapters)
 - Go client (stable — plain structs, context-aware methods returning (value, error), net/http and coder/websocket adapters)
 - Express / Apollo server (stable — TypeScript, DataLoader batch mappings, graphql-ws subscriptions)
+- NestJS / Apollo server (TypeScript — injectable abstract-class services, @Resolver and @Controller classes, DataLoader batch mappings, graphql-ws subscriptions, REST and uploads)
 
 ## Installation
 

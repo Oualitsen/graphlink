@@ -945,6 +945,7 @@ glink -w    # watch mode — regenerate on every save
 - **[Go Client](go-client.md)** — plain structs and a context-aware client returning `(value, error)`.
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
 - **[Express / Apollo](express-apollo.md)** — Generated resolvers, service interfaces, DataLoader batch mappings.
+- **[NestJS / Apollo](nestjs-apollo.md)** — injectable services, `@Resolver` and `@Controller` classes, batch loaders, REST and uploads.
 - **[FastAPI / Ariadne](fastapi-ariadne.md)** — Pydantic models, service Protocols, async resolvers, batch loaders, REST and uploads.
 - **[Django / Ariadne](django-ariadne.md)** — the same Python server hosted by Django ASGI: URL patterns for REST, Ariadne for GraphQL.
 - **[Custom Queries & Mutations](custom-queries.md)** — Hand-written operations next to the schema, typed end to end.

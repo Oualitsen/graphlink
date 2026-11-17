@@ -19,6 +19,8 @@ import 'package:graphlink/src/serializers/python/python_rest_constants.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/nest_apollo_server_constants.dart';
+import 'package:graphlink/src/serializers/typescript/nest_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
@@ -65,6 +67,9 @@ Future<Set<String>> generateServerClasses(
   final serverLang = config.serverConfig!.language;
   if (serverLang is ExpressApolloServerConfig) {
     return _generateExpressApolloClasses(grammar, config, started);
+  }
+  if (serverLang is NestApolloServerConfig) {
+    return _generateNestApolloClasses(grammar, config, serverLang, started);
   }
   if (serverLang is AriadneServerConfig) {
     return _generateAriadneClasses(grammar, config, serverLang, started);
@@ -647,6 +652,94 @@ Future<Set<String>> _generateExpressApolloClasses(
     if (!File(contextStubPath).existsSync()) {
       futures.add(saveSource(
         data: serverSerializer.serializeContextStub(destinationDir),
+        path: contextStubPath,
+        typescriptSource: true,
+      ));
+    }
+  }
+
+  final result = await Future.wait(futures);
+  stdout.writeln('Generated ${futures.length} files in ${formatElapsedTime(started)}');
+  final paths = result.map((f) => f.path).toSet();
+  await cleanUpObsoleteFiles(paths);
+  return paths;
+}
+
+Future<Set<String>> _generateNestApolloClasses(
+    GLParser grammar, GeneratorConfig config, NestApolloServerConfig nestConfig, DateTime started) async {
+  final destinationDir = config.outputDir;
+  final tsSerializer = TypeScriptSerializer(grammar, importPrefix: '',
+      typeMapOverrides: config.typeMappings ?? {});
+  final serializer = NestApolloServerSerializer(grammar, tsSerializer, nestConfig);
+  final futures = <Future<File>>[];
+
+  void add(String path, String data) {
+    futures.add(saveSource(data: data, path: '$destinationDir/$path', typescriptSource: true));
+  }
+
+  if (!grammar.restOnly) add('typeDefs.ts', serializer.serializeTypeDefs());
+
+  grammar.getSerializableEnums().forEach((def) {
+    add('enums/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeEnumDefinition(def));
+  });
+  grammar.getSerializableInputs().forEach((def) {
+    add('inputs/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeInputDefinition(def));
+  });
+  grammar.getSerializableTypes().forEach((def) {
+    add('types/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeTypeDefinition(def));
+  });
+  grammar.getSerializableInterfaces().forEach((def) {
+    if (def.token == glInterceptorInterfaceName) return;
+    add('interfaces/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeTypeDefinition(def));
+  });
+  final interceptorInterface = serializer.serializeInterceptorInterface();
+  if (interceptorInterface != null) {
+    add('interfaces/${tsSerializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!)}', interceptorInterface);
+  }
+
+  grammar.services.forEach((_, service) {
+    add('services/${service.token.toKebabCase()}.ts', serializer.serializeService(service));
+    final guard = serializer.serializeGuard(service);
+    if (guard != null) {
+      add('guards/${'${service.token.replaceFirst('Service', '')}Guard'.toKebabCase()}.ts', guard);
+    }
+    final loader = serializer.serializeLoader(service);
+    if (loader != null) {
+      add('loaders/${service.token.replaceFirst('Service', '').toKebabCase()}-loaders.ts', loader);
+    }
+  });
+
+  if (grammar.carriesSources) add('source.ts', serializer.serializeSourceSupport());
+  add('context.ts', serializer.serializeContext());
+
+  if (serializer.hasUploads || serializer.rest.hasUploads) add('file-upload.ts', serializer.serializeFileUploadType());
+  if (serializer.hasUploads) add('graphql-upload.d.ts', serializer.serializeGraphqlUploadDeclarations());
+
+  serializer.serializeResolverFiles().forEach((file, content) => add('resolvers/$file', content));
+
+  if (serializer.hasRest) {
+    add('rest/$nestRestSupportFileName', nestRestSupport);
+    if (serializer.rest.hasUploads) add('rest/$expressRestUploadsFileName', serializer.rest.serializeUploads());
+    if (serializer.rest.hasDownloads) add('rest/$expressRestDownloadFileName', serializer.rest.serializeDownloads());
+    add('rest/shapes.ts', serializer.rest.serializeShapes());
+    for (final service in serializer.rest.restServices) {
+      add('rest/${serializer.rest.controllerFileName(service)}.ts', serializer.rest.serializeController(service));
+    }
+    add('rest/rest-fallback.controller.ts', serializer.rest.serializeFallbackController());
+  }
+
+  add(nestOptionsFileName, serializer.serializeOptions());
+  add(nestExceptionFilterFileName, serializer.serializeExceptionFilter());
+  if (!grammar.restOnly) add(nestRequestGuardsFileName, nestRequestGuards);
+
+  if (nestConfig.generateEntryPoint) {
+    add(nestModuleFileName, serializer.serializeModule());
+    add('index.ts', serializer.serializeEntryPoint());
+    final implDir = destinationDir.replaceFirst('/generated', '');
+    final contextStubPath = '$implDir/impl/my-context.ts';
+    if (!File(contextStubPath).existsSync()) {
+      futures.add(saveSource(
+        data: serializer.serializeContextStub(destinationDir),
         path: contextStubPath,
         typescriptSource: true,
       ));

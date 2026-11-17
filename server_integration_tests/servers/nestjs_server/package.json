@@ -1,0 +1,35 @@
+{
+  "name": "graphlink-nestjs-server-integration-test",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "tsx src/start.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^5.0.0",
+    "@as-integrations/express5": "^1.1.2",
+    "@graphql-tools/schema": "^10.0.0",
+    "@nestjs/apollo": "^13.0.0",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/graphql": "^13.0.0",
+    "@nestjs/platform-express": "^11.0.1",
+    "busboy": "^1.6.0",
+    "dataloader": "^2.2.2",
+    "graphql": "^16.10.0",
+    "graphql-ws": "^6.0.0",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/busboy": "^1.5.4",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
