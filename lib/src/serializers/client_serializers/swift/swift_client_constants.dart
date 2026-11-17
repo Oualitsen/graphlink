@@ -1064,6 +1064,7 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
     private var reconnectListener: (@Sendable () -> Void)?
     private var disposed = false
     private var reconnectAttempts = 0
+    private static let fatalCloseCodes: Set<Int> = [4400, 4401, 4403, 4409]
 
     public init(
         url: URL,
@@ -1118,11 +1119,17 @@ public final class DefaultGraphLinkWebSocketAdapter: GraphLinkWebSocketAdapter, 
                 @unknown default: break
                 }
                 self.listen(task: task, onFailure: onFailure)
-            case .failure:
+            case .failure(let error):
                 self.lock.lock()
                 let wasDisposed = self.disposed
                 self.lock.unlock()
-                if !wasDisposed { self.scheduleReconnect(onFailure: onFailure) }
+                if wasDisposed { return }
+                let code = task.closeCode.rawValue
+                if Self.fatalCloseCodes.contains(code) {
+                    onFailure(NSError(domain: "GraphLinkWebSocketAdapter", code: code, userInfo: [NSLocalizedDescriptionKey: "WebSocket closed by the server with code \\(code), not retrying", NSUnderlyingErrorKey: error]))
+                } else {
+                    self.scheduleReconnect(onFailure: onFailure)
+                }
             }
         }
     }
@@ -1200,6 +1207,8 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
     private var payloadsToHandle: [String: GraphLinkPayload] = [:]
     private var activePayloads: [String: GraphLinkPayload] = [:]
     private var ackStatus: GraphLinkAckStatus = .none
+    private var ackGeneration = 0
+    private static let ackTimeout: TimeInterval = 5
 
     public init(adapter: any GraphLinkWebSocketAdapter) {
         self.adapter = adapter
@@ -1241,6 +1250,7 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
         }
         lock.unlock()
         if shouldConnect {
+            armAckTimeout()
             adapter.connect(
                 onConnect: { [weak self] in
                     guard let self else { return }
@@ -1250,6 +1260,22 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
             )
         } else if shouldSend {
             adapter.sendMessage(getSubscriptionMessage(id: id, payload: payload))
+        }
+    }
+
+    private func armAckTimeout() {
+        lock.lock()
+        ackGeneration += 1
+        let generation = ackGeneration
+        lock.unlock()
+        DispatchQueue.global().asyncAfter(deadline: .now() + Self.ackTimeout) { [weak self] in
+            guard let self else { return }
+            self.lock.lock()
+            let waiting = self.ackStatus == .progress && self.ackGeneration == generation
+            self.lock.unlock()
+            if !waiting { return }
+            self.adapter.close()
+            self.notifyAllListenersOfError(NSError(domain: "GraphLinkSubscriptionHandler", code: -2, userInfo: [NSLocalizedDescriptionKey: "WebSocket server did not send connection_ack within \\(Int(Self.ackTimeout)) s"]))
         }
     }
 
@@ -1315,7 +1341,10 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
         let listener = listeners.removeValue(forKey: id)
         activePayloads.removeValue(forKey: id)
         lock.unlock()
-        listener?.finish(throwing: NSError(domain: "GraphLinkSubscriptionHandler", code: -1, userInfo: [NSLocalizedDescriptionKey: "Subscription error"]))
+        let raw = map["payload"] ?? nil
+        let items: [Any?] = (raw as? [Any?]) ?? (raw.map { [\$0] } ?? [])
+        let errors = items.compactMap { item in (item as? [String: Any?]).flatMap { try? GraphLinkError.fromJson(\$0) } }
+        listener?.finish(throwing: GraphLinkException(errors: errors.isEmpty ? [GraphLinkError(message: "Subscription error")] : errors))
     }
 
     private func handleComplete(_ id: String?) {
@@ -1346,6 +1375,7 @@ public final class GraphLinkSubscriptionHandler: @unchecked Sendable {
         let firstId = snapshot.keys.first
         lock.unlock()
         if let firstId {
+            armAckTimeout()
             adapter.sendMessage(getConnectionInit(firstId))
         }
     }

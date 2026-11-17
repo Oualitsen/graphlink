@@ -13,15 +13,7 @@ FAULT_PORT = int(os.environ.get("WS_FAULT_PORT", "9942"))
 FAULT_URL = f"http://127.0.0.1:{FAULT_PORT}"
 CASES: List[Dict[str, Any]] = json.loads((Path(__file__).parents[2] / "fault_server" / "ws_cases.json").read_text())
 
-NO_ACK_TIMEOUT = "the handshake waits for connection_ack with no timeout"
-RECONNECTS_ON_4XXX = "reconnects and resubscribes after a 4xxx close instead of surfacing an error"
-KNOWN_DEFECTS: Dict[str, str] = {
-    "ws-no-ack": NO_ACK_TIMEOUT,
-    "ws-close-4400": RECONNECTS_ON_4XXX,
-    "ws-close-4401": RECONNECTS_ON_4XXX,
-    "ws-close-4403": RECONNECTS_ON_4XXX,
-    "ws-close-4409": RECONNECTS_ON_4XXX,
-}
+KNOWN_DEFECTS: Dict[str, str] = {}
 
 
 class WsFaultCase(unittest.IsolatedAsyncioTestCase):

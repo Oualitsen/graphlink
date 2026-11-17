@@ -39,14 +39,7 @@ class WsFaultsTest {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final HttpClient HTTP = HttpClient.newHttpClient();
 
-    private static final String NO_ACK_TIMEOUT = "the handshake waits for connection_ack with no timeout";
-    private static final String RECONNECTS_ON_4XXX = "reconnects and resubscribes after a 4xxx close instead of surfacing an error";
-    private static final Map<String, String> KNOWN_DEFECTS = Map.of(
-            "ws-no-ack", NO_ACK_TIMEOUT,
-            "ws-close-4400", RECONNECTS_ON_4XXX,
-            "ws-close-4401", RECONNECTS_ON_4XXX,
-            "ws-close-4403", RECONNECTS_ON_4XXX,
-            "ws-close-4409", RECONNECTS_ON_4XXX);
+    private static final Map<String, String> KNOWN_DEFECTS = Map.of();
 
     private static String send(String method, String path) throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create(FAULT_URL + path));

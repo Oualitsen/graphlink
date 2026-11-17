@@ -5,16 +5,7 @@ import XCTest
 private let faultPort = Int(ProcessInfo.processInfo.environment["WS_FAULT_PORT"] ?? "") ?? 9945
 private let faultURL = "http://127.0.0.1:\(faultPort)"
 
-private let noAckTimeout = "the handshake waits for connection_ack with no timeout"
-private let reconnectsOn4xxx = "reconnects and resubscribes after a 4xxx close instead of surfacing an error"
-private let knownDefects: [String: String] = [
-    "ws-no-ack": noAckTimeout,
-    "ws-error-message": "the failure is a bare \"Subscription error\": the server's message is dropped",
-    "ws-close-4400": reconnectsOn4xxx,
-    "ws-close-4401": reconnectsOn4xxx,
-    "ws-close-4403": reconnectsOn4xxx,
-    "ws-close-4409": reconnectsOn4xxx,
-]
+private let knownDefects: [String: String] = [:]
 
 private final class Outcome: @unchecked Sendable {
     private let lock = NSLock()

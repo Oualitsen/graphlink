@@ -35,18 +35,7 @@ type wsCase struct {
 	MinConnections       *int   `json:"minConnections"`
 }
 
-const (
-	noAckTimeout     = "the handshake waits for connection_ack with no timeout"
-	reconnectsOn4xxx = "reconnects and resubscribes after a 4xxx close instead of surfacing an error"
-)
-
-var wsKnownDefects = map[string]string{
-	"ws-no-ack":     noAckTimeout,
-	"ws-close-4400": reconnectsOn4xxx,
-	"ws-close-4401": reconnectsOn4xxx,
-	"ws-close-4403": reconnectsOn4xxx,
-	"ws-close-4409": reconnectsOn4xxx,
-}
+var wsKnownDefects = map[string]string{}
 
 func faultURL(path string) string { return fmt.Sprintf("http://127.0.0.1:%d%s", faultPort, path) }
 

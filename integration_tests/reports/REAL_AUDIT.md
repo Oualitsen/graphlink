@@ -93,7 +93,7 @@ self-restarts after emitting tick stopAt", but `SubscriptionController` has no r
 delete it, or implement it and use it for the reconnect cases above. That would remove the `lsof … | kill -9` port
 killing from the tests (fragile, and not portable to Windows).
 
-## 5. WebSocket faults — DONE (7 targets, 1 defect fixed, 4 defect groups open)
+## 5. WebSocket faults — DONE (7 targets, 6 defects fixed)
 
 `fault_server/server.py` is HTTP only, so the subscription transport is never fed a bad server. Add a WebSocket mode
 (armed like the HTTP faults: `POST /_arm?fault=<name>`), add rows to `cases.json`, and give every subscription-capable
@@ -120,21 +120,15 @@ connections misbehave; `GET /_ws_log` lists every connection with the frames the
 `ws_faults` test on its own fault port (Dart 9940, Python 9942, TypeScript 9943, Go 9944, Swift 9945, Java 9946, Kotlin 9947), started by
 `make ci`. Not covered: the reactive Java flavors (Reactor, RxJava 3, Mutiny).
 
-Fixed: **Kotlin hung forever when the server closed the socket with a close frame** (any code, 1011 and 4500 included). The adapter only
-handled `onClosed`, which OkHttp fires only after the app answers `onClosing`. `onClosing` now closes the socket, so the reconnect runs.
+Fixed, in every runtime:
+- **Kotlin hung forever when the server closed the socket with a close frame** (any code, 1011 and 4500 included). The adapter only handled `onClosed`, which OkHttp fires only after the app answers `onClosing`. The Java OkHttp adapter had the same gap.
+- **No timeout on `connection_ack`**: the handshake now fails after 5 s and the subscription gets an error (Go already had a 30 s timeout, now 5 s).
+- **Close 4400 / 4401 / 4403 / 4409** are final: no reconnect, every open subscription fails with a message naming the code (Dart, TypeScript, Python, Go and Swift reuse their give-up path, Java and Kotlin call `onFailure`). The headers provider is therefore not asked for a new token after a 4401; a client that wants that has to resubscribe itself.
+- **A frame that is not JSON, or a binary frame**, is ignored (Dart, TypeScript, Python and the JVM clients).
+- **Dart answers the server `ping`** from the connection, not from a subscription listener.
+- **Swift keeps the server's error message** (`GraphLinkException`, like the other clients).
 
-Open (each language skips its own in `KNOWN_DEFECTS`, remove the entry when fixed):
-
-| Defect | Dart | TS | Python | Go | Swift | Java | Kotlin |
-|---|---|---|---|---|---|---|---|
-| `ws-no-ack`: no timeout on `connection_ack`, the subscription hangs | x | x | x | x | x | x | x |
-| `ws-close-4400/4401/4403/4409`: reconnects and resubscribes instead of surfacing an error | x | x | x | x | x | x | x |
-| `ws-invalid-json`: unhandled error, the subscription never settles | x | x | | | | | |
-| `ws-binary`: unhandled error (Dart `Uint8List` cast, TS `Blob` parsed as JSON), never settles | x | x | | | | | |
-| `ws-ping`: the server ping is never answered | x | | | | | | |
-| `ws-error-message`: the server's message is dropped ("Subscription error") | | | | | x | | |
-
-The 4xxx rows are a design question, not only a bug: the headers provider runs again on every reconnect, so retrying a 4401 may be on purpose.
+`KNOWN_DEFECTS` is empty in all seven tests. Reactive Java flavors are generated from the same runtime but their packages were not run.
 
 ## 6. Many cached requests at the same time — DONE (1 defect fixed, in-flight coalescing added)
 
