@@ -1,3 +1,4 @@
+FAULT_PORT = 9945
 GENERATED_DIR     = Sources/GraphLinkGenerated
 SERVER_JAR        = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
@@ -36,9 +37,11 @@ stop-upload-server:
 test:
 	DEVELOPER_DIR=$(XCODE_DEVELOPER_DIR) swift test
 
-ci: start-server start-upload-server generate test stop-server stop-upload-server
+ci: start-server start-upload-server start-fault-server generate test stop-server stop-upload-server stop-fault-server
 
-ci-no-generate: start-server start-upload-server test stop-server stop-upload-server
+ci-no-generate: start-server start-upload-server start-fault-server test stop-server stop-upload-server stop-fault-server
 
 reconnect-test: generate start-server
 	SERVER_JAR=$(shell pwd)/$(SERVER_JAR) DEVELOPER_DIR=$(XCODE_DEVELOPER_DIR) swift test --filter ReconnectCasesTest
+
+include ../fault_server/fault.mk

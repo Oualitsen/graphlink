@@ -346,6 +346,9 @@ don't confuse them:
   `fault.test.ts`, `test_faults.py`, `FaultTests.swift`, `fault_test.go`) on its own fault port (9950 to 9969, see each Makefile; shared recipe in
   `fault_server/fault.mk`). A language's open defects are skipped in its `knownDefects` map with the reason; remove the entry when fixed.
   Add a fault in `server.py` and a row in `cases.json`, then run every language.
+  The same server speaks `graphql-transport-ws` for the GraphQL real packages (`fault_server/ws_cases.json`, `POST /_arm?fault=ws-...&times=N`,
+  `GET /_ws_log`); each has a `ws_faults` test (`ws_faults_test.dart`, `WsFaultsTest.java`, `WsFaultsTest.kt`, `ws-faults.test.ts`,
+  `test_ws_faults.py`, `WsFaultsTest.swift`, `ws_faults_test.go`) with its open defects in `KNOWN_DEFECTS` / `knownDefects`. Fault ports 9940 to 9947.
 - **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
   (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
   `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known

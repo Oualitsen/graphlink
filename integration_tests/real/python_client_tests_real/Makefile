@@ -1,5 +1,6 @@
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
 UPLOAD_SERVER_JAR = ../spring_upload_server/build/libs/graphlink-upload-server-0.0.1.jar
+FAULT_PORT = 9942
 PY := .venv/bin/python
 
 .PHONY: install generate test clean ci ci-no-generate start-server stop-server start-upload-server stop-upload-server reconnect-test
@@ -37,11 +38,13 @@ test:
 clean:
 	rm -rf generated
 
-ci: install start-server start-upload-server generate test stop-server stop-upload-server
+ci: install start-server start-upload-server start-fault-server generate test stop-server stop-upload-server stop-fault-server
 
-ci-no-generate: install start-server start-upload-server test stop-server stop-upload-server
+ci-no-generate: install start-server start-upload-server start-fault-server test stop-server stop-upload-server stop-fault-server
 
 reconnect-test: install generate start-server start-upload-server
 	SERVER_JAR=$(shell pwd)/$(SERVER_JAR) $(PY) -m unittest tests.test_subscription_reconnect
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
+
+include ../fault_server/fault.mk
