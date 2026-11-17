@@ -338,7 +338,8 @@ class DartClientRuntimeSerializer {
                 _client.codeGenUtils.constDecl(svPayload, _client.codeGenUtils.callExpression("_buildPayload", ["$svRemainingQueries", "operationName", "directives"])),
                 _client.codeGenUtils.constDecl('glEpochs__', '{for (final q in $svRemaining) q: _glEpoch(q.tags)}'),
                 _client.codeGenUtils.tryCatchFinally(tryStatements: [
-                  _client.codeGenUtils.constDecl(svResponseText, 'await glCallAdapter($svPayload)'),
+                  _client.codeGenUtils.constDecl('glFlightKey__', '_glFlightKey($svRemaining, operationName, directives, glEpochs__)'),
+                  _client.codeGenUtils.constDecl(svResponseText, 'await (glFlightKey__ == null ? glCallAdapter($svPayload) : _glFlight(glFlightKey__, () => glCallAdapter($svPayload)))'),
                   _client.codeGenUtils.constDecl('glCacheable__', '$svRemaining.where((q) => _glEpoch(q.tags) == glEpochs__[q]).toSet()'),
                   'return ${_client.codeGenUtils.callExpression('_parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', 'glCacheable__', 'captureErrors'])};',
                 ], catchStatements: [
@@ -483,6 +484,37 @@ class DartClientRuntimeSerializer {
                     iterable: 'tags',
                     statements: ['epoch += $svTagLocks[tag]?.epoch ?? 0;']),
                 'return epoch;',
+              ]),
+          _client.codeGenUtils.createMethod(
+              methodName: "_glFlightKey",
+              namedArguments: false,
+              arguments: ["Set<GraphLinkPartialQuery> queries", "String operationName", "String directives", "Map<GraphLinkPartialQuery, int> epochs"],
+              returnType: "String?",
+              statements: [
+                _client.codeGenUtils.ifStatement(
+                    condition: 'queries.any((q) => q.ttl <= 0 || q.cacheKey == null)',
+                    ifBlockStatements: ['return null;']),
+                'final keys = queries.map((q) => q.cacheKey!).toList()..sort();',
+                'final epoch = epochs.values.fold(0, (a, b) => a + b);',
+                r"return '\u0000flight|$operationName|$directives|${keys.join(',')}|$epoch';",
+              ]),
+          _client.codeGenUtils.createMethod(
+              methodName: "_glFlight",
+              namedArguments: false,
+              arguments: ["String key", "Future<String> Function() send"],
+              returnType: "Future<String>",
+              statements: [
+                'final lock = $svTagLocks.putIfAbsent(key, () => GraphLinkLock());',
+                'final running = lock.flight;',
+                _client.codeGenUtils.ifStatement(
+                    condition: 'running != null',
+                    ifBlockStatements: ['return running;']),
+                'final started = send().whenComplete(() ${_client.codeGenUtils.block([
+                      'lock.flight = null;',
+                      '$svTagLocks.remove(key);',
+                    ])});',
+                'lock.flight = started;',
+                'return started;',
               ]),
           _client.codeGenUtils.createMethod(
               methodName: "invalidateAllEntries",

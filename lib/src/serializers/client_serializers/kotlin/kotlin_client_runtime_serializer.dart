@@ -46,6 +46,10 @@ class KotlinClientRuntimeSerializer {
         '',
         'protected fun glEpochs(queries: List<GraphLinkPartialQuery>): List<Long> = queries.map { glEpoch(it.tags) }',
         '',
+        'private val glFlights = glFlightsByStore.computeIfAbsent(store) { java.util.concurrent.ConcurrentHashMap() }',
+        '',
+        _glCallCachedMethod(),
+        '',
         'protected fun glCacheable(queries: List<GraphLinkPartialQuery>, epochs: List<Long>): List<GraphLinkPartialQuery> = queries.filterIndexed { i, q -> glEpoch(q.tags) == epochs[i] }',
         '',
         'protected fun invalidateAllEntries() ${_client.codeGenUtils.block([
@@ -55,6 +59,7 @@ class KotlinClientRuntimeSerializer {
         '',
         'private companion object ${_client.codeGenUtils.block([
           'val glEpochsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
+          'val glFlightsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.CompletableDeferred<String>>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
         ])}',
         '',
         'init ${_client.codeGenUtils.block([
@@ -126,6 +131,53 @@ class KotlinClientRuntimeSerializer {
       returnType: 'String',
       statements: statements,
     );
+  }
+
+  String _glCallCachedMethod() {
+    final cg = _client.codeGenUtils;
+    return 'protected ${cg.suspendFun(
+      name: 'glCallCached',
+      arguments: ['payload: GraphLinkPayload', 'queries: List<GraphLinkPartialQuery>', 'epochs: List<Long>'],
+      returnType: 'String',
+      statements: [
+        cg.ifStatement(
+          condition: 'queries.any { it.ttl <= 0 }',
+          ifBlockStatements: ['return glCallAdapter(payload)'],
+        ),
+        cg.constDecl('key', '"\\u0000flight|\${payload.operationName}|\${queries.map { it.cacheKey }.sorted().joinToString(",")}|\${epochs.sum()}"'),
+        'while (true) ${cg.block([
+          cg.constDecl('mine', 'kotlinx.coroutines.CompletableDeferred<String>()'),
+          cg.constDecl('running', 'glFlights.putIfAbsent(key, mine)'),
+          cg.ifStatement(
+            condition: 'running != null',
+            ifBlockStatements: [
+              cg.tryCatchFinally(
+                tryStatements: ['return running.await()'],
+                catchVariable: 'e',
+                catchStatements: [
+                  cg.ifStatement(
+                    condition: 'e !is kotlinx.coroutines.CancellationException',
+                    ifBlockStatements: ['throw e'],
+                  ),
+                  'kotlinx.coroutines.yield()',
+                  'continue',
+                ],
+              ),
+            ],
+          ),
+          cg.tryCatchFinally(
+            tryStatements: [
+              cg.constDecl('text', 'glCallAdapter(payload)'),
+              'mine.complete(text)',
+              'return text',
+            ],
+            catchVariable: 'e',
+            catchStatements: ['mine.completeExceptionally(e)', 'throw e'],
+            finallyStatements: ['glFlights.remove(key, mine)'],
+          ),
+        ])}',
+      ],
+    )}';
   }
 
   String _glHashMethod() {
@@ -363,7 +415,7 @@ class KotlinClientRuntimeSerializer {
         _client.codeGenUtils.constDecl('epochs', 'glEpochs(remaining)'),
         _client.codeGenUtils.tryCatchFinally(
           tryStatements: [
-            _client.codeGenUtils.constDecl('responseText', 'glCallAdapter(payload)'),
+            _client.codeGenUtils.constDecl('responseText', 'glCallCached(payload, remaining, epochs)'),
             'return ${_client.codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'glCacheable(remaining, epochs)', 'captureErrors'])}',
           ],
           catchVariable: 'exception',

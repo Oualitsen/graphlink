@@ -266,6 +266,40 @@ class TypeScriptClientRuntimeSerializer {
           statements: ['return queries.filter((q, i) => this._glEpoch(q.tags) === epochs[i]);'],
         ),
         _client.cg.createMethod(
+          methodName: 'protected _glCallCached',
+          arguments: [
+            'payload: GraphLinkPayload',
+            'queries: GraphLinkPartialQuery[]',
+            'epochs: number[]',
+          ],
+          returnType: 'Promise<string>',
+          statements: [
+            _client.cg.ifStatement(
+              condition: 'queries.some(q => q.ttl <= 0 || !q.cacheKey)',
+              ifBlockStatements: ['return this._glCallAdapter(payload);'],
+            ),
+            r"const key = `\u0000flight|${payload.operationName}|${queries.map(q => q.cacheKey).sort().join(',')}|${epochs.reduce((a, b) => a + b, 0)}`;",
+            'let lock = this.$svTagLocks.get(key);',
+            _client.cg.ifStatement(
+              condition: '!lock',
+              ifBlockStatements: [
+                'lock = new GraphLinkLock();',
+                'this.$svTagLocks.set(key, lock);',
+              ],
+            ),
+            _client.cg.ifStatement(
+              condition: 'lock.flight',
+              ifBlockStatements: ['return lock.flight;'],
+            ),
+            'const flightLock = lock;',
+            'flightLock.flight = this._glCallAdapter(payload).finally(() => ${_client.cg.block([
+                  'flightLock.flight = undefined;',
+                  'this.$svTagLocks.delete(key);',
+                ])});',
+            'return flightLock.flight;',
+          ],
+        ),
+        _client.cg.createMethod(
           methodName: '_invalidateAllEntries',
           async: true,
           arguments: [],

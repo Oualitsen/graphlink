@@ -388,8 +388,28 @@ actor GraphLinkTagLocks {
 public final class GraphLinkEpochs: @unchecked Sendable {
     private let lock = NSLock()
     private var counters: [String: Int] = [:]
+    private var flights: [String: (id: UUID, task: Task<Data, Error>)] = [:]
 
     public init() {}
+
+    func flight(_ key: String, _ send: @escaping @Sendable () async throws -> Data) -> Task<Data, Error> {
+        lock.lock()
+        defer { lock.unlock() }
+        if let running = flights[key] { return running.task }
+        let id = UUID()
+        let task = Task {
+            defer { self.finish(key, id) }
+            return try await send()
+        }
+        flights[key] = (id, task)
+        return task
+    }
+
+    private func finish(_ key: String, _ id: UUID) {
+        lock.lock()
+        defer { lock.unlock() }
+        if flights[key]?.id == id { flights[key] = nil }
+    }
 
     func bump(_ tag: String) {
         lock.lock()
@@ -514,7 +534,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         let payload = buildPayload(remaining, operationName: operationName, directives: directives)
         let epochSnapshot = remaining.map { epochs.value(\$0.tags) }
         do {
-            let responseData = try await glCallAdapter(payload)
+            let responseData = try await glCallCached(payload, remaining, epochSnapshot)
             let cacheable = zip(remaining, epochSnapshot).filter { epochs.value(\$0.0.tags) == \$0.1 }.map { \$0.0 }
             return try await parseToObjectAndCache(data: responseData, cachedResponse: responseMap, parser: fromJson, remainingQueries: cacheable, captureErrors: captureErrors)
         } catch {
@@ -524,6 +544,13 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
             let wrappedResponse: [String: Any?] = ["data": responseMap]
             return try fromJson(wrappedResponse)
         }
+    }
+
+    func glCallCached(_ payload: GraphLinkPayload, _ queries: [GraphLinkPartialQuery], _ snapshot: [Int]) async throws -> Data {
+        if queries.contains(where: { \$0.ttl <= 0 }) { return try await glCallAdapter(payload) }
+        let keys = try queries.map { try \$0.cacheKey() }.sorted().joined(separator: ",")
+        let key = "\\u{0000}flight|\\(payload.operationName)|\\(keys)|\\(snapshot.reduce(0, +))"
+        return try await epochs.flight(key) { try await self.glCallAdapter(payload) }.value
     }
 
     func getFromCache(_ key: String, tags: [String], staleIfOffline: Bool) async throws -> GraphLinkCacheEntry? {

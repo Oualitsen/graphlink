@@ -27,6 +27,16 @@ class CacheConcurrencyTest {
     }
 
     @Test
+    void concurrentRequestsForTheSameKeyShareOneCall() {
+        String id = freshId();
+        CompletableFuture<Void> a = CompletableFuture.runAsync(() -> client.queries.cachedSlow(id, 300));
+        CompletableFuture<Void> b = CompletableFuture.runAsync(() -> client.queries.cachedSlow(id, 300));
+        CompletableFuture<Void> c = CompletableFuture.runAsync(() -> client.queries.cachedSlow(id, 300));
+        CompletableFuture.allOf(a, b, c).join();
+        assertEquals(1, client.queries.cachedSlowCalls(id).getCachedSlowCalls());
+    }
+
+    @Test
     void aResponseInFlightDuringAnInvalidationIsNotStored() throws Exception {
         String id = freshId();
         CompletableFuture<Integer> slow =

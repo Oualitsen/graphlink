@@ -18,6 +18,18 @@ final class CacheConcurrencyTest: XCTestCase {
         XCTAssertEqual(callsB, 1)
     }
 
+    func testConcurrentRequestsForTheSameKeyShareOneCall() async throws {
+        let client = Fixtures.newRealClient()
+        let id = freshId()
+        async let a = client.queries.cachedSlow(id: id, delayMs: 300)
+        async let b = client.queries.cachedSlow(id: id, delayMs: 300)
+        async let c = client.queries.cachedSlow(id: id, delayMs: 300)
+        let versions = try await [a.cachedSlow, b.cachedSlow, c.cachedSlow]
+        XCTAssertEqual(versions, [0, 0, 0])
+        let calls = try await client.queries.cachedSlowCalls(id: id).cachedSlowCalls
+        XCTAssertEqual(calls, 1)
+    }
+
     func testAResponseInFlightDuringAnInvalidationIsNotStored() async throws {
         let client = Fixtures.newRealClient()
         let id = freshId()

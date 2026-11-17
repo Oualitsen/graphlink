@@ -97,7 +97,7 @@ const pythonLock = r'''
 from __future__ import annotations
 
 import asyncio
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable, Optional, TypeVar
 
 T = TypeVar("T")
 
@@ -106,6 +106,7 @@ class GraphLinkLock:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
         self.epoch = 0
+        self.flight: Optional[asyncio.Future] = None
 
     async def synchronized(self, fn: Callable[[], Awaitable[T]]) -> T:
         async with self._lock:

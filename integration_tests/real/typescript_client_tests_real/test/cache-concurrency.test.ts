@@ -17,6 +17,18 @@ describe('cached requests at the same time', () => {
     expect((await client.queries.cachedSlowCalls({ id: `${id}-b` })).cachedSlowCalls).toBe(1);
   });
 
+  it('concurrent requests for the same key share one call', async () => {
+    const client = newClient();
+    const id = freshId();
+    const results = await Promise.all([
+      client.queries.cachedSlow({ id, delayMs: 300 }),
+      client.queries.cachedSlow({ id, delayMs: 300 }),
+      client.queries.cachedSlow({ id, delayMs: 300 }),
+    ]);
+    expect(results.map((r) => r.cachedSlow)).toEqual([0, 0, 0]);
+    expect((await client.queries.cachedSlowCalls({ id })).cachedSlowCalls).toBe(1);
+  });
+
   it('a response that was in flight during an invalidation is not stored', async () => {
     const client = newClient();
     const id = freshId();
