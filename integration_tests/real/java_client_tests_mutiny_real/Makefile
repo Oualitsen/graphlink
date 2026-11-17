@@ -1,3 +1,5 @@
+FAULT_PORT = 9955
+export WS_FAULT_PORT = $(FAULT_PORT)
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/test/generated
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar
@@ -34,7 +36,9 @@ start-upload-server:
 stop-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
 
-ci: start-server start-upload-server generate test stop-server stop-upload-server
+ci: start-server start-upload-server start-fault-server generate test stop-server stop-upload-server stop-fault-server
 
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
-ci-no-generate: start-server start-upload-server test stop-server stop-upload-server
+ci-no-generate: start-server start-upload-server start-fault-server test stop-server stop-upload-server stop-fault-server
+
+include ../fault_server/fault.mk

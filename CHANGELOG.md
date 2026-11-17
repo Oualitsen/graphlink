@@ -788,6 +788,8 @@
 
 ### Fixes
 
+- **Java reactive clients (Reactor, RxJava 3, Mutiny) coalesce identical concurrent cached queries** like the blocking client: the in-flight map is shared and registered when the call is subscribed to.
+- **Java and Kotlin: the 5 s connection_ack timeout no longer fails subscriptions while a reconnect is pending.** `GraphLinkWebSocketAdapter` has a new default `setDisconnectListener`; the default adapters call it before scheduling a reconnect and the handler cancels the pending ack timer.
 - **Server integration tests: `java_server_reactive` now runs on Spring WebFlux** (`spring-boot-starter-webflux` instead of the servlet WebSocket starter), so reactive-mode code (`FilePart`, `Mono`) runs on the stack it is generated for. Two GraphQL fault cases (`empty_body`, `huge_body`) are now known Spring GraphQL WebFlux defects.
 - **Express/Apollo server: `GraphQLUpload` is wired only when a GraphQL operation takes an upload** (a REST-only upload no longer pulls in `graphql-upload`, `csrfPrevention: false` or the GraphQL scalar), and a nullable `Upload` argument is typed `FileUpload | null`.
 - **Express/Apollo server: stack traces no longer leave the server** — every GraphQL error response (validation errors included) carried `extensions.stacktrace` with absolute file paths. The generated `ApolloServer` now sets `includeStacktraceInErrorResponses: false`.

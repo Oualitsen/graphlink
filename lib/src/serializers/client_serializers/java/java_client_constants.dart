@@ -85,6 +85,7 @@ public class GraphLinkSubscriptionHandler {
     this.encoder = encoder;
     adapter.setMessageListener(this::onMessage);
     adapter.setReconnectListener(this::handleReconnect);
+    adapter.setDisconnectListener(this::invalidateAckTimeout);
   }
 
   String getConnectionInit(String id) {
@@ -144,6 +145,10 @@ public class GraphLinkSubscriptionHandler {
     } else if (shouldSend) {
       adapter.sendMessage(getSubscriptionMessage(id, payload));
     }
+  }
+
+  private synchronized void invalidateAckTimeout() {
+    ackGeneration++;
   }
 
   private void armAckTimeout() {
@@ -303,6 +308,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
   private volatile Runnable reconnectListener;
+  private volatile Runnable disconnectListener;
   private volatile boolean disposed = false;
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
@@ -406,6 +412,8 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    Runnable onDisconnect = disconnectListener;
+    if (onDisconnect != null) onDisconnect.run();
     if (disposed) return;
     int attempts = reconnectAttempts.incrementAndGet();
     if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
@@ -455,6 +463,11 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   public void setReconnectListener(Runnable onReconnect) {
     this.reconnectListener = onReconnect;
   }
+
+  @Override
+  public void setDisconnectListener(Runnable onDisconnect) {
+    this.disconnectListener = onDisconnect;
+  }
 }
 ''';
 
@@ -473,6 +486,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
   private volatile Runnable reconnectListener;
+  private volatile Runnable disconnectListener;
   private volatile boolean disposed = false;
   private final AtomicInteger reconnectAttempts = new AtomicInteger(0);
 
@@ -570,6 +584,8 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   }
 
   private void scheduleReconnect(Consumer<Throwable> onFailure) {
+    Runnable onDisconnect = disconnectListener;
+    if (onDisconnect != null) onDisconnect.run();
     if (disposed) return;
     int attempts = reconnectAttempts.incrementAndGet();
     if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
@@ -618,6 +634,11 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   @Override
   public void setReconnectListener(Runnable onReconnect) {
     this.reconnectListener = onReconnect;
+  }
+
+  @Override
+  public void setDisconnectListener(Runnable onDisconnect) {
+    this.disconnectListener = onDisconnect;
   }
 }
 ''';

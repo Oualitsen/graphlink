@@ -122,6 +122,8 @@ public interface GraphLinkWebSocketAdapter {
 
    // Fires after a successful reconnect; used by the handler to re-subscribe
    default void setReconnectListener(Runnable onReconnect) {}
+
+   default void setDisconnectListener(Runnable onDisconnect) {}
 }
 ''';
 

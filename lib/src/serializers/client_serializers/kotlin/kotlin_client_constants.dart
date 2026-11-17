@@ -45,6 +45,7 @@ interface GraphLinkWebSocketAdapter {
     fun close()
     fun setMessageListener(listener: (String) -> Unit)
     fun setReconnectListener(onReconnect: () -> Unit)
+    fun setDisconnectListener(onDisconnect: () -> Unit) {}
     fun connectionInitPayload(): Map<String, Any?>? = null
 }
 ''';
@@ -385,6 +386,7 @@ class DefaultGraphLinkWebSocketAdapter(
     @Volatile private var webSocket: WebSocket? = null
     @Volatile private var messageListener: ((String) -> Unit)? = null
     @Volatile private var reconnectListener: (() -> Unit)? = null
+    @Volatile private var disconnectListener: (() -> Unit)? = null
     @Volatile private var disposed = false
     private val fatalCloseCodes = setOf(4400, 4401, 4403, 4409)
 
@@ -424,6 +426,7 @@ class DefaultGraphLinkWebSocketAdapter(
 
     private fun scheduleReconnect(onFailure: (Throwable) -> Unit) {
         if (disposed) return
+        disconnectListener?.invoke()
         val attempts = _reconnectAttempts.incrementAndGet()
         if (maxReconnectAttempts != null && attempts > maxReconnectAttempts) {
             onFailure(RuntimeException("Max reconnect attempts reached"))
@@ -451,6 +454,7 @@ class DefaultGraphLinkWebSocketAdapter(
     }
     override fun setMessageListener(listener: (String) -> Unit) { messageListener = listener }
     override fun setReconnectListener(onReconnect: () -> Unit) { reconnectListener = onReconnect }
+    override fun setDisconnectListener(onDisconnect: () -> Unit) { disconnectListener = onDisconnect }
     override fun connectionInitPayload(): Map<String, Any?>? {
         val h = headersProvider?.invoke() ?: return null
         return if (h.isEmpty()) null else h.toMap()
@@ -488,6 +492,11 @@ class GraphLinkSubscriptionHandler(
     init {
         adapter.setMessageListener(::onMessage)
         adapter.setReconnectListener(::handleReconnect)
+        adapter.setDisconnectListener(::invalidateAckTimeout)
+    }
+
+    private fun invalidateAckTimeout() {
+        synchronized(this) { ackGeneration++ }
     }
 
     fun handle(payload: GraphLinkPayload): Flow<Map<String, Any?>> = callbackFlow {

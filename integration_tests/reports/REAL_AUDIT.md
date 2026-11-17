@@ -118,7 +118,7 @@ Built: `fault_server/server.py` speaks `graphql-transport-ws` (stdlib RFC 6455) 
 connections misbehave; `GET /_ws_log` lists every connection with the frames the client sent. `fault_server/ws_cases.json` is the one table
 (`expect`: `value`, `error` or `settles`, plus `pong`, `noSubscribeBeforeAck`, `min/maxConnections`). Every GraphQL real package has a
 `ws_faults` test on its own fault port (Dart 9940, Python 9942, TypeScript 9943, Go 9944, Swift 9945, Java 9946, Kotlin 9947), started by
-`make ci`. Not covered: the reactive Java flavors (Reactor, RxJava 3, Mutiny).
+`make ci`. The reactive Java flavors run the same suites; the listener-style tests (`AuthSubscriptionTest`, `WsFaultsTest`, `SubscriptionReconnectCasesTest`) are excluded in `generate_reactor_tests.dart` and have stream-based copies in `java_reactive_shared/` (`*StreamsTest`).
 
 Fixed, in every runtime:
 - **Kotlin hung forever when the server closed the socket with a close frame** (any code, 1011 and 4500 included). The adapter only handled `onClosed`, which OkHttp fires only after the app answers `onClosing`. The Java OkHttp adapter had the same gap.
@@ -128,14 +128,14 @@ Fixed, in every runtime:
 - **Dart answers the server `ping`** from the connection, not from a subscription listener.
 - **Swift keeps the server's error message** (`GraphLinkException`, like the other clients).
 
-`KNOWN_DEFECTS` is empty in all seven tests. Reactive Java flavors are generated from the same runtime but their packages were not run.
+`KNOWN_DEFECTS` is empty in all seven tests. The reactive Java packages were run (400/401/401 tests) with stream-based copies of the three listener-style tests (fault ports 9948, 9949, 9955).
 
 ## 6. Many cached requests at the same time — DONE (1 defect fixed, in-flight coalescing added)
 
 Server: `cachedSlow(id, delayMs)` (`@glCache`, tag `slow`; returns the id's version as it was when the request arrived, then waits), `cachedSlowCalls(id)`, `bumpSlow(id)` (`@glCacheInvalidate(tags: ["slow"])`). Tests, in all 7: `cache_concurrency_test.dart`, `cache-concurrency.test.ts`, `test_cache_concurrency.py`, `cache_concurrency_test.go`, `CacheConcurrencyTest.{java,kt,swift}`.
 
 - Two keys at the same time make two calls: passes in all 7.
-- Five identical requests at the same time used to make **five** calls. Now identical concurrent cached queries share one network call (single-flight). The in-flight key is the operation name, the sorted cache keys of the elements still to fetch and the combined epoch, so a request that starts after an invalidation never joins an earlier one. Only the network call is shared: each caller parses and caches its own copy, and a failure is shared by all joined callers (each still falls back to its own stale data). Queries with an element that has `ttl` 0 are not coalesced. Tests: `concurrent requests for the same key share one call` in all 7 languages. Not covered: the three reactive Java packages (blocking Java only), REST cached calls, failure sharing has no real-server test.
+- Five identical requests at the same time used to make **five** calls. Now identical concurrent cached queries share one network call (single-flight). The in-flight key is the operation name, the sorted cache keys of the elements still to fetch and the combined epoch, so a request that starts after an invalidation never joins an earlier one. Only the network call is shared: each caller parses and caches its own copy, and a failure is shared by all joined callers (each still falls back to its own stale data). Queries with an element that has `ttl` 0 are not coalesced. Tests: `concurrent requests for the same key share one call` in all 7 languages. The three reactive Java packages coalesce too (shared `CompletableFuture` map, registered at subscription). Not covered: REST cached calls, failure sharing has no real-server test.
 - A response still in flight when its tag is invalidated **is stored**: the next call is served the stale value. Failed in all 7 (`expected 1 but was 0`). Fixed in all 7 runtimes: an in-memory invalidation counter per tag plus one for `all: true` is read before the request is sent, and the cache write is skipped when it changed (the caller still gets the response). Dart, TypeScript, Python and Go keep the counters on the per-tag lock objects; Java and Kotlin keep them per cache store (the query and mutation classes do not share their lock maps); Swift passes a shared `GraphLinkEpochs` object to the query, mutation and subscription classes. All `invalidateAll` call sites (GraphQL and REST) now go through `invalidateAllEntries`. Not covered: the REST cached-response writes do not check the counter, and the gap between `store.set` and `addKeyToTags` is not closed.
 
 The original proposal follows.

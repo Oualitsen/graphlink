@@ -169,6 +169,34 @@ class JavaReactiveFlavor {
     }
   }
 
+  /// Opens `defer(() -> {`; the caller emits the body and closes with `});`.
+  String deferOpen() {
+    switch (single) {
+      case 'Mono':
+        return 'Mono.defer(() -> {';
+      case 'Single':
+        return 'Single.defer(() -> {';
+      case 'Uni':
+        return 'Uni.createFrom().deferred(() -> {';
+      default:
+        return '';
+    }
+  }
+
+  /// Subscribes to [singleExpr] immediately and exposes the result as a `CompletableFuture`.
+  String toFuture(String singleExpr) {
+    switch (single) {
+      case 'Mono':
+        return '$singleExpr.toFuture()';
+      case 'Single':
+        return '$singleExpr.toCompletionStage().toCompletableFuture()';
+      case 'Uni':
+        return '$singleExpr.subscribeAsCompletionStage()';
+      default:
+        return singleExpr;
+    }
+  }
+
   String singleType(String type) => isReactive ? '$single<${type.toBoxedType}>' : type;
 
   String maybeType(String type) {
