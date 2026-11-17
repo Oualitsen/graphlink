@@ -246,9 +246,11 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     List<String>? implementsNames,
     String? extendsName,
     bool exported = true,
+    bool isAbstract = false,
   }) {
     var buffer = StringBuffer();
     if (exported) buffer.write("export ");
+    if (isAbstract) buffer.write("abstract ");
     buffer.write("class $className");
     if (extendsName != null) buffer.write(" extends $extendsName");
     if (implementsNames != null && implementsNames.isNotEmpty) {

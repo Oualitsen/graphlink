@@ -65,7 +65,7 @@ Set<String>? _parameterReservedWordsFor(GeneratorConfig config) {
   final lang = config.getMode() == CodeGenerationMode.server
       ? config.serverConfig!.language
       : config.clientConfig!.language;
-  if (lang is TypeScriptClientConfig || lang is ExpressApolloServerConfig) {
+  if (lang is TypeScriptClientConfig || lang is TypeScriptApolloServerConfig) {
     return typescriptParameterReservedWords;
   }
   return null;

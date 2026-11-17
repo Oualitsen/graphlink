@@ -40,11 +40,11 @@ const _supportImports = [
   'wrap',
 ];
 
-class _RouteBinding {
+class RouteBinding {
   final GLRestOperation op;
   final GLService service;
 
-  _RouteBinding(this.op, this.service);
+  RouteBinding(this.op, this.service);
 
   String get serviceVar => service.token.firstLow;
 }
@@ -54,14 +54,14 @@ class _RouteBinding {
 class ExpressApolloRestSerializer {
   final GLParser grammar;
   final TypeScriptSerializer tsSerializer;
-  final ExpressApolloServerConfig apolloConfig;
+  final TypeScriptApolloServerConfig apolloConfig;
   final _cg = TypeScriptCodeGenUtils();
 
   ExpressApolloRestSerializer(this.grammar, this.tsSerializer, this.apolloConfig);
 
   bool get hasRest => grammar.restOperations.isNotEmpty;
 
-  bool get hasUploads => grammar.restOperations.values.any((op) => op.arguments.any((a) => _isUpload(a.argument.type)));
+  bool get hasUploads => grammar.restOperations.values.any((op) => op.arguments.any((a) => isUploadType(a.argument.type)));
 
   bool get hasDownloads => grammar.restOperations.values.any((op) => op.responseKind == RestResponseKind.binary);
 
@@ -96,14 +96,14 @@ class ExpressApolloRestSerializer {
   }
 
   String serializeRestRouter() {
-    final bindings = _bindings();
+    final bindings = routeBindings();
     final routes = [for (final binding in bindings) _route(binding)];
-    final usesContext = bindings.any((b) => _injectsContext(b.op) || _intercepted(b.op));
-    final intercepted = bindings.any((b) => _intercepted(b.op));
+    final usesContext = bindings.any((b) => injectsContext(b.op) || isIntercepted(b.op));
+    final intercepted = bindings.any((b) => isIntercepted(b.op));
     final interceptor = intercepted ? grammar.interfaces[glInterceptorInterfaceName]! : null;
     final tagEnum = intercepted ? grammar.enums[glInterceptorTagEnumName] : null;
     final services = bindings.map((b) => b.service).toSet().toList();
-    final guarded = bindings.where((b) => _hasValidation(b.op)).map((b) => b.service).toSet().toList();
+    final guarded = bindings.where((b) => hasValidation(b.op)).map((b) => b.service).toSet().toList();
 
     final imports = [
       "import express, { Request, Response, Router } from 'express';",
@@ -112,26 +112,26 @@ class ExpressApolloRestSerializer {
         "import { ${interceptor.codeName} } from '../interfaces/${tsSerializer.getFileNameFor(interceptor).replaceAll('.ts', '.js')}';",
       if (tagEnum != null)
         "import { ${tagEnum.codeName} } from '../enums/${tsSerializer.getFileNameFor(tagEnum).replaceAll('.ts', '.js')}';",
-      "import { ${_supportImports.join(', ')} } from './support.js';",
+      "import { ${supportImportNames.join(', ')} } from './support.js';",
       if (hasDownloads) "import { sendDownload } from './download.js';",
       if (hasUploads) "import { rawUploadArg${hasMultipart ? ', readMultipart, fileArg, fileListArg' : ''} } from './uploads.js';",
       for (final service in services)
         "import { ${service.token} } from '../services/${service.token.toKebabCase()}.js';",
       for (final service in guarded)
-        "import { ${_guardName(service)} } from '../guards/${_guardName(service).toKebabCase()}.js';",
-      ..._typeImports(bindings),
+        "import { ${guardName(service)} } from '../guards/${guardName(service).toKebabCase()}.js';",
+      ...typeImports(bindings),
     ];
 
     final body = StringBuffer();
     body.writeln(_cg.createInterface(interfaceName: 'RestServices', exported: true, fields: [
       for (final service in services) '${service.token.firstLow}: ${service.token};',
-      for (final service in guarded) '${_guardName(service).firstLow}: ${_guardName(service)};',
+      for (final service in guarded) '${guardName(service).firstLow}: ${guardName(service)};',
       if (interceptor != null) 'interceptor?: ${interceptor.codeName};',
       if (usesContext)
         'contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;',
     ]));
     body.writeln();
-    body.writeln(_shapes(bindings));
+    body.writeln(shapesDeclaration(bindings));
     body.writeln();
     if (usesContext) {
       body.writeln(_cg.createFunction(
@@ -164,11 +164,11 @@ class ExpressApolloRestSerializer {
     return '${GLClassModel(imports: imports, body: body.toString()).toFileContent()}\n';
   }
 
-  List<_RouteBinding> _bindings() {
-    final bindings = <_RouteBinding>[];
+  List<RouteBinding> routeBindings() {
+    final bindings = <RouteBinding>[];
     for (final service in grammar.services.values) {
       for (final op in grammar.restOperationsOf(service)) {
-        bindings.add(_RouteBinding(op, service));
+        bindings.add(RouteBinding(op, service));
       }
     }
     return bindings;
@@ -176,7 +176,20 @@ class ExpressApolloRestSerializer {
 
   // ── route ─────────────────────────────────────────────────────────────────
 
-  String _route(_RouteBinding binding) {
+  List<String> get supportImportNames => _supportImports;
+
+  String _route(RouteBinding binding) {
+    final handler = 'handle(async (req, res) => ${_cg.block(routeStatements(binding))})';
+    return "router.${binding.op.method.name}(${expressPath(binding.op).quote()}, $handler);";
+  }
+
+  String serviceAccess(String member) => 'services.$member';
+
+  String get interceptorAccess => 'services.interceptor!';
+
+  String get contextAccess => 'await restContext(services, req, res)';
+
+  List<String> routeStatements(RouteBinding binding) {
     final op = binding.op;
     final statements = <String>[];
     final callArgs = <String>[];
@@ -188,24 +201,23 @@ class ExpressApolloRestSerializer {
       callArgs.add(restArg.argument.codeName);
     }
     final rawArgs = List<String>.of(callArgs);
-    final passesContext = _injectsContext(op);
-    if (passesContext || _intercepted(op)) {
-      statements.add(_cg.constDecl('context', 'await restContext(services, req, res)'));
+    final passesContext = injectsContext(op);
+    if (passesContext || isIntercepted(op)) {
+      statements.add(_cg.constDecl('context', contextAccess));
     }
     if (passesContext) callArgs.add('context');
-    if (_intercepted(op)) statements.add(_runBefore(op, rawArgs));
-    final service = 'services.${binding.serviceVar}';
-    if (_hasValidation(op)) {
-      final guard = 'services.${_guardName(binding.service).firstLow}';
+    if (isIntercepted(op)) statements.add(_runBefore(op, rawArgs));
+    final service = serviceAccess(binding.serviceVar);
+    if (hasValidation(op)) {
+      final guard = serviceAccess(guardName(binding.service).firstLow);
       statements.add('await $guard.${GLService.getValidationMethodName(op.field.name.token)}(${callArgs.join(', ')});');
     }
     final call = '$service.${op.field.codeName}(${callArgs.join(', ')})';
     statements.addAll(_response(op, call));
-    final handler = 'handle(async (req, res) => ${_cg.block(statements)})';
-    return "router.${op.method.name}(${_expressPath(op).quote()}, $handler);";
+    return statements;
   }
 
-  bool _intercepted(GLRestOperation op) => grammar.isIntercepted(op.field, op.type);
+  bool isIntercepted(GLRestOperation op) => grammar.isIntercepted(op.field, op.type);
 
   String _runBefore(GLRestOperation op, List<String> rawArgs) {
     final tagEnum = grammar.enums[glInterceptorTagEnumName];
@@ -217,7 +229,7 @@ class ExpressApolloRestSerializer {
       'context',
       if (apolloConfig.useResolveInfo) 'null',
     ];
-    return 'await services.interceptor!.runBefore(${callArgs.join(', ')});';
+    return 'await $interceptorAccess.runBefore(${callArgs.join(', ')});';
   }
 
   List<String> _response(GLRestOperation op, String call) {
@@ -254,7 +266,7 @@ class ExpressApolloRestSerializer {
       case RestArgRole.part:
         return _convert(code, arg.type, _readPart(restArg, options));
       case RestArgRole.body:
-        if (_isUpload(arg.type)) return [_cg.constDecl(code, 'rawUploadArg(req)')];
+        if (isUploadType(arg.type)) return [_cg.constDecl(code, 'rawUploadArg(req)')];
         final read = 'bodyArg(req, ${_shape(arg.type)}, shapes, $options)';
         return _convert(code, arg.type, read);
       case RestArgRole.field:
@@ -286,14 +298,14 @@ class ExpressApolloRestSerializer {
   String _readPart(GLRestArgument restArg, String options) {
     final type = restArg.argument.type;
     final wire = restArg.wireName!.quote();
-    if (_isUpload(type)) {
+    if (isUploadType(type)) {
       return "${type is GLListType ? 'fileListArg' : 'fileArg'}(form, $wire, ${options.contains('optional') ? '{ optional: true }' : '{}'})";
     }
     final list = type is GLListType;
     return "form${list ? 'List' : ''}Arg(form, $wire, ${_shape(list ? type.inlineType : type)}, $options)";
   }
 
-  bool _isUpload(GLType type) => grammar.uploadScalarNames.contains(type.firstType.token);
+  bool isUploadType(GLType type) => grammar.uploadScalarNames.contains(type.firstType.token);
 
   String _readValue(GLRestArgument restArg, String source, String options) {
     final type = restArg.argument.type;
@@ -376,7 +388,7 @@ class ExpressApolloRestSerializer {
     }
   }
 
-  String _shapes(List<_RouteBinding> bindings) {
+  String shapesDeclaration(List<RouteBinding> bindings) {
     final names = <String>{};
     final pending = [
       for (final binding in bindings)
@@ -405,10 +417,10 @@ class ExpressApolloRestSerializer {
 
   // ── routes that exist for another method only ─────────────────────────────
 
-  List<String> _methodNotAllowedRoutes(List<_RouteBinding> bindings) {
+  List<String> _methodNotAllowedRoutes(List<RouteBinding> bindings) {
     final methodsByPath = <String, List<String>>{};
     for (final binding in bindings) {
-      methodsByPath.putIfAbsent(_expressPath(binding.op), () => []).add(binding.op.method.wireName);
+      methodsByPath.putIfAbsent(expressPath(binding.op), () => []).add(binding.op.method.wireName);
     }
     return [
       for (final entry in methodsByPath.entries)
@@ -417,10 +429,10 @@ class ExpressApolloRestSerializer {
   }
 
   /// Requests under the prefix every REST path shares, but matching no route, get a JSON 404.
-  List<String> _notFoundRoute(List<_RouteBinding> bindings) {
+  List<String> _notFoundRoute(List<RouteBinding> bindings) {
     final prefixes = [
       for (final binding in bindings)
-        _expressPath(binding.op).split('/').where((s) => s.isNotEmpty).takeWhile((s) => !s.startsWith(':')).toList(),
+        expressPath(binding.op).split('/').where((s) => s.isNotEmpty).takeWhile((s) => !s.startsWith(':')).toList(),
     ];
     var common = prefixes.first;
     for (final prefix in prefixes.skip(1)) {
@@ -436,9 +448,9 @@ class ExpressApolloRestSerializer {
 
   // ── helpers ───────────────────────────────────────────────────────────────
 
-  bool _hasValidation(GLRestOperation op) => op.field.hasDirective(glValidate);
+  bool hasValidation(GLRestOperation op) => op.field.hasDirective(glValidate);
 
-  bool _injectsContext(GLRestOperation op) => apolloConfig.injectContext || op.field.hasDirective(glInjectContext);
+  bool injectsContext(GLRestOperation op) => apolloConfig.injectContext || op.field.hasDirective(glInjectContext);
 
   bool _isInput(GLType type) => grammar.inputs.containsKey(type.firstType.token);
 
@@ -447,14 +459,14 @@ class ExpressApolloRestSerializer {
     return grammar.isEnum(token) || grammar.isProjectableType(token);
   }
 
-  String _guardName(GLService service) => '${service.token.replaceFirst('Service', '')}Guard';
+  String guardName(GLService service) => '${service.token.replaceFirst('Service', '')}Guard';
 
   String _pathKey(String placeholder) => placeholder.replaceAll(RegExp(r'[^A-Za-z0-9_]'), '_');
 
-  String _expressPath(GLRestOperation op) =>
+  String expressPath(GLRestOperation op) =>
       op.path.replaceAllMapped(restPlaceholder, (m) => ':${_pathKey(m.group(1)!)}');
 
-  List<String> _typeImports(List<_RouteBinding> bindings) {
+  List<String> typeImports(List<RouteBinding> bindings) {
     final names = <String>{};
     void collect(GLType type) {
       final token = type.firstType.token;

@@ -526,7 +526,7 @@ jobs:
           path: server_integration_tests
 
   # Full client x server matrix: each generated server target driven by each
-  # generated client harness. 6 servers x 7 clients = 42 independent jobs, each
+  # generated client harness. 8 servers x 7 clients = 56 independent jobs, each
   # its own pass/fail check. swift is deliberately NOT in this matrix — see
   # swift-vs-java-matrix-client below, which runs it against java only to keep
   # this matrix from growing 5x for a single extra client.
@@ -536,7 +536,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django]
+        server: [typescript, nestjs, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django]
         client: [dart, ts, java, kotlin, java_reactive, python, go]
     defaults:
       run:
@@ -565,6 +565,7 @@ jobs:
         run: |
           case "${{ matrix.server }}" in
             typescript)       make ci-typescript-client CLIENT=${{ matrix.client }} ;;
+            nestjs)           make ci-nestjs-client CLIENT=${{ matrix.client }} ;;
             kotlin-blocking)  make ci-kotlin-blocking-client CLIENT=${{ matrix.client }} ;;
             kotlin-suspend)   make ci-kotlin-suspend-client CLIENT=${{ matrix.client }} ;;
             java)             make ci-java-client CLIENT=${{ matrix.client }} ;;
@@ -574,14 +575,14 @@ jobs:
           esac
 
   # Server HTTP suites: malformed and hostile requests (server_faults/) and the REST operations (server_rest/)
-  # against each generated server, on one server start. One job per server (not per client), so it adds 5 jobs rather than 35.
+  # against each generated server, on one server start. One job per server (not per client), so the cost grows with the servers, not with servers x clients.
   server-faults:
     runs-on: ubuntu-latest
     needs: server-integration-tests-generate
     strategy:
       fail-fast: false
       matrix:
-        server: [typescript, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django, python-fastapi-graphql, python-fastapi-rest, python-django-graphql, python-django-rest]
+        server: [typescript, nestjs, kotlin-blocking, kotlin-suspend, java, java-reactive, python-fastapi, python-django, python-fastapi-graphql, python-fastapi-rest, python-django-graphql, python-django-rest]
     defaults:
       run:
         working-directory: server_integration_tests
@@ -663,6 +664,24 @@ jobs:
           path: server_integration_tests
       - run: make ci-upload-python
       - run: make ci-upload-python-django
+
+  integration-tests-nestjs-upload:
+    runs-on: ubuntu-latest
+    needs: server-integration-tests-generate
+    defaults:
+      run:
+        working-directory: server_integration_tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-integration-tests-generated
+          path: server_integration_tests
+      - run: make ci-upload-nestjs
 
   build-spring-servers:
     runs-on: ubuntu-latest

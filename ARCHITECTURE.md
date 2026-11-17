@@ -221,7 +221,11 @@ Under `serializers/client_serializers/`:
 | `jvm_spring_server_serializer_base.dart` / `jvm_spring_controller_serializer_base.dart` | `JvmSpringServerSerializerBase` / `JvmSpringControllerSerializerBase` | Shared Java/Kotlin Spring bases |
 | `java/java_spring_server_serializer.dart`, `kotlin/kotlin_spring_server_serializer.dart` | — | Spring Boot services + interfaces |
 | `java/java_spring_controller_serializer.dart`, `kotlin/kotlin_spring_controller_serializer.dart` | — | Spring controllers |
-| `typescript/express_apollo_server_serializer.dart` | `ExpressApolloServerSerializer` | Express/Apollo resolvers |
+| `typescript/typescript_apollo_server_base.dart` | `TypeScriptApolloServerSerializerBase` | What Express and NestJS share: service/guard contracts (`declareContract` hook), loaders, context, type defs, naming/import helpers |
+| `typescript/express_apollo_server_serializer.dart` | `ExpressApolloServerSerializer` | Express/Apollo resolvers (`buildResolvers`) and `createServer` |
+| `typescript/nest_apollo_server_serializer.dart` | `NestApolloServerSerializer` | NestJS: abstract-class services (the DI tokens), `@Resolver` / `@ResolveField` classes, `GraphLinkModule.forRoot`, exception filter |
+| `typescript/nest_apollo_rest_serializer.dart` | `NestApolloRestSerializer` | NestJS `@Controller` per service for `@glRest*` plus the 404/405 fallback; reuses the Express REST argument logic |
+| `typescript/nest_apollo_server_constants.dart` | — | NestJS runtime: REST support derived from the Express one, request guards |
 | `python/python_ariadne_server_serializer.dart` | `PythonAriadneServerSerializer` | Shared Ariadne server base: `Protocol` services and guards, `build_schema` resolvers, batch loaders, `GraphLinkServices`. Types come from `PythonSerializer` (server mode, runtime dir `runtime/`) |
 | `python/fastapi_ariadne_server_serializer.dart` | `FastapiAriadneServerSerializer` | FastAPI `create_app` |
 | `python/django_ariadne_server_serializer.dart` | `DjangoAriadneServerSerializer` | Django `create_urlpatterns` (GraphQL view + REST views) and `create_app` (WebSocket wrapper) |
@@ -255,7 +259,9 @@ GeneratorConfig
 ├── PythonClientConfig    (.python)
 ├── GoClientConfig        (.go)
 ├── SpringServerConfig    (Spring Boot)
-├── ExpressApolloServerConfig (Express)
+├── TypeScriptApolloServerConfig  (shared base)
+│   ├── ExpressApolloServerConfig (Express)
+│   └── NestApolloServerConfig    (NestJS)
 ├── AriadneServerConfig (abstract, shared options)
 │   ├── FastapiAriadneServerConfig (FastAPI + Ariadne)
 │   └── DjangoAriadneServerConfig (Django + Ariadne)
@@ -359,7 +365,7 @@ have been caught.
 `server_integration_tests/` is a **client x server matrix**, not organized by language.
 `servers/` holds one subdirectory per generated server target (`typescript_server`,
 `typescript_upload_server`, `java_server`, `java_server_reactive`,
-`kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`) — flat, no per-language grouping.
+`kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`, `nestjs_server`) — flat, no per-language grouping.
 `clients/` holds one subdirectory per generated client harness (`dart_client`,
 `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
 upload-only suite). The top-level `Makefile` exposes one `ci-<server>-client` target per

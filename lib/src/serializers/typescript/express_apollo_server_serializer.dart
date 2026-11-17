@@ -1,14 +1,11 @@
-import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_field.dart';
-import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
@@ -16,19 +13,14 @@ import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_constants.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
-import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
-import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
-import 'package:graphlink/src/serializers/server_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_apollo_server_base.dart';
 
-class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializerUtils {
-  final TypeScriptSerializer tsSerializer;
-  final ExpressApolloServerConfig apolloConfig;
+class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
   final _cg = TypeScriptCodeGenUtils();
 
-  ExpressApolloServerSerializer(super.grammar, this.tsSerializer, this.apolloConfig);
+  ExpressApolloServerSerializer(super.grammar, super.tsSerializer, super.apolloConfig);
 
   late final ExpressApolloRestSerializer _rest = ExpressApolloRestSerializer(grammar, tsSerializer, apolloConfig);
 
@@ -46,130 +38,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
 
   String serializeRestSupport() => expressRestSupport;
 
-  // ── uploads ───────────────────────────────────────────────────────────────
-
-  String serializeFileUploadType() => fileUploadType;
-
-  String serializeGraphqlUploadDeclarations() => graphqlUploadDeclarations;
-
-  // ── interfaces/gl-interceptor.ts ─────────────────────────────────────────
-
-  bool get hasInterceptor => grammar.usesInterceptor;
-
-  /// Appends the Apollo-specific `context`/`info` params onto the shared
-  /// `runBefore` IR, then serializes normally. The two import lines are
-  /// hand-written since `GraphLinkContext`/`GraphQLResolveInfo` aren't schema
-  /// tokens the generic import resolver knows about.
-  String? serializeInterceptorInterface() {
-    if (!hasInterceptor) return null;
-    final def = grammar.interfaces[glInterceptorInterfaceName]!;
-    _addInterceptorTargetArgs(def);
-
-    return GLClassModel(
-      imports: [
-        "import { GraphLinkContext } from '../context.js';",
-        if (apolloConfig.useResolveInfo) "import { GraphQLResolveInfo } from 'graphql';",
-      ],
-      body: tsSerializer.serializeTypeDefinition(def),
-    ).toFileContent();
-  }
-
-  void _addInterceptorTargetArgs(GLInterfaceDefinition def) {
-    final runBefore = def.fields.firstWhere((f) => f.name.token == glInterceptorRunBeforeMethod);
-    if (runBefore.arguments.any((a) => a.token == 'context')) return;
-    runBefore.addArgument(
-        GLArgumentDefinition('context'.toToken(), GLType('GraphLinkContext'.toToken(), true), []));
-    if (apolloConfig.useResolveInfo) {
-      runBefore.addArgument(
-          GLArgumentDefinition('info'.toToken(), GLType('GraphQLResolveInfo'.toToken(), true), []));
-    }
-  }
-
-  // ── context.ts ────────────────────────────────────────────────────────────
-
-  @override
-  String serializeContext() {
-    final batch = _batchMappings();
-    if (batch.isEmpty) return graphLinkContextInterface;
-
-    final typeNames = <String>{};
-    for (final e in batch) {
-      _addIfKnown(e.mapping.type.token, typeNames);
-      _collectType(e.mapping.field.type, typeNames);
-    }
-    // context.ts sits one level above types/ etc., so rewrite the shared '../'
-    // import prefix to './'.
-    final typeImports = _imports(typeNames).replaceAll("from '../", "from './");
-
-    final loaderFields = [
-      for (final e in batch) '${e.mapping.key}: ${_loaderFieldType(e.mapping)};',
-    ];
-
-    final buf = StringBuffer();
-    buf.writeln("import DataLoader from 'dataloader';");
-    if (typeImports.isNotEmpty) buf.writeln(typeImports);
-    buf.writeln();
-    buf.writeln(_cg.createInterface(interfaceName: 'GraphLinkLoaders', fields: loaderFields));
-    buf.writeln();
-    buf.write(graphLinkContextInterface);
-    return buf.toString();
-  }
-
-  List<_MappingEntry> _batchMappings() => [
-        for (final service in grammar.services.values)
-          for (final m in service.mappings.where((m) => m.isBatch))
-            _MappingEntry(mapping: m, service: service),
-      ];
-
-  /// [mapping]'s real declared arguments, excluding the synthetic parent
-  /// (`value`) argument every mapping carries.
-  List<GLArgumentDefinition> _realMappingArgs(GLSchemaMapping mapping) =>
-      mapping.field.arguments.where((a) => !a.skipOnGraphqlSerialization).toList();
-
-  /// The `GraphLinkLoaders` field type for a batch [mapping] — a plain
-  /// `DataLoader` when zero-arg, or a memoized-loader-getter function when
-  /// the field carries real arguments (see `_loaderFactory`).
-  String _loaderFieldType(GLSchemaMapping mapping) {
-    final dataLoaderType =
-        'DataLoader<${tsSerializer.resolveCodeName(mapping.type.token)}, ${tsSerializer.serializeType(mapping.field.type)}>';
-    final realArgs = _realMappingArgs(mapping);
-    if (realArgs.isEmpty) return dataLoaderType;
-    final params = realArgs.map((a) => '${a.codeName}: ${tsSerializer.serializeType(a.type)}').join(', ');
-    return '($params) => $dataLoaderType';
-  }
-
-  // ── impl/my-context.ts stub (written once) ────────────────────────────────
-
-  String serializeContextStub(String generatedDir) {
-    final dirName = generatedDir.split('/').last;
-    final contextInterface = _cg.createInterface(
-      interfaceName: 'GraphLinkContext',
-      fields: [
-        '// add your typed context fields here, for example:',
-        '// userId?: string;',
-        '// roles?: string[];',
-      ],
-      exported: false,
-    );
-    return "declare module '../$dirName/context.js' ${_cg.block([contextInterface])}\n";
-  }
-
-  // ── typeDefs.ts ───────────────────────────────────────────────────────────
-
-  @override
-  String serializeTypeDefs() {
-    final schema = GLGraphqlSerializer(grammar).generateSchema();
-    final escaped = schema.replaceAll('`', r'\`');
-    return 'export const typeDefs = `\n$escaped`;\n';
-  }
-
   // ── services/XxxService.ts ────────────────────────────────────────────────
-
-  /// Whether [field]'s resolver/service method receives the request `context`
-  /// parameter — either globally (`injectContext`) or per-field via
-  /// `@glInjectContext`.
-  bool _injectsContext(GLField field) =>
-      apolloConfig.injectContext || field.hasDirective(glInjectContext);
 
   /// Apollo resolver positional signature. `context` is the 3rd positional
   /// arg, so when it isn't injected but `info` (4th) is, a `_ctx` placeholder
@@ -186,205 +55,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return '(${parts.join(', ')})';
   }
 
-  @override
-  String serializeService(GLService service) {
-    final importedTypes = <String>{};
-    final methods = <String>[];
-    var hasUpload = false;
-    var hasDownload = false;
-
-    // A batch mapping resolves many parents in one call, so it has no single
-    // GraphQLResolveInfo — exclude `info` from its signature (as subscriptions do).
-    final batchKeys =
-        service.mappings.where((m) => m.isBatch).map((m) => m.key).toSet();
-
-    for (final field in service.fields) {
-      if (field.getDirectiveByName(glValidate)?.generated == true) continue;
-      final argList = field.arguments.map((arg) {
-        if (isUploadScalar(arg.type)) {
-          hasUpload = true;
-          return '${arg.codeName}: ${_tsUploadType(arg.type)}';
-        }
-        _collectType(arg.type, importedTypes);
-        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
-      }).toList();
-      final isDownload = grammar.downloadScalarNames.contains(field.type.firstType.token);
-      if (isDownload) hasDownload = true;
-      final returnTs = grammar.voidScalarNames.contains(field.type.firstType.token)
-          ? 'void'
-          : isDownload
-              ? 'GraphLinkDownload${field.type.nullable ? ' | null' : ''}'
-              : tsSerializer.serializeType(field.type);
-      _collectType(field.type, importedTypes);
-      final isSubscription = service.getTypeByFieldName(field.name.token) == GLQueryType.subscription;
-      final isBatch = batchKeys.contains(field.name.token);
-      final needsInfo = apolloConfig.useResolveInfo && !isSubscription && !isBatch && !grammar.isRestField(field);
-      final params = [
-        ...argList,
-        if (_injectsContext(field)) 'context: GraphLinkContext',
-        if (needsInfo) 'info: GraphQLResolveInfo',
-      ];
-      final returnDecl = isSubscription ? 'AsyncIterable<$returnTs>' : 'Promise<$returnTs>';
-      methods.add('${field.name}(${params.join(', ')}): $returnDecl;');
-    }
-
-    final needsResolveInfoImport = apolloConfig.useResolveInfo &&
-        service.fields.any((f) =>
-            f.getDirectiveByName(glValidate)?.generated != true &&
-            service.getTypeByFieldName(f.name.token) != GLQueryType.subscription &&
-            !grammar.isRestField(f) &&
-            !batchKeys.contains(f.name.token));
-    final needsContextImport = service.fields.any(_injectsContext);
-
-    final imp = _imports(importedTypes);
-    final lines = [
-      if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
-      if (needsResolveInfoImport) "import { GraphQLResolveInfo } from 'graphql';",
-      if (hasUpload) "import type { FileUpload } from '../file-upload.js';",
-      if (hasDownload) "import type { GraphLinkDownload } from '../rest/download.js';",
-      if (imp.isNotEmpty) imp,
-    ];
-    return '${lines.join('\n')}\n\n${_cg.createInterface(interfaceName: service.token, fields: methods)}';
-  }
-
-  // ── guards/XxxGuard.ts ────────────────────────────────────────────────────
-
-  @override
-  String? serializeGuard(GLService service) {
-    final importedTypes = <String>{};
-    final methods = <String>[];
-
-    for (final field in service.fields) {
-      if (!fieldHasValidation(field)) continue;
-      final argList = field.arguments.map((arg) {
-        _collectType(arg.type, importedTypes);
-        return '${arg.codeName}: ${tsSerializer.serializeType(arg.type)}';
-      }).toList();
-      final guardParams = [...argList, if (_injectsContext(field)) 'context: GraphLinkContext', if (apolloConfig.useResolveInfo && !grammar.isRestField(field)) 'info: GraphQLResolveInfo'];
-      methods.add('${validationMethodName(field.name.token)}(${guardParams.join(', ')}): Promise<void>;');
-    }
-
-    if (methods.isEmpty) return null;
-
-    final imp = _imports(importedTypes);
-    final resolveInfoImport = apolloConfig.useResolveInfo && service.fields.where(fieldHasValidation).any((f) => !grammar.isRestField(f))
-        ? "import { GraphQLResolveInfo } from 'graphql';"
-        : '';
-    final needsContextImport = service.fields.where(fieldHasValidation).any(_injectsContext);
-    final lines = [
-      if (needsContextImport) "import { GraphLinkContext } from '../context.js';",
-      if (resolveInfoImport.isNotEmpty) resolveInfoImport,
-      if (imp.isNotEmpty) imp,
-    ];
-    return '${lines.join('\n')}\n\n${_cg.createInterface(interfaceName: _guardName(service), fields: methods)}';
-  }
-
-  // ── loaders/XxxLoaders.ts ─────────────────────────────────────────────────
-
-  String? serializeLoader(GLService service) {
-    final batchMappings = service.mappings.where((m) => m.isBatch).toList();
-    if (batchMappings.isEmpty) return null;
-
-    final importedTypes = <String>{};
-    for (final m in batchMappings) {
-      _addIfKnown(m.type.token, importedTypes);
-      _collectType(m.field.type, importedTypes);
-    }
-
-    final imp = _imports(importedTypes);
-    return '${GLClassModel(
-      imports: [
-        "import DataLoader from 'dataloader';",
-        if (batchMappings.any((m) => _injectsContext(m.field))) "import { GraphLinkContext } from '../context.js';",
-        if (_carriesSource(batchMappings.first.type.token) || batchMappings.any((m) => _carriesSource(m.type.token)))
-          "import { sourceOf } from '../source.js';",
-        "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
-        if (imp.isNotEmpty) imp,
-      ],
-      body: batchMappings.map((m) => _loaderFactory(m, service.token)).join('\n'),
-    ).toFileContent()}\n';
-  }
-
-  bool _carriesSource(String typeName) => grammar.sourceTypeNames.contains(typeName);
-
-  String serializeSourceSupport() => expressSourceSupport;
-
-  String _loaderFactory(GLSchemaMapping mapping, String serviceName) {
-    final parentName = tsSerializer.resolveCodeName(mapping.type.token);
-    final fieldTs = tsSerializer.serializeType(mapping.field.type);
-    final factoryName = 'create${mapping.key.firstUp}Loader';
-    final serviceVar = serviceName.firstLow;
-    final realArgs = _realMappingArgs(mapping);
-    final argCodeNames = realArgs.map((a) => a.codeName).toList();
-
-    final String mapCallback;
-    final lookup = _carriesSource(mapping.type.token) ? 'map.get(sourceOf(v))' : 'map.get(v)';
-    if (mapping.field.type.nullable) {
-      // A nullable batch field legitimately resolves to null when the service
-      // has no entry for a parent.
-      mapCallback = 'v => $lookup ?? null';
-    } else {
-      // A non-nullable field requires a value per key. Returning an Error (not
-      // throwing) rejects only this key's promise, not the whole batch. Keep the
-      // client-facing message generic and log the full parent object server-side.
-      final callbackBody = _cg.block([
-        _cg.constDecl('r', lookup),
-        _cg.ifStatement(
-          condition: 'r == null',
-          ifBlockStatements: [
-            "console.error('${mapping.key}: no result for', v);",
-            "return new Error('${mapping.key} resolution failed');",
-          ],
-        ),
-        'return r;',
-      ]);
-      mapCallback = 'v => $callbackBody';
-    }
-    final ctx = _injectsContext(mapping.field);
-    final sourced = _carriesSource(mapping.type.token);
-    final serviceCallArgs = [
-      ...argCodeNames,
-      sourced ? 'items.map(sourceOf)' : '[...items]',
-      if (ctx) 'context',
-    ].join(', ');
-    final loaderBody = _cg.block([
-      _cg.constDecl('map', 'await $serviceVar.${mapping.key}($serviceCallArgs)'),
-      'return items.map($mapCallback);',
-    ]);
-    final newLoaderExpr = 'new DataLoader<$parentName, $fieldTs>(async (items) => $loaderBody)';
-    final factoryArgs = ['$serviceVar: $serviceName', if (ctx) 'context: GraphLinkContext'];
-
-    if (realArgs.isEmpty) {
-      return '${_cg.createFunction(
-        functionName: factoryName,
-        arguments: factoryArgs,
-        exported: true,
-        statements: ['return $newLoaderExpr;'],
-      )}\n';
-    }
-
-    // A single DataLoader only batches calls sharing the same argument value,
-    // so return a per-arguments memoized getter instead of one instance.
-    final params = realArgs.map((a) => '${a.codeName}: ${tsSerializer.serializeType(a.type)}').join(', ');
-    return '${_cg.createFunction(
-      functionName: factoryName,
-      arguments: factoryArgs,
-      exported: true,
-      statements: [
-        'const cache = new Map<string, DataLoader<$parentName, $fieldTs>>();',
-        'return ($params) => ${_cg.block([
-          'const key = JSON.stringify([${argCodeNames.join(', ')}]);',
-          'let loader = cache.get(key);',
-          _cg.ifStatement(condition: '!loader', ifBlockStatements: [
-            'loader = $newLoaderExpr;',
-            'cache.set(key, loader);',
-          ]),
-          'return loader;',
-        ])};',
-      ],
-    )}\n';
-  }
-
   // ── resolvers/buildResolvers.ts ───────────────────────────────────────────
 
   @override
@@ -397,18 +67,18 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final resolverTypes = <String>{};
     for (final service in services) {
       for (final field in service.fields) {
-        _collectType(field.type, resolverTypes);
+        collectType(field.type, resolverTypes);
       }
       for (final mapping in service.mappings) {
-        _collectType(mapping.field.type, resolverTypes);
+        collectType(mapping.field.type, resolverTypes);
       }
     }
-    final resolverTypeImports = _imports(resolverTypes);
+    final resolverTypeImports = importLines(resolverTypes);
 
     final imports = <String>[
       "import { IResolvers } from '@graphql-tools/utils';",
       "import { ${apolloConfig.useResolveInfo ? 'GraphQLError, GraphQLResolveInfo' : 'GraphQLError'} } from 'graphql';",
-      _hasBatchLoaders
+      hasBatchLoaders
           ? "import { GraphLinkContext, GraphLinkLoaders } from '../context.js';"
           : "import { GraphLinkContext } from '../context.js';",
       if (grammar.carriesSources) "import { attachSource, sourceOf } from '../source.js';",
@@ -416,8 +86,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (resolverTypeImports.isNotEmpty) resolverTypeImports,
       // service + guard imports (guard only if service has @glValidate fields)
       for (final service in services) ...[
-        "import { ${service.token} } from '../services/${_kebabJs(service.token)}';",
-        if (_hasGuard(service)) "import { ${_guardName(service)} } from '../guards/${_kebabJs(_guardName(service))}';",
+        "import { ${service.token} } from '../services/${kebabJs(service.token)}';",
+        if (hasGuard(service)) "import { ${guardName(service)} } from '../guards/${kebabJs(guardName(service))}';",
       ],
       if (hasInterceptor) ...[
         "import { ${grammar.interfaces[glInterceptorInterfaceName]!.codeName} } from '../interfaces/${tsSerializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!).replaceAll('.ts', '.js')}';",
@@ -431,7 +101,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final params = <String>[
       for (final service in services) '${service.token.firstLow}: ${service.token}',
       for (final service in services)
-        if (_hasGuard(service)) '${_guardName(service).firstLow}: ${_guardName(service)}',
+        if (hasGuard(service)) '${guardName(service).firstLow}: ${guardName(service)}',
       if (hasInterceptor)
         'interceptor: ${grammar.interfaces[glInterceptorInterfaceName]!.codeName}',
     ];
@@ -461,24 +131,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return '${imports.join('\n')}\n\n$buildResolvers\n';
   }
 
-  /// The `tag` call-site argument for `runBefore` — a single-element list, or
-  /// empty when no `GlInterceptorTag` enum was generated (no tag param exists
-  /// to pass).
-  List<String> _interceptorTagCallArg(GLField field, [GLQueryType? type]) {
-    final tagEnum = grammar.enums[glInterceptorTagEnumName];
-    if (tagEnum == null) return const [];
-    final tag = grammar.interceptTag(field, type);
-    if (tag == null) return const ['null'];
-    final member = tagEnum.values.firstWhere((v) => v.token == tag).codeName;
-    return ['${tagEnum.codeName}.$member'];
-  }
-
   /// `runBefore(...)` call inserted as the first statement of an intercepted
   /// resolver, before any upload/validation/service call.
-  String? _runBeforeStatement(_RootEntry e) {
+  String? _runBeforeStatement(RootEntry e) {
     if (!e.intercepted) return null;
     final callArgs = [
-      ..._interceptorTagCallArg(e.field, e.queryType),
+      ...interceptorTagCallArg(e.field, e.queryType),
       '"${e.fieldName}"',
       '[${e.argCodeNames.join(', ')}]',
       'context',
@@ -487,30 +145,6 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (apolloConfig.useResolveInfo) (e.needsInfo ? 'info' : 'null'),
     ].join(', ');
     return 'await interceptor.runBefore($callArgs);';
-  }
-
-  bool _hasGuard(GLService service) => service.fields.any(fieldHasValidation);
-
-  bool get _hasBatchLoaders =>
-      grammar.services.values.any((s) => s.mappings.any((m) => m.isBatch));
-
-  bool get _anyBatchInjectsContext =>
-      _batchMappings().any((e) => _injectsContext(e.mapping.field));
-
-  /// Builds the resolver `args` destructuring pattern. Each entry is plain
-  /// shorthand (`{ id }`) when the wire name is a legal identifier, or a rename
-  /// (`{ return: return_ }`) when the wire name is a reserved word, so the local
-  /// binding is safe while the property key stays the GraphQL wire name.
-  String _argsDestructure(
-      List<String> wireNames, List<String> codeNames, String emptyToken) {
-    if (wireNames.isEmpty) return emptyToken;
-    final parts = <String>[];
-    for (var i = 0; i < wireNames.length; i++) {
-      parts.add(wireNames[i] == codeNames[i]
-          ? wireNames[i]
-          : '${wireNames[i]}: ${codeNames[i]}');
-    }
-    return '{ ${parts.join(', ')} }';
   }
 
   /// Builds a resolver-map entry `fieldName: <value>,`. With [signature],
@@ -523,14 +157,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   }
 
   String? _serializeRootBlock(List<GLService> services, GLQueryType type, String blockName) {
-    final entries = <_RootEntry>[];
+    final entries = <RootEntry>[];
     for (final service in services) {
       for (final field in service.fields) {
         if (field.getDirectiveByName(glValidate)?.generated == true) continue;
         if (grammar.isRestField(field)) continue;
         if (service.getTypeByFieldName(field.name.token) != type) continue;
         final intercepted = grammar.isIntercepted(field, type);
-        entries.add(_RootEntry(
+        entries.add(RootEntry(
           service: service,
           field: field,
           queryType: type,
@@ -543,7 +177,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           // an intercepted resolver always needs `context` locally to pass to
           // `runBefore`, regardless of whether the SERVICE method itself opted
           // into @glInjectContext/global injectContext.
-          contextInjected: _injectsContext(field) || intercepted,
+          contextInjected: injectsContext(field) || intercepted,
           intercepted: intercepted,
         ));
       }
@@ -553,9 +187,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final fieldEntries = <String>[];
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
-      final gVar = _guardName(e.service).firstLow;
+      final gVar = guardName(e.service).firstLow;
       final argsDestructure =
-          _argsDestructure(e.argNames, e.argCodeNames, '__');
+          argsDestructurePattern(e.argNames, e.argCodeNames, '__');
 
       // resolve upload args before passing to service. The destructured local
       // binding is the (parameter-safe) code name, so awaits/calls use it.
@@ -600,12 +234,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   }
 
   String? _serializeSubscriptionBlock(List<GLService> services) {
-    final entries = <_RootEntry>[];
+    final entries = <RootEntry>[];
     for (final service in services) {
       for (final field in service.fields) {
         if (service.getTypeByFieldName(field.name.token) != GLQueryType.subscription) continue;
         final intercepted = grammar.isIntercepted(field, GLQueryType.subscription);
-        entries.add(_RootEntry(
+        entries.add(RootEntry(
           service: service,
           field: field,
           queryType: GLQueryType.subscription,
@@ -615,7 +249,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
           argTypes: field.arguments.map((a) => a.type).toList(),
           returnType: field.type,
           needsInfo: false,
-          contextInjected: _injectsContext(field) || intercepted,
+          contextInjected: injectsContext(field) || intercepted,
           intercepted: intercepted,
         ));
       }
@@ -626,7 +260,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     for (final e in entries) {
       final sVar = e.service.token.firstLow;
       final argsDestructure =
-          _argsDestructure(e.argNames, e.argCodeNames, '__');
+          argsDestructurePattern(e.argNames, e.argCodeNames, '__');
       final callArgs = [...e.argCodeNames, if (e.contextInjected) 'context'].join(', ');
       final subscribeSignature = _resolverSignature('_', argsDestructure, e.contextInjected, false);
       final toJsonExpr = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(e.returnType, 'payload'));
@@ -643,19 +277,19 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   }
 
   List<String> _serializeTypeMappings(List<GLService> services) {
-    final byType = <String, List<_MappingEntry>>{};
+    final byType = <String, List<MappingEntry>>{};
     for (final service in services) {
       for (final mapping in service.mappings) {
         byType.putIfAbsent(mapping.type.token, () => []);
-        byType[mapping.type.token]!.add(_MappingEntry(mapping: mapping, service: service));
+        byType[mapping.type.token]!.add(MappingEntry(mapping: mapping, service: service));
       }
     }
 
-    final passThrough = _mapToPassThroughFields();
+    final passThrough = mapToPassThroughFields();
     return [
       for (final typeName in {...byType.keys, ...passThrough.keys})
         '$typeName: ${_cg.block([
-          for (final entry in byType[typeName] ?? <_MappingEntry>[])
+          for (final entry in byType[typeName] ?? <MappingEntry>[])
             '${entry.mapping.field.name}: ${_mappingResolver(entry.mapping, entry.service.token.firstLow)},',
           for (final name in passThrough[typeName] ?? <String>[])
             '$name: (parent) => parent,',
@@ -663,35 +297,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     ];
   }
 
-  /// Fields typed as the `@glSkipOnServer(mapTo:)` source: the service returns the source, so it is the parent
-  /// and the field resolves to it.
-  Map<String, List<String>> _mapToPassThroughFields() {
-    final result = <String, List<String>>{};
-    for (final type in grammar.types.values) {
-      final dir = type.getDirectiveByName(glSkipOnServer);
-      final source = dir?.getArgValueAsString(glMapTo);
-      if (source == null) continue;
-      final mapped = {
-        for (final service in grammar.services.values)
-          for (final mapping in service.mappings)
-            if (mapping.type.token == type.token) mapping.field.name.token,
-      };
-      for (final field in type.fields) {
-        if (field.type is GLListType || field.type.token != source || mapped.contains(field.name.token)) continue;
-        result.putIfAbsent(type.token, () => []).add(field.name.token);
-      }
-    }
-    return result;
-  }
-
   /// `runBefore(...)` call for an intercepted mapping field, inserted once
   /// per resolved parent (not inside the DataLoader's batch function, which
   /// only sees an already-collapsed array with no single caller to attribute
   /// the check to).
   String _mappingRunBeforeStatement(GLSchemaMapping m) {
-    final argCodeNames = _realMappingArgs(m).map((a) => a.codeName).toList();
+    final argCodeNames = realMappingArgs(m).map((a) => a.codeName).toList();
     final callArgs = [
-      ..._interceptorTagCallArg(m.field),
+      ...interceptorTagCallArg(m.field),
       '"${m.type.token}.${m.field.name}"',
       '[${argCodeNames.join(', ')}]',
       'context',
@@ -717,10 +330,10 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       return 'async $sig => ${_cg.block([runBefore, 'return $expr;'])}';
     }
     if (m.isBatch) {
-      final realArgs = _realMappingArgs(m);
+      final realArgs = realMappingArgs(m);
       final argNames = realArgs.map((a) => a.token).toList();
       final argCodeNames = realArgs.map((a) => a.codeName).toList();
-      final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
+      final argsDestructure = argsDestructurePattern(argNames, argCodeNames, '_');
       final loaderAccess = realArgs.isEmpty
           ? 'context.loaders.${m.key}'
           : 'context.loaders.${m.key}(${argCodeNames.join(', ')})';
@@ -743,12 +356,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         .toList();
     final argNames = realArgs.map((a) => a.token).toList();
     final argCodeNames = realArgs.map((a) => a.codeName).toList();
-    final argsDestructure = _argsDestructure(argNames, argCodeNames, '_');
+    final argsDestructure = argsDestructurePattern(argNames, argCodeNames, '_');
     final needsInfo = apolloConfig.useResolveInfo;
-    final ctx = _injectsContext(m.field) || intercepted;
+    final ctx = injectsContext(m.field) || intercepted;
     final mappingCallArgs = [
       ...m.field.arguments
-          .map((a) => a.skipOnGraphqlSerialization ? (_carriesSource(m.type.token) ? 'sourceOf(parent)' : 'parent') : a.codeName),
+          .map((a) => a.skipOnGraphqlSerialization ? (carriesSource(m.type.token) ? 'sourceOf(parent)' : 'parent') : a.codeName),
       if (ctx) 'context',
       if (needsInfo) 'info',
     ].join(', ');
@@ -794,12 +407,12 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
       if (interceptorDef != null)
         "import { ${interceptorDef.codeName} } from './interfaces/${tsSerializer.getFileNameFor(interceptorDef).replaceAll('.ts', '.js')}';",
       for (final service in services) ...[
-        "import { ${service.token} } from './services/${_kebabJs(service.token)}';",
-        if (_hasGuard(service)) "import { ${_guardName(service)} } from './guards/${_kebabJs(_guardName(service))}';",
+        "import { ${service.token} } from './services/${kebabJs(service.token)}';",
+        if (hasGuard(service)) "import { ${guardName(service)} } from './guards/${kebabJs(guardName(service))}';",
       ],
       for (final service in services)
         for (final m in service.mappings.where((m) => m.isBatch))
-          "import { create${m.key.firstUp}Loader } from './loaders/${_loaderFileJs(service)}';",
+          "import { create${m.key.firstUp}Loader } from './loaders/${loaderFileJs(service)}';",
     ];
 
     final buf = StringBuffer();
@@ -810,8 +423,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final serviceFields = <String>[];
     for (final service in services) {
       serviceFields.add('${service.token.firstLow}: ${service.token};');
-      if (_hasGuard(service)) {
-        final guard = _guardName(service);
+      if (hasGuard(service)) {
+        final guard = guardName(service);
         serviceFields.add('${guard.firstLow}: $guard;');
       }
     }
@@ -833,14 +446,14 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     final loaderFields = <String>[
       for (final service in services)
         for (final m in service.mappings.where((m) => m.isBatch))
-          '${m.key}: create${m.key.firstUp}Loader(services.${service.token.firstLow}${_injectsContext(m.field) ? ', context' : ''}),',
+          '${m.key}: create${m.key.firstUp}Loader(services.${service.token.firstLow}${injectsContext(m.field) ? ', context' : ''}),',
     ];
     if (loaderFields.isNotEmpty) {
       buf.writeln(_cg.createFunction(
         functionName: 'createLoaders',
         arguments: [
           'services: GraphLinkServices',
-          if (_anyBatchInjectsContext) 'context: GraphLinkContext',
+          if (anyBatchInjectsContext) 'context: GraphLinkContext',
         ],
         statements: ['return ${_cg.block(loaderFields)};'],
       ));
@@ -850,8 +463,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     // buildResolvers call: services first, guards last (mirrors param order)
     final serviceArgs = services.map((s) => 'services.${s.token.firstLow}').join(', ');
     final guardArgs = services
-        .where((s) => _hasGuard(s))
-        .map((s) => 'services.${_guardName(s).firstLow}')
+        .where((s) => hasGuard(s))
+        .map((s) => 'services.${guardName(s).firstLow}')
         .join(', ');
     final resolverArgs = [
       serviceArgs,
@@ -963,20 +576,20 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   /// A schema with REST operations only: an Express app with the REST router, no Apollo, no schema, no resolvers.
   String _restOnlyEntryPoint() {
     final services = grammar.services.values.toList();
-    final guarded = services.where(_hasGuard).toList();
+    final guarded = services.where(hasGuard).toList();
     final imports = [
       "import express, { Express, Request, Response } from 'express';",
       "import cors from 'cors';",
       "import { GraphLinkContext } from './context.js';",
       "import { buildRestRouter } from './rest/build-rest-router.js';",
       "import { restErrorHandler } from './rest/support.js';",
-      for (final service in services) "import { ${service.token} } from './services/${_kebabJs(service.token)}';",
-      for (final service in guarded) "import { ${_guardName(service)} } from './guards/${_kebabJs(_guardName(service))}';",
+      for (final service in services) "import { ${service.token} } from './services/${kebabJs(service.token)}';",
+      for (final service in guarded) "import { ${guardName(service)} } from './guards/${kebabJs(guardName(service))}';",
     ];
     final body = StringBuffer()
       ..writeln(_cg.createInterface(interfaceName: 'GraphLinkServices', fields: [
         for (final service in services) '${service.token.firstLow}: ${service.token};',
-        for (final service in guarded) '${_guardName(service).firstLow}: ${_guardName(service)};',
+        for (final service in guarded) '${guardName(service).firstLow}: ${guardName(service)};',
         'contextFactory?: (req: Request, res: Response) => GraphLinkContext | Promise<GraphLinkContext>;',
       ]))
       ..writeln()
@@ -1003,8 +616,8 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   /// no `contextFactory` (no req/res), so the WS context carries only per-request
   /// loaders — built after the context object exists when they need to forward it.
   String _wsContextOption() {
-    if (!_hasBatchLoaders) return '';
-    if (_anyBatchInjectsContext) {
+    if (!hasBatchLoaders) return '';
+    if (anyBatchInjectsContext) {
       final body = _cg.block([
         _cg.constDecl('context', '{} as GraphLinkContext'),
         'context.loaders = createLoaders(services, context);',
@@ -1018,7 +631,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
   /// `app.use('/path', [graphqlUploadExpress(),] expressMiddleware(server, { context }))`.
   String _registerMiddleware() {
     final String contextCallback;
-    if (_anyBatchInjectsContext) {
+    if (anyBatchInjectsContext) {
       // Loaders forward the request context to their batch service methods, so
       // the context object must exist before the loaders are built.
       final body = _cg.block([
@@ -1027,7 +640,7 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
         'return context;',
       ]);
       contextCallback = 'context: async ({ req, res }) => $body,';
-    } else if (_hasBatchLoaders) {
+    } else if (hasBatchLoaders) {
       final body = _cg.block([
         _cg.constDecl('base', 'services.contextFactory ? await services.contextFactory(req, res) : {} as GraphLinkContext'),
         'return { ...base, loaders: createLoaders(services) };',
@@ -1046,63 +659,9 @@ class ExpressApolloServerSerializer extends ServerSerializer with ServerSerializ
     return "app.use('${apolloConfig.graphqlPath}', ${uploadHandler}queryDepthGuard(maxQueryDepth), expressMiddleware(server, $options));";
   }
 
-  String _tsUploadType(GLType type) {
-    final upload = type is GLListType ? 'FileUpload[]' : 'FileUpload';
-    return type.nullable ? '$upload | null' : upload;
-  }
-
-  String _guardName(GLService service) =>
-      '${service.token.replaceFirst('Service', '')}Guard';
-
-  /// kebab-case filename with .js extension (for import statements)
-  String _kebabJs(String typeName) => '${typeName.toKebabCase()}.js';
-
-  String _loaderFileJs(GLService service) =>
-      '${service.token.replaceFirst('Service', '').toKebabCase()}-loaders.js';
-
-  /// Resolves each collected wire token to its definition and delegates to the
-  /// TypeScript serializer's import logic, which routes interfaces/unions to
-  /// `../interfaces/`, types to `../types/`, and follows `@glSkipOnServer(mapTo:)`
-  /// to the mapped target (e.g. `ArticleWithCount` → `Article`). Deduplicated so
-  /// several mapped-away types collapsing onto one target import once.
-  String _imports(Set<String> typeNames) {
-    final seen = <String>{};
-    final lines = <String>[];
-    for (final name in typeNames) {
-      final token = grammar.types[name] ??
-          grammar.interfaces[name] ??
-          grammar.inputs[name] ??
-          grammar.enums[name];
-      if (token == null) continue;
-      final line = tsSerializer.serializeImportToken(token);
-      if (line.isEmpty || !seen.add(line)) continue;
-      lines.add(line);
-    }
-    return lines.join('\n');
-  }
-
-  void _collectType(GLType type, Set<String> out) {
-    if (type is GLListType) {
-      _collectType(type.inlineType, out);
-    } else if (type is GLMapType) {
-      _collectType(type.keyType, out);
-      _collectType(type.valueType, out);
-    } else {
-      _addIfKnown(type.token, out);
-    }
-  }
-
-  void _addIfKnown(String name, Set<String> out) {
-    if (grammar.types.containsKey(name) ||
-        grammar.interfaces.containsKey(name) ||
-        grammar.inputs.containsKey(name) ||
-        grammar.enums.containsKey(name)) {
-      out.add(name);
-    }
-  }
 }
 
-class _RootEntry {
+class RootEntry {
   final GLService service;
   final GLField field;
   final GLQueryType queryType;
@@ -1122,7 +681,7 @@ class _RootEntry {
   final bool contextInjected;
 
   final bool intercepted;
-  _RootEntry({
+  RootEntry({
     required this.service,
     required this.field,
     required this.queryType,
@@ -1137,8 +696,8 @@ class _RootEntry {
   });
 }
 
-class _MappingEntry {
+class MappingEntry {
   final GLSchemaMapping mapping;
   final GLService service;
-  _MappingEntry({required this.mapping, required this.service});
+  MappingEntry({required this.mapping, required this.service});
 }

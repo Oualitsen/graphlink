@@ -91,6 +91,7 @@ nav:
   - Backend:
     - Spring Boot: spring-server.md
     - Express / Apollo: express-apollo.md
+    - NestJS / Apollo: nestjs-apollo.md
     - FastAPI / Ariadne: fastapi-ariadne.md
     - Django / Ariadne: django-ariadne.md
   - Features:

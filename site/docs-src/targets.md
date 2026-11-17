@@ -50,6 +50,7 @@ Some features belong to one target:
 |---|---|---|
 | [Spring Boot](spring-server.md) | Java or Kotlin, MVC or WebFlux | controllers, service interfaces, repository stubs, types and inputs |
 | [Express / Apollo](express-apollo.md) | TypeScript | service interfaces, Apollo resolvers, DataLoader batch mappings, `graphql-ws` subscriptions, optional `createServer(services)` |
+| [NestJS / Apollo](nestjs-apollo.md) | TypeScript | injectable service contracts, `@Resolver` and `@Controller` classes, DataLoader batch mappings, `graphql-ws` subscriptions, `GraphLinkModule.forRoot(...)` |
 
 Server-only directives such as `@glSkipOnServer`, `@glSkipOnClient`, `@glIntercept` and `@glServerLenient` are described in [Directives](directives.md) and [Skip directives](skip-directives.md).
 
