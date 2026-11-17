@@ -69,7 +69,7 @@ class JavaClientRuntimeSerializer {
             'java.util.concurrent.CompletableFuture<String> running = glFlights__.putIfAbsent(key, mine);',
             codeGenUtils.ifStatement(
                 condition: 'running != null',
-                ifBlockStatements: ['return ${flavor.bridgeFuture('running')};']),
+                ifBlockStatements: ['return ${flavor.bridgeFuture('running.thenApply(v -> v)')};']),
             '${flavor.toFuture('glCallAdapter(payload)')}.whenComplete((text, e) -> {',
             ...[
               'glFlights__.remove(key, mine);',
@@ -81,7 +81,7 @@ class JavaClientRuntimeSerializer {
                   ]),
             ].map((l) => l.ident()),
             '});',
-            'return ${flavor.bridgeFuture('mine')};',
+            'return ${flavor.bridgeFuture('mine.thenApply(v -> v)')};',
           ],
         ),
       ];
@@ -608,7 +608,7 @@ class JavaClientRuntimeSerializer {
           statements: ['return glEpochs__.computeIfAbsent(tag, t -> new java.util.concurrent.atomic.AtomicLong());'],
         ),
         codeGenUtils.createMethod(
-          returnType: 'private long',
+          returnType: 'protected long',
           methodName: 'glEpoch',
           arguments: ['List<String> tags'],
           statements: [

@@ -8,6 +8,7 @@ import '../../dart_rest_client_tests_real/test/responses_test.dart' as responses
 import '../../dart_rest_client_tests_real/test/download_test.dart' as download;
 import '../../dart_rest_client_tests_real/test/crud_flow_test.dart' as crud_flow;
 import '../../dart_rest_client_tests_real/test/cache_test.dart' as cache;
+import '../../dart_rest_client_tests_real/test/cache_concurrency_test.dart' as cache_concurrency;
 import '../../dart_rest_client_tests_real/test/transport_test.dart' as transport;
 import '../../dart_rest_client_tests_real/test/edge_cases_test.dart' as edge_cases;
 import '../../dart_rest_client_tests_real/test/lenient_test.dart' as lenient;
@@ -27,6 +28,7 @@ void main() {
   group('download', download.main);
   group('crud_flow', crud_flow.main);
   group('cache', cache.main);
+  group('cache_concurrency', cache_concurrency.main);
   group('transport', transport.main);
   group('lenient', lenient.main);
   group('cancel', cancel.main);

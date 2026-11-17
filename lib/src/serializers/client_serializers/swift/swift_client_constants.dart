@@ -388,21 +388,57 @@ actor GraphLinkTagLocks {
 public final class GraphLinkEpochs: @unchecked Sendable {
     private let lock = NSLock()
     private var counters: [String: Int] = [:]
-    private var flights: [String: (id: UUID, task: Task<Data, Error>)] = [:]
+    private struct Flight {
+        let id: UUID
+        let task: Task<Data, Error>
+        var waiters: Int
+    }
+
+    private var flights: [String: Flight] = [:]
 
     public init() {}
 
-    func flight(_ key: String, _ send: @escaping @Sendable () async throws -> Data) -> Task<Data, Error> {
+    func shared(_ key: String, _ send: @escaping @Sendable () async throws -> Data) async throws -> Data {
+        let (id, task) = join(key, send)
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            leave(key, id)
+        }
+    }
+
+    private func join(_ key: String, _ send: @escaping @Sendable () async throws -> Data) -> (UUID, Task<Data, Error>) {
         lock.lock()
         defer { lock.unlock() }
-        if let running = flights[key] { return running.task }
+        if var running = flights[key] {
+            running.waiters += 1
+            flights[key] = running
+            return (running.id, running.task)
+        }
         let id = UUID()
         let task = Task {
             defer { self.finish(key, id) }
             return try await send()
         }
-        flights[key] = (id, task)
-        return task
+        flights[key] = Flight(id: id, task: task, waiters: 1)
+        return (id, task)
+    }
+
+    private func leave(_ key: String, _ id: UUID) {
+        lock.lock()
+        guard var flight = flights[key], flight.id == id else {
+            lock.unlock()
+            return
+        }
+        flight.waiters -= 1
+        if flight.waiters <= 0 {
+            flights[key] = nil
+            lock.unlock()
+            flight.task.cancel()
+        } else {
+            flights[key] = flight
+            lock.unlock()
+        }
     }
 
     private func finish(_ key: String, _ id: UUID) {
@@ -550,7 +586,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         if queries.contains(where: { \$0.ttl <= 0 }) { return try await glCallAdapter(payload) }
         let keys = try queries.map { try \$0.cacheKey() }.sorted().joined(separator: ",")
         let key = "\\u{0000}flight|\\(payload.operationName)|\\(keys)|\\(snapshot.reduce(0, +))"
-        return try await epochs.flight(key) { try await self.glCallAdapter(payload) }.value
+        return try await epochs.shared(key) { try await self.glCallAdapter(payload) }
     }
 
     func getFromCache(_ key: String, tags: [String], staleIfOffline: Bool) async throws -> GraphLinkCacheEntry? {

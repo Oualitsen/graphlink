@@ -570,7 +570,11 @@ func restCached[T any](
 	if cached != nil && !cached.Stale {
 		return decode(json.RawMessage(cached.Data))
 	}
-	raw, err := fetch()
+	epoch := r.glEpoch(tags)
+	text, err := r.glFlightText(ctx, fmt.Sprintf("rest-flight|%s|%d", key, epoch), func() (string, error) {
+		raw, err := fetch()
+		return string(raw), err
+	})
 	if err != nil {
 		var restErr *RestError
 		if errors.As(err, &restErr) {
@@ -581,11 +585,15 @@ func restCached[T any](
 		}
 		return zero, err
 	}
+	var raw json.RawMessage
+	if text != "" {
+		raw = json.RawMessage(text)
+	}
 	value, err := decode(raw)
 	if err != nil {
 		return zero, err
 	}
-	if !glIsNull(raw) {
+	if !glIsNull(raw) && r.glEpoch(tags) == epoch {
 		encoded, err := NewGraphLinkCacheEntry(string(raw), time.Now().UnixMilli()+int64(ttl)*1000).Encode()
 		if err != nil {
 			return zero, err

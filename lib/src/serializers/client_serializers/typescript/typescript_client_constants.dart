@@ -319,7 +319,7 @@ const tsLock = r'''
 export class GraphLinkLock {
   private _last: Promise<void> = Promise.resolve();
   epoch = 0;
-  flight?: Promise<string>;
+  flight?: Promise<unknown>;
 
   synchronized<T>(fn: () => Promise<T>): Promise<T> {
     const next = this._last.then(() => fn());

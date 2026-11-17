@@ -897,9 +897,10 @@ mixin GraphLinkRestResolver on GraphLinkResolverBase {
     final key = GraphLinkPartialQuery.computeCacheKey(name, variables);
     final cached = await getFromCache(key, tags, staleIfOffline);
     if (cached != null && !cached.stale) return decode(jsonDecode(cached.data));
+    final epoch = glEpoch(tags);
     Object? json;
     try {
-      json = await fetch();
+      json = await glFlight('\\u0000rest|\$key|\$epoch', fetch);
     } on RestError {
       rethrow;
     } catch (_) {
@@ -907,7 +908,7 @@ mixin GraphLinkRestResolver on GraphLinkResolverBase {
       rethrow;
     }
     final value = decode(json);
-    if (json != null) {
+    if (json != null && glEpoch(tags) == epoch) {
       final entry = GraphLinkCacheEntry(jsonEncode(json), DateTime.now().millisecondsSinceEpoch + ttl * 1000);
       await glStore__.set(key, jsonEncode(entry.toJson()));
       if (tags.isNotEmpty) await addKeyToTags(key, tags);

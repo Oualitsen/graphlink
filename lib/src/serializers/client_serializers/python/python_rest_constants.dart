@@ -327,8 +327,9 @@ class GraphLinkRestResolver(GraphLinkResolverBase):
         cached = await self.get_from_cache(key, tags, stale_if_offline)
         if cached is not None and not cached.stale:
             return decode(json.loads(cached.data))
+        epoch = self._gl_epoch(tags)
         try:
-            payload = await fetch()
+            payload = await self._gl_flight(f"rest-flight|{key}|{epoch}", fetch)
         except RestError:
             raise
         except Exception:
@@ -336,7 +337,7 @@ class GraphLinkRestResolver(GraphLinkResolverBase):
                 return decode(json.loads(cached.data))
             raise
         value = decode(payload)
-        if payload is not None:
+        if payload is not None and self._gl_epoch(tags) == epoch:
             entry = GraphLinkCacheEntry(json.dumps(payload), int(time.time() * 1000) + ttl * 1000)
             await self.gl_store__.set(key, json.dumps(entry.to_json()))
             if tags:

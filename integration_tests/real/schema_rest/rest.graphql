@@ -188,12 +188,15 @@ extend type Query @glRestPrefix(path: "/counter") {
   counterUncached(name: String!): Counter! @glRest(path: "/{name}/uncached")
   counterNoCache(name: String!): Counter! @glRest(path: "/{name}/nocache") @glNoCache
   counterShort(name: String!): Counter! @glRest(path: "/{name}/short") @glCache(ttl: 1)
+  counterSlow(name: String!, delayMs: Int! @glRestParam): Counter! @glRest(path: "/{name}/slow") @glCache(ttl: 60, tags: ["slow"])
+  counterCalls(name: String!): Counter! @glRest(path: "/{name}/calls")
   counterOffline(name: String!): Counter! @glRest(path: "/{name}/offline") @glCache(ttl: 1, staleIfOffline: true)
 }
 
 extend type Mutation @glRestPrefix(path: "/counter") {
   bump(name: String!): Counter! @glRest(path: "/{name}/bump") @glCacheInvalidate(tags: ["counters"])
   resetAll(name: String!): Counter! @glRest(path: "/{name}/reset") @glCacheInvalidate(all: true)
+  touchSlow(name: String!): Counter! @glRest(path: "/{name}/touch") @glCacheInvalidate(tags: ["slow"])
 }
 
 extend type Mutation @glRestPrefix(path: "") {
