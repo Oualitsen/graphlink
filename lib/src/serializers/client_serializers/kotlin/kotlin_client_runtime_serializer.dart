@@ -42,13 +42,15 @@ class KotlinClientRuntimeSerializer {
         '',
         'private fun glEpochCounter(tag: String) = glEpochs.computeIfAbsent(tag) { java.util.concurrent.atomic.AtomicLong() }',
         '',
-        'private fun glEpoch(tags: List<String>): Long = glEpochCounter("\\u0000all").get() + tags.sumOf { glEpochCounter(it).get() }',
+        'protected fun glEpoch(tags: List<String>): Long = glEpochCounter("\\u0000all").get() + tags.sumOf { glEpochCounter(it).get() }',
         '',
         'protected fun glEpochs(queries: List<GraphLinkPartialQuery>): List<Long> = queries.map { glEpoch(it.tags) }',
         '',
         'private val glFlights = glFlightsByStore.computeIfAbsent(store) { java.util.concurrent.ConcurrentHashMap() }',
         '',
         _glCallCachedMethod(),
+        '',
+        _glFlightMethod(),
         '',
         'protected fun glCacheable(queries: List<GraphLinkPartialQuery>, epochs: List<Long>): List<GraphLinkPartialQuery> = queries.filterIndexed { i, q -> glEpoch(q.tags) == epochs[i] }',
         '',
@@ -59,7 +61,7 @@ class KotlinClientRuntimeSerializer {
         '',
         'private companion object ${_client.codeGenUtils.block([
           'val glEpochsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
-          'val glFlightsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.CompletableDeferred<String>>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
+          'val glFlightsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.CompletableDeferred<Any?>>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
         ])}',
         '',
         'init ${_client.codeGenUtils.block([
@@ -145,14 +147,27 @@ class KotlinClientRuntimeSerializer {
           ifBlockStatements: ['return glCallAdapter(payload)'],
         ),
         cg.constDecl('key', '"\\u0000flight|\${payload.operationName}|\${queries.map { it.cacheKey }.sorted().joinToString(",")}|\${epochs.sum()}"'),
+        'return glFlight(key) { glCallAdapter(payload) }',
+      ],
+    )}';
+  }
+
+  String _glFlightMethod() {
+    final cg = _client.codeGenUtils;
+    return 'protected ${cg.suspendFun(
+      name: 'glFlight',
+      typeParams: 'T',
+      arguments: ['key: String', 'send: suspend () -> T'],
+      returnType: 'T',
+      statements: [
         'while (true) ${cg.block([
-          cg.constDecl('mine', 'kotlinx.coroutines.CompletableDeferred<String>()'),
+          cg.constDecl('mine', 'kotlinx.coroutines.CompletableDeferred<Any?>()'),
           cg.constDecl('running', 'glFlights.putIfAbsent(key, mine)'),
           cg.ifStatement(
             condition: 'running != null',
             ifBlockStatements: [
               cg.tryCatchFinally(
-                tryStatements: ['return running.await()'],
+                tryStatements: ['@Suppress("UNCHECKED_CAST") return running.await() as T'],
                 catchVariable: 'e',
                 catchStatements: [
                   cg.ifStatement(
@@ -167,9 +182,9 @@ class KotlinClientRuntimeSerializer {
           ),
           cg.tryCatchFinally(
             tryStatements: [
-              cg.constDecl('text', 'glCallAdapter(payload)'),
-              'mine.complete(text)',
-              'return text',
+              cg.constDecl('result', 'send()'),
+              'mine.complete(result)',
+              'return result',
             ],
             catchVariable: 'e',
             catchStatements: ['mine.completeExceptionally(e)', 'throw e'],

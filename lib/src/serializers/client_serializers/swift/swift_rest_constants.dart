@@ -399,15 +399,19 @@ open class GraphLinkRestResolver: GraphLinkResolverBase, @unchecked Sendable {
         ttl: Int,
         tags: [String],
         staleIfOffline: Bool,
-        fetch: () async throws -> Any?,
+        fetch: @escaping () async throws -> Any?,
         decode: (Any?) throws -> T
     ) async throws -> T {
         let key = try GraphLinkPartialQuery.computeCacheKey(name, variables)
         let cached = try await getFromCache(key, tags: tags, staleIfOffline: staleIfOffline)
         if let cached, !cached.stale { return try decode(try restCachedValue(cached)) }
+        let epoch = epochs.value(tags)
         let json: Any?
         do {
-            json = try await fetch()
+            let shared = try await epochs.shared("rest-flight|\(key)|\(epoch)") {
+                try GraphLinkJson.encode(["v": try await fetch()] as [String: Any?])
+            }
+            json = (try GraphLinkJson.decode(shared))["v"] ?? nil
         } catch let error as RestError {
             throw error
         } catch {
@@ -415,7 +419,7 @@ open class GraphLinkRestResolver: GraphLinkResolverBase, @unchecked Sendable {
             throw error
         }
         let value = try decode(json)
-        if let json {
+        if let json, epochs.value(tags) == epoch {
             let wrapped: [String: Any?] = ["__gl_v__": json]
             let entry = GraphLinkCacheEntry(
                 data: String(decoding: try GraphLinkJson.encode(wrapped), as: UTF8.self),

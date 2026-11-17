@@ -226,11 +226,21 @@ class PythonClientSerializer extends GLClientSerializer {
             ifBlockStatements: ['return await self.gl_call_adapter(payload)'],
           ),
           'key = "\\u0000flight|" + payload.operation_name + "|" + ",".join(sorted(q.cache_key for q in queries)) + "|" + str(epoch)',
+          'return await self._gl_flight(key, lambda: self.gl_call_adapter(payload))',
+        ],
+      ),
+      '',
+      cg.createMethod(
+        async: true,
+        methodName: '_gl_flight',
+        arguments: ['self', 'key: str', 'send: Callable[[], Awaitable[Any]]'],
+        returnType: 'Any',
+        statements: [
           cg.constDecl('lock', 'self.$svTagLocks.setdefault(key, GraphLinkLock())'),
           cg.ifStatement(
             condition: 'lock.flight is None',
             ifBlockStatements: [
-              'lock.flight = asyncio.ensure_future(self.gl_call_adapter(payload))',
+              'lock.flight = asyncio.ensure_future(send())',
               'lock.flight.add_done_callback(lambda _: self.$svTagLocks.pop(key, None))',
             ],
           ),

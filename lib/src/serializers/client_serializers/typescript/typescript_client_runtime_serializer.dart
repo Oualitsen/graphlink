@@ -279,6 +279,14 @@ class TypeScriptClientRuntimeSerializer {
               ifBlockStatements: ['return this._glCallAdapter(payload);'],
             ),
             r"const key = `\u0000flight|${payload.operationName}|${queries.map(q => q.cacheKey).sort().join(',')}|${epochs.reduce((a, b) => a + b, 0)}`;",
+            'return this._glFlight(key, () => this._glCallAdapter(payload));',
+          ],
+        ),
+        _client.cg.createMethod(
+          methodName: 'protected _glFlight<T>',
+          arguments: ['key: string', 'send: () => Promise<T>'],
+          returnType: 'Promise<T>',
+          statements: [
             'let lock = this.$svTagLocks.get(key);',
             _client.cg.ifStatement(
               condition: '!lock',
@@ -289,14 +297,15 @@ class TypeScriptClientRuntimeSerializer {
             ),
             _client.cg.ifStatement(
               condition: 'lock.flight',
-              ifBlockStatements: ['return lock.flight;'],
+              ifBlockStatements: ['return lock.flight as Promise<T>;'],
             ),
             'const flightLock = lock;',
-            'flightLock.flight = this._glCallAdapter(payload).finally(() => ${_client.cg.block([
+            'const started = send().finally(() => ${_client.cg.block([
                   'flightLock.flight = undefined;',
                   'this.$svTagLocks.delete(key);',
                 ])});',
-            'return flightLock.flight;',
+            'flightLock.flight = started;',
+            'return started;',
           ],
         ),
         _client.cg.createMethod(

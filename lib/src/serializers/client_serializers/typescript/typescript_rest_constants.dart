@@ -335,16 +335,17 @@ export class GraphLinkRestResolver extends GraphLinkResolverBase {
     const key = GraphLinkPartialQuery.computeCacheKey(name, variables);
     const cached = await this._getFromCache(key, tags, staleIfOffline);
     if (cached !== null && !cached.stale) return decode(JSON.parse(cached.data));
+    const epoch = this._glEpoch(tags);
     let json: unknown;
     try {
-      json = await fetch();
+      json = await this._glFlight(`\u0000rest|${key}|${epoch}`, fetch);
     } catch (e) {
       if (e instanceof RestError) throw e;
       if (cached !== null) return decode(JSON.parse(cached.data));
       throw e;
     }
     const value = decode(json);
-    if (json !== null && json !== undefined) {
+    if (json !== null && json !== undefined && this._glEpoch(tags) === epoch) {
       const entry = new GraphLinkCacheEntry(JSON.stringify(json), Date.now() + ttl * 1000);
       await this.gl_store__.set(key, JSON.stringify(entry.toJson()));
       if (tags.length > 0) await this._addKeyToTags(key, tags);

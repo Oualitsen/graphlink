@@ -258,9 +258,10 @@ open class GraphLinkRestResolver(
         val key = GraphLinkPartialQuery.computeCacheKey(name, variables, encoder)
         val cached = getFromCache(key, tags, staleIfOffline)
         if (cached != null && !cached.stale) return decode(decoder.decode(cached.data)["__gl_v__"])
+        val epoch = glEpoch(tags)
         val json: Any?
         try {
-            json = fetch()
+            json = glFlight("rest-flight|\$key|\$epoch") { fetch() }
         } catch (e: RestError) {
             throw e
         } catch (e: kotlinx.coroutines.CancellationException) {
@@ -270,7 +271,7 @@ open class GraphLinkRestResolver(
             throw e
         }
         val value = decode(json)
-        if (json != null) {
+        if (json != null && glEpoch(tags) == epoch) {
             val entry = GraphLinkCacheEntry(encoder.encode(mapOf("__gl_v__" to json)), System.currentTimeMillis() + ttl * 1000L)
             store.set(key, encoder.encode(entry.toJson()))
             if (tags.isNotEmpty()) addKeyToTags(key, tags)

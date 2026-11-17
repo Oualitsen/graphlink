@@ -788,6 +788,7 @@
 
 ### Fixes
 
+- **REST cached calls (`@glRest*` with `@glCache`) coalesce identical concurrent calls and skip the cache write when their tag was invalidated while the request was in flight**, like the GraphQL cache already did. All 7 clients; the shared in-flight helper is now generic (`glFlight` / `_glFlight` / `shared`). Swift: a cancelled cached call now cancels its request when it was the only waiter. Java reactive flavors: a subscriber that cancels no longer poisons the shared in-flight future.
 - **Java reactive clients (Reactor, RxJava 3, Mutiny) coalesce identical concurrent cached queries** like the blocking client: the in-flight map is shared and registered when the call is subscribed to.
 - **Java and Kotlin: the 5 s connection_ack timeout no longer fails subscriptions while a reconnect is pending.** `GraphLinkWebSocketAdapter` has a new default `setDisconnectListener`; the default adapters call it before scheduling a reconnect and the handler cancels the pending ack timer.
 - **Server integration tests: `java_server_reactive` now runs on Spring WebFlux** (`spring-boot-starter-webflux` instead of the servlet WebSocket starter), so reactive-mode code (`FilePart`, `Mono`) runs on the stack it is generated for. Two GraphQL fault cases (`empty_body`, `huge_body`) are now known Spring GraphQL WebFlux defects.

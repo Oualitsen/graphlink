@@ -953,8 +953,12 @@ func (r *GraphLinkResolverBase) glCallCached(ctx context.Context, payload GraphL
 	}
 	sort.Strings(keys)
 	key := fmt.Sprintf("\u0000flight|%s|%s|%d", payload.OperationName, strings.Join(keys, ","), epoch)
+	return r.glFlightText(ctx, key, func() (string, error) { return r.glCallAdapter(ctx, payload) })
+}
+
+func (r *GraphLinkResolverBase) glFlightText(ctx context.Context, key string, send func() (string, error)) (string, error) {
 	for {
-		text, err, joined := r.tagLocks.flight(key, func() (string, error) { return r.glCallAdapter(ctx, payload) })
+		text, err, joined := r.tagLocks.flight(key, send)
 		leaderCancelled := errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 		if err != nil && joined && leaderCancelled && ctx.Err() == nil {
 			continue

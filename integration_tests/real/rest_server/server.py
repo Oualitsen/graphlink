@@ -11,6 +11,7 @@ import hashlib
 import json
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, unquote
 
@@ -260,7 +261,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json(401, {'error': 'unauthorized'}, {'WWW-Authenticate': 'Bearer'})
             return self.send_json(200, {'user': 'ann', 'tenant': self.headers.get('X-Tenant')})
         if head == 'counter':
-            return self.counter(s)
+            return self.counter(s, raw_query)
         if head == 'blob' and len(s) == 2:
             data = blob(int(s[1]))
             return self.send(200, data, 'application/octet-stream', {'Content-Disposition': f'attachment; filename="blob-{s[1]}.bin"'})
@@ -304,9 +305,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(204)
         self.send_json(code, {'error': f'status {code}'}, {'X-Reason': f'reason-{code}'})
 
-    def counter(self, s):
+    def counter(self, s, raw_query=''):
         name = s[1]
         counters = STATE['counters']
+        if self.command == 'GET' and s[2:] == ['slow']:
+            counters[name] = counters.get(name, 0) + 1
+            n = counters[name]
+            LOCK.release()
+            try:
+                time.sleep(int(dict(parse_qsl(raw_query)).get('delayMs', '0')) / 1000)
+            finally:
+                LOCK.acquire()
+            return self.send_json(200, {'name': name, 'n': n})
+        if self.command == 'GET' and s[2:] == ['calls']:
+            return self.send_json(200, {'name': name, 'n': counters.get(name, 0)})
+        if s[2:] == ['touch']:
+            return self.send_json(200, {'name': name, 'n': counters.get(name, 0)})
         if self.command == 'GET' and (len(s) == 2 or s[2] in ('other', 'uncached', 'nocache', 'short', 'offline')):
             counters[name] = counters.get(name, 0) + 1
             return self.send_json(200, {'name': name, 'n': counters[name]})

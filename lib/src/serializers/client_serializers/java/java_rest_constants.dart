@@ -657,7 +657,7 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
   final storeBody = [
     'Object json = fetched.orElse(null);',
     'T value = decode.apply(json);',
-    _braces('if (json != null)', [
+    _braces('if (json != null && glEpoch(tags) == epoch)', [
       'Map<String, Object> wrapper = new HashMap<>();',
       'wrapper.put("__gl_v__", json);',
       'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(glEncoder__.encode(wrapper), System.currentTimeMillis() + ttl * 1000L);',
@@ -673,7 +673,8 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
             'String key = GraphLinkPartialQuery.computeCacheKey(name, variables, glEncoder__);',
             'GraphLinkCacheEntry cached = getFromCache(key, tags, staleIfOffline);',
             _braces('if (cached != null && !cached.stale)', ['return ${flavor.wrapValue(staleRead)};']),
-            'return ${_lambdaBlock(flavor.onErrorResumeOpen(flavor.mapTo('fetch.get()', 'fetched -> restStore(key, ttl, tags, fetched, decode)'), 'failure'), [
+            'long epoch = glEpoch(tags);',
+            'return ${_lambdaBlock(flavor.onErrorResumeOpen(flavor.mapTo('restFlight(key + "|" + epoch, fetch)', 'fetched -> restStore(key, epoch, ttl, tags, fetched, decode)'), 'failure'), [
                   _braces('if (failure instanceof RestError || cached == null)', ['return ${flavor.error('failure')};']),
                   'return ${flavor.wrapValue(staleRead)};',
                 ])}',
@@ -684,15 +685,16 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
               ['return ${flavor.maybeOf('cached.orElse(null)')};'],
             )}',
           ]),
-          _method('private <T> T restStore(String key, long ttl, List<String> tags, Optional<Object> fetched, Function<Object, T> decode)', storeBody),
+          _method('private <T> T restStore(String key, long epoch, long ttl, List<String> tags, Optional<Object> fetched, Function<Object, T> decode)', storeBody),
         ].join('\n\n')
       : _method(cachedSignature('T', 'Supplier<Optional<Object>> fetch'), [
           'String key = GraphLinkPartialQuery.computeCacheKey(name, variables, glEncoder__);',
           'GraphLinkCacheEntry cached = getFromCache(key, tags, staleIfOffline);',
           _braces('if (cached != null && !cached.stale)', ['return $staleRead;']),
+          'long epoch = glEpoch(tags);',
           'Optional<Object> fetched;',
           [
-            _braces('try', ['fetched = fetch.get();']),
+            _braces('try', ['fetched = restFlight(key + "|" + epoch, fetch);']),
             _braces('catch (RestError e)', ['throw e;']),
             _braces('catch (RuntimeException e)', [
               _braces('if (cached != null)', ['return $staleRead;']),
@@ -703,6 +705,44 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
         ]);
 
   final helpers = [
+    ...(r ? [
+      _method('private $fetchType restFlight(String key, Supplier<$fetchType> fetch)', [
+      'return ${_lambdaBlock(flavor.deferOpen(), [
+        'java.util.concurrent.CompletableFuture<Optional<Object>> mine = new java.util.concurrent.CompletableFuture<>();',
+        'java.util.concurrent.CompletableFuture<Optional<Object>> running = restFlights__.putIfAbsent(key, mine);',
+        _braces('if (running != null)', ['return ${flavor.bridgeFuture('running.thenApply(v -> v)')};']),
+        _lambdaBlock('${flavor.toFuture('fetch.get()')}.whenComplete((value, e) -> {', [
+          'restFlights__.remove(key, mine);',
+          _braces('if (e == null)', ['mine.complete(value);']) +
+              ' else ' +
+              '{\n    mine.completeExceptionally(e instanceof java.util.concurrent.CompletionException && e.getCause() != null ? e.getCause() : e);\n}',
+        ]),
+        'return ${flavor.bridgeFuture('mine.thenApply(v -> v)')};',
+      ])}',
+    ]),
+    ] : [
+      _method('private Optional<Object> restFlight(String key, Supplier<Optional<Object>> fetch)', [
+      'java.util.concurrent.CompletableFuture<Optional<Object>> mine = new java.util.concurrent.CompletableFuture<>();',
+      'java.util.concurrent.CompletableFuture<Optional<Object>> running = restFlights__.putIfAbsent(key, mine);',
+      _braces('if (running != null)', [
+        _braces('try', ['return running.join();']) +
+            ' ' +
+            _braces('catch (java.util.concurrent.CompletionException e)', [
+              _braces('if (e.getCause() instanceof RuntimeException)', ['throw (RuntimeException) e.getCause();']),
+              'throw e;',
+            ]),
+      ]),
+      _braces('try', [
+            'Optional<Object> result = fetch.get();',
+            'mine.complete(result);',
+            'return result;',
+          ]) +
+          ' ' +
+          _braces('catch (RuntimeException e)', ['mine.completeExceptionally(e);', 'throw e;']) +
+          ' ' +
+          _braces('finally', ['restFlights__.remove(key, mine);']),
+    ]),
+    ]),
     _method('private Optional<Object> restFetched(RestRequest request, Object value, boolean allowEmpty)', [
       _braces('if (value == null && !allowEmpty)', [
         'throw new IllegalStateException("Empty REST response for a non-null result of " + request.getMethod() + " " + request.getPath());',
@@ -729,6 +769,7 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
 
   final body = [
     'protected final GLRestAdapter restAdapter;',
+    'private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<Optional<Object>>> restFlights__ = new java.util.concurrent.ConcurrentHashMap<>();',
     constructor,
     restCall,
     voidOp,

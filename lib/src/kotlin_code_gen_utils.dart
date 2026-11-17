@@ -157,12 +157,15 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
 
   String suspendFun({
     required String name,
+    String? typeParams,
     List<String>? arguments,
     required String returnType,
     required List<String> statements,
   }) {
     final buffer = StringBuffer();
-    buffer.write('suspend fun $name');
+    buffer.write('suspend fun ');
+    if (typeParams != null) buffer.write('<$typeParams> ');
+    buffer.write(name);
     buffer.write(parentheses(arguments));
     buffer.write(': $returnType ');
     buffer.write(block(statements));
