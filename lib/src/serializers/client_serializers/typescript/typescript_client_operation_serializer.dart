@@ -146,12 +146,13 @@ class TypeScriptClientOperationSerializer {
     // cacheHitValue: for non-CE this is the data map; for CE it's the full response shape.
     final cacheHitValue =
         isCE ? '{ data: $svResponseMap, errors: null }' : svResponseMap;
-    final parseAndCacheCall = _cg.callExpression('this._parseAndCache', [
+    final parseAndCacheCall = '(await ${_cg.callExpression('this._parseAndCache', [
       svResponseText,
       svResponseMap,
-      'this._glCacheable($svRemaining, glEpochs__)',
+      svRemaining,
+      'glEpochs__',
       if (isCE) 'true',
-    ]);
+    ])})';
 
     final args = _getMethodArgs(def);
     final hasFrags = def.fragments(_parser).isNotEmpty;

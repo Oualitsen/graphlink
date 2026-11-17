@@ -1,6 +1,8 @@
 import asyncio
 import time
 
+from generated import InMemoryGraphLinkCacheStore
+
 from .support import RestTestCase
 
 _sequence = 0
@@ -34,3 +36,26 @@ class CacheConcurrency(RestTestCase):
         await self.client.mutations.touch_slow(name=self.name)
         self.assertEqual((await slow).n, 1)
         self.assertEqual((await self.client.queries.counter_slow(name=self.name, delay_ms=600)).n, 2)
+
+    async def test_an_invalidation_that_arrives_while_the_response_is_being_stored_removes_it(self) -> None:
+        reached = asyncio.Event()
+        release = asyncio.Event()
+
+        class PausingStore(InMemoryGraphLinkCacheStore):
+            paused = False
+
+            async def set(self, key: str, value: str) -> None:
+                if not key.startswith("__tag__") and not self.paused:
+                    self.paused = True
+                    reached.set()
+                    await release.wait()
+                await super().set(key, value)
+
+        pausing = self.new_client(store=PausingStore())
+        first = asyncio.ensure_future(pausing.queries.counter_slow(name=self.name, delay_ms=50))
+        await reached.wait()
+        touch = asyncio.ensure_future(pausing.mutations.touch_slow(name=self.name))
+        await asyncio.sleep(0.3)
+        release.set()
+        await asyncio.gather(first, touch)
+        self.assertEqual((await pausing.queries.counter_slow(name=self.name, delay_ms=50)).n, 2)

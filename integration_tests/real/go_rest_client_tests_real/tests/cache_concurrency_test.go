@@ -1,11 +1,15 @@
 package tests
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"graphlink.dev/resttests/generated"
 )
 
 var concurrencyNames atomic.Int64
@@ -56,4 +60,38 @@ func TestACachedRestResponseInFlightDuringAnInvalidationIsNotStored(t *testing.T
 	must(client.Mutations.TouchSlow(ctx, name))
 	eq(t, <-slow, 1)
 	eq(t, must(client.Queries.CounterSlow(ctx, name, 600)).N, 2)
+}
+
+type pausingStore struct {
+	*generated.InMemoryGraphLinkCacheStore
+	reached chan struct{}
+	release chan struct{}
+	once    sync.Once
+}
+
+func (s *pausingStore) Set(ctx context.Context, key, value string) error {
+	if !strings.HasPrefix(key, "__tag__") {
+		s.once.Do(func() {
+			close(s.reached)
+			<-s.release
+		})
+	}
+	return s.InMemoryGraphLinkCacheStore.Set(ctx, key, value)
+}
+
+func TestAnInvalidationThatArrivesWhileTheResponseIsBeingStoredRemovesIt(t *testing.T) {
+	ctx, _ := setup(t)
+	name := freshCounterName()
+	store := &pausingStore{InMemoryGraphLinkCacheStore: generated.NewInMemoryGraphLinkCacheStore(), reached: make(chan struct{}), release: make(chan struct{})}
+	client := newClient(t, clientOptions{store: store})
+	first := make(chan int, 1)
+	go func() { first <- must(client.Queries.CounterSlow(ctx, name, 50)).N }()
+	<-store.reached
+	touch := make(chan struct{})
+	go func() { must(client.Mutations.TouchSlow(ctx, name)); close(touch) }()
+	time.Sleep(300 * time.Millisecond)
+	close(store.release)
+	<-first
+	<-touch
+	eq(t, must(client.Queries.CounterSlow(ctx, name, 50)).N, 2)
 }

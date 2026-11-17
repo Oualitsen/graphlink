@@ -36,7 +36,7 @@ class KotlinClientRuntimeSerializer {
           '',
           if (_client.grammar.persistedQueriesUseGet) ...[_glSendHashOnlyMethod(withOpName), ''],
         ],
-        'private val tagLocks = java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>()',
+        'private val tagLocks = glLocksByStore.computeIfAbsent(store) { java.util.concurrent.ConcurrentHashMap() }',
         '',
         'private val glEpochs = glEpochsByStore.computeIfAbsent(store) { java.util.concurrent.ConcurrentHashMap() }',
         '',
@@ -52,14 +52,31 @@ class KotlinClientRuntimeSerializer {
         '',
         _glFlightMethod(),
         '',
-        'protected fun glCacheable(queries: List<GraphLinkPartialQuery>, epochs: List<Long>): List<GraphLinkPartialQuery> = queries.filterIndexed { i, q -> glEpoch(q.tags) == epochs[i] }',
+        'protected fun glStoreIfCurrent(key: String, value: String, tags: List<String>, epoch: Long) ${_client.codeGenUtils.block([
+          'val locks = (tags + "\\u0000all").distinct().sorted().map { tagLocks.getOrPut(it) { java.util.concurrent.locks.ReentrantLock() } }',
+          'locks.forEach { it.lock() }',
+          _client.codeGenUtils.tryCatchFinally(
+            tryStatements: [
+              'if (glEpoch(tags) != epoch) return',
+              'store.set(key, value)',
+              'if (tags.isNotEmpty()) addKeyToTags(key, tags)',
+            ],
+            finallyStatements: ['locks.asReversed().forEach { it.unlock() }'],
+          ),
+        ])}',
         '',
         'protected fun invalidateAllEntries() ${_client.codeGenUtils.block([
           'glEpochCounter("\\u0000all").incrementAndGet()',
-          'store.invalidateAll()',
+          'val lock = tagLocks.getOrPut("\\u0000all") { java.util.concurrent.locks.ReentrantLock() }',
+          'lock.lock()',
+          _client.codeGenUtils.tryCatchFinally(
+            tryStatements: ['store.invalidateAll()'],
+            finallyStatements: ['lock.unlock()'],
+          ),
         ])}',
         '',
         'private companion object ${_client.codeGenUtils.block([
+          'val glLocksByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.locks.ReentrantLock>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
           'val glEpochsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
           'val glFlightsByStore: MutableMap<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, kotlinx.coroutines.CompletableDeferred<Any?>>> = java.util.Collections.synchronizedMap(java.util.WeakHashMap())',
         ])}',
@@ -69,7 +86,7 @@ class KotlinClientRuntimeSerializer {
           _client.codeGenUtils.forEachLoop(
             variable: 'tag',
             iterable: 'tags',
-            statements: ['tagLocks[tag] = java.util.concurrent.locks.ReentrantLock()'],
+            statements: ['tagLocks.putIfAbsent(tag, java.util.concurrent.locks.ReentrantLock())'],
           ),
         ])}',
         '',
@@ -289,6 +306,7 @@ class KotlinClientRuntimeSerializer {
         'cachedResponse: MutableMap<String, Any?>',
         'parser: (Map<String, Any?>) -> T',
         'remainingQueries: List<GraphLinkPartialQuery>',
+        'epochs: List<Long>',
         'captureErrors: Boolean',
       ],
       returnType: 'T',
@@ -297,19 +315,15 @@ class KotlinClientRuntimeSerializer {
         _client.codeGenUtils.constDecl('rawData', 'result["data"] as? Map<String, Any?>'),
         _client.codeGenUtils.constDecl('dataMap', 'rawData?.toMutableMap() ?: mutableMapOf()'),
         _client.codeGenUtils.forEachLoop(
-          variable: 'q',
-          iterable: 'remainingQueries',
+          variable: '(i, q)',
+          iterable: 'remainingQueries.withIndex()',
           statements: [
             _client.codeGenUtils.ifStatement(
               condition: 'q.ttl > 0 && dataMap[q.elementKey] != null',
               ifBlockStatements: [
                 _client.codeGenUtils.constDecl('cacheWrap', 'mapOf("__gl_v__" to dataMap[q.elementKey])'),
                 _client.codeGenUtils.constDecl('entry', 'GraphLinkCacheEntry(encoder.encode(cacheWrap), System.currentTimeMillis() + q.ttl * 1000L)'),
-                'store.set(q.cacheKey, encoder.encode(entry.toJson()))',
-                _client.codeGenUtils.ifStatement(
-                  condition: 'q.tags.isNotEmpty()',
-                  ifBlockStatements: ['addKeyToTags(q.cacheKey, q.tags)'],
-                ),
+                'glStoreIfCurrent(q.cacheKey, encoder.encode(entry.toJson()), q.tags, epochs[i])',
               ],
             ),
           ],
@@ -431,7 +445,7 @@ class KotlinClientRuntimeSerializer {
         _client.codeGenUtils.tryCatchFinally(
           tryStatements: [
             _client.codeGenUtils.constDecl('responseText', 'glCallCached(payload, remaining, epochs)'),
-            'return ${_client.codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'glCacheable(remaining, epochs)', 'captureErrors'])}',
+            'return ${_client.codeGenUtils.callExpression('parseToObjectAndCache', ['responseText', 'responseMap', 'fromJson', 'remaining', 'epochs', 'captureErrors'])}',
           ],
           catchVariable: 'exception',
           catchStatements: [

@@ -345,10 +345,9 @@ export class GraphLinkRestResolver extends GraphLinkResolverBase {
       throw e;
     }
     const value = decode(json);
-    if (json !== null && json !== undefined && this._glEpoch(tags) === epoch) {
+    if (json !== null && json !== undefined) {
       const entry = new GraphLinkCacheEntry(JSON.stringify(json), Date.now() + ttl * 1000);
-      await this.gl_store__.set(key, JSON.stringify(entry.toJson()));
-      if (tags.length > 0) await this._addKeyToTags(key, tags);
+      await this._glStoreIfCurrent(key, JSON.stringify(entry.toJson()), tags, epoch);
     }
     return value;
   }

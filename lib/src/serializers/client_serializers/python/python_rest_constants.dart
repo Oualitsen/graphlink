@@ -337,11 +337,9 @@ class GraphLinkRestResolver(GraphLinkResolverBase):
                 return decode(json.loads(cached.data))
             raise
         value = decode(payload)
-        if payload is not None and self._gl_epoch(tags) == epoch:
+        if payload is not None:
             entry = GraphLinkCacheEntry(json.dumps(payload), int(time.time() * 1000) + ttl * 1000)
-            await self.gl_store__.set(key, json.dumps(entry.to_json()))
-            if tags:
-                await self.add_key_to_tags(key, tags)
+            await self.gl_store_if_current(key, json.dumps(entry.to_json()), tags, epoch)
         return value
 ''';
 

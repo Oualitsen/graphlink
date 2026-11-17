@@ -28,7 +28,7 @@ public enum GraphLinkJson {
     }
 
     public static func encode(_ map: [String: Any?]) throws -> Data {
-        try JSONSerialization.data(withJSONObject: normalize(map))
+        try JSONSerialization.data(withJSONObject: normalize(map), options: [.sortedKeys])
     }
 
     /// `JSONSerialization` rejects Swift `nil` boxed inside `Any` — this
@@ -299,11 +299,7 @@ public struct GraphLinkPartialQuery: @unchecked Sendable {
     }
 
     public static func computeCacheKey(_ operationName: String, _ variables: [String: Any?]) throws -> String {
-        var sorted: [String: Any?] = [:]
-        for key in variables.keys.sorted() {
-            sorted[key] = variables[key]
-        }
-        let encoded = try GraphLinkJson.encode(sorted)
+        let encoded = try GraphLinkJson.encode(variables)
         let raw = operationName + ":" + (String(data: encoded, encoding: .utf8) ?? "")
         return GraphLinkPartialQuery.fnv1a(raw)
     }
@@ -386,6 +382,7 @@ actor GraphLinkTagLocks {
 }
 
 public final class GraphLinkEpochs: @unchecked Sendable {
+    let tagLocks = GraphLinkTagLocks()
     private let lock = NSLock()
     private var counters: [String: Int] = [:]
     private struct Flight {
@@ -465,7 +462,7 @@ open class GraphLinkResolverBase: @unchecked Sendable {
     let fragmentMap: [String: String]
     let store: any GraphLinkCacheStore
     let epochs: GraphLinkEpochs
-    private let tagLocks = GraphLinkTagLocks()${useGet ? '\n    private let getAdapter: GraphLinkClientAdapter?' : ''}${persistedQueries ? '\n    private let persisted = GraphLinkPersistedQueryState()' : ''}
+    private var tagLocks: GraphLinkTagLocks { epochs.tagLocks }${useGet ? '\n    private let getAdapter: GraphLinkClientAdapter?' : ''}${persistedQueries ? '\n    private let persisted = GraphLinkPersistedQueryState()' : ''}
 
     public init(adapter: @escaping GraphLinkClientAdapter, ${useGet ? 'getAdapter: GraphLinkClientAdapter? = nil, ' : ''}fragmentMap: [String: String], store: any GraphLinkCacheStore, epochs: GraphLinkEpochs = GraphLinkEpochs()) {
         self.epochs = epochs
@@ -481,20 +478,20 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         cachedResponse: [String: Any?],
         parser: ([String: Any?]) throws -> T,
         remainingQueries: [GraphLinkPartialQuery],
+        epochSnapshot: [Int],
         captureErrors: Bool
     ) async throws -> T {
         let result = try GraphLinkJson.decode(data)
         let rawData = result["data"] as? [String: Any?]
         var dataMap = rawData ?? [:]
-        for q in remainingQueries {
+        for (index, q) in remainingQueries.enumerated() {
             if q.ttl > 0, let inner = dataMap[q.elementKey], let value = inner {
                 let cacheWrap: [String: Any?] = ["__gl_v__": value]
                 let expiry = Int(Date().timeIntervalSince1970 * 1000) + q.ttl * 1000
                 let cacheData = try GraphLinkJson.encode(cacheWrap)
                 let entry = GraphLinkCacheEntry(data: String(data: cacheData, encoding: .utf8) ?? "", expiry: expiry)
                 let entryData = try GraphLinkJson.encode(entry.toJson())
-                await store.set(try q.cacheKey(), value: String(data: entryData, encoding: .utf8) ?? "")
-                if !q.tags.isEmpty { try await addKeyToTags(q.cacheKey(), tags: q.tags) }
+                try await glStoreIfCurrent(q.cacheKey(), value: String(data: entryData, encoding: .utf8) ?? "", tags: q.tags, epoch: epochSnapshot[index])
             }
         }
         for (k, v) in cachedResponse { dataMap[k] = v }
@@ -571,8 +568,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
         let epochSnapshot = remaining.map { epochs.value(\$0.tags) }
         do {
             let responseData = try await glCallCached(payload, remaining, epochSnapshot)
-            let cacheable = zip(remaining, epochSnapshot).filter { epochs.value(\$0.0.tags) == \$0.1 }.map { \$0.0 }
-            return try await parseToObjectAndCache(data: responseData, cachedResponse: responseMap, parser: fromJson, remainingQueries: cacheable, captureErrors: captureErrors)
+            return try await parseToObjectAndCache(data: responseData, cachedResponse: responseMap, parser: fromJson, remainingQueries: remaining, epochSnapshot: epochSnapshot, captureErrors: captureErrors)
         } catch {
             for (k, v) in staleData { responseMap[k] = v }
             let remainingCount = partialQueries.filter { !responseMap.keys.contains(\$0.elementKey) }.count
@@ -606,7 +602,7 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
 
     func invalidateAllEntries() async {
         epochs.bump("\\u{0000}all")
-        await store.invalidateAll()
+        try? await tagLocks.run("\\u{0000}all") { await self.store.invalidateAll() }
     }
 
     func invalidateByTags(_ tags: [String]) async throws {
@@ -638,6 +634,28 @@ ${persistedQueries ? swiftPersistedCallAdapter(withOpName, useGet) : swiftPlainC
                 await self.store.set(tKey, value: String(data: entryData, encoding: .utf8) ?? "")
             }
         }
+    }
+
+    func glStoreIfCurrent(_ key: String, value: String, tags: [String], epoch: Int) async throws {
+        let names = Array(Set(["\\u{0000}all"] + tags)).sorted()
+        try await glStoreLocked(names[...], key, value, tags, epoch)
+    }
+
+    private func glStoreLocked(_ names: ArraySlice<String>, _ key: String, _ value: String, _ tags: [String], _ epoch: Int) async throws {
+        guard let first = names.first else {
+            guard epochs.value(tags) == epoch else { return }
+            await store.set(key, value: value)
+            for tag in tags {
+                let tKey = tagKey(tag)
+                var entry = GraphLinkTagEntry()
+                if let data = await store.get(tKey) { entry = GraphLinkTagEntry.read(data) }
+                entry.add(key)
+                let entryData = try GraphLinkJson.encode(entry.toJson())
+                await store.set(tKey, value: String(data: entryData, encoding: .utf8) ?? "")
+            }
+            return
+        }
+        try await tagLocks.run(first) { try await self.glStoreLocked(names.dropFirst(), key, value, tags, epoch) }
     }
 
     func removeKeyFromTags(_ key: String, tags: [String]) async throws {

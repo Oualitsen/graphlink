@@ -47,4 +47,50 @@ final class CacheConcurrencyTests: XCTestCase {
         let second = try await client.queries.counterSlow(name: counter, delayMs: 600).n
         XCTAssertEqual(second, 2)
     }
+
+    func test_anInvalidationThatArrivesWhileTheResponseIsBeingStoredRemovesIt() async throws {
+        let store = PausingStore()
+        let pausing = newClient(store: store)
+        let counter = self.counter
+        let first = Task { try await pausing.queries.counterSlow(name: counter, delayMs: 50).n }
+        while !store.reached { try await Task.sleep(nanoseconds: 10_000_000) }
+        let touch = Task { _ = try await pausing.mutations.touchSlow(name: counter) }
+        try await Task.sleep(nanoseconds: 300_000_000)
+        store.release()
+        _ = try await first.value
+        try await touch.value
+        let second = try await pausing.queries.counterSlow(name: counter, delayMs: 50).n
+        XCTAssertEqual(second, 2)
+    }
+}
+
+private final class PausingStore: GraphLinkCacheStore, @unchecked Sendable {
+    private let inner = InMemoryGraphLinkCacheStore()
+    private let lock = NSLock()
+    private var paused = false
+    private var released = false
+    private var hasReached = false
+
+    var reached: Bool { lock.lock(); defer { lock.unlock() }; return hasReached }
+
+    func release() { lock.lock(); released = true; lock.unlock() }
+
+    func set(_ key: String, value: String) async {
+        lock.lock()
+        let shouldPause = !key.hasPrefix("__tag__") && !paused
+        if shouldPause { paused = true; hasReached = true }
+        lock.unlock()
+        if shouldPause {
+            while true {
+                lock.lock(); let done = released; lock.unlock()
+                if done { break }
+                try? await Task.sleep(nanoseconds: 10_000_000)
+            }
+        }
+        await inner.set(key, value: value)
+    }
+
+    func get(_ key: String) async -> String? { await inner.get(key) }
+    func invalidate(_ key: String) async { await inner.invalidate(key) }
+    func invalidateAll() async { await inner.invalidateAll() }
 }

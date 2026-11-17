@@ -280,7 +280,8 @@ class JavaClientRuntimeSerializer {
         'protected final GraphLinkCacheStore $svStore;',
         'protected final GraphLinkJsonEncoder $svEncoder;',
         'protected final GraphLinkJsonDecoder $svDecoder;',
-        'private final Map<String, ReentrantLock> $svTagLocks = new HashMap<>();',
+        'private final java.util.concurrent.ConcurrentHashMap<String, ReentrantLock> $svTagLocks;',
+        'private static final Map<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, ReentrantLock>> glLocksByStore__ = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());',
         'private static final Map<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> glEpochsByStore__ = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());',
         'private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong> glEpochs__;',
         'private static final Map<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<String>>> glFlightsByStore__ = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());',
@@ -320,6 +321,7 @@ class JavaClientRuntimeSerializer {
             if (_grammar.persistedQueriesUseGet) 'this.$svGetAdapter = getAdapter;',
             'this.${svFragmentMap} = fragmentMap;',
             'this.$svStore = store;',
+            'this.$svTagLocks = glLocksByStore__.computeIfAbsent(store, s -> new java.util.concurrent.ConcurrentHashMap<>());',
             'this.glEpochs__ = glEpochsByStore__.computeIfAbsent(store, s -> new java.util.concurrent.ConcurrentHashMap<>());',
             'this.glFlights__ = glFlightsByStore__.computeIfAbsent(store, s -> new java.util.concurrent.ConcurrentHashMap<>());',
             'this.$svEncoder = encoder;',
@@ -327,8 +329,9 @@ class JavaClientRuntimeSerializer {
             'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
             codeGenUtils
                 .forEachLoop(variable: 'tag', type: 'String', iterable: 'tags', statements: [
-              '$svTagLocks.put(tag, new ReentrantLock());',
+              '$svTagLocks.putIfAbsent(tag, new ReentrantLock());',
             ]),
+            '$svTagLocks.putIfAbsent("\\u0000all", new ReentrantLock());',
           ],
         ),
         codeGenUtils.createMethod(
@@ -339,16 +342,17 @@ class JavaClientRuntimeSerializer {
             'Map<String, Object> cachedResponse',
             'Function<Map<String, Object>, T> parser',
             'List<GraphLinkPartialQuery> remainingQueries',
+            'long[] epochs',
             'boolean captureErrors'
           ],
           statements: [
             'Map<String, Object> result = $svDecoder.decode(data);',
             'Map<String, Object> $svRawData = (Map<String, Object>) result.get("data");',
             'Map<String, Object> dataMap = $svRawData != null ? $svRawData : new HashMap<>();',
-            codeGenUtils.forEachLoop(
-                variable: 'q', type: 'GraphLinkPartialQuery',
-                iterable: 'remainingQueries',
+            codeGenUtils.forLoop(
+                init: 'int i = 0', condition: 'i < remainingQueries.size()', increment: 'i++',
                 statements: [
+                  'GraphLinkPartialQuery q = remainingQueries.get(i);',
                   codeGenUtils.ifStatement(
                       condition:
                           'q.ttl > 0 && dataMap.get(q.elementKey) != null',
@@ -356,12 +360,7 @@ class JavaClientRuntimeSerializer {
                         'Map<String, Object> $svCacheWrap = new HashMap<>();',
                         '$svCacheWrap.put("__gl_v__", dataMap.get(q.elementKey));',
                         'GraphLinkCacheEntry entry = new GraphLinkCacheEntry($svEncoder.encode($svCacheWrap), System.currentTimeMillis() + q.ttl * 1000L);',
-                        '$svStore.set(q.cacheKey, $svEncoder.encode(entry.toJson()));',
-                        codeGenUtils.ifStatement(
-                            condition: '!q.tags.isEmpty()',
-                            ifBlockStatements: [
-                              'addKeyToTags(q.cacheKey, q.tags);',
-                            ]),
+                        'glStoreIfCurrent(q.cacheKey, $svEncoder.encode(entry.toJson()), q.tags, epochs[i]);',
                       ]),
                 ]),
             'dataMap.putAll(cachedResponse);',
@@ -511,7 +510,7 @@ class JavaClientRuntimeSerializer {
               codeGenUtils.tryCatchFinally(
                 tryStatements: [
                   'String $svResponseText = glCallCached($svPayload, $svRemaining, glEpochSnapshot__);',
-                  'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', 'glCacheable($svRemaining, glEpochSnapshot__)', 'captureErrors'])};',
+                  'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', '$svRemaining', 'glEpochSnapshot__', 'captureErrors'])};',
                 ],
                 catchStatements: [
                   '$svResponseMap.putAll($svStaleData);',
@@ -529,7 +528,7 @@ class JavaClientRuntimeSerializer {
               )
             else
               _reactiveOpenBlock(
-                header: 'return ${flavor.onErrorResumeOpen(flavor.mapTo('glCallCached($svPayload, $svRemaining, glEpochSnapshot__)', '$svResponseText -> parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, glCacheable($svRemaining, glEpochSnapshot__), captureErrors)'), 'exception')}',
+                header: 'return ${flavor.onErrorResumeOpen(flavor.mapTo('glCallCached($svPayload, $svRemaining, glEpochSnapshot__)', '$svResponseText -> parseToObjectAndCache($svResponseText, $svResponseMap, fromJson, $svRemaining, glEpochSnapshot__, captureErrors)'), 'exception')}',
                 statements: [
                   '$svResponseMap.putAll($svStaleData);',
                   'long remainingCount = $svPartialQueries.stream().filter(e -> !$svResponseMap.containsKey(e.elementKey)).count();',
@@ -632,22 +631,6 @@ class JavaClientRuntimeSerializer {
           ],
         ),
         codeGenUtils.createMethod(
-          returnType: 'protected List<GraphLinkPartialQuery>',
-          methodName: 'glCacheable',
-          arguments: ['List<GraphLinkPartialQuery> queries', 'long[] epochs'],
-          statements: [
-            'List<GraphLinkPartialQuery> cacheable = new ArrayList<>();',
-            codeGenUtils.forLoop(
-                init: 'int i = 0', condition: 'i < epochs.length', increment: 'i++',
-                statements: [
-                  codeGenUtils.ifStatement(
-                      condition: 'glEpoch(queries.get(i).tags) == epochs[i]',
-                      ifBlockStatements: ['cacheable.add(queries.get(i));']),
-                ]),
-            'return cacheable;',
-          ],
-        ),
-        codeGenUtils.createMethod(
           returnType: 'protected ${_wrapSingle('String')}',
           methodName: 'glCallCached',
           arguments: ['GraphLinkPayload payload', 'List<GraphLinkPartialQuery> queries', 'long[] epochs'],
@@ -674,7 +657,41 @@ class JavaClientRuntimeSerializer {
           arguments: [],
           statements: [
             'glEpochCounter("\\u0000all").incrementAndGet();',
-            '$svStore.invalidateAll();',
+            'ReentrantLock lock = $svTagLocks.get("\\u0000all");',
+            'lock.lock();',
+            codeGenUtils.tryCatchFinally(
+              tryStatements: ['$svStore.invalidateAll();'],
+              finallyStatements: ['lock.unlock();'],
+            ),
+          ],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'protected void',
+          methodName: 'glStoreIfCurrent',
+          arguments: ['String key', 'String value', 'List<String> tags', 'long epoch'],
+          statements: [
+            'java.util.TreeSet<String> names = new java.util.TreeSet<>(tags);',
+            'names.add("\\u0000all");',
+            'List<ReentrantLock> held = new ArrayList<>();',
+            codeGenUtils.tryCatchFinally(
+              tryStatements: [
+                codeGenUtils.forEachLoop(
+                    variable: 'name', type: 'String', iterable: 'names',
+                    statements: [
+                      'ReentrantLock lock = $svTagLocks.get(name);',
+                      'lock.lock();',
+                      'held.add(lock);',
+                    ]),
+                codeGenUtils.ifStatement(condition: 'glEpoch(tags) != epoch', ifBlockStatements: ['return;']),
+                '$svStore.set(key, value);',
+                codeGenUtils.ifStatement(condition: '!tags.isEmpty()', ifBlockStatements: ['addKeyToTags(key, tags);']),
+              ],
+              finallyStatements: [
+                codeGenUtils.forLoop(
+                    init: 'int i = held.size() - 1', condition: 'i >= 0', increment: 'i--',
+                    statements: ['held.get(i).unlock();']),
+              ],
+            ),
           ],
         ),
         codeGenUtils.createMethod(

@@ -344,8 +344,7 @@ class PythonClientRuntimeSerializer {
         cg.tryCatchFinally(
           tryStatements: [
             cg.constDecl(svResponseText, 'await self._gl_call_cached($svPayload, $svRemainingQueries, sum(gl_epochs__.values()))'),
-            cg.constDecl('gl_cacheable__', '[q for q in $svRemainingQueries if self._gl_epoch(q.tags) == gl_epochs__[id(q)]]'),
-            'return await self._parse_to_object_and_cache($svResponseText, $svResponseMap, from_json, gl_cacheable__, capture_errors)',
+            'return await self._parse_to_object_and_cache($svResponseText, $svResponseMap, from_json, $svRemainingQueries, capture_errors, gl_epochs__)',
           ],
           catchStatements: [
             '$svResponseMap.update($svStaleData)',
@@ -403,6 +402,7 @@ class PythonClientRuntimeSerializer {
         'parser: Callable[[Dict[str, Any]], TFull]',
         'remaining_queries: List[GraphLinkPartialQuery]',
         'capture_errors: bool',
+        'epochs: Dict[int, int]',
       ],
       returnType: 'TFull',
       statements: [
@@ -417,8 +417,7 @@ class PythonClientRuntimeSerializer {
                 'entry',
                 'GraphLinkCacheEntry(json.dumps(data_map[q.element_key]), int(time.time() * 1000) + q.ttl * 1000)',
               ),
-              'await self.$svStore.set(q.cache_key, json.dumps(entry.to_json()))',
-              cg.ifStatement(condition: 'q.tags', ifBlockStatements: ['await self.add_key_to_tags(q.cache_key, q.tags)']),
+              'await self.gl_store_if_current(q.cache_key, json.dumps(entry.to_json()), q.tags, epochs[id(q)])',
             ],
           ),
         ]),
