@@ -1399,7 +1399,7 @@ type glWsMessage struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
-const glHandshakeTimeout = 30 * time.Second
+const glHandshakeTimeout = 5 * time.Second
 
 var errGlHandshakeAborted = errors.New("WebSocket connection lost during the handshake")
 
@@ -1586,7 +1586,7 @@ func (h *GraphLinkSubscriptionHandler) onGiveUp() {
 	}
 	h.mu.Unlock()
 	for _, sub := range subs {
-		sub.emit(GraphLinkRawEvent{Err: errors.New("WebSocket reconnect attempts exhausted")})
+		sub.emit(GraphLinkRawEvent{Err: errors.New("WebSocket closed for good: reconnect attempts exhausted or the server closed it with a fatal code")})
 		h.remove(sub)
 	}
 }
@@ -1808,11 +1808,26 @@ func (a *DefaultGraphLinkWebSocketAdapter) connectionClosed(conn *websocket.Conn
 		return
 	}
 	a.conn = nil
-	retry := a.Reconnect && !a.disposed && !a.reconnecting && websocket.CloseStatus(err) != websocket.StatusNormalClosure
+	status := websocket.CloseStatus(err)
+	fatal := glFatalCloseStatus(status)
+	giveUp := a.onGiveUp
+	retry := a.Reconnect && !a.disposed && !a.reconnecting && !fatal && status != websocket.StatusNormalClosure
+	notify := fatal && !a.disposed && giveUp != nil
 	a.mu.Unlock()
+	if notify {
+		go giveUp()
+	}
 	if retry {
 		go a.reconnectLoop()
 	}
+}
+
+func glFatalCloseStatus(status websocket.StatusCode) bool {
+	switch status {
+	case 4400, 4401, 4403, 4409:
+		return true
+	}
+	return false
 }
 
 func (a *DefaultGraphLinkWebSocketAdapter) reconnectLoop() {

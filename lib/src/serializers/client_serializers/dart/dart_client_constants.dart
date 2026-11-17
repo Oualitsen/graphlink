@@ -20,7 +20,10 @@ class GraphLinkSubscriptionHandler {
   GraphLinkSubscriptionHandler(this.adapter) {
     adapter.onReconnect.listen((_) => _onReconnect());
     adapter.onGiveUp.listen((_) => _onGiveUp());
+    _onMessageStream.listen(_answerPing);
   }
+
+  static const _ackTimeout = Duration(seconds: 5);
 
   Completer<GraphLinkStreamSink>? _sinkCompleter;
   GraphLinkHandshakeStatus _handshakeStatus = GraphLinkHandshakeStatus.none;
@@ -88,7 +91,7 @@ class GraphLinkSubscriptionHandler {
             .catchError((_) => GraphLinkSubscriptionErrorMessage(type: GraphqlWsMessageTypes.connectionAck))
             .then((_) {}),
         abort.future,
-      ]);
+      ]).timeout(_ackTimeout, onTimeout: () => throw StateError('WebSocket server did not send connection_ack within \${_ackTimeout.inSeconds} s'));
       _handshakeAbort = null;
       _handshakeStatus = GraphLinkHandshakeStatus.acknowledged;
       return GraphLinkStreamSink(sendMessage: adapter.sendMessage, stream: _onMessageStream);
@@ -114,7 +117,7 @@ class GraphLinkSubscriptionHandler {
     _sinkCompleter = null;
     for (final uuid in _map.keys.toList()) {
       final controller = _map[uuid]!;
-      if (!controller.isClosed) controller.addError(StateError('WebSocket reconnect attempts exhausted'));
+      if (!controller.isClosed) controller.addError(StateError('WebSocket closed for good: reconnect attempts exhausted or the server closed it with a fatal code'));
       _removeController(uuid);
     }
   }
@@ -197,8 +200,20 @@ class GraphLinkSubscriptionHandler {
     return controller.stream;
   }
 
+  void _answerPing(String raw) {
+    if (_parseEvent(raw).type == GraphqlWsMessageTypes.ping) {
+      adapter.sendMessage(pongMessage).catchError((_) {});
+    }
+  }
+
   GraphLinkSubscriptionErrorMessageBase _parseEvent(String event) {
-    var map = jsonDecode(event);
+    final Object? map;
+    try {
+      map = jsonDecode(event);
+    } on FormatException {
+      return GraphLinkSubscriptionErrorMessage(type: 'invalid');
+    }
+    if (map is! Map<String, dynamic>) return GraphLinkSubscriptionErrorMessage(type: 'invalid');
     var payload = map["payload"];
     if (payload is Map) {
       return GraphLinkSubscriptionMessage.fromJson(map);
@@ -210,9 +225,6 @@ class GraphLinkSubscriptionHandler {
     var controller = _map[uuid];
     if (controller == null) return;
     switch (msg.type!) {
-      case GraphqlWsMessageTypes.ping:
-        adapter.sendMessage(pongMessage);
-        break;
       case GraphqlWsMessageTypes.next:
         if (!controller.isClosed) controller.add((msg as GraphLinkSubscriptionMessage).payload!.data!);
         break;
@@ -310,6 +322,7 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
   bool _reconnecting = false;
   bool _disposed = false;
   static const Duration _initialDelay = Duration(seconds: 1);
+  static const _fatalCloseCodes = {4400, 4401, 4403, 4409};
   static final Random _random = Random();
 
   DefaultGraphLinkWebSocketAdapter({
@@ -338,7 +351,9 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
     try {
       _channel = WebSocketChannel.connect(Uri.parse(url), protocols: protocols);
       _subscription = _channel!.stream.listen(
-        (data) => _messageController.add(data as String),
+        (data) {
+          if (data is String) _messageController.add(data);
+        },
         onError: _onError,
         onDone: _onDone,
       );
@@ -371,7 +386,12 @@ class DefaultGraphLinkWebSocketAdapter extends GraphLinkWebSocketAdapter {
     _subscription?.cancel();
     _subscription = null;
     _channel = null;
-    if (reconnect && closeCode != 1000 && !_reconnecting && !_disposed) _reconnect();
+    if (_disposed) return;
+    if (_fatalCloseCodes.contains(closeCode)) {
+      _giveUpController.add(null);
+    } else if (reconnect && closeCode != 1000 && !_reconnecting) {
+      _reconnect();
+    }
   }
 
   Future<void> _reconnect() async {

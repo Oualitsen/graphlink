@@ -20,18 +20,7 @@ interface WsCase {
 
 const CASES: WsCase[] = JSON.parse(readFileSync(new URL('../../fault_server/ws_cases.json', import.meta.url), 'utf8'));
 
-const NO_ACK_TIMEOUT = 'the handshake waits for connection_ack with no timeout';
-const NOT_JSON = 'a frame that is not JSON throws inside the message loop: unhandled error, the subscription never settles';
-const RECONNECTS_ON_4XXX = 'reconnects and resubscribes after a 4xxx close instead of surfacing an error';
-const KNOWN_DEFECTS: Record<string, string> = {
-  'ws-no-ack': NO_ACK_TIMEOUT,
-  'ws-invalid-json': NOT_JSON,
-  'ws-binary': 'a binary frame arrives as a Blob and is parsed as JSON: unhandled error, the subscription never settles',
-  'ws-close-4400': RECONNECTS_ON_4XXX,
-  'ws-close-4401': RECONNECTS_ON_4XXX,
-  'ws-close-4403': RECONNECTS_ON_4XXX,
-  'ws-close-4409': RECONNECTS_ON_4XXX,
-};
+const KNOWN_DEFECTS: Record<string, string> = {};
 
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 

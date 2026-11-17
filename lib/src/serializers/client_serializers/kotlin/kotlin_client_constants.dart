@@ -386,6 +386,7 @@ class DefaultGraphLinkWebSocketAdapter(
     @Volatile private var messageListener: ((String) -> Unit)? = null
     @Volatile private var reconnectListener: (() -> Unit)? = null
     @Volatile private var disposed = false
+    private val fatalCloseCodes = setOf(4400, 4401, 4403, 4409)
 
     override fun connect(onConnect: () -> Unit, onFailure: (Throwable) -> Unit) {
         disposed = false
@@ -408,10 +409,12 @@ class DefaultGraphLinkWebSocketAdapter(
                 messageListener?.invoke(text)
             }
             override fun onClosing(ws: WebSocket, code: Int, reason: String) {
-                ws.close(code, reason)
+                ws.close(1000, null)
             }
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
-                if (!disposed) scheduleReconnect(onFailure)
+                if (disposed) return
+                if (code in fatalCloseCodes) onFailure(RuntimeException("WebSocket closed by the server with code " + code + ", not retrying"))
+                else scheduleReconnect(onFailure)
             }
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 if (!disposed) scheduleReconnect(onFailure)
@@ -479,6 +482,8 @@ class GraphLinkSubscriptionHandler(
     private val payloadsToHandle = mutableMapOf<String, GraphLinkPayload>()
     private val activePayloads = mutableMapOf<String, GraphLinkPayload>()
     @Volatile private var ackStatus = GraphLinkAckStatus.NONE
+    private var ackGeneration = 0
+    private val ackTimer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "graphlink-ack-timeout").apply { isDaemon = true } }
 
     init {
         adapter.setMessageListener(::onMessage)
@@ -511,6 +516,7 @@ class GraphLinkSubscriptionHandler(
             }
         }
         if (shouldConnect) {
+            armAckTimeout()
             adapter.connect(
                 onConnect = { adapter.sendMessage(getConnectionInit(id)) },
                 onFailure = { notifyAllListenersOfError(it) },
@@ -518,6 +524,14 @@ class GraphLinkSubscriptionHandler(
         } else if (shouldSend) {
             adapter.sendMessage(getSubscriptionMessage(id, payload))
         }
+    }
+
+    private fun armAckTimeout() {
+        val generation = synchronized(this) { ++ackGeneration }
+        ackTimer.schedule({
+            val waiting = synchronized(this) { ackStatus == GraphLinkAckStatus.PROGRESS && ackGeneration == generation }
+            if (waiting) notifyAllListenersOfError(RuntimeException("WebSocket server did not send connection_ack within 5 s"))
+        }, 5, java.util.concurrent.TimeUnit.SECONDS)
     }
 
     private fun getConnectionInit(id: String): String {
@@ -541,7 +555,7 @@ class GraphLinkSubscriptionHandler(
         encoder.encode(mapOf("type" to GraphlinkWsMessageTypes.pong, "id" to id))
 
     private fun onMessage(message: String) {
-        val map = decoder.decode(message)
+        val map = try { decoder.decode(message) } catch (e: Exception) { return }
         when (map["type"] as? String) {
             GraphlinkWsMessageTypes.connectionAck -> handleConnectionAck()
             GraphlinkWsMessageTypes.ping -> adapter.sendMessage(getPongMessage(map["id"] as? String))
@@ -609,6 +623,7 @@ class GraphLinkSubscriptionHandler(
         }
         if (snapshot.isNotEmpty()) {
             val firstId = snapshot.keys.first()
+            armAckTimeout()
             adapter.sendMessage(getConnectionInit(firstId))
         }
     }

@@ -8,19 +8,7 @@ import 'package:test/test.dart';
 final _faultPort = int.parse(Platform.environment['WS_FAULT_PORT'] ?? '9940');
 final _faultUrl = 'http://127.0.0.1:$_faultPort';
 
-const _noAckTimeout = 'the handshake waits for connection_ack with no timeout';
-const _reconnectsOn4xxx = 'reconnects and resubscribes after a 4xxx close instead of surfacing an error';
-const _notJson = 'a frame that is not JSON throws a FormatException from the message stream: uncaught, the subscription never settles';
-const _knownDefects = <String, String>{
-  'ws-no-ack': _noAckTimeout,
-  'ws-invalid-json': _notJson,
-  'ws-ping': 'a server ping is never answered: pong is sent from the per-subscription listener, which filters on the subscription id and a ping has none',
-  'ws-close-4400': _reconnectsOn4xxx,
-  'ws-close-4401': _reconnectsOn4xxx,
-  'ws-close-4403': _reconnectsOn4xxx,
-  'ws-close-4409': _reconnectsOn4xxx,
-  'ws-binary': 'a binary frame is cast to String: uncaught TypeError, the subscription never settles',
-};
+const _knownDefects = <String, String>{};
 
 Future<List<String>> _framesSent() async {
   final log = jsonDecode((await http.get(Uri.parse('$_faultUrl/_ws_log'))).body) as List<dynamic>;

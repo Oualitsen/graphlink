@@ -71,6 +71,13 @@ public class GraphLinkSubscriptionHandler {
   private final GraphLinkJsonDecoder decoder;
   private final GraphLinkJsonEncoder encoder;
   private GraphLinkAckStatus ackStatus = GraphLinkAckStatus.NONE;
+  private int ackGeneration = 0;
+  private static final long ACK_TIMEOUT_SECONDS = 5;
+  private final java.util.concurrent.ScheduledExecutorService ackTimer = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread thread = new Thread(r, "graphlink-ack-timeout");
+    thread.setDaemon(true);
+    return thread;
+  });
 
   GraphLinkSubscriptionHandler(GraphLinkWebSocketAdapter adapter, GraphLinkJsonDecoder decoder, GraphLinkJsonEncoder encoder) {
     this.adapter = adapter;
@@ -128,6 +135,7 @@ public class GraphLinkSubscriptionHandler {
       }
     }
     if (shouldConnect) {
+      armAckTimeout();
       adapter.connect(() -> {
         adapter.sendMessage(getConnectionInit(id));
       }, (t) -> {
@@ -136,6 +144,22 @@ public class GraphLinkSubscriptionHandler {
     } else if (shouldSend) {
       adapter.sendMessage(getSubscriptionMessage(id, payload));
     }
+  }
+
+  private void armAckTimeout() {
+    int generation;
+    synchronized (this) {
+      generation = ++ackGeneration;
+    }
+    ackTimer.schedule(() -> {
+      boolean waiting;
+      synchronized (this) {
+        waiting = ackStatus == GraphLinkAckStatus.PROGRESS && ackGeneration == generation;
+      }
+      if (waiting) {
+        notifyAllListenersOfError(new RuntimeException("WebSocket server did not send connection_ack within " + ACK_TIMEOUT_SECONDS + " s"));
+      }
+    }, ACK_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS);
   }
 
   private GraphLinkSubscriptionErrorMessageBase parseEvent(String event) {
@@ -158,8 +182,14 @@ public class GraphLinkSubscriptionHandler {
   }
 
   public void onMessage(String message) {
-    GraphLinkSubscriptionErrorMessageBase event = parseEvent(message);
+    GraphLinkSubscriptionErrorMessageBase event;
+    try {
+      event = parseEvent(message);
+    } catch (RuntimeException e) {
+      return;
+    }
     String type = event.getType();
+    if (type == null) return;
     switch (type) {
       case GraphqlWsMessageTypes.connectionAck:
         handleConnectionAck();
@@ -227,6 +257,7 @@ public class GraphLinkSubscriptionHandler {
     }
     if (!snapshot.isEmpty()) {
       String firstId = snapshot.keySet().iterator().next();
+      armAckTimeout();
       adapter.sendMessage(getConnectionInit(firstId));
     }
   }
@@ -267,6 +298,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final Integer maxReconnectAttempts;
   private final long maxReconnectDelayMs;
   private final List<String> protocols;
+  private static final java.util.Set<Integer> FATAL_CLOSE_CODES = new java.util.HashSet<>(java.util.Arrays.asList(4400, 4401, 4403, 4409));
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
@@ -353,7 +385,13 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
 
           @Override
           public CompletionStage<?> onClose(WebSocket ws, int statusCode, String reason) {
-            if (!disposed) scheduleReconnect(onFailure);
+            if (!disposed) {
+              if (FATAL_CLOSE_CODES.contains(statusCode)) {
+                onFailure.accept(new RuntimeException("WebSocket closed by the server with code " + statusCode + ", not retrying"));
+              } else {
+                scheduleReconnect(onFailure);
+              }
+            }
             return CompletableFuture.completedFuture(null);
           }
 
@@ -430,6 +468,7 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
   private final Integer maxReconnectAttempts;
   private final long maxReconnectDelayMs;
   private final List<String> protocols;
+  private static final java.util.Set<Integer> FATAL_CLOSE_CODES = new java.util.HashSet<>(java.util.Arrays.asList(4400, 4401, 4403, 4409));
 
   private volatile WebSocket webSocket;
   private volatile Consumer<String> messageListener;
@@ -509,8 +548,18 @@ public class DefaultGraphLinkWebSocketAdapter implements GraphLinkWebSocketAdapt
       }
 
       @Override
+      public void onClosing(WebSocket ws, int code, String reason) {
+        ws.close(1000, null);
+      }
+
+      @Override
       public void onClosed(WebSocket ws, int code, String reason) {
-        if (!disposed) scheduleReconnect(onFailure);
+        if (disposed) return;
+        if (FATAL_CLOSE_CODES.contains(code)) {
+          onFailure.accept(new RuntimeException("WebSocket closed by the server with code " + code + ", not retrying"));
+        } else {
+          scheduleReconnect(onFailure);
+        }
       }
 
       @Override

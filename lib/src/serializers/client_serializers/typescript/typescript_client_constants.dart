@@ -474,6 +474,14 @@ export function _makeBroadcastChannel<T>() {
   };
 }
 
+const _GL_ACK_TIMEOUT_MS = 5000;
+
+class _GlAckTimeout extends Error {
+  constructor() {
+    super(`WebSocket server did not send connection_ack within ${_GL_ACK_TIMEOUT_MS / 1000} s`);
+  }
+}
+
 type _HandshakeStatus = 'none' | 'progress' | 'acknowledged';
 
 export class GraphLinkSubscriptionHandler {
@@ -542,16 +550,24 @@ export class GraphLinkSubscriptionHandler {
       // Register a temporary listener — runs alongside _dispatch on the same
       // fan-out set, so connection_ack is never stolen by the dispatch loop.
       await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          this._msgListeners.delete(listener);
+          reject(new _GlAckTimeout());
+        }, _GL_ACK_TIMEOUT_MS);
         this._abortHandshake = (error) => {
+          clearTimeout(timer);
           this._msgListeners.delete(listener);
           reject(error);
         };
         const listener = (raw: string) => {
-          const parsed: _GlWsMsg = JSON.parse(raw);
+          const parsed = this._parse(raw);
+          if (parsed === null) return;
           if (parsed.type === _GL_WS.connectionAck) {
+            clearTimeout(timer);
             this._msgListeners.delete(listener);
             resolve();
           } else if (parsed.type === _GL_WS.error) {
+            clearTimeout(timer);
             this._msgListeners.delete(listener);
             reject(new Error('WebSocket handshake error'));
           }
@@ -572,7 +588,7 @@ export class GraphLinkSubscriptionHandler {
   }
 
   private _onGiveUp(): void {
-    const error = new Error('WebSocket reconnect attempts exhausted');
+    const error = new Error('WebSocket closed for good: reconnect attempts exhausted or the server closed it with a fatal code');
     this._abortHandshake?.(error);
     this._handshakeStatus = 'none';
     this._handshakePromise = null;
@@ -596,8 +612,18 @@ export class GraphLinkSubscriptionHandler {
     }
   }
 
+  private _parse(raw: string): _GlWsMsg | null {
+    try {
+      const parsed: unknown = JSON.parse(raw);
+      return typeof parsed === 'object' && parsed !== null ? (parsed as _GlWsMsg) : null;
+    } catch {
+      return null;
+    }
+  }
+
   private _dispatch(raw: string): void {
-    const msg: _GlWsMsg = JSON.parse(raw);
+    const msg = this._parse(raw);
+    if (msg === null) return;
     if (msg.type === _GL_WS.ping) {
       this.adapter.sendMessage(this._pongMessage);
       return;
@@ -657,8 +683,9 @@ export class GraphLinkSubscriptionHandler {
     // re-subscribe once the adapter comes back up (mirrors Dart behaviour).
     this._initWs().then(async (sink) => {
       await this._sendSubscribe(sink, uuid, pl);
-    }).catch((_e) => {
-      // Intentionally swallowed — subscription resumes on reconnect.
+    }).catch((e) => {
+      // Other failures are swallowed — the subscription resumes on reconnect.
+      if (e instanceof _GlAckTimeout) ch.error(e);
     });
 
     try {
@@ -776,6 +803,7 @@ export function createAxiosAdapter(
 
 const tsDefaultWsAdapter = r'''
 export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
+  private static readonly _fatalCloseCodes: ReadonlySet<number> = new Set([4400, 4401, 4403, 4409]);
   private _ws: WebSocket | null = null;
   private readonly _messageChannel = _makeChannel<string>();
   private readonly _reconnectChannel = _makeBroadcastChannel<void>();
@@ -806,9 +834,22 @@ export class DefaultGraphLinkWsAdapter implements GraphLinkWsAdapter {
       const ws = new WebSocket(this.url, this.protocols);
       ws.onopen = () => { this._ws = ws; this._reconnectAttempts = 0; this._gaveUp = false; resolve(); };
       ws.onerror = (e) => { this._scheduleReconnect(); reject(e); };
-      ws.onmessage = (e) => this._messageChannel.push(e.data as string);
-      ws.onclose = () => this._scheduleReconnect();
+      ws.onmessage = (e) => { if (typeof e.data === 'string') this._messageChannel.push(e.data); };
+      ws.onclose = (e) => {
+        if (DefaultGraphLinkWsAdapter._fatalCloseCodes.has(e.code)) this._giveUp();
+        else this._scheduleReconnect();
+      };
     });
+  }
+
+  private _giveUp(): void {
+    if (this._closed) return;
+    this._ws = null;
+    this._connectPromise = null;
+    if (!this._gaveUp) {
+      this._gaveUp = true;
+      this._giveUpChannel.push();
+    }
   }
 
   private _scheduleReconnect(): void {

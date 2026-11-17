@@ -566,6 +566,7 @@ from .graph_link_ws_message_types import GraphqlWsMessageTypes
 _NEXT = "next"
 _ERROR = "error"
 _DONE = "done"
+_ACK_TIMEOUT = 5.0
 
 
 class GraphLinkSubscriptionHandler:
@@ -598,7 +599,10 @@ class GraphLinkSubscriptionHandler:
         if payload is not None:
             init["payload"] = payload
         await self.adapter.send_message(json.dumps(init))
-        await ack
+        try:
+            await asyncio.wait_for(ack, _ACK_TIMEOUT)
+        except asyncio.TimeoutError:
+            raise RuntimeError(f"WebSocket server did not send connection_ack within {_ACK_TIMEOUT:g} s") from None
         self._acknowledged = True
 
     async def _send_subscribe(self, subscription_id: str, payload: Any) -> None:
@@ -649,7 +653,12 @@ class GraphLinkSubscriptionHandler:
                     pass
 
     def _on_message(self, raw: str) -> None:
-        message = json.loads(raw)
+        try:
+            message = json.loads(raw)
+        except ValueError:
+            return
+        if not isinstance(message, dict):
+            return
         message_type = message.get("type")
         if message_type == GraphqlWsMessageTypes.CONNECTION_ACK:
             if self._ack is not None and not self._ack.done():
@@ -687,7 +696,7 @@ class GraphLinkSubscriptionHandler:
                 queue.put_nowait((_ERROR, [error]))
 
     def _on_give_up(self) -> None:
-        error = RuntimeError("WebSocket reconnect attempts exhausted")
+        error = RuntimeError("WebSocket closed for good: reconnect attempts exhausted or the server closed it with a fatal code")
         self._acknowledged = False
         self._subscribed.clear()
         if self._ack is not None and not self._ack.done():
@@ -709,6 +718,8 @@ from .graph_link_websocket_adapter import GraphLinkWebSocketAdapter
 
 
 class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
+    _FATAL_CLOSE_CODES = frozenset({4400, 4401, 4403, 4409})
+
     def __init__(
         self,
         *,
@@ -750,12 +761,17 @@ class DefaultGraphLinkWebSocketAdapter(GraphLinkWebSocketAdapter):
     async def _read(self, connection: ClientConnection) -> None:
         try:
             async for message in connection:
-                self.on_message(message if isinstance(message, str) else message.decode("utf-8"))
+                if isinstance(message, str):
+                    self.on_message(message)
         except Exception:
             pass
         if self._connection is connection:
             self._connection = None
-            if self.reconnect and not self._disposed and not self._reconnecting:
+            if self._disposed:
+                return
+            if connection.close_code in self._FATAL_CLOSE_CODES:
+                self.on_give_up()
+            elif self.reconnect and not self._reconnecting:
                 asyncio.ensure_future(self._reconnect())
 
     def _backoff_delay(self, attempt: int) -> float:

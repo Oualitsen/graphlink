@@ -30,15 +30,7 @@ class WsFaultsTest {
         val FAULT_URL = "http://127.0.0.1:$FAULT_PORT"
         val HTTP: HttpClient = HttpClient.newHttpClient()
 
-        const val NO_ACK_TIMEOUT = "the handshake waits for connection_ack with no timeout"
-        const val RECONNECTS_ON_4XXX = "reconnects and resubscribes after a 4xxx close instead of surfacing an error"
-        val KNOWN_DEFECTS = mapOf(
-            "ws-no-ack" to NO_ACK_TIMEOUT,
-            "ws-close-4400" to RECONNECTS_ON_4XXX,
-            "ws-close-4401" to RECONNECTS_ON_4XXX,
-            "ws-close-4403" to RECONNECTS_ON_4XXX,
-            "ws-close-4409" to RECONNECTS_ON_4XXX,
-        )
+        val KNOWN_DEFECTS = mapOf<String, String>()
 
         fun send(method: String, path: String): String {
             val builder = HttpRequest.newBuilder(URI.create(FAULT_URL + path))
