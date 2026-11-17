@@ -407,6 +407,9 @@ class DefaultGraphLinkWebSocketAdapter(
             override fun onMessage(ws: WebSocket, text: String) {
                 messageListener?.invoke(text)
             }
+            override fun onClosing(ws: WebSocket, code: Int, reason: String) {
+                ws.close(code, reason)
+            }
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                 if (!disposed) scheduleReconnect(onFailure)
             }

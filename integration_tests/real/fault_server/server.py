@@ -5,9 +5,16 @@ A test arms one fault with POST /_arm?fault=<name>; the next request to any othe
 fault instead of a normal answer, then the server is back to normal. Unarmed, it answers only what
 the tests need to prove a client still works afterwards: POST /graphql (getCount), GET /count,
 GET /status/{code}.
+
+It also speaks graphql-transport-ws on any path (a `counterTick` subscription answers `next(1)` then `complete`).
+POST /_arm?fault=ws-...&times=N makes the next N WebSocket connections misbehave; GET /_ws_log lists every
+connection with the frames the client sent.
 """
 import argparse
+import base64
+import hashlib
 import json
+import struct
 import sys
 import threading
 import time
@@ -16,7 +23,7 @@ from urllib.parse import parse_qsl, urlsplit
 
 GRAPHQL_OK = {'data': {'getCount': 19}}
 PRODUCT_OK = {'id': 'p1', 'name': 'Pen', 'price': 2.5, 'status': 'ACTIVE', 'tags': ['office']}
-STATE = {'armed': None, 'served': []}
+STATE = {'armed': None, 'served': [], 'ws_armed': None, 'ws_times': 0, 'ws_log': []}
 LOCK = threading.Lock()
 
 
@@ -118,6 +125,145 @@ FAULTS = {
 }
 
 
+WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+WS_FAULTS = ('ws-no-ack', 'ws-invalid-json', 'ws-unknown-type', 'ws-next-unknown-id', 'ws-next-after-complete',
+             'ws-error-message', 'ws-ping', 'ws-close-4400', 'ws-close-4401', 'ws-close-4403', 'ws-close-4409',
+             'ws-close-4429', 'ws-close-4500', 'ws-close-1011', 'ws-abrupt', 'ws-binary')
+
+
+def ws_frame(opcode, payload=b''):
+    head = bytes([0x80 | opcode])
+    size = len(payload)
+    if size < 126:
+        head += bytes([size])
+    elif size < 65536:
+        head += bytes([126]) + struct.pack('>H', size)
+    else:
+        head += bytes([127]) + struct.pack('>Q', size)
+    return head + payload
+
+
+def ws_text(value):
+    return ws_frame(1, (value if isinstance(value, str) else json.dumps(value)).encode('utf-8'))
+
+
+def ws_close(code):
+    return ws_frame(8, struct.pack('>H', code))
+
+
+def ws_read(rfile):
+    """Next (opcode, payload) from the client, or None when the peer is gone."""
+    head = rfile.read(2)
+    if len(head) < 2:
+        return None
+    opcode, size = head[0] & 0x0F, head[1] & 0x7F
+    if size == 126:
+        size = struct.unpack('>H', rfile.read(2))[0]
+    elif size == 127:
+        size = struct.unpack('>Q', rfile.read(8))[0]
+    mask = rfile.read(4) if head[1] & 0x80 else b''
+    payload = rfile.read(size)
+    if mask:
+        payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+    return opcode, payload
+
+
+def ws_next(sub_id, value):
+    return {'id': sub_id, 'type': 'next', 'payload': {'data': {'counterTick': value}}}
+
+
+def ws_serve(handler):
+    key = handler.headers.get('Sec-WebSocket-Key', '')
+    accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
+    with LOCK:
+        fault = None
+        if STATE['ws_armed'] and STATE['ws_times'] > 0:
+            fault = STATE['ws_armed']
+            STATE['ws_times'] -= 1
+            if STATE['ws_times'] == 0:
+                STATE['ws_armed'] = None
+        log = {'conn': len(STATE['ws_log']) + 1, 'fault': fault or 'ok', 'frames': []}
+        STATE['ws_log'].append(log)
+    handler.send_response(101)
+    handler.send_header('Upgrade', 'websocket')
+    handler.send_header('Connection', 'Upgrade')
+    handler.send_header('Sec-WebSocket-Accept', accept)
+    if 'graphql-transport-ws' in handler.headers.get('Sec-WebSocket-Protocol', ''):
+        handler.send_header('Sec-WebSocket-Protocol', 'graphql-transport-ws')
+    handler.end_headers()
+    handler.close_connection = True
+    sock, rfile = handler.connection, handler.rfile
+
+    def send(data):
+        sock.sendall(data)
+
+    while True:
+        try:
+            frame = ws_read(rfile)
+        except (OSError, ValueError):
+            return
+        if frame is None:
+            return
+        opcode, payload = frame
+        if opcode == 8:
+            log['frames'].append({'type': 'close'})
+            try:
+                send(ws_close(1000))
+            except OSError:
+                pass
+            return
+        if opcode == 9:
+            send(ws_frame(10, payload))
+            continue
+        if opcode != 1:
+            log['frames'].append({'type': 'binary' if opcode == 2 else f'opcode-{opcode}'})
+            continue
+        try:
+            message = json.loads(payload.decode('utf-8'))
+        except ValueError:
+            log['frames'].append({'type': 'invalid'})
+            continue
+        kind, sub_id = message.get('type'), message.get('id')
+        log['frames'].append({'type': kind, 'id': sub_id})
+        if kind == 'connection_init':
+            if fault == 'ws-no-ack':
+                continue
+            send(ws_text({'type': 'connection_ack'}))
+            if fault == 'ws-ping':
+                send(ws_text({'type': 'ping'}))
+        elif kind == 'subscribe':
+            if ws_fault_on_subscribe(fault, sock, send, sub_id):
+                return
+            send(ws_text(ws_next(sub_id, 1)))
+            send(ws_text({'id': sub_id, 'type': 'complete'}))
+            if fault == 'ws-next-after-complete':
+                send(ws_text(ws_next(sub_id, 2)))
+        elif kind == 'ping':
+            send(ws_text({'type': 'pong'}))
+
+
+def ws_fault_on_subscribe(fault, sock, send, sub_id):
+    """Sends the fault's frames; True when the connection is over."""
+    if fault == 'ws-invalid-json':
+        send(ws_text('{not json'))
+    elif fault == 'ws-unknown-type':
+        send(ws_text({'type': 'mystery', 'id': sub_id}))
+    elif fault == 'ws-next-unknown-id':
+        send(ws_text(ws_next('no-such-id', 99)))
+    elif fault == 'ws-binary':
+        send(ws_frame(2, b'\x00\x01\x02\xff'))
+    elif fault == 'ws-error-message':
+        send(ws_text({'id': sub_id, 'type': 'error', 'payload': [{'message': 'boom'}]}))
+        return True
+    elif fault and fault.startswith('ws-close-'):
+        send(ws_close(int(fault.rsplit('-', 1)[1])))
+        return True
+    elif fault == 'ws-abrupt':
+        sock.shutdown(2)
+        return True
+    return False
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
 
@@ -167,6 +313,8 @@ class Handler(BaseHTTPRequestHandler):
             self.connection.shutdown(2)
 
     def dispatch(self):
+        if self.headers.get('Upgrade', '').lower() == 'websocket':
+            return ws_serve(self)
         self.drain()
         url = urlsplit(self.path)
         path = url.path
@@ -176,17 +324,26 @@ class Handler(BaseHTTPRequestHandler):
             self.reply_json(200, {'ok': True})
             return threading.Thread(target=self.server.shutdown, daemon=True).start()
         if self.command == 'POST' and path == '/_arm':
-            name = dict(parse_qsl(url.query)).get('fault', '')
+            query = dict(parse_qsl(url.query))
+            name = query.get('fault', '')
+            if name in WS_FAULTS:
+                with LOCK:
+                    STATE['ws_armed'], STATE['ws_times'] = name, int(query.get('times', '1'))
+                return self.reply_json(200, {'armed': name})
             if name not in FAULTS:
-                return self.reply_json(400, {'error': f'unknown fault {name!r}', 'known': sorted(FAULTS)})
+                return self.reply_json(400, {'error': f'unknown fault {name!r}', 'known': sorted(FAULTS) + list(WS_FAULTS)})
             with LOCK:
                 STATE['armed'] = name
             return self.reply_json(200, {'armed': name})
         if self.command == 'POST' and path == '/_reset':
             with LOCK:
                 STATE['armed'] = None
+                STATE['ws_armed'], STATE['ws_times'] = None, 0
                 STATE['served'].clear()
+                STATE['ws_log'].clear()
             return self.reply_json(200, {'ok': True})
+        if path == '/_ws_log':
+            return self.reply_json(200, STATE['ws_log'])
         if path == '/_served':
             return self.reply_json(200, STATE['served'])
 

@@ -1,0 +1,18 @@
+[
+  {"fault": "ws-no-ack", "expect": "error", "noSubscribeBeforeAck": true},
+  {"fault": "ws-invalid-json", "expect": "settles"},
+  {"fault": "ws-unknown-type", "expect": "value"},
+  {"fault": "ws-next-unknown-id", "expect": "value"},
+  {"fault": "ws-next-after-complete", "expect": "value"},
+  {"fault": "ws-error-message", "expect": "error", "message": "boom"},
+  {"fault": "ws-ping", "expect": "value", "pong": true},
+  {"fault": "ws-close-4400", "expect": "error", "maxConnections": 1},
+  {"fault": "ws-close-4401", "expect": "error", "maxConnections": 1},
+  {"fault": "ws-close-4403", "expect": "error", "maxConnections": 1},
+  {"fault": "ws-close-4409", "expect": "error", "maxConnections": 1},
+  {"fault": "ws-close-4429", "expect": "settles", "times": 50, "waitSeconds": 4, "maxConnections": 5},
+  {"fault": "ws-close-4500", "expect": "value", "minConnections": 2},
+  {"fault": "ws-close-1011", "expect": "value", "minConnections": 2},
+  {"fault": "ws-abrupt", "expect": "value", "minConnections": 2},
+  {"fault": "ws-binary", "expect": "settles"}
+]
