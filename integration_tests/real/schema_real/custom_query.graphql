@@ -324,3 +324,7 @@ query partialAliased @glCaptureErrors {
   ok: getUser(id: "user-1") { id }
   bad: findUser(id: "error-id") { id }
 }
+
+query fetchBigUsers($count: Int!) {
+  bigUsers(count: $count) { id name email status tags address { street city country zip } }
+}
