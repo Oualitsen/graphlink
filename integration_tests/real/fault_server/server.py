@@ -18,6 +18,7 @@ import base64
 import hashlib
 import json
 import re
+import socketserver
 import struct
 import sys
 import threading
@@ -483,6 +484,10 @@ class Handler(BaseHTTPRequestHandler):
 class Server(ThreadingHTTPServer):
     request_queue_size = 128
     daemon_threads = True
+
+    def server_bind(self):
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = self.server_address[0], self.server_address[1]
 
 
 def main():

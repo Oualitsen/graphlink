@@ -903,6 +903,7 @@ jobs:
 
   java-reactor-real:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [build-spring-servers, generate]
     defaults:
       run:
@@ -922,10 +923,15 @@ jobs:
         with:
           name: spring-server-jars
           path: integration_tests/real
-      - run: make ci-no-generate
+      - run: |
+          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          WATCHDOG=$!
+          trap 'kill $WATCHDOG 2>/dev/null' EXIT
+          make ci-no-generate
 
   java-rxjava3-real:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [build-spring-servers, generate]
     defaults:
       run:
@@ -945,10 +951,15 @@ jobs:
         with:
           name: spring-server-jars
           path: integration_tests/real
-      - run: make ci-no-generate
+      - run: |
+          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          WATCHDOG=$!
+          trap 'kill $WATCHDOG 2>/dev/null' EXIT
+          make ci-no-generate
 
   java-mutiny-real:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [build-spring-servers, generate]
     defaults:
       run:
@@ -968,7 +979,11 @@ jobs:
         with:
           name: spring-server-jars
           path: integration_tests/real
-      - run: make ci-no-generate
+      - run: |
+          ( sleep 720; echo '=== watchdog: processes ==='; ps -eo pid,ppid,stat,pcpu,etime,args --sort=-pcpu | head -20; echo '=== watchdog: thread dumps ==='; for p in $(pgrep -f surefire); do jcmd "$p" Thread.print; done; pkill -f surefire ) &
+          WATCHDOG=$!
+          trap 'kill $WATCHDOG 2>/dev/null' EXIT
+          make ci-no-generate
 
   kotlin-real:
     runs-on: ubuntu-latest
