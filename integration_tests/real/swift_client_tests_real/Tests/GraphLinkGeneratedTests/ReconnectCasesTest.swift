@@ -184,7 +184,6 @@ final class ReconnectCasesTest: XCTestCase {
     }
 
     func test_aRestartDuringConnectionInitSubscribesOnce() async throws {
-        throw XCTSkip("known defect: after a restart during connection_init the CI runner never gets the subscription (passes locally, fails in Python); see REAL_AUDIT.md")
         connect(headers: { ["Ack-Delay": "3000"] })
         let initStream = subscribe("init")
         try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -192,6 +191,20 @@ final class ReconnectCasesTest: XCTestCase {
         try startServer()
         try await awaitEvent(initStream, "init")
         try await Task.sleep(nanoseconds: 2_000_000_000)
+        let count = try await starts("init")
+        XCTAssertEqual(count, 1)
+    }
+
+    func test_aServerDownLongerThanTheAckTimeoutStillResumes() async throws {
+        connect(headers: { ["Ack-Delay": "3000"] })
+        let initStream = subscribe("init")
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+
+        killPort()
+        try await Task.sleep(nanoseconds: 8_000_000_000)
+        try startServer()
+        try await awaitEvent(initStream, "init")
+        XCTAssertNil(initStream.error)
         let count = try await starts("init")
         XCTAssertEqual(count, 1)
     }

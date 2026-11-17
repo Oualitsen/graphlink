@@ -140,7 +140,6 @@ class ReconnectCasesTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await self.starts(client, "a"), 1)
         self.assertEqual(await self.starts(client, "b"), 1)
 
-    @unittest.skip("known defect: when the server is back within a second of the restart, the reconnect handshake sends connection_init but the subscription is never sent (it works after 5 s of downtime)")
     async def test_a_restart_during_connection_init_subscribes_once(self) -> None:
         async def provider() -> Dict[str, str]:
             return {"Ack-Delay": "3000"}
@@ -152,6 +151,21 @@ class ReconnectCasesTest(unittest.IsolatedAsyncioTestCase):
         await self.restart()
         await stream.wait_events("init")
         await asyncio.sleep(2)
+        self.assertEqual(await self.starts(client, "init"), 1)
+
+    async def test_a_server_down_longer_than_the_ack_timeout_still_resumes(self) -> None:
+        async def provider() -> Dict[str, str]:
+            return {"Ack-Delay": "3000"}
+
+        client = self.client(provider)
+        stream = self.subscribe(client, "init")
+        await asyncio.sleep(1)
+
+        kill_port(PORT)
+        await asyncio.sleep(8)
+        await self.restart()
+        await stream.wait_events("init")
+        self.assertIsNone(stream.error)
         self.assertEqual(await self.starts(client, "init"), 1)
 
     async def test_gives_up_with_a_visible_error(self) -> None:
