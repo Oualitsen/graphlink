@@ -25,7 +25,7 @@ stop-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
 
 test:
-	cd $(CLIENT_DIR) && mvn test
+	cd $(CLIENT_DIR) && mvn test -Djunit.jupiter.execution.timeout.default=120s -Djunit.jupiter.execution.timeout.thread.mode.default=SEPARATE_THREAD
 
 start-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true
