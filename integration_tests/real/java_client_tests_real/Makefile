@@ -1,4 +1,5 @@
 FAULT_PORT = 9946
+export WS_FAULT_PORT = $(FAULT_PORT)
 CLIENT_DIR = client-app
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/test/generated
 SERVER_JAR = ../spring_server/build/libs/graphlink-test-server-0.0.1.jar

@@ -355,7 +355,7 @@ don't confuse them:
   Add a fault in `server.py` and a row in `cases.json`, then run every language.
   The same server speaks `graphql-transport-ws` for the GraphQL real packages (`fault_server/ws_cases.json`, `POST /_arm?fault=ws-...&times=N`,
   `GET /_ws_log`); each has a `ws_faults` test (`ws_faults_test.dart`, `WsFaultsTest.java`, `WsFaultsTest.kt`, `ws-faults.test.ts`,
-  `test_ws_faults.py`, `WsFaultsTest.swift`, `ws_faults_test.go`) (open defects go in `KNOWN_DEFECTS` / `knownDefects`, none today). Fault ports 9940 to 9947.
+  `test_ws_faults.py`, `WsFaultsTest.swift`, `ws_faults_test.go`) (open defects go in `KNOWN_DEFECTS` / `knownDefects`, none today). Fault ports 9940 to 9947; the reactive Java packages run `WsFaultsStreamsTest` from `java_reactive_shared/` on 9948, 9949 and 9955.
 - **Uploads** (GraphQL multipart and REST, streaming rules shared by every client): one `*_client_upload_tests_real` package per target
   (`dart` and `dart_dio`, `java` with JDK/OkHttp variants, `java_reactor` with JDK/WebClient variants, `kotlin`, `typescript`, `python`,
   `swift`, `go`). Each runs the same real-socket tests against an in-process recording server (6 MB sha256, Content-Length for known
