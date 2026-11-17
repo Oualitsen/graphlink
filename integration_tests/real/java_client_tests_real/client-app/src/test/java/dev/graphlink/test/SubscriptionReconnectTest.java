@@ -19,10 +19,8 @@ class SubscriptionReconnectTest {
     private static final int PORT_HALT   = 9996;
     private static final int PORT_BEFORE = 9993;
 
-    private static String jarPath() {
-        String env = System.getenv("SERVER_JAR");
-        if (env != null && !env.isBlank()) return env;
-        return "../../spring_server/build/libs/graphlink-test-server-0.0.1.jar";
+    private static String serverScript() {
+        return "../../fault_server/server.py";
     }
 
     static String wsUrl(int port)   { return "ws://localhost:"   + port + "/graphql"; }
@@ -35,7 +33,7 @@ class SubscriptionReconnectTest {
     void counterTick_resumesAfterServerHalt() throws Exception {
         log("=== counterTick_resumesAfterServerHalt START (port %d) ===", PORT_HALT);
         killPort(PORT_HALT);
-        startJar(PORT_HALT);
+        startServer(PORT_HALT);
 
         JacksonGraphLinkJsonCodec codec = new JacksonGraphLinkJsonCodec();
         DefaultGraphLinkWebSocketAdapter ws =
@@ -71,7 +69,7 @@ class SubscriptionReconnectTest {
             log("  restarting server on port %d in background...", PORT_HALT);
             Thread restartThread = new Thread(() -> {
                 try {
-                    startJar(PORT_HALT);
+                    startServer(PORT_HALT);
                     log("  server restarted on port %d", PORT_HALT);
                 } catch (Exception e) {
                     log("  ERROR restarting server: %s", e.getMessage());
@@ -96,7 +94,7 @@ class SubscriptionReconnectTest {
     @Timeout(value = 2, unit = TimeUnit.MINUTES)
     void secureTicks_sendsTheRotatedTokenOnResume() throws Exception {
         killPort(PORT_HALT);
-        startJar(PORT_HALT);
+        startServer(PORT_HALT);
 
         String first = "java-first-" + System.nanoTime();
         String second = "java-second-" + System.nanoTime();
@@ -120,7 +118,7 @@ class SubscriptionReconnectTest {
             killPort(PORT_HALT);
             Thread restart = new Thread(() -> {
                 try {
-                    startJar(PORT_HALT);
+                    startServer(PORT_HALT);
                 } catch (Exception e) {
                     log("  ERROR restarting server: %s", e.getMessage());
                 }
@@ -178,7 +176,7 @@ class SubscriptionReconnectTest {
             log("  starting server on port %d in background...", PORT_BEFORE);
             Thread startThread = new Thread(() -> {
                 try {
-                    startJar(PORT_BEFORE);
+                    startServer(PORT_BEFORE);
                     log("  server started on port %d", PORT_BEFORE);
                 } catch (Exception e) {
                     log("  ERROR starting server: %s", e.getMessage());
@@ -246,17 +244,15 @@ class SubscriptionReconnectTest {
         log("  [killPort] done (port %d)", port);
     }
 
-    static void startJar(int port) throws Exception {
-        log("  [startJar] launching JAR on port %d: %s", port, jarPath());
+    static void startServer(int port) throws Exception {
         ProcessBuilder pb = new ProcessBuilder(
-                "java", "-jar", jarPath(), "--server.port=" + port, "--management.server.port=-1");
+                "python3", serverScript(), "--port", String.valueOf(port), "--live");
         pb.redirectOutput(ProcessBuilder.Redirect.DISCARD);
         pb.redirectError(ProcessBuilder.Redirect.DISCARD);
         pb.start();
-        log("  [startJar] process launched, waiting for port %d...", port);
+        log("  [startServer] process launched, waiting for port %d...", port);
         waitForPort(port);
-        Thread.sleep(2000);
-        log("  [startJar] port %d is open", port);
+        log("  [startServer] port %d is open", port);
     }
 
     private static void waitForPort(int port) throws Exception {

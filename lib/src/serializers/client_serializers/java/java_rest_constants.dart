@@ -1,4 +1,4 @@
-import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 
 const javaRestBody = r'''
@@ -467,97 +467,108 @@ public final class GraphLinkRestUtils {
 }
 ''';
 
-String javaRestAdapterInterface(JavaReactiveFlavor flavor) => '''
-@FunctionalInterface
-public interface GLRestAdapter {
-    ${flavor.singleType('RestResponse')} execute(RestRequest request);
-}
-''';
+final _cg = JavaCodeGenUtils();
+
+const _override = '@Override\n';
+const _emptyResponse =
+    'throw new IllegalStateException("Empty REST response for a non-null result of " + request.getMethod() + " " + request.getPath());';
+
+String _members(List<String> members) => members.join('\n\n');
+
+String javaRestAdapterInterface(JavaReactiveFlavor flavor) => '@FunctionalInterface\n${_cg.createInterface(
+      interfaceName: 'GLRestAdapter',
+      statements: ['${flavor.singleType('RestResponse')} execute(RestRequest request);'],
+    )}\n';
 
 String javaNoGraphQLAdapter(JavaReactiveFlavor flavor, {required bool operationName}) {
-  final params = operationName ? 'String payload, String operationName' : 'String payload';
   const failure = 'new IllegalStateException("This schema has no GraphQL operation: pass no GraphQL adapter")';
-  return '''
-public final class GraphLinkNoGraphQL implements GraphLinkClientAdapter {
-    @Override
-    public ${flavor.singleType('String')} execute($params) {
-        ${flavor.isReactive ? 'return ${flavor.error(failure)};' : 'throw $failure;'}
-    }
+  return '${_cg.createClass(
+    className: 'GraphLinkNoGraphQL',
+    finalClass: true,
+    interfaceNames: ['GraphLinkClientAdapter'],
+    statements: [
+      _cg.method(
+        returnType: '${_override}public ${flavor.singleType('String')}',
+        methodName: 'execute',
+        arguments: ['String payload', if (operationName) 'String operationName'],
+        statements: [flavor.isReactive ? 'return ${flavor.error(failure)};' : 'throw $failure;'],
+      ),
+    ],
+  )}\n';
 }
-''';
-}
-
-
-String _lambdaBlock(String header, List<String> lines) => '$header\n${lines.join('\n').ident()}\n});';
-
-String _method(String signature, List<String> body) => '$signature {\n${body.join('\n').ident()}\n}';
-
-String _braces(String header, List<String> lines) => '$header {\n${lines.join('\n').ident()}\n}';
 
 class _ValueOp {
   final String name;
   final String typeParams;
   final String resultType;
-  final String extraParams;
-  final String decodeParam;
+  final List<String> extraParams;
   final List<String> read;
-  final List<String> readOrNull;
+  final List<String>? readOrNull;
   final String apply;
 
-  const _ValueOp({
+  _ValueOp({
     required this.name,
     this.typeParams = '',
     required this.resultType,
-    this.extraParams = '',
-    this.decodeParam = '',
+    this.extraParams = const [],
     required this.read,
-    List<String>? readOrNull,
+    this.readOrNull,
     required this.apply,
-  }) : readOrNull = readOrNull ?? read;
+  });
 }
 
 String _valueOps(JavaReactiveFlavor flavor, _ValueOp op) {
-  final params = 'RestRequest request${op.extraParams}${op.decodeParam}, Runnable afterSuccess';
-  const empty =
-      'throw new IllegalStateException("Empty REST response for a non-null result of " + request.getMethod() + " " + request.getPath());';
+  final arguments = ['RestRequest request', ...op.extraParams, 'Runnable afterSuccess'];
   List<String> tail(List<String> read, {required bool nullable}) => [
         ...read,
-        if (!nullable) _braces('if (value == null)', [empty]),
-        '${op.resultType} result = ${op.apply};',
+        if (!nullable)
+          _cg.ifStatement(condition: 'value == null', ifBlockStatements: [_emptyResponse]),
+        _cg.constDecl('result', op.apply, type: op.resultType),
         'afterSuccess.run();',
       ];
 
-  if (!flavor.isReactive) {
-    return [
-      _method('protected ${op.typeParams}${op.resultType} ${op.name}($params)', [
-        'RestResponse response = restCall(request);',
-        ...tail(op.read, nullable: false),
-        'return result;',
-      ]),
-      _method('protected ${op.typeParams}${op.resultType} ${op.name}OrNull($params)', [
-        'RestResponse response = restCall(request);',
-        ...tail(op.readOrNull, nullable: true),
-        'return result;',
-      ]),
-    ].join('\n\n');
+  String build(String suffix, List<String> read, {required bool nullable}) {
+    final nullableName = '${op.name}$suffix';
+    if (!flavor.isReactive) {
+      return _cg.method(
+        returnType: 'protected ${op.typeParams}${op.resultType}',
+        methodName: nullableName,
+        arguments: arguments,
+        statements: [
+          _cg.constDecl('response', 'restCall(request)', type: 'RestResponse'),
+          ...tail(read, nullable: nullable),
+          'return result;',
+        ],
+      );
+    }
+    final open = nullable
+        ? flavor.flatMapToMaybeOpen('restCall(request)', 'response')
+        : flavor.mapOpen('restCall(request)', 'response');
+    final returned = nullable ? flavor.maybeOf('result') : 'result';
+    return _cg.method(
+      returnType: 'protected ${op.typeParams}${nullable ? flavor.maybeType(op.resultType) : flavor.singleType(op.resultType)}',
+      methodName: nullableName,
+      arguments: arguments,
+      statements: ['return ${_cg.lambdaBlock(open, [...tail(read, nullable: nullable), 'return $returned;'])}'],
+    );
   }
-  return [
-    _method('protected ${op.typeParams}${flavor.singleType(op.resultType)} ${op.name}($params)', [
-      'return ${_lambdaBlock(flavor.mapOpen('restCall(request)', 'response'), [...tail(op.read, nullable: false), 'return result;'])}',
-    ]),
-    _method('protected ${op.typeParams}${flavor.maybeType(op.resultType)} ${op.name}OrNull($params)', [
-      'return ${_lambdaBlock(flavor.flatMapToMaybeOpen('restCall(request)', 'response'), [...tail(op.readOrNull, nullable: true), 'return ${flavor.maybeOf('result')};'])}',
-    ]),
-  ].join('\n\n');
+
+  return _members([
+    build('', op.read, nullable: false),
+    build('OrNull', op.readOrNull ?? op.read, nullable: true),
+  ]);
 }
 
 String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter}) {
   final r = flavor.isReactive;
   final fetchType = flavor.singleType('Optional<Object>');
   const staleRead = 'decode.apply(glDecoder__.decode(cached.data).get("__gl_v__"))';
+  const completableFuture = 'java.util.concurrent.CompletableFuture<Optional<Object>>';
 
-  final constructor = _braces(
-    'protected GraphLinkRestResolver(\n${[
+  final constructor = _cg.createMethod(
+    returnType: 'protected',
+    methodName: 'GraphLinkRestResolver',
+    arguments: [
       'GraphLinkClientAdapter adapter',
       if (withGetAdapter) 'GraphLinkClientAdapter getAdapter',
       'GLRestAdapter restAdapter',
@@ -565,86 +576,115 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
       'GraphLinkCacheStore store',
       'GraphLinkJsonEncoder encoder',
       'GraphLinkJsonDecoder decoder',
-    ].join(',\n').ident().ident()}\n)',
-    [
+    ],
+    statements: [
       'super(adapter, ${withGetAdapter ? 'getAdapter, ' : ''}fragmentMap, store, encoder, decoder);',
       'this.restAdapter = restAdapter;',
     ],
   );
 
   final restCall = r
-      ? [
-          _method('protected ${flavor.singleType('RestResponse')} restCall(RestRequest request)', [
-            'return ${flavor.flatMap('restAdapter.execute(request)', 'response -> restChecked(response)')};',
-          ]),
-          _method('private ${flavor.singleType('RestResponse')} restChecked(RestResponse response)', [
-            _braces('if (response.isSuccess())', ['return ${flavor.wrapValue('response')};']),
-            'return ${flavor.error('new RestError(response.getStatus(), response.getHeaders(), response.text())')};',
-          ]),
-        ].join('\n\n')
-      : _method('protected RestResponse restCall(RestRequest request)', [
-          'RestResponse response = restAdapter.execute(request);',
-          _braces('if (!response.isSuccess())', [
-            'throw new RestError(response.getStatus(), response.getHeaders(), response.text());',
-          ]),
-          'return response;',
-        ]);
+      ? _members([
+          _cg.method(
+            returnType: 'protected ${flavor.singleType('RestResponse')}',
+            methodName: 'restCall',
+            arguments: ['RestRequest request'],
+            statements: ['return ${flavor.flatMap('restAdapter.execute(request)', 'response -> restChecked(response)')};'],
+          ),
+          _cg.method(
+            returnType: 'private ${flavor.singleType('RestResponse')}',
+            methodName: 'restChecked',
+            arguments: ['RestResponse response'],
+            statements: [
+              _cg.ifStatement(
+                condition: 'response.isSuccess()',
+                ifBlockStatements: ['return ${flavor.wrapValue('response')};'],
+              ),
+              'return ${flavor.error('new RestError(response.getStatus(), response.getHeaders(), response.text())')};',
+            ],
+          ),
+        ])
+      : _cg.method(
+          returnType: 'protected RestResponse',
+          methodName: 'restCall',
+          arguments: ['RestRequest request'],
+          statements: [
+            _cg.constDecl('response', 'restAdapter.execute(request)', type: 'RestResponse'),
+            _cg.ifStatement(
+              condition: '!response.isSuccess()',
+              ifBlockStatements: ['throw new RestError(response.getStatus(), response.getHeaders(), response.text());'],
+            ),
+            'return response;',
+          ],
+        );
 
   final voidOp = r
-      ? _method('protected ${flavor.voidType} restVoid(RestRequest request, Runnable afterSuccess)', [
-          'return ${_lambdaBlock(flavor.flatMapToVoidOpen('restCall(request)', 'response'), [
-                'response.drain();',
-                'afterSuccess.run();',
-                'return ${flavor.voidDone};',
-              ])}',
-        ])
-      : _method('protected void restVoid(RestRequest request, Runnable afterSuccess)', [
-          'restCall(request).drain();',
-          'afterSuccess.run();',
-        ]);
+      ? _cg.method(
+          returnType: 'protected ${flavor.voidType}',
+          methodName: 'restVoid',
+          arguments: ['RestRequest request', 'Runnable afterSuccess'],
+          statements: [
+            'return ${_cg.lambdaBlock(flavor.flatMapToVoidOpen('restCall(request)', 'response'), [
+                  'response.drain();',
+                  'afterSuccess.run();',
+                  'return ${flavor.voidDone};',
+                ])}',
+          ],
+        )
+      : _cg.method(
+          returnType: 'protected void',
+          methodName: 'restVoid',
+          arguments: ['RestRequest request', 'Runnable afterSuccess'],
+          statements: ['restCall(request).drain();', 'afterSuccess.run();'],
+        );
 
   final jsonOps = _valueOps(
     flavor,
-    const _ValueOp(
+    _ValueOp(
       name: 'restJson',
       typeParams: '<T> ',
       resultType: 'T',
-      extraParams: ', List<String> path',
-      decodeParam: ', Function<Object, T> decode',
-      read: ['Object value = restParse(response, path);'],
+      extraParams: ['List<String> path', 'Function<Object, T> decode'],
+      read: [_cg.constDecl('value', 'restParse(response, path)', type: 'Object')],
       apply: 'decode.apply(value)',
     ),
   );
   final textOps = _valueOps(
     flavor,
-    const _ValueOp(
+    _ValueOp(
       name: 'restText',
       resultType: 'String',
-      read: ['String value = response.text();'],
-      readOrNull: ['String value = response.text();', 'if (value.isEmpty()) {\n    value = null;\n}'],
+      read: [_cg.constDecl('value', 'response.text()', type: 'String')],
+      readOrNull: [
+        'String value = response.text();',
+        _cg.ifStatement(condition: 'value.isEmpty()', ifBlockStatements: ['value = null;']),
+      ],
       apply: 'value',
     ),
   );
   final downloadOps = _valueOps(
     flavor,
-    const _ValueOp(
+    _ValueOp(
       name: 'restDownload',
       resultType: 'GLDownload',
-      extraParams: ', DownloadProgressCallback onProgress',
-      read: ['GLDownload value = restDownloadOf(response, onProgress);'],
+      extraParams: ['DownloadProgressCallback onProgress'],
+      read: [_cg.constDecl('value', 'restDownloadOf(response, onProgress)', type: 'GLDownload')],
       apply: 'value',
     ),
   );
 
-  final fetch = r
-      ? _method('protected $fetchType restFetch(RestRequest request, List<String> path, boolean allowEmpty)', [
-          'return ${flavor.mapTo('restCall(request)', 'response -> restFetched(request, restParse(response, path), allowEmpty)')};',
-        ])
-      : _method('protected Optional<Object> restFetch(RestRequest request, List<String> path, boolean allowEmpty)', [
-          'return restFetched(request, restParse(restCall(request), path), allowEmpty);',
-        ]);
+  final fetch = _cg.method(
+    returnType: 'protected ${r ? fetchType : 'Optional<Object>'}',
+    methodName: 'restFetch',
+    arguments: ['RestRequest request', 'List<String> path', 'boolean allowEmpty'],
+    statements: [
+      r
+          ? 'return ${flavor.mapTo('restCall(request)', 'response -> restFetched(request, restParse(response, path), allowEmpty)')};'
+          : 'return restFetched(request, restParse(restCall(request), path), allowEmpty);',
+    ],
+  );
 
-  String cachedSignature(String returnType, String fetchArg) => 'protected <T> $returnType restCached(\n${[
+  List<String> cachedArguments(String fetchArg) => [
         'String name',
         'Map<String, Object> variables',
         'long ttl',
@@ -652,454 +692,779 @@ String javaRestResolver(JavaReactiveFlavor flavor, {required bool withGetAdapter
         'boolean staleIfOffline',
         fetchArg,
         'Function<Object, T> decode',
-      ].join(',\n').ident().ident()}\n)';
+      ];
+
+  final cacheLookup = [
+    _cg.constDecl('key', 'GraphLinkPartialQuery.computeCacheKey(name, variables, glEncoder__)', type: 'String'),
+    _cg.constDecl('cached', 'getFromCache(key, tags, staleIfOffline)', type: 'GraphLinkCacheEntry'),
+  ];
 
   final storeBody = [
-    'Object json = fetched.orElse(null);',
-    'T value = decode.apply(json);',
-    _braces('if (json != null)', [
-      'Map<String, Object> wrapper = new HashMap<>();',
+    _cg.constDecl('json', 'fetched.orElse(null)', type: 'Object'),
+    _cg.constDecl('value', 'decode.apply(json)', type: 'T'),
+    _cg.ifStatement(condition: 'json != null', ifBlockStatements: [
+      _cg.constDecl('wrapper', 'new HashMap<>()', type: 'Map<String, Object>'),
       'wrapper.put("__gl_v__", json);',
-      'GraphLinkCacheEntry entry = new GraphLinkCacheEntry(glEncoder__.encode(wrapper), System.currentTimeMillis() + ttl * 1000L);',
+      _cg.constDecl(
+        'entry',
+        'new GraphLinkCacheEntry(glEncoder__.encode(wrapper), System.currentTimeMillis() + ttl * 1000L)',
+        type: 'GraphLinkCacheEntry',
+      ),
       'glStoreIfCurrent(key, glEncoder__.encode(entry.toJson()), tags, epoch);',
     ]),
     'return value;',
   ];
 
   final cached = r
-      ? [
-          _method(cachedSignature(flavor.singleType('T'), 'Supplier<$fetchType> fetch'), [
-            'String key = GraphLinkPartialQuery.computeCacheKey(name, variables, glEncoder__);',
-            'GraphLinkCacheEntry cached = getFromCache(key, tags, staleIfOffline);',
-            _braces('if (cached != null && !cached.stale)', ['return ${flavor.wrapValue(staleRead)};']),
-            'long epoch = glEpoch(tags);',
-            'return ${_lambdaBlock(flavor.onErrorResumeOpen(flavor.mapTo('restFlight(key + "|" + epoch, fetch)', 'fetched -> restStore(key, epoch, ttl, tags, fetched, decode)'), 'failure'), [
-                  _braces('if (failure instanceof RestError || cached == null)', ['return ${flavor.error('failure')};']),
+      ? _members([
+          _cg.method(
+            returnType: 'protected <T> ${flavor.singleType('T')}',
+            methodName: 'restCached',
+            arguments: cachedArguments('Supplier<$fetchType> fetch'),
+            statements: [
+              ...cacheLookup,
+              _cg.ifStatement(
+                condition: 'cached != null && !cached.stale',
+                ifBlockStatements: ['return ${flavor.wrapValue(staleRead)};'],
+              ),
+              _cg.constDecl('epoch', 'glEpoch(tags)', type: 'long'),
+              'return ${_cg.lambdaBlock(
+                flavor.onErrorResumeOpen(
+                  flavor.mapTo('restFlight(key + "|" + epoch, fetch)', 'fetched -> restStore(key, epoch, ttl, tags, fetched, decode)'),
+                  'failure',
+                ),
+                [
+                  _cg.ifStatement(
+                    condition: 'failure instanceof RestError || cached == null',
+                    ifBlockStatements: ['return ${flavor.error('failure')};'],
+                  ),
                   'return ${flavor.wrapValue(staleRead)};',
+                ],
+              )}',
+            ],
+          ),
+          _cg.method(
+            returnType: 'protected <T> ${flavor.maybeType('T')}',
+            methodName: 'restCachedOrNull',
+            arguments: cachedArguments('Supplier<$fetchType> fetch'),
+            statements: [
+              'return ${_cg.lambdaBlock(
+                flavor.flatMapToMaybeOpen(
+                  'restCached(name, variables, ttl, tags, staleIfOffline, fetch, json -> Optional.ofNullable(decode.apply(json)))',
+                  'cached',
+                ),
+                ['return ${flavor.maybeOf('cached.orElse(null)')};'],
+              )}',
+            ],
+          ),
+          _cg.method(
+            returnType: 'private <T> T',
+            methodName: 'restStore',
+            arguments: [
+              'String key',
+              'long epoch',
+              'long ttl',
+              'List<String> tags',
+              'Optional<Object> fetched',
+              'Function<Object, T> decode',
+            ],
+            statements: storeBody,
+          ),
+        ])
+      : _cg.method(
+          returnType: 'protected <T> T',
+          methodName: 'restCached',
+          arguments: cachedArguments('Supplier<Optional<Object>> fetch'),
+          statements: [
+            ...cacheLookup,
+            _cg.ifStatement(
+              condition: 'cached != null && !cached.stale',
+              ifBlockStatements: ['return $staleRead;'],
+            ),
+            _cg.constDecl('epoch', 'glEpoch(tags)', type: 'long'),
+            'Optional<Object> fetched;',
+            _cg.tryCatch(
+              tryStatements: ['fetched = restFlight(key + "|" + epoch, fetch);'],
+              catches: [
+                const JavaCatch('RestError', 'e', ['throw e;']),
+                JavaCatch('RuntimeException', 'e', [
+                  _cg.ifStatement(condition: 'cached != null', ifBlockStatements: ['return $staleRead;']),
+                  'throw e;',
+                ]),
+              ],
+            ),
+            ...storeBody,
+          ],
+        );
+
+  final restFlight = r
+      ? _cg.method(
+          returnType: 'private $fetchType',
+          methodName: 'restFlight',
+          arguments: ['String key', 'Supplier<$fetchType> fetch'],
+          statements: [
+            'return ${_cg.lambdaBlock(flavor.deferOpen(), [
+                  _cg.constDecl('mine', 'new java.util.concurrent.CompletableFuture<>()', type: completableFuture),
+                  _cg.constDecl('running', 'restFlights__.putIfAbsent(key, mine)', type: completableFuture),
+                  _cg.ifStatement(
+                    condition: 'running != null',
+                    ifBlockStatements: ['return ${flavor.bridgeFuture('running.thenApply(v -> v)')};'],
+                  ),
+                  _cg.lambdaBlock('${flavor.toFuture('fetch.get()')}.whenComplete((value, e) -> {', [
+                    'restFlights__.remove(key, mine);',
+                    _cg.ifStatement(
+                      condition: 'e == null',
+                      ifBlockStatements: ['mine.complete(value);'],
+                      elseBlockStatements: [
+                        'mine.completeExceptionally(${_cg.ternaryOp(
+                          condition: 'e instanceof java.util.concurrent.CompletionException && e.getCause() != null',
+                          positiveStatement: 'e.getCause()',
+                          negativeStatement: 'e',
+                        )});',
+                      ],
+                    ),
+                  ]),
+                  'return ${flavor.bridgeFuture('mine.thenApply(v -> v)')};',
                 ])}',
-          ]),
-          _method(cachedSignature(flavor.maybeType('T'), 'Supplier<$fetchType> fetch').replaceFirst('restCached', 'restCachedOrNull'), [
-            'return ${_lambdaBlock(
-              flavor.flatMapToMaybeOpen('restCached(name, variables, ttl, tags, staleIfOffline, fetch, json -> Optional.ofNullable(decode.apply(json)))', 'cached'),
-              ['return ${flavor.maybeOf('cached.orElse(null)')};'],
-            )}',
-          ]),
-          _method('private <T> T restStore(String key, long epoch, long ttl, List<String> tags, Optional<Object> fetched, Function<Object, T> decode)', storeBody),
-        ].join('\n\n')
-      : _method(cachedSignature('T', 'Supplier<Optional<Object>> fetch'), [
-          'String key = GraphLinkPartialQuery.computeCacheKey(name, variables, glEncoder__);',
-          'GraphLinkCacheEntry cached = getFromCache(key, tags, staleIfOffline);',
-          _braces('if (cached != null && !cached.stale)', ['return $staleRead;']),
-          'long epoch = glEpoch(tags);',
-          'Optional<Object> fetched;',
-          [
-            _braces('try', ['fetched = restFlight(key + "|" + epoch, fetch);']),
-            _braces('catch (RestError e)', ['throw e;']),
-            _braces('catch (RuntimeException e)', [
-              _braces('if (cached != null)', ['return $staleRead;']),
-              'throw e;',
+          ],
+        )
+      : _cg.method(
+          returnType: 'private Optional<Object>',
+          methodName: 'restFlight',
+          arguments: ['String key', 'Supplier<Optional<Object>> fetch'],
+          statements: [
+            _cg.constDecl('mine', 'new java.util.concurrent.CompletableFuture<>()', type: completableFuture),
+            _cg.constDecl('running', 'restFlights__.putIfAbsent(key, mine)', type: completableFuture),
+            _cg.ifStatement(condition: 'running != null', ifBlockStatements: [
+              _cg.tryCatch(
+                tryStatements: ['return running.join();'],
+                catches: [
+                  JavaCatch('java.util.concurrent.CompletionException', 'e', [
+                    _cg.ifStatement(
+                      condition: 'e.getCause() instanceof RuntimeException',
+                      ifBlockStatements: ['throw (RuntimeException) e.getCause();'],
+                    ),
+                    'throw e;',
+                  ]),
+                ],
+              ),
             ]),
-          ].join(' '),
-          ...storeBody,
-        ]);
+            _cg.tryCatch(
+              tryStatements: [
+                _cg.constDecl('result', 'fetch.get()', type: 'Optional<Object>'),
+                'mine.complete(result);',
+                'return result;',
+              ],
+              catches: [
+                const JavaCatch('RuntimeException', 'e', ['mine.completeExceptionally(e);', 'throw e;']),
+              ],
+              finallyStatements: ['restFlights__.remove(key, mine);'],
+            ),
+          ],
+        );
 
-  final helpers = [
-    ...(r ? [
-      _method('private $fetchType restFlight(String key, Supplier<$fetchType> fetch)', [
-      'return ${_lambdaBlock(flavor.deferOpen(), [
-        'java.util.concurrent.CompletableFuture<Optional<Object>> mine = new java.util.concurrent.CompletableFuture<>();',
-        'java.util.concurrent.CompletableFuture<Optional<Object>> running = restFlights__.putIfAbsent(key, mine);',
-        _braces('if (running != null)', ['return ${flavor.bridgeFuture('running.thenApply(v -> v)')};']),
-        _lambdaBlock('${flavor.toFuture('fetch.get()')}.whenComplete((value, e) -> {', [
-          'restFlights__.remove(key, mine);',
-          _braces('if (e == null)', ['mine.complete(value);']) +
-              ' else ' +
-              '{\n    mine.completeExceptionally(e instanceof java.util.concurrent.CompletionException && e.getCause() != null ? e.getCause() : e);\n}',
-        ]),
-        'return ${flavor.bridgeFuture('mine.thenApply(v -> v)')};',
-      ])}',
-    ]),
-    ] : [
-      _method('private Optional<Object> restFlight(String key, Supplier<Optional<Object>> fetch)', [
-      'java.util.concurrent.CompletableFuture<Optional<Object>> mine = new java.util.concurrent.CompletableFuture<>();',
-      'java.util.concurrent.CompletableFuture<Optional<Object>> running = restFlights__.putIfAbsent(key, mine);',
-      _braces('if (running != null)', [
-        _braces('try', ['return running.join();']) +
-            ' ' +
-            _braces('catch (java.util.concurrent.CompletionException e)', [
-              _braces('if (e.getCause() instanceof RuntimeException)', ['throw (RuntimeException) e.getCause();']),
-              'throw e;',
-            ]),
-      ]),
-      _braces('try', [
-            'Optional<Object> result = fetch.get();',
-            'mine.complete(result);',
-            'return result;',
-          ]) +
-          ' ' +
-          _braces('catch (RuntimeException e)', ['mine.completeExceptionally(e);', 'throw e;']) +
-          ' ' +
-          _braces('finally', ['restFlights__.remove(key, mine);']),
-    ]),
-    ]),
-    _method('private Optional<Object> restFetched(RestRequest request, Object value, boolean allowEmpty)', [
-      _braces('if (value == null && !allowEmpty)', [
-        'throw new IllegalStateException("Empty REST response for a non-null result of " + request.getMethod() + " " + request.getPath());',
-      ]),
-      'return Optional.ofNullable(value);',
-    ]),
-    _method('private GLDownload restDownloadOf(RestResponse response, DownloadProgressCallback onProgress)', [
-      _braces('if (response.getStatus() == 204)', ['response.drain();', 'return null;']),
-      'return GLDownload.fromResponse(response, onProgress);',
-    ]),
-    _method('private Object restParse(RestResponse response, List<String> path)', [
-      'String text = response.text();',
-      _braces('if (text.trim().isEmpty())', ['return null;']),
-      'Map<String, Object> wrapper = glDecoder__.decode("{\\"v\\":" + text + "}");',
-      'return GraphLinkRestUtils.restNavigate(wrapper.get("v"), path);',
-    ]),
-    _method('protected String restEncodeJson(Object value)', [
-      'Map<String, Object> wrapper = new HashMap<>();',
-      'wrapper.put("v", value);',
-      'String text = glEncoder__.encode(wrapper);',
-      "return text.substring(text.indexOf(':') + 1, text.lastIndexOf('}')).trim();",
-    ]),
-  ].join('\n\n');
+  final helpers = _members([
+    restFlight,
+    _cg.method(
+      returnType: 'private Optional<Object>',
+      methodName: 'restFetched',
+      arguments: ['RestRequest request', 'Object value', 'boolean allowEmpty'],
+      statements: [
+        _cg.ifStatement(condition: 'value == null && !allowEmpty', ifBlockStatements: [_emptyResponse]),
+        'return Optional.ofNullable(value);',
+      ],
+    ),
+    _cg.method(
+      returnType: 'private GLDownload',
+      methodName: 'restDownloadOf',
+      arguments: ['RestResponse response', 'DownloadProgressCallback onProgress'],
+      statements: [
+        _cg.ifStatement(condition: 'response.getStatus() == 204', ifBlockStatements: ['response.drain();', 'return null;']),
+        'return GLDownload.fromResponse(response, onProgress);',
+      ],
+    ),
+    _cg.method(
+      returnType: 'private Object',
+      methodName: 'restParse',
+      arguments: ['RestResponse response', 'List<String> path'],
+      statements: [
+        _cg.constDecl('text', 'response.text()', type: 'String'),
+        _cg.ifStatement(condition: 'text.trim().isEmpty()', ifBlockStatements: ['return null;']),
+        _cg.constDecl('wrapper', 'glDecoder__.decode("{\\"v\\":" + text + "}")', type: 'Map<String, Object>'),
+        'return GraphLinkRestUtils.restNavigate(wrapper.get("v"), path);',
+      ],
+    ),
+    _cg.method(
+      returnType: 'protected String',
+      methodName: 'restEncodeJson',
+      arguments: ['Object value'],
+      statements: [
+        _cg.constDecl('wrapper', 'new HashMap<>()', type: 'Map<String, Object>'),
+        'wrapper.put("v", value);',
+        _cg.constDecl('text', 'glEncoder__.encode(wrapper)', type: 'String'),
+        "return text.substring(text.indexOf(':') + 1, text.lastIndexOf('}')).trim();",
+      ],
+    ),
+  ]);
 
-  final body = [
-    'protected final GLRestAdapter restAdapter;',
-    'private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<Optional<Object>>> restFlights__ = new java.util.concurrent.ConcurrentHashMap<>();',
-    constructor,
-    restCall,
-    voidOp,
-    jsonOps,
-    textOps,
-    downloadOps,
-    fetch,
-    cached,
-    helpers,
-  ].join('\n\n');
-  return 'public class GraphLinkRestResolver extends GraphLinkResolverBase {\n${body.ident()}\n}\n';
+  return '${_cg.createClass(
+    className: 'GraphLinkRestResolver',
+    superClass: 'GraphLinkResolverBase',
+    statements: [
+      _members([
+        'protected final GLRestAdapter restAdapter;',
+        'private final java.util.concurrent.ConcurrentHashMap<String, $completableFuture> restFlights__ = new java.util.concurrent.ConcurrentHashMap<>();',
+        constructor,
+        restCall,
+        voidOp,
+        jsonOps,
+        textOps,
+        downloadOps,
+        fetch,
+        cached,
+        helpers,
+      ]),
+    ],
+  )}\n';
 }
+
+String _restUrlMethod() => _cg.method(
+      returnType: 'private String',
+      methodName: 'url',
+      arguments: ['RestRequest request'],
+      statements: [
+        _cg.constDecl(
+          'base',
+          _cg.ternaryOp(
+            condition: 'baseUrl.endsWith("/")',
+            positiveStatement: 'baseUrl.substring(0, baseUrl.length() - 1)',
+            negativeStatement: 'baseUrl',
+          ),
+          type: 'String',
+        ),
+        'return base + request.getPath() + queryString(request.getQuery());',
+      ],
+    );
+
+String _restQueryStringMethod() => _cg.method(
+      returnType: 'private static String',
+      methodName: 'queryString',
+      arguments: ['List<Map.Entry<String, String>> entries'],
+      statements: [
+        _cg.constDecl('joiner', 'new StringJoiner("&")', type: 'StringJoiner'),
+        _cg.forEachLoop(
+          type: 'Map.Entry<String, String>',
+          variable: 'entry',
+          iterable: 'entries',
+          statements: [
+            'joiner.add(GraphLinkRestUtils.restEncodeQuery(entry.getKey()) + "=" + GraphLinkRestUtils.restEncodeQuery(entry.getValue()));',
+          ],
+        ),
+        'return joiner.length() == 0 ? "" : "?" + joiner;',
+      ],
+    );
+
+String _restConvertMethod(List<String> flattenHeaders) => _cg.method(
+      returnType: 'private static RestResponse',
+      methodName: 'convert',
+      arguments: ['int status', 'HttpHeaders headers', 'InputStream body'],
+      statements: [
+        _cg.constDecl('flat', 'new LinkedHashMap<>()', type: 'Map<String, String>'),
+        ...flattenHeaders,
+        _cg.constDecl('encoding', 'flat.get("content-encoding")', type: 'String'),
+        _cg.ifStatement(condition: 'encoding != null', ifBlockStatements: [
+          _cg.constDecl('coding', 'encoding.trim().toLowerCase(Locale.ROOT)', type: 'String'),
+          _cg.tryCatch(
+            tryStatements: [
+              _cg.ifStatement(
+                condition: 'coding.equals("gzip") || coding.equals("x-gzip")',
+                ifBlockStatements: ['return new RestResponse(status, new GZIPInputStream(body), flat);'],
+              ),
+              _cg.ifStatement(
+                condition: 'coding.equals("deflate")',
+                ifBlockStatements: ['return new RestResponse(status, new InflaterInputStream(body), flat);'],
+              ),
+            ],
+            catches: [
+              const JavaCatch('IOException', 'e', ['throw new UncheckedIOException(e);']),
+            ],
+          ),
+        ]),
+        'return new RestResponse(status, body, flat);',
+      ],
+    );
+
+List<String> _restMergedHeaders() => [
+      'Map<String, String> headers = new LinkedHashMap<>();',
+      _cg.constDecl('provided', 'headersProvider.get()', type: 'Map<String, String>'),
+      _cg.ifStatement(condition: 'provided != null', ifBlockStatements: ['headers.putAll(provided);']),
+      'headers.putAll(request.getHeaders());',
+    ];
+
+List<String> _restBodyStatements({
+  required String nullBody,
+  required String json,
+  required String form,
+  required String raw,
+  required String multipartResult,
+}) =>
+    [
+      'RestBody body = request.getBody();',
+      _cg.ifStatement(condition: 'body == null', ifBlockStatements: ['return $nullBody;']),
+      _cg.ifStatement(condition: 'body instanceof RestBody.Json', ifBlockStatements: ['return $json;']),
+      _cg.ifStatement(condition: 'body instanceof RestBody.Form', ifBlockStatements: [
+        _cg.constDecl('form', 'queryString(((RestBody.Form) body).getFields())', type: 'String'),
+        'return $form;',
+      ]),
+      _cg.ifStatement(condition: 'body instanceof RestBody.Raw', ifBlockStatements: [
+        _cg.constDecl('upload', '((RestBody.Raw) body).getUpload()', type: 'GLUpload'),
+        'return $raw;',
+      ]),
+      _cg.constDecl('multipart', '((RestBody.Multipart) body).toBody()', type: 'GLMultipartBody'),
+      'headers.put("Content-Type", multipart.getContentType());',
+      'return $multipartResult;',
+    ];
 
 String javaRestJdkAdapter(JavaReactiveFlavor flavor) {
   final execute = flavor.isReactive
-      ? [
-          _method('@Override\npublic ${flavor.singleType('RestResponse')} execute(RestRequest request)', [
-            'return ${flavor.defer('send(request)')};',
-          ]),
-          _method('private ${flavor.singleType('RestResponse')} send(RestRequest request)', [
-            'HttpRequest httpRequest = build(request);',
-            _braces('if (request.isStreamResponse())', [
-              'return ${flavor.bridgeFuture('httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()).thenApply(response -> convert(response.statusCode(), response.headers(), response.body()))')};',
-            ]),
-            'return ${flavor.bridgeFuture('httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofByteArray()).thenApply(response -> convert(response.statusCode(), response.headers(), new ByteArrayInputStream(response.body())))')};',
-          ]),
-        ].join('\n\n')
-      : _method('@Override\npublic RestResponse execute(RestRequest request)', [
-          'HttpRequest httpRequest = build(request);',
-          [
-            _braces('try', [
-              _braces('if (request.isStreamResponse())', [
-                'HttpResponse<InputStream> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream());',
-                'return convert(response.statusCode(), response.headers(), response.body());',
+      ? _members([
+          _cg.method(
+            returnType: '${_override}public ${flavor.singleType('RestResponse')}',
+            methodName: 'execute',
+            arguments: ['RestRequest request'],
+            statements: ['return ${flavor.defer('send(request)')};'],
+          ),
+          _cg.method(
+            returnType: 'private ${flavor.singleType('RestResponse')}',
+            methodName: 'send',
+            arguments: ['RestRequest request'],
+            statements: [
+              _cg.constDecl('httpRequest', 'build(request)', type: 'HttpRequest'),
+              _cg.ifStatement(condition: 'request.isStreamResponse()', ifBlockStatements: [
+                'return ${flavor.bridgeFuture('httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream()).thenApply(response -> convert(response.statusCode(), response.headers(), response.body()))')};',
               ]),
-              'HttpResponse<byte[]> response = httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofByteArray());',
-              'return convert(response.statusCode(), response.headers(), new ByteArrayInputStream(response.body()));',
-            ]),
-            _braces('catch (IOException e)', ['throw new UncheckedIOException(e);']),
-            _braces('catch (InterruptedException e)', [
-              'Thread.currentThread().interrupt();',
-              'throw new RuntimeException(e);',
-            ]),
-          ].join(' '),
-        ]);
+              'return ${flavor.bridgeFuture('httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofByteArray()).thenApply(response -> convert(response.statusCode(), response.headers(), new ByteArrayInputStream(response.body())))')};',
+            ],
+          ),
+        ])
+      : _cg.method(
+          returnType: '${_override}public RestResponse',
+          methodName: 'execute',
+          arguments: ['RestRequest request'],
+          statements: [
+            _cg.constDecl('httpRequest', 'build(request)', type: 'HttpRequest'),
+            _cg.tryCatch(
+              tryStatements: [
+                _cg.ifStatement(condition: 'request.isStreamResponse()', ifBlockStatements: [
+                  _cg.constDecl('response', 'httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofInputStream())',
+                      type: 'HttpResponse<InputStream>'),
+                  'return convert(response.statusCode(), response.headers(), response.body());',
+                ]),
+                _cg.constDecl('response', 'httpClient.send(httpRequest, HttpResponse.BodyHandlers.ofByteArray())',
+                    type: 'HttpResponse<byte[]>'),
+                'return convert(response.statusCode(), response.headers(), new ByteArrayInputStream(response.body()));',
+              ],
+              catches: [
+                const JavaCatch('IOException', 'e', ['throw new UncheckedIOException(e);']),
+                const JavaCatch('InterruptedException', 'e', ['Thread.currentThread().interrupt();', 'throw new RuntimeException(e);']),
+              ],
+            ),
+          ],
+        );
 
-  final build = _method('private HttpRequest build(RestRequest request)', [
-    'Map<String, String> headers = new LinkedHashMap<>();',
-    'Map<String, String> provided = headersProvider.get();',
-    _braces('if (provided != null)', ['headers.putAll(provided);']),
-    'headers.putAll(request.getHeaders());',
-    'HttpRequest.BodyPublisher publisher = publisher(request, headers);',
-    'HttpRequest.Builder builder = HttpRequest.newBuilder().uri(URI.create(url(request))).method(request.getMethod(), publisher);',
-    _braces('for (Map.Entry<String, String> header : headers.entrySet())', ['builder.header(header.getKey(), header.getValue());']),
-    'return builder.build();',
+  final build = _cg.method(
+    returnType: 'private HttpRequest',
+    methodName: 'build',
+    arguments: ['RestRequest request'],
+    statements: [
+      ..._restMergedHeaders(),
+      _cg.constDecl('publisher', 'publisher(request, headers)', type: 'HttpRequest.BodyPublisher'),
+      _cg.constDecl(
+        'builder',
+        'HttpRequest.newBuilder().uri(URI.create(url(request))).method(request.getMethod(), publisher)',
+        type: 'HttpRequest.Builder',
+      ),
+      _cg.forEachLoop(
+        type: 'Map.Entry<String, String>',
+        variable: 'header',
+        iterable: 'headers.entrySet()',
+        statements: ['builder.header(header.getKey(), header.getValue());'],
+      ),
+      'return builder.build();',
+    ],
+  );
+
+  final publisher = _cg.method(
+    returnType: 'private HttpRequest.BodyPublisher',
+    methodName: 'publisher',
+    arguments: ['RestRequest request', 'Map<String, String> headers'],
+    statements: _restBodyStatements(
+      nullBody: 'HttpRequest.BodyPublishers.noBody()',
+      json: 'HttpRequest.BodyPublishers.ofString(((RestBody.Json) body).getJson())',
+      form: 'HttpRequest.BodyPublishers.ofString(form.isEmpty() ? "" : form.substring(1))',
+      raw: 'stream(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength())',
+      multipartResult: 'stream(multipart.getStream(request.getOnSendProgress()), multipart.getLength())',
+    ),
+  );
+
+  final stream = _cg.method(
+    returnType: 'private static HttpRequest.BodyPublisher',
+    methodName: 'stream',
+    arguments: ['InputStream in', 'long length'],
+    statements: [
+      _cg.ifStatement(condition: 'length == 0', ifBlockStatements: ['return HttpRequest.BodyPublishers.noBody();']),
+      _cg.constDecl('publisher', 'HttpRequest.BodyPublishers.ofInputStream(() -> in)', type: 'HttpRequest.BodyPublisher'),
+      'return ${_cg.ternaryOp(
+        condition: 'length > 0',
+        positiveStatement: 'HttpRequest.BodyPublishers.fromPublisher(publisher, length)',
+        negativeStatement: 'publisher',
+      )};',
+    ],
+  );
+
+  final convert = _restConvertMethod([
+    _cg.forEachLoop(
+      type: 'Map.Entry<String, List<String>>',
+      variable: 'entry',
+      iterable: 'headers.map().entrySet()',
+      statements: ['flat.put(entry.getKey().toLowerCase(Locale.ROOT), String.join(",", entry.getValue()));'],
+    ),
   ]);
 
-  final url = _method('private String url(RestRequest request)', [
-    'String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;',
-    'return base + request.getPath() + queryString(request.getQuery());',
+  final constructors = _members([
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl'],
+      statements: ['this(baseUrl, () -> null);'],
+    ),
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl', 'Supplier<Map<String, String>> headersProvider'],
+      statements: [
+        'this(baseUrl, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NORMAL).build());',
+      ],
+    ),
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl', 'Supplier<Map<String, String>> headersProvider', 'HttpClient httpClient'],
+      statements: [
+        'this.baseUrl = baseUrl;',
+        'this.headersProvider = headersProvider;',
+        'this.httpClient = httpClient;',
+      ],
+    ),
   ]);
 
-  final queryString = _method('private static String queryString(List<Map.Entry<String, String>> entries)', [
-    'StringJoiner joiner = new StringJoiner("&");',
-    _braces('for (Map.Entry<String, String> entry : entries)', [
-      'joiner.add(GraphLinkRestUtils.restEncodeQuery(entry.getKey()) + "=" + GraphLinkRestUtils.restEncodeQuery(entry.getValue()));',
-    ]),
-    'return joiner.length() == 0 ? "" : "?" + joiner;',
-  ]);
-
-  final publisher = _method('private HttpRequest.BodyPublisher publisher(RestRequest request, Map<String, String> headers)', [
-    'RestBody body = request.getBody();',
-    _braces('if (body == null)', ['return HttpRequest.BodyPublishers.noBody();']),
-    _braces('if (body instanceof RestBody.Json)', ['return HttpRequest.BodyPublishers.ofString(((RestBody.Json) body).getJson());']),
-    _braces('if (body instanceof RestBody.Form)', [
-      'String form = queryString(((RestBody.Form) body).getFields());',
-      'return HttpRequest.BodyPublishers.ofString(form.isEmpty() ? "" : form.substring(1));',
-    ]),
-    _braces('if (body instanceof RestBody.Raw)', [
-      'GLUpload upload = ((RestBody.Raw) body).getUpload();',
-      'return stream(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength());',
-    ]),
-    'GLMultipartBody multipart = ((RestBody.Multipart) body).toBody();',
-    'headers.put("Content-Type", multipart.getContentType());',
-    'return stream(multipart.getStream(request.getOnSendProgress()), multipart.getLength());',
-  ]);
-
-  final stream = _method('private static HttpRequest.BodyPublisher stream(InputStream in, long length)', [
-    _braces('if (length == 0)', ['return HttpRequest.BodyPublishers.noBody();']),
-    'HttpRequest.BodyPublisher publisher = HttpRequest.BodyPublishers.ofInputStream(() -> in);',
-    'return length > 0 ? HttpRequest.BodyPublishers.fromPublisher(publisher, length) : publisher;',
-  ]);
-
-  final convert = _method('private static RestResponse convert(int status, HttpHeaders headers, InputStream body)', [
-    'Map<String, String> flat = new LinkedHashMap<>();',
-    _braces('for (Map.Entry<String, List<String>> entry : headers.map().entrySet())', [
-      'flat.put(entry.getKey().toLowerCase(Locale.ROOT), String.join(",", entry.getValue()));',
-    ]),
-    'String encoding = flat.get("content-encoding");',
-    _braces('if (encoding != null)', [
-      'String coding = encoding.trim().toLowerCase(Locale.ROOT);',
-      [
-        _braces('try', [
-          _braces('if (coding.equals("gzip") || coding.equals("x-gzip"))', ['return new RestResponse(status, new GZIPInputStream(body), flat);']),
-          _braces('if (coding.equals("deflate"))', ['return new RestResponse(status, new InflaterInputStream(body), flat);']),
-        ]),
-        _braces('catch (IOException e)', ['throw new UncheckedIOException(e);']),
-      ].join(' '),
-    ]),
-    'return new RestResponse(status, body, flat);',
-  ]);
-
-  final constructors = [
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl)', ['this(baseUrl, () -> null);']),
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider)', [
-      'this(baseUrl, headersProvider, HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).followRedirects(HttpClient.Redirect.NORMAL).build());',
-    ]),
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider, HttpClient httpClient)', [
-      'this.baseUrl = baseUrl;',
-      'this.headersProvider = headersProvider;',
-      'this.httpClient = httpClient;',
-    ]),
-  ].join('\n\n');
-
-  final body = [
-    'private final String baseUrl;',
-    'private final Supplier<Map<String, String>> headersProvider;',
-    'private final HttpClient httpClient;',
-    constructors,
-    execute,
-    build,
-    url,
-    queryString,
-    publisher,
-    stream,
-    convert,
-  ].join('\n\n');
-  return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${body.ident()}\n}\n';
+  return '${_cg.createClass(
+    className: 'DefaultGraphLinkRestAdapter',
+    interfaceNames: ['GLRestAdapter'],
+    statements: [
+      _members([
+        'private final String baseUrl;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        'private final HttpClient httpClient;',
+        constructors,
+        execute,
+        build,
+        _restUrlMethod(),
+        _restQueryStringMethod(),
+        publisher,
+        stream,
+        convert,
+      ]),
+    ],
+  )}\n';
 }
 
 String javaGLWebClientContentType() {
-  final sanitize = _method('public static ExchangeFilterFunction sanitize()', [
-    'return (request, next) -> next.exchange(request).map(GLWebClientContentType::sanitize);',
-  ]);
-  final response = _method('private static ClientResponse sanitize(ClientResponse response)', [
-    'String value = response.headers().asHttpHeaders().getFirst(HttpHeaders.CONTENT_TYPE);',
-    _braces('if (value == null || parses(value))', ['return response;']),
-    'String cleaned = withoutCharset(value);',
-    'return response.mutate().headers(headers -> replace(headers, cleaned)).build();',
-  ]);
-  final replace = _method('private static void replace(HttpHeaders headers, String cleaned)', [
-    'headers.remove(HttpHeaders.CONTENT_TYPE);',
-    _braces('if (parses(cleaned))', ['headers.set(HttpHeaders.CONTENT_TYPE, cleaned);']),
-  ]);
-  final parses = _method('private static boolean parses(String value)', [
-    _braces('try', ['MediaType.parseMediaType(value);', 'return true;']),
-    _braces('catch (InvalidMediaTypeException e)', ['return false;']),
-  ]);
-  final withoutCharset = _method('private static String withoutCharset(String value)', [
-    'return Arrays.stream(value.split(";")).filter(part -> !part.trim().toLowerCase(Locale.ROOT).startsWith("charset=")).collect(Collectors.joining(";"));',
-  ]);
-  final members = [sanitize, response, replace, parses, withoutCharset].join('\n\n');
-  return 'public final class GLWebClientContentType {\n${members.ident()}\n}\n';
+  final sanitize = _cg.method(
+    returnType: 'public static ExchangeFilterFunction',
+    methodName: 'sanitize',
+    statements: ['return (request, next) -> next.exchange(request).map(GLWebClientContentType::sanitize);'],
+  );
+  final response = _cg.method(
+    returnType: 'private static ClientResponse',
+    methodName: 'sanitize',
+    arguments: ['ClientResponse response'],
+    statements: [
+      _cg.constDecl('value', 'response.headers().asHttpHeaders().getFirst(HttpHeaders.CONTENT_TYPE)', type: 'String'),
+      _cg.ifStatement(condition: 'value == null || parses(value)', ifBlockStatements: ['return response;']),
+      _cg.constDecl('cleaned', 'withoutCharset(value)', type: 'String'),
+      'return response.mutate().headers(headers -> replace(headers, cleaned)).build();',
+    ],
+  );
+  final replace = _cg.method(
+    returnType: 'private static void',
+    methodName: 'replace',
+    arguments: ['HttpHeaders headers', 'String cleaned'],
+    statements: [
+      'headers.remove(HttpHeaders.CONTENT_TYPE);',
+      _cg.ifStatement(condition: 'parses(cleaned)', ifBlockStatements: ['headers.set(HttpHeaders.CONTENT_TYPE, cleaned);']),
+    ],
+  );
+  final parses = _cg.method(
+    returnType: 'private static boolean',
+    methodName: 'parses',
+    arguments: ['String value'],
+    statements: [
+      _cg.tryCatch(
+        tryStatements: ['MediaType.parseMediaType(value);', 'return true;'],
+        catches: [
+          const JavaCatch('InvalidMediaTypeException', 'e', ['return false;']),
+        ],
+      ),
+    ],
+  );
+  final withoutCharset = _cg.method(
+    returnType: 'private static String',
+    methodName: 'withoutCharset',
+    arguments: ['String value'],
+    statements: [
+      'return Arrays.stream(value.split(";")).filter(part -> !part.trim().toLowerCase(Locale.ROOT).startsWith("charset=")).collect(Collectors.joining(";"));',
+    ],
+  );
+  return '${_cg.createClass(
+    className: 'GLWebClientContentType',
+    finalClass: true,
+    statements: [_members([sanitize, response, replace, parses, withoutCharset])],
+  )}\n';
 }
 
 String javaGLDataBufferInputStream() {
-  final constructor = _method('GLDataBufferInputStream(Flux<DataBuffer> body)', [
-    _braces('subscriber = new BaseSubscriber<DataBuffer>()', [
-      _method('@Override\nprotected void hookOnSubscribe(Subscription subscription)', ['subscription.request(1);']),
-      _method('@Override\nprotected void hookOnNext(DataBuffer buffer)', ['queue.add(bytesOf(buffer));']),
-      _method('@Override\nprotected void hookOnComplete()', ['queue.add(END);']),
-      _method('@Override\nprotected void hookOnError(Throwable failure)', ['queue.add(failure);']),
-    ]).replaceFirst(RegExp(r'\}$'), '};'),
-    'body.subscribe(subscriber);',
+  final subscriber = _cg.block([
+    _cg.method(
+      returnType: '${_override}protected void',
+      methodName: 'hookOnSubscribe',
+      arguments: ['Subscription subscription'],
+      statements: ['subscription.request(1);'],
+    ),
+    _cg.method(
+      returnType: '${_override}protected void',
+      methodName: 'hookOnNext',
+      arguments: ['DataBuffer buffer'],
+      statements: ['queue.add(bytesOf(buffer));'],
+    ),
+    _cg.method(
+      returnType: '${_override}protected void',
+      methodName: 'hookOnComplete',
+      statements: ['queue.add(END);'],
+    ),
+    _cg.method(
+      returnType: '${_override}protected void',
+      methodName: 'hookOnError',
+      arguments: ['Throwable failure'],
+      statements: ['queue.add(failure);'],
+    ),
   ]);
 
-  final read = _method('@Override\npublic int read(byte[] target, int offset, int length) throws IOException', [
-    _braces('if (length == 0)', ['return 0;']),
-    _braces('while (position >= current.length)', [
-      _braces('if (finished)', ['return -1;']),
-      'Object next = take();',
-      _braces('if (next == END)', ['finished = true;', 'return -1;']),
-      _braces('if (next instanceof Throwable)', ['finished = true;', 'throw new IOException((Throwable) next);']),
-      'current = (byte[]) next;',
-      'position = 0;',
-      'subscriber.request(1);',
-    ]),
-    'int count = Math.min(length, current.length - position);',
-    'System.arraycopy(current, position, target, offset, count);',
-    'position += count;',
-    'return count;',
-  ]);
+  final constructor = _cg.createMethod(
+    methodName: 'GLDataBufferInputStream',
+    arguments: ['Flux<DataBuffer> body'],
+    statements: [
+      'subscriber = new BaseSubscriber<DataBuffer>() $subscriber;',
+      'body.subscribe(subscriber);',
+    ],
+  );
 
-  final readByte = _method('@Override\npublic int read() throws IOException', [
-    'byte[] one = new byte[1];',
-    'return read(one, 0, 1) == -1 ? -1 : one[0] & 0xff;',
-  ]);
+  final read = _cg.method(
+    returnType: '${_override}public int',
+    methodName: 'read',
+    arguments: ['byte[] target', 'int offset', 'int length'],
+    throwsTypes: ['IOException'],
+    statements: [
+      _cg.ifStatement(condition: 'length == 0', ifBlockStatements: ['return 0;']),
+      'while (position >= current.length) ${_cg.block([
+            _cg.ifStatement(condition: 'finished', ifBlockStatements: ['return -1;']),
+            _cg.constDecl('next', 'take()', type: 'Object'),
+            _cg.ifStatement(condition: 'next == END', ifBlockStatements: ['finished = true;', 'return -1;']),
+            _cg.ifStatement(
+              condition: 'next instanceof Throwable',
+              ifBlockStatements: ['finished = true;', 'throw new IOException((Throwable) next);'],
+            ),
+            'current = (byte[]) next;',
+            'position = 0;',
+            'subscriber.request(1);',
+          ])}',
+      _cg.constDecl('count', 'Math.min(length, current.length - position)', type: 'int'),
+      'System.arraycopy(current, position, target, offset, count);',
+      'position += count;',
+      'return count;',
+    ],
+  );
 
-  final take = _method('private Object take() throws IOException', [
-    [
-      _braces('try', ['return queue.take();']),
-      _braces('catch (InterruptedException e)', [
-        'Thread.currentThread().interrupt();',
-        'subscriber.dispose();',
-        'throw new InterruptedIOException();',
+  final readByte = _cg.method(
+    returnType: '${_override}public int',
+    methodName: 'read',
+    throwsTypes: ['IOException'],
+    statements: [
+      'byte[] one = new byte[1];',
+      'return read(one, 0, 1) == -1 ? -1 : one[0] & 0xff;',
+    ],
+  );
+
+  final take = _cg.method(
+    returnType: 'private Object',
+    methodName: 'take',
+    throwsTypes: ['IOException'],
+    statements: [
+      _cg.tryCatch(
+        tryStatements: ['return queue.take();'],
+        catches: [
+          const JavaCatch('InterruptedException', 'e', [
+            'Thread.currentThread().interrupt();',
+            'subscriber.dispose();',
+            'throw new InterruptedIOException();',
+          ]),
+        ],
+      ),
+    ],
+  );
+
+  final close = _cg.method(
+    returnType: '${_override}public void',
+    methodName: 'close',
+    statements: ['finished = true;', 'subscriber.dispose();'],
+  );
+
+  return '${_cg.createClass(
+    className: 'GLDataBufferInputStream',
+    packagePrivate: true,
+    finalClass: true,
+    superClass: 'InputStream',
+    statements: [
+      _members([
+        'private static final Object END = new Object();',
+        'private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();',
+        'private final BaseSubscriber<DataBuffer> subscriber;',
+        'private byte[] current = new byte[0];',
+        'private int position = 0;',
+        'private boolean finished = false;',
+        constructor,
+        _cg.method(
+          returnType: 'static byte[]',
+          methodName: 'bytesOf',
+          arguments: ['DataBuffer buffer'],
+          statements: [
+            _cg.constDecl('bytes', 'new byte[buffer.readableByteCount()]', type: 'byte[]'),
+            'buffer.read(bytes);',
+            'DataBufferUtils.release(buffer);',
+            'return bytes;',
+          ],
+        ),
+        readByte,
+        read,
+        take,
+        close,
       ]),
-    ].join(' '),
-  ]);
-
-  final close = _method('@Override\npublic void close()', [
-    'finished = true;',
-    'subscriber.dispose();',
-  ]);
-
-  final body = [
-    'private static final Object END = new Object();',
-    'private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>();',
-    'private final BaseSubscriber<DataBuffer> subscriber;',
-    'private byte[] current = new byte[0];',
-    'private int position = 0;',
-    'private boolean finished = false;',
-    constructor,
-    _method('static byte[] bytesOf(DataBuffer buffer)', [
-      'byte[] bytes = new byte[buffer.readableByteCount()];',
-      'buffer.read(bytes);',
-      'DataBufferUtils.release(buffer);',
-      'return bytes;',
-    ]),
-    readByte,
-    read,
-    take,
-    close,
-  ].join('\n\n');
-  return 'final class GLDataBufferInputStream extends InputStream {\n${body.ident()}\n}\n';
+    ],
+  )}\n';
 }
 
 String javaRestWebClientAdapter() {
-  final execute = [
-    _method('@Override\npublic Mono<RestResponse> execute(RestRequest request)', ['return Mono.defer(() -> send(request));']),
-    _method('private Mono<RestResponse> send(RestRequest request)', [
-      'Map<String, String> headers = new LinkedHashMap<>();',
-      'Map<String, String> provided = headersProvider.get();',
-      _braces('if (provided != null)', ['headers.putAll(provided);']),
-      'headers.putAll(request.getHeaders());',
-      'BodyInserter<?, ? super ClientHttpRequest> body = body(request, headers);',
-      'WebClient.RequestBodySpec spec = webClient.method(HttpMethod.valueOf(request.getMethod())).uri(URI.create(url(request)));',
-      'headers.forEach(spec::header);',
-      'WebClient.RequestHeadersSpec<?> ready = body == null ? spec : spec.body(body);',
-      'WebClient.ResponseSpec response = ready.retrieve().onStatus(status -> true, failure -> Mono.empty());',
-      _braces('if (request.isStreamResponse())', [
-        'return response.toEntityFlux(DataBuffer.class).publishOn(Schedulers.boundedElastic()).map(entity -> convert(entity.getStatusCode().value(), entity.getHeaders(), new GLDataBufferInputStream(entity.getBody())));',
-      ]),
-      'return response.toEntityFlux(DataBuffer.class).flatMap(entity -> DataBufferUtils.join(entity.getBody()).map(GLDataBufferInputStream::bytesOf).defaultIfEmpty(new byte[0]).map(bytes -> convert(entity.getStatusCode().value(), entity.getHeaders(), new ByteArrayInputStream(bytes))));',
-    ]),
-  ].join('\n\n');
-
-  final url = _method('private String url(RestRequest request)', [
-    'String base = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;',
-    'return base + request.getPath() + queryString(request.getQuery());',
-  ]);
-
-  final queryString = _method('private static String queryString(List<Map.Entry<String, String>> entries)', [
-    'StringJoiner joiner = new StringJoiner("&");',
-    _braces('for (Map.Entry<String, String> entry : entries)', [
-      'joiner.add(GraphLinkRestUtils.restEncodeQuery(entry.getKey()) + "=" + GraphLinkRestUtils.restEncodeQuery(entry.getValue()));',
-    ]),
-    'return joiner.length() == 0 ? "" : "?" + joiner;',
-  ]);
-
-  final body = _method('private BodyInserter<?, ? super ClientHttpRequest> body(RestRequest request, Map<String, String> headers)', [
-    'RestBody body = request.getBody();',
-    _braces('if (body == null)', ['return null;']),
-    _braces('if (body instanceof RestBody.Json)', ['return BodyInserters.fromValue(((RestBody.Json) body).getJson());']),
-    _braces('if (body instanceof RestBody.Form)', [
-      'String form = queryString(((RestBody.Form) body).getFields());',
-      'return BodyInserters.fromValue(form.isEmpty() ? "" : form.substring(1));',
-    ]),
-    _braces('if (body instanceof RestBody.Raw)', [
-      'GLUpload upload = ((RestBody.Raw) body).getUpload();',
-      'return resource(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength());',
-    ]),
-    'GLMultipartBody multipart = ((RestBody.Multipart) body).toBody();',
-    'headers.put("Content-Type", multipart.getContentType());',
-    'return resource(multipart.getStream(request.getOnSendProgress()), multipart.getLength());',
-  ]);
-
-  final resource = _method('private static BodyInserter<?, ? super ClientHttpRequest> resource(InputStream in, long length)', [
-    _braces('if (length == 0)', ['return BodyInserters.fromValue(new byte[0]);']),
-    'return BodyInserters.fromResource(new InputStreamResource(in) ${_braces('', ['@Override public long contentLength() { return length; }'])});',
-  ]);
-
-  final convert = _method('private static RestResponse convert(int status, HttpHeaders headers, InputStream body)', [
-    'Map<String, String> flat = new LinkedHashMap<>();',
-    'headers.forEach((name, values) -> flat.put(name.toLowerCase(Locale.ROOT), String.join(",", values)));',
-    'String encoding = flat.get("content-encoding");',
-    _braces('if (encoding != null)', [
-      'String coding = encoding.trim().toLowerCase(Locale.ROOT);',
-      [
-        _braces('try', [
-          _braces('if (coding.equals("gzip") || coding.equals("x-gzip"))', ['return new RestResponse(status, new GZIPInputStream(body), flat);']),
-          _braces('if (coding.equals("deflate"))', ['return new RestResponse(status, new InflaterInputStream(body), flat);']),
+  final execute = _members([
+    _cg.method(
+      returnType: '${_override}public Mono<RestResponse>',
+      methodName: 'execute',
+      arguments: ['RestRequest request'],
+      statements: ['return Mono.defer(() -> send(request));'],
+    ),
+    _cg.method(
+      returnType: 'private Mono<RestResponse>',
+      methodName: 'send',
+      arguments: ['RestRequest request'],
+      statements: [
+        ..._restMergedHeaders(),
+        _cg.constDecl('body', 'body(request, headers)', type: 'BodyInserter<?, ? super ClientHttpRequest>'),
+        _cg.constDecl(
+          'spec',
+          'webClient.method(HttpMethod.valueOf(request.getMethod())).uri(URI.create(url(request)))',
+          type: 'WebClient.RequestBodySpec',
+        ),
+        'headers.forEach(spec::header);',
+        _cg.constDecl('ready', 'body == null ? spec : spec.body(body)', type: 'WebClient.RequestHeadersSpec<?>'),
+        _cg.constDecl('response', 'ready.retrieve().onStatus(status -> true, failure -> Mono.empty())', type: 'WebClient.ResponseSpec'),
+        _cg.ifStatement(condition: 'request.isStreamResponse()', ifBlockStatements: [
+          'return response.toEntityFlux(DataBuffer.class).publishOn(Schedulers.boundedElastic()).map(entity -> convert(entity.getStatusCode().value(), entity.getHeaders(), new GLDataBufferInputStream(entity.getBody())));',
         ]),
-        _braces('catch (IOException e)', ['throw new UncheckedIOException(e);']),
-      ].join(' '),
-    ]),
-    'return new RestResponse(status, body, flat);',
+        'return response.toEntityFlux(DataBuffer.class).flatMap(entity -> DataBufferUtils.join(entity.getBody()).map(GLDataBufferInputStream::bytesOf).defaultIfEmpty(new byte[0]).map(bytes -> convert(entity.getStatusCode().value(), entity.getHeaders(), new ByteArrayInputStream(bytes))));',
+      ],
+    ),
   ]);
 
-  final constructors = [
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl)', ['this(baseUrl, () -> null);']),
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider)', [
-      'this(baseUrl, headersProvider, WebClient.builder().clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create().followRedirect(true))).build());',
-    ]),
-    _method('public DefaultGraphLinkRestAdapter(String baseUrl, Supplier<Map<String, String>> headersProvider, WebClient webClient)', [
-      'this.baseUrl = baseUrl;',
-      'this.headersProvider = headersProvider;',
-      'this.webClient = webClient.mutate().filter(GLWebClientContentType.sanitize()).build();',
-    ]),
-  ].join('\n\n');
+  const inserter = 'BodyInserter<?, ? super ClientHttpRequest>';
+  final body = _cg.method(
+    returnType: 'private $inserter',
+    methodName: 'body',
+    arguments: ['RestRequest request', 'Map<String, String> headers'],
+    statements: _restBodyStatements(
+      nullBody: 'null',
+      json: 'BodyInserters.fromValue(((RestBody.Json) body).getJson())',
+      form: 'BodyInserters.fromValue(form.isEmpty() ? "" : form.substring(1))',
+      raw: 'resource(GLMultipartBody.withProgress(upload.getStream(), upload.getLength(), request.getOnSendProgress()), upload.getLength())',
+      multipartResult: 'resource(multipart.getStream(request.getOnSendProgress()), multipart.getLength())',
+    ),
+  );
 
-  final members = [
-    'private final String baseUrl;',
-    'private final Supplier<Map<String, String>> headersProvider;',
-    'private final WebClient webClient;',
-    constructors,
-    execute,
-    url,
-    queryString,
-    body,
-    resource,
-    convert,
-  ].join('\n\n');
-  return 'public class DefaultGraphLinkRestAdapter implements GLRestAdapter {\n${members.ident()}\n}\n';
+  final resource = _cg.method(
+    returnType: 'private static $inserter',
+    methodName: 'resource',
+    arguments: ['InputStream in', 'long length'],
+    statements: [
+      _cg.ifStatement(condition: 'length == 0', ifBlockStatements: ['return BodyInserters.fromValue(new byte[0]);']),
+      'return BodyInserters.fromResource(new InputStreamResource(in) ${_cg.block(['@Override public long contentLength() { return length; }'])});',
+    ],
+  );
+
+  final convert = _restConvertMethod(
+    ['headers.forEach((name, values) -> flat.put(name.toLowerCase(Locale.ROOT), String.join(",", values)));'],
+  );
+
+  final constructors = _members([
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl'],
+      statements: ['this(baseUrl, () -> null);'],
+    ),
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl', 'Supplier<Map<String, String>> headersProvider'],
+      statements: [
+        'this(baseUrl, headersProvider, WebClient.builder().clientConnector(new ReactorClientHttpConnector(reactor.netty.http.client.HttpClient.create().followRedirect(true))).build());',
+      ],
+    ),
+    _cg.createMethod(
+      returnType: 'public',
+      methodName: 'DefaultGraphLinkRestAdapter',
+      arguments: ['String baseUrl', 'Supplier<Map<String, String>> headersProvider', 'WebClient webClient'],
+      statements: [
+        'this.baseUrl = baseUrl;',
+        'this.headersProvider = headersProvider;',
+        'this.webClient = webClient.mutate().filter(GLWebClientContentType.sanitize()).build();',
+      ],
+    ),
+  ]);
+
+  return '${_cg.createClass(
+    className: 'DefaultGraphLinkRestAdapter',
+    interfaceNames: ['GLRestAdapter'],
+    statements: [
+      _members([
+        'private final String baseUrl;',
+        'private final Supplier<Map<String, String>> headersProvider;',
+        'private final WebClient webClient;',
+        constructors,
+        execute,
+        _restUrlMethod(),
+        _restQueryStringMethod(),
+        body,
+        resource,
+        convert,
+      ]),
+    ],
+  )}\n';
 }

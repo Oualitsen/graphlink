@@ -25,7 +25,7 @@ stop-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true
 
 test:
-	cd $(CLIENT_DIR) && mvn test -Dexcludes='**/SubscriptionReconnectTest.java'
+	cd $(CLIENT_DIR) && mvn test
 
 start-upload-server:
 	curl -s -X POST http://localhost:9991/actuator/shutdown || true

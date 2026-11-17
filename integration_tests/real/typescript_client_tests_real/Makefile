@@ -48,8 +48,4 @@ ci: start-server start-upload-server start-fault-server generate test stop-serve
 # Assumes code has already been generated (e.g. by a prior `make generate-all` job).
 ci-no-generate: start-server start-upload-server start-fault-server test stop-server stop-upload-server stop-fault-server
 
-reconnect-test: generate start-server
-	RUN_RECONNECT_TESTS=1 npx vitest run test/subscription-reconnect.test.ts
-	curl -s -X POST http://localhost:9990/actuator/shutdown || true
-
 include ../fault_server/fault.mk

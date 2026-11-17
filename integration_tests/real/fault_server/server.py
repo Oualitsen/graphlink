@@ -7,6 +7,9 @@ the tests need to prove a client still works afterwards: POST /graphql (getCount
 GET /status/{code}.
 
 It also speaks graphql-transport-ws on any path (a `counterTick` subscription answers `next(1)` then `complete`).
+Like the Spring test server it serves `labelTicks`, `secureTicks` (needs `Authorization: Bearer` in the connection_init
+payload), their `*Starts` queries and the `Ack-Delay` connection_init payload key, so the reconnect tests can kill and start
+this process in place of the JAR. `--live` makes `counterTick` tick every second until the client leaves.
 POST /_arm?fault=ws-...&times=N makes the next N WebSocket connections misbehave; GET /_ws_log lists every
 connection with the frames the client sent.
 """
@@ -14,6 +17,7 @@ import argparse
 import base64
 import hashlib
 import json
+import re
 import struct
 import sys
 import threading
@@ -24,7 +28,8 @@ from urllib.parse import parse_qsl, urlsplit
 
 GRAPHQL_OK = {'data': {'getCount': 19}}
 PRODUCT_OK = {'id': 'p1', 'name': 'Pen', 'price': 2.5, 'status': 'ACTIVE', 'tags': ['office']}
-STATE = {'armed': None, 'served': [], 'ws_armed': None, 'ws_times': 0, 'ws_log': []}
+STATE = {'armed': None, 'served': [], 'ws_armed': None, 'ws_times': 0, 'ws_log': [], 'starts': {}}
+LIVE = {'counter': False}
 LOCK = threading.Lock()
 
 
@@ -195,6 +200,63 @@ def ws_next(sub_id, value):
     return {'id': sub_id, 'type': 'next', 'payload': {'data': {'counterTick': value}}}
 
 
+def operation(payload):
+    match = re.match(r'\s*(?:query|subscription)\s+(\w+)', (payload or {}).get('query', ''))
+    return match.group(1) if match else None
+
+
+def count_start(key):
+    with LOCK:
+        STATE['starts'][key] = STATE['starts'].get(key, 0) + 1
+
+
+def bearer(authorization):
+    prefix = 'Bearer '
+    if not isinstance(authorization, str) or not authorization.startswith(prefix) or len(authorization) == len(prefix):
+        return None
+    return authorization[len(prefix):]
+
+
+def start_stream(op, payload, sub_id, auth, send, streams):
+    """Starts the Spring-like ticking subscription `op`; False when the fault server has no such stream."""
+    variables = payload.get('variables') or {}
+    if op == 'labelTicks':
+        label, count, interval = variables['label'], int(variables['count']), 0.1
+        count_start(f'label:{label}')
+        value = lambda i: label + '-' + str(i)
+    elif op == 'secureTicks':
+        token = bearer(auth)
+        if token is None:
+            send(ws_text({'id': sub_id, 'type': 'error', 'payload': [{'message': 'unauthenticated'}]}))
+            return True
+        count, interval = int(variables['count']), 0.1
+        count_start(f'secure:{token}')
+        value = lambda i: i
+    elif op == 'counterTick' and LIVE['counter']:
+        count, interval = 1 << 30, 1.0
+        value = lambda i: i
+    else:
+        return False
+    stop = threading.Event()
+    streams[sub_id] = stop
+
+    def tick():
+        for i in range(1, count + 1):
+            if stop.wait(interval):
+                return
+            try:
+                send(ws_text({'id': sub_id, 'type': 'next', 'payload': {'data': {op: value(i)}}}))
+            except OSError:
+                return
+        try:
+            send(ws_text({'id': sub_id, 'type': 'complete'}))
+        except OSError:
+            pass
+
+    threading.Thread(target=tick, daemon=True).start()
+    return True
+
+
 def ws_serve(handler):
     key = handler.headers.get('Sec-WebSocket-Key', '')
     accept = base64.b64encode(hashlib.sha1((key + WS_GUID).encode()).digest()).decode()
@@ -217,9 +279,22 @@ def ws_serve(handler):
     handler.close_connection = True
     sock, rfile = handler.connection, handler.rfile
 
-    def send(data):
-        sock.sendall(data)
+    send_lock = threading.Lock()
+    streams = {}
 
+    def send(data):
+        with send_lock:
+            sock.sendall(data)
+
+    try:
+        ws_loop(rfile, sock, send, fault, log, streams)
+    finally:
+        for stop in streams.values():
+            stop.set()
+
+
+def ws_loop(rfile, sock, send, fault, log, streams):
+    auth = None
     while True:
         try:
             frame = ws_read(rfile)
@@ -251,16 +326,24 @@ def ws_serve(handler):
         if kind == 'connection_init':
             if fault == 'ws-no-ack':
                 continue
+            init = message.get('payload') or {}
+            auth = init.get('Authorization')
+            if init.get('Ack-Delay'):
+                time.sleep(int(init['Ack-Delay']) / 1000)
             send(ws_text({'type': 'connection_ack'}))
             if fault == 'ws-ping':
                 send(ws_text({'type': 'ping'}))
         elif kind == 'subscribe':
+            if fault is None and start_stream(operation(message.get('payload')), message['payload'], sub_id, auth, send, streams):
+                continue
             if ws_fault_on_subscribe(fault, sock, send, sub_id):
                 return
             send(ws_text(ws_next(sub_id, 1)))
             send(ws_text({'id': sub_id, 'type': 'complete'}))
             if fault == 'ws-next-after-complete':
                 send(ws_text(ws_next(sub_id, 2)))
+        elif kind == 'complete' and sub_id in streams:
+            streams.pop(sub_id).set()
         elif kind == 'ping':
             send(ws_text({'type': 'pong'}))
 
@@ -298,7 +381,7 @@ class Handler(BaseHTTPRequestHandler):
     def drain(self):
         length = int(self.headers.get('Content-Length') or 0)
         if length:
-            self.rfile.read(length)
+            return self.rfile.read(length)
         elif 'chunked' in self.headers.get('Transfer-Encoding', '').lower():
             while True:
                 size = int(self.rfile.readline().strip().split(b';')[0] or b'0', 16)
@@ -306,6 +389,19 @@ class Handler(BaseHTTPRequestHandler):
                     self.rfile.readline()
                     return
                 self.rfile.read(size + 2)
+
+    def starts_answer(self, body):
+        try:
+            request = json.loads(body or b'{}')
+        except ValueError:
+            return None
+        op, variables = operation(request), request.get('variables') or {}
+        prefix = {'labelTickStarts': ('label', 'label'), 'secureTickStarts': ('secure', 'token')}.get(op)
+        if prefix is None:
+            return None
+        with LOCK:
+            count = STATE['starts'].get(f'{prefix[0]}:{variables[prefix[1]]}', 0)
+        return {'data': {op: count}}
 
     def reply_json(self, status, value):
         self.reply(response(status, json.dumps(value)))
@@ -338,7 +434,7 @@ class Handler(BaseHTTPRequestHandler):
     def dispatch(self):
         if self.headers.get('Upgrade', '').lower() == 'websocket':
             return ws_serve(self)
-        self.drain()
+        body = self.drain()
         url = urlsplit(self.path)
         path = url.path
         if path == '/health':
@@ -371,6 +467,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply_json(200, STATE['served'])
 
         kind = 'graphql' if self.command == 'POST' and path.rstrip('/').endswith('/graphql') else 'rest'
+        started = kind == 'graphql' and not STATE['armed'] and self.starts_answer(body)
+        if started is not None and started is not False:
+            return self.reply_json(200, started)
         ctx = Ctx(kind, path)
         with LOCK:
             name, STATE['armed'] = STATE['armed'], None
@@ -389,7 +488,9 @@ class Server(ThreadingHTTPServer):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=9960)
+    parser.add_argument('--live', action='store_true')
     args = parser.parse_args()
+    LIVE['counter'] = args.live
     server = Server(('127.0.0.1', args.port), Handler)
     print(f'fault server on {args.port}', flush=True)
     try:

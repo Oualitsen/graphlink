@@ -120,6 +120,26 @@ class TypeScriptClientRuntimeSerializer {
 
   // ── Resolver base class ───────────────────────────────────────────────────
 
+  String get _tagKeyDecl =>
+      _client.cg.constDecl('tagKey', r'`${__GL_TAG_KEY_PREFIX__}${tag}`');
+
+  List<String> get _addKeyStatements => [
+        _client.cg.constDecl('data', 'await this.$svStore.get(tagKey)'),
+        _client.cg.constDecl(
+          'entry',
+          _client.cg.ternaryOp(
+            condition: 'data !== null',
+            positiveStatement: 'GraphLinkTagEntry.decode(data)',
+            negativeStatement: 'new GraphLinkTagEntry(new Set())',
+          ),
+        ),
+        'entry.add(key);',
+        'await this.$svStore.set(tagKey, entry.encode());',
+      ];
+
+  String _synchronized(List<String> statements) =>
+      'await lock.synchronized(async () => ${_client.cg.block(statements)});';
+
   String resolverBase() {
     return _client.cg.createClass(
       className: 'GraphLinkResolverBase',
@@ -327,24 +347,24 @@ class TypeScriptClientRuntimeSerializer {
           returnType: 'void',
           statements: [
             _client.cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
+              _tagKeyDecl,
               _client.cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
               'lock.epoch++;',
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              _client.cg.ifStatement(
-                condition: 'data !== null',
-                ifBlockStatements: [
-                  _client.cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
-                  _client.cg.forEachLoop(
-                    variable: 'k',
-                    iterable: 'entry.keys',
-                    statements: ['await this.$svStore.invalidate(k);'],
-                  ),
-                  'await this.$svStore.invalidate(tagKey);',
-                ],
-              ),
-              '});',
+              _synchronized([
+                _client.cg.constDecl('data', 'await this.$svStore.get(tagKey)'),
+                _client.cg.ifStatement(
+                  condition: 'data !== null',
+                  ifBlockStatements: [
+                    _client.cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
+                    _client.cg.forEachLoop(
+                      variable: 'k',
+                      iterable: 'entry.keys',
+                      statements: ['await this.$svStore.invalidate(k);'],
+                    ),
+                    'await this.$svStore.invalidate(tagKey);',
+                  ],
+                ),
+              ]),
             ]),
           ],
         ),
@@ -355,14 +375,9 @@ class TypeScriptClientRuntimeSerializer {
           returnType: 'void',
           statements: [
             _client.cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
+              _tagKeyDecl,
               _client.cg.constDecl('lock', 'this.$svTagLocks.get(tag)!'),
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              '  const entry = data !== null ? GraphLinkTagEntry.decode(data) : new GraphLinkTagEntry(new Set());',
-              '  entry.add(key);',
-              '  await this.$svStore.set(tagKey, entry.encode());',
-              '});',
+              _synchronized(_addKeyStatements),
             ]),
           ],
         ),
@@ -371,24 +386,24 @@ class TypeScriptClientRuntimeSerializer {
           arguments: ['key: string', 'value: string', 'tags: string[]', 'epoch: number'],
           returnType: 'Promise<void>',
           statements: [
-            "const names = Array.from(new Set(['\\u0000all', ...tags])).sort();",
-            'const run = async (i: number): Promise<void> => {',
-            '  if (i < names.length) {',
-            '    let lock = this.$svTagLocks.get(names[i]!);',
-            '    if (!lock) { lock = new GraphLinkLock(); this.$svTagLocks.set(names[i]!, lock); }',
-            '    await lock.synchronized(() => run(i + 1));',
-            '    return;',
-            '  }',
-            '  if (this._glEpoch(tags) !== epoch) return;',
-            '  await this.$svStore.set(key, value);',
-            '  for (const tag of tags) {',
-            r'    const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
-            '    const data = await this.$svStore.get(tagKey);',
-            '    const entry = data !== null ? GraphLinkTagEntry.decode(data) : new GraphLinkTagEntry(new Set());',
-            '    entry.add(key);',
-            '    await this.$svStore.set(tagKey, entry.encode());',
-            '  }',
-            '};',
+            _client.cg.constDecl('names', "Array.from(new Set(['\\u0000all', ...tags])).sort()"),
+            'const run = async (i: number): Promise<void> => ${_client.cg.block([
+              _client.cg.ifStatement(condition: 'i < names.length', ifBlockStatements: [
+                'let lock = this.$svTagLocks.get(names[i]!);',
+                _client.cg.ifStatement(condition: '!lock', ifBlockStatements: [
+                  'lock = new GraphLinkLock();',
+                  'this.$svTagLocks.set(names[i]!, lock);',
+                ]),
+                'await lock.synchronized(() => run(i + 1));',
+                'return;',
+              ]),
+              _client.cg.ifStatement(condition: 'this._glEpoch(tags) !== epoch', ifBlockStatements: ['return;']),
+              'await this.$svStore.set(key, value);',
+              _client.cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
+                _tagKeyDecl,
+                ..._addKeyStatements,
+              ]),
+            ])};',
             'await run(0);',
           ],
         ),
@@ -399,25 +414,23 @@ class TypeScriptClientRuntimeSerializer {
           returnType: 'void',
           statements: [
             _client.cg.forEachLoop(variable: 'tag', iterable: 'tags', statements: [
-              r'const tagKey = `${__GL_TAG_KEY_PREFIX__}${tag}`;',
+              _tagKeyDecl,
               _client.cg.constDecl('lock', 'this.$svTagLocks.get(tag) ?? (() => { const l = new GraphLinkLock(); this.$svTagLocks.set(tag, l); return l; })()'),
-              'await lock.synchronized(async () => {',
-              '  const data = await this.$svStore.get(tagKey);',
-              _client.cg.ifStatement(
-                condition: 'data !== null',
-                ifBlockStatements: [
-                  '  const entry = GraphLinkTagEntry.decode(data);',
-                  '  entry.remove(key);',
-                  _client.cg.ifStatement(
-                    condition: 'entry.keys.size === 0',
-                    ifBlockStatements: ['await this.$svStore.invalidate(tagKey);'],
-                    elseBlockStatements: [
-                      'await this.$svStore.set(tagKey, entry.encode());',
-                    ],
-                  ),
-                ],
-              ),
-              '});',
+              _synchronized([
+                _client.cg.constDecl('data', 'await this.$svStore.get(tagKey)'),
+                _client.cg.ifStatement(
+                  condition: 'data !== null',
+                  ifBlockStatements: [
+                    _client.cg.constDecl('entry', 'GraphLinkTagEntry.decode(data)'),
+                    'entry.remove(key);',
+                    _client.cg.ifStatement(
+                      condition: 'entry.keys.size === 0',
+                      ifBlockStatements: ['await this.$svStore.invalidate(tagKey);'],
+                      elseBlockStatements: ['await this.$svStore.set(tagKey, entry.encode());'],
+                    ),
+                  ],
+                ),
+              ]),
             ]),
           ],
         ),

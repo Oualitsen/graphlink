@@ -80,8 +80,7 @@ DefaultGraphLinkWebSocketAdapter newWsAdapterNeverStop(
 // Server lifecycle utilities
 // ---------------------------------------------------------------------------
 
-String _jarPath() =>
-    '${Directory.current.path}/../spring_server/build/libs/graphlink-test-server-0.0.1.jar';
+String _serverScript() => '${Directory.current.path}/../fault_server/server.py';
 
 /// Kills any process listening on [port].
 Future<void> killPort(int port) async {
@@ -92,16 +91,11 @@ Future<void> killPort(int port) async {
   await Future.delayed(const Duration(milliseconds: 500));
 }
 
-/// Kills any process on [port], starts the test-server JAR on that port,
+/// Kills any process on [port], starts the fault server on that port,
 /// and waits until the port accepts TCP connections.
 Future<void> startServer(int port) async {
   await killPort(port);
-  final process = await Process.start('java', [
-    '-jar',
-    _jarPath(),
-    '--server.port=$port',
-    '--management.server.port=-1',
-  ]);
+  final process = await Process.start('python3', [_serverScript(), '--port', '$port', '--live']);
   unawaited(process.stdout.drain());
   unawaited(process.stderr.drain());
   await _waitForPort(port);

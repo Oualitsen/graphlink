@@ -57,9 +57,9 @@ class KotlinClientRuntimeSerializer {
           'locks.forEach { it.lock() }',
           _client.codeGenUtils.tryCatchFinally(
             tryStatements: [
-              'if (glEpoch(tags) != epoch) return',
+              _client.codeGenUtils.ifStatement(condition: 'glEpoch(tags) != epoch', ifBlockStatements: ['return']),
               'store.set(key, value)',
-              'if (tags.isNotEmpty()) addKeyToTags(key, tags)',
+              _client.codeGenUtils.ifStatement(condition: 'tags.isNotEmpty()', ifBlockStatements: ['addKeyToTags(key, tags)']),
             ],
             finallyStatements: ['locks.asReversed().forEach { it.unlock() }'],
           ),

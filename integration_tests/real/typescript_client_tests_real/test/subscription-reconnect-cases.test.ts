@@ -3,7 +3,6 @@ import { GraphLinkClient } from '../lib/generated/client/graph-link-client.js';
 import { DefaultGraphLinkWsAdapter } from '../lib/generated/graphlink.ts';
 import { httpAdapterForPort, killPort, startServer, wsUrlForPort } from './real-server-adapter.ts';
 
-const RUN_RECONNECT = !!process.env['RUN_RECONNECT_TESTS'];
 const port = 9932;
 const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -36,7 +35,7 @@ class Stream {
   }
 }
 
-describe.skipIf(!RUN_RECONNECT)('reconnect cases', () => {
+describe('reconnect cases', () => {
   let ws: DefaultGraphLinkWsAdapter;
   let client: GraphLinkClient;
   let reconnects = 0;

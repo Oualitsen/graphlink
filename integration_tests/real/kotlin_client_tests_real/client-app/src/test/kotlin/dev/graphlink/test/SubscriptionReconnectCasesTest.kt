@@ -2,7 +2,7 @@ package dev.graphlink.test
 
 import dev.graphlink.test.SubscriptionReconnectTest.Companion.httpUrl
 import dev.graphlink.test.SubscriptionReconnectTest.Companion.killPort
-import dev.graphlink.test.SubscriptionReconnectTest.Companion.startJar
+import dev.graphlink.test.SubscriptionReconnectTest.Companion.startServer
 import dev.graphlink.test.SubscriptionReconnectTest.Companion.wsUrl
 import dev.graphlink.test.generated.client.DefaultGraphLinkClientAdapter
 import dev.graphlink.test.generated.client.DefaultGraphLinkWebSocketAdapter
@@ -52,7 +52,7 @@ class SubscriptionReconnectCasesTest {
     @BeforeTest
     fun setUp() {
         killPort(PORT)
-        startJar(PORT)
+        startServer(PORT)
     }
 
     @AfterTest
@@ -78,7 +78,7 @@ class SubscriptionReconnectCasesTest {
 
     private suspend fun restart() = withContext(Dispatchers.IO) {
         killPort(PORT)
-        startJar(PORT)
+        startServer(PORT)
     }
 
     @Test
