@@ -217,6 +217,29 @@ class PythonClientSerializer extends GLClientSerializer {
       '',
       cg.createMethod(
         async: true,
+        methodName: '_gl_call_cached',
+        arguments: ['self', 'payload: GraphLinkPayload', 'queries: List[GraphLinkPartialQuery]', 'epoch: int'],
+        returnType: 'str',
+        statements: [
+          cg.ifStatement(
+            condition: 'any(q.ttl <= 0 or not q.cache_key for q in queries)',
+            ifBlockStatements: ['return await self.gl_call_adapter(payload)'],
+          ),
+          'key = "\\u0000flight|" + payload.operation_name + "|" + ",".join(sorted(q.cache_key for q in queries)) + "|" + str(epoch)',
+          cg.constDecl('lock', 'self.$svTagLocks.setdefault(key, GraphLinkLock())'),
+          cg.ifStatement(
+            condition: 'lock.flight is None',
+            ifBlockStatements: [
+              'lock.flight = asyncio.ensure_future(self.gl_call_adapter(payload))',
+              'lock.flight.add_done_callback(lambda _: self.$svTagLocks.pop(key, None))',
+            ],
+          ),
+          'return await asyncio.shield(lock.flight)',
+        ],
+      ),
+      '',
+      cg.createMethod(
+        async: true,
         methodName: 'invalidate_all_entries',
         arguments: ['self'],
         returnType: 'None',

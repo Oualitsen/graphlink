@@ -343,7 +343,7 @@ class PythonClientRuntimeSerializer {
         cg.constDecl('gl_epochs__', '{id(q): self._gl_epoch(q.tags) for q in $svRemainingQueries}'),
         cg.tryCatchFinally(
           tryStatements: [
-            cg.constDecl(svResponseText, 'await self.gl_call_adapter($svPayload)'),
+            cg.constDecl(svResponseText, 'await self._gl_call_cached($svPayload, $svRemainingQueries, sum(gl_epochs__.values()))'),
             cg.constDecl('gl_cacheable__', '[q for q in $svRemainingQueries if self._gl_epoch(q.tags) == gl_epochs__[id(q)]]'),
             'return await self._parse_to_object_and_cache($svResponseText, $svResponseMap, from_json, gl_cacheable__, capture_errors)',
           ],

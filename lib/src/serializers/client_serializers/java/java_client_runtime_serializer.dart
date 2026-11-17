@@ -229,6 +229,10 @@ class JavaClientRuntimeSerializer {
         'private final Map<String, ReentrantLock> $svTagLocks = new HashMap<>();',
         'private static final Map<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong>> glEpochsByStore__ = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());',
         'private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.atomic.AtomicLong> glEpochs__;',
+        if (!flavor.isReactive) ...[
+          'private static final Map<GraphLinkCacheStore, java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<String>>> glFlightsByStore__ = java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());',
+          'private final java.util.concurrent.ConcurrentHashMap<String, java.util.concurrent.CompletableFuture<String>> glFlights__;',
+        ],
         'private final GraphLinkClientAdapter $svAdapter;',
         if (_grammar.persistedQueries) ...[
           'private final Map<String, String> $svHashes = new ConcurrentHashMap<>();',
@@ -265,6 +269,7 @@ class JavaClientRuntimeSerializer {
             'this.${svFragmentMap} = fragmentMap;',
             'this.$svStore = store;',
             'this.glEpochs__ = glEpochsByStore__.computeIfAbsent(store, s -> new java.util.concurrent.ConcurrentHashMap<>());',
+            if (!flavor.isReactive) 'this.glFlights__ = glFlightsByStore__.computeIfAbsent(store, s -> new java.util.concurrent.ConcurrentHashMap<>());',
             'this.$svEncoder = encoder;',
             'this.$svDecoder = decoder;',
             'String[] tags = {${allTags.map((t) => '"$t"').join(', ')}};',
@@ -453,7 +458,7 @@ class JavaClientRuntimeSerializer {
             if (!flavor.isReactive)
               codeGenUtils.tryCatchFinally(
                 tryStatements: [
-                  'String $svResponseText = glCallAdapter($svPayload);',
+                  'String $svResponseText = glCallCached($svPayload, $svRemaining, glEpochSnapshot__);',
                   'return ${codeGenUtils.callExpression('parseToObjectAndCache', ['$svResponseText', '$svResponseMap', 'fromJson', 'glCacheable($svRemaining, glEpochSnapshot__)', 'captureErrors'])};',
                 ],
                 catchStatements: [
@@ -590,6 +595,53 @@ class JavaClientRuntimeSerializer {
             'return cacheable;',
           ],
         ),
+        if (!flavor.isReactive)
+          codeGenUtils.createMethod(
+            returnType: 'protected String',
+            methodName: 'glCallCached',
+            arguments: ['GraphLinkPayload payload', 'List<GraphLinkPartialQuery> queries', 'long[] epochs'],
+            statements: [
+              'long epoch = 0;',
+              'List<String> keys = new ArrayList<>();',
+              codeGenUtils.forLoop(
+                  init: 'int i = 0', condition: 'i < queries.size()', increment: 'i++',
+                  statements: [
+                    codeGenUtils.ifStatement(
+                        condition: 'queries.get(i).ttl <= 0 || queries.get(i).cacheKey == null',
+                        ifBlockStatements: ['return glCallAdapter(payload);']),
+                    'keys.add(queries.get(i).cacheKey);',
+                    'epoch += epochs[i];',
+                  ]),
+              'java.util.Collections.sort(keys);',
+              'String key = "\\u0000flight|" + payload.getOperationName() + "|" + String.join(",", keys) + "|" + epoch;',
+              'java.util.concurrent.CompletableFuture<String> mine = new java.util.concurrent.CompletableFuture<>();',
+              'java.util.concurrent.CompletableFuture<String> running = glFlights__.putIfAbsent(key, mine);',
+              codeGenUtils.ifStatement(
+                  condition: 'running != null',
+                  ifBlockStatements: [
+                    codeGenUtils.tryCatchFinally(
+                      tryStatements: ['return running.join();'],
+                      catchVariable: 'e',
+                      catchStatements: [
+                        codeGenUtils.ifStatement(
+                            condition: 'e instanceof java.util.concurrent.CompletionException && e.getCause() instanceof RuntimeException',
+                            ifBlockStatements: ['throw (RuntimeException) e.getCause();']),
+                        'throw e;',
+                      ],
+                    ),
+                  ]),
+              codeGenUtils.tryCatchFinally(
+                tryStatements: [
+                  'String text = glCallAdapter(payload);',
+                  'mine.complete(text);',
+                  'return text;',
+                ],
+                catchVariable: 'e',
+                catchStatements: ['mine.completeExceptionally(e);', 'throw e;'],
+                finallyStatements: ['glFlights__.remove(key, mine);'],
+              ),
+            ],
+          ),
         codeGenUtils.createMethod(
           returnType: 'protected void',
           methodName: 'invalidateAllEntries',

@@ -427,12 +427,38 @@ func (l *GraphLinkLock) Synchronized(fn func() error) error {
 
 // GraphLinkTagLocks hands out the lock for a tag, creating it on first use.
 type GraphLinkTagLocks struct {
-	mu    sync.Mutex
-	locks map[string]*GraphLinkLock
+	mu      sync.Mutex
+	locks   map[string]*GraphLinkLock
+	flights map[string]*glFlight
+}
+
+type glFlight struct {
+	done chan struct{}
+	text string
+	err  error
+}
+
+func (t *GraphLinkTagLocks) flight(key string, send func() (string, error)) (text string, err error, joined bool) {
+	t.mu.Lock()
+	f, joined := t.flights[key]
+	if !joined {
+		f = &glFlight{done: make(chan struct{})}
+		t.flights[key] = f
+		go func() {
+			f.text, f.err = send()
+			t.mu.Lock()
+			delete(t.flights, key)
+			t.mu.Unlock()
+			close(f.done)
+		}()
+	}
+	t.mu.Unlock()
+	<-f.done
+	return f.text, f.err, joined
 }
 
 func NewGraphLinkTagLocks(tags []string) *GraphLinkTagLocks {
-	locks := &GraphLinkTagLocks{locks: map[string]*GraphLinkLock{}}
+	locks := &GraphLinkTagLocks{locks: map[string]*GraphLinkLock{}, flights: map[string]*glFlight{}}
 	for _, tag := range tags {
 		locks.locks[tag] = &GraphLinkLock{}
 	}
@@ -755,7 +781,7 @@ func glExecuteCached[T GraphLinkFullResponse](ctx context.Context, r *GraphLinkR
 	payload := r.buildPayload(remaining, operationName, directives)
 	epochs := r.glEpochs(remaining)
 	result, err := func() (T, error) {
-		text, err := r.glCallAdapter(ctx, payload)
+		text, err := r.glCallCached(ctx, payload, remaining, epochs)
 		if err != nil {
 			return zero, err
 		}
@@ -913,6 +939,28 @@ func (r *GraphLinkResolverBase) glCacheable(queries []GraphLinkPartialQuery, epo
 		}
 	}
 	return cacheable
+}
+
+func (r *GraphLinkResolverBase) glCallCached(ctx context.Context, payload GraphLinkPayload, queries []GraphLinkPartialQuery, epochs []int64) (string, error) {
+	keys := make([]string, len(queries))
+	var epoch int64
+	for i, query := range queries {
+		if query.TTL <= 0 || query.CacheKey == "" {
+			return r.glCallAdapter(ctx, payload)
+		}
+		keys[i] = query.CacheKey
+		epoch += epochs[i]
+	}
+	sort.Strings(keys)
+	key := fmt.Sprintf("\u0000flight|%s|%s|%d", payload.OperationName, strings.Join(keys, ","), epoch)
+	for {
+		text, err, joined := r.tagLocks.flight(key, func() (string, error) { return r.glCallAdapter(ctx, payload) })
+		leaderCancelled := errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+		if err != nil && joined && leaderCancelled && ctx.Err() == nil {
+			continue
+		}
+		return text, err
+	}
 }
 
 func (r *GraphLinkResolverBase) invalidateAllEntries(ctx context.Context) error {

@@ -203,7 +203,7 @@ class TypeScriptClientOperationSerializer {
       _cg.constDecl('glEpochs__', 'this._glEpochs($svRemaining)'),
       _cg.tryCatchFinally(
         tryStatements: [
-          _cg.constDecl(svResponseText, 'await this._glCallAdapter($svPayload)'),
+          _cg.constDecl(svResponseText, 'await this._glCallCached($svPayload, $svRemaining, glEpochs__)'),
           _cg.constDecl(svResult, '$parseAndCacheCall as unknown as $fullResponseTypeName'),
           if (observables) ...[
             isCE

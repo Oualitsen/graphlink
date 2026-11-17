@@ -109,6 +109,7 @@ const glLock = '''
 class GraphLinkLock {
   Future<void> _last = Future.value();
   int epoch = 0;
+  Future<String>? flight;
 
   Future<T> synchronized<T>(Future<T> Function() fn) {
     final next = _last.then((_) => fn());

@@ -18,6 +18,14 @@ class CacheConcurrencyTest {
     }
 
     @Test
+    fun concurrentRequestsForTheSameKeyShareOneCall() = runBlocking<Unit> {
+        val id = freshId()
+        val versions = (1..3).map { async(Dispatchers.IO) { client.queries.cachedSlow(id, 300).cachedSlow } }.awaitAll()
+        assertEquals(listOf(0, 0, 0), versions)
+        assertEquals(1, client.queries.cachedSlowCalls(id).cachedSlowCalls)
+    }
+
+    @Test
     fun aResponseInFlightDuringAnInvalidationIsNotStored() = runBlocking<Unit> {
         val id = freshId()
         val slow = async(Dispatchers.IO) { client.queries.cachedSlow(id, 600).cachedSlow }

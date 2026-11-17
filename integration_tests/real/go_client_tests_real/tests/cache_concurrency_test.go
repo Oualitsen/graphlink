@@ -33,6 +33,27 @@ func TestConcurrentRequestsForTwoKeysMakeTwoCalls(t *testing.T) {
 	}
 }
 
+func TestConcurrentRequestsForTheSameKeyShareOneCall(t *testing.T) {
+	c := newClient(t)
+	id := freshConcurrencyId(t)
+	versions := make([]int, 3)
+	var wg sync.WaitGroup
+	for i := range versions {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			res, err := c.Queries.CachedSlow(ctx(t), id, 300)
+			if err != nil {
+				t.Error(err)
+			}
+			versions[i] = res.CachedSlow
+		}(i)
+	}
+	wg.Wait()
+	expectEqual(t, versions[0]+versions[1]+versions[2], 0, "versions")
+	expectEqual(t, must(c.Queries.CachedSlowCalls(ctx(t), id)).CachedSlowCalls, 1, "calls")
+}
+
 func TestResponseInFlightDuringInvalidationIsNotStored(t *testing.T) {
 	c := newClient(t)
 	id := freshConcurrencyId(t)
