@@ -21,7 +21,7 @@ generate: remove-generated
 	dart run ../../generate.dart
 
 typecheck:
-	$(PY) -m compileall -q generated impl start.py
+	$(PY) -m compileall -q generated ../python_impl/impl start.py
 
 ci: install generate typecheck
 

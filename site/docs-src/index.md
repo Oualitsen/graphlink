@@ -946,6 +946,7 @@ glink -w    # watch mode — regenerate on every save
 - **[Spring Boot](spring-server.md)** — Generated controllers, service interfaces, types, inputs.
 - **[Express / Apollo](express-apollo.md)** — Generated resolvers, service interfaces, DataLoader batch mappings.
 - **[FastAPI / Ariadne](fastapi-ariadne.md)** — Pydantic models, service Protocols, async resolvers, batch loaders, REST and uploads.
+- **[Django / Ariadne](django-ariadne.md)** — the same Python server hosted by Django ASGI: URL patterns for REST, Ariadne for GraphQL.
 - **[Custom Queries & Mutations](custom-queries.md)** — Hand-written operations next to the schema, typed end to end.
 - **[Why Support REST](why-rest.md)** — Try GraphLink on your REST API, cache it, and migrate to GraphQL one field at a time.
 - **[REST Operations](rest-client.md)** — Serve fields over HTTP/JSON from the same schema and client.

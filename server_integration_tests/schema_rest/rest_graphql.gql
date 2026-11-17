@@ -1,0 +1,5 @@
+# Kept apart from rest.gql so that a server can be generated from the REST operations alone.
+# A GraphQL operation on the same service as the REST ones (RestItemService): both controllers live side by side.
+extend type Query {
+    restItemGraphql(id: ID!): RestItem
+}

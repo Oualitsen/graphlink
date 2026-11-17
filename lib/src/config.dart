@@ -137,7 +137,8 @@ abstract class ServerLanguageConfig {
     if (json['kotlinSpring'] != null) return KotlinSpringServerConfig.fromJson(json['kotlinSpring'] as Map<String, dynamic>);
     if (json['expressApollo'] != null) return ExpressApolloServerConfig.fromJson(json['expressApollo'] as Map<String, dynamic>);
     if (json['fastapiAriadne'] != null) return FastapiAriadneServerConfig.fromJson(json['fastapiAriadne'] as Map<String, dynamic>);
-    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo, fastapiAriadne');
+    if (json['djangoAriadne'] != null) return DjangoAriadneServerConfig.fromJson(json['djangoAriadne'] as Map<String, dynamic>);
+    throw ArgumentError('serverConfig must specify one of: spring, kotlinSpring, expressApollo, fastapiAriadne, djangoAriadne');
   }
 }
 
@@ -265,7 +266,7 @@ class ExpressApolloServerConfig extends ServerLanguageConfig {
   }
 }
 
-class FastapiAriadneServerConfig extends ServerLanguageConfig {
+abstract class AriadneServerConfig extends ServerLanguageConfig {
   final int port;
   final String graphqlPath;
   final bool generateEntryPoint;
@@ -278,16 +279,46 @@ class FastapiAriadneServerConfig extends ServerLanguageConfig {
   /// interceptor gets it as a last parameter (`None` for subscriptions, batch mappings and REST).
   final bool useResolveInfo;
 
-  FastapiAriadneServerConfig({
+  AriadneServerConfig({
     this.port = 8000,
     this.graphqlPath = '/graphql',
     this.generateEntryPoint = true,
     this.injectContext = false,
     this.useResolveInfo = false,
   });
+}
+
+class FastapiAriadneServerConfig extends AriadneServerConfig {
+  FastapiAriadneServerConfig({
+    super.port,
+    super.graphqlPath,
+    super.generateEntryPoint,
+    super.injectContext,
+    super.useResolveInfo,
+  });
 
   factory FastapiAriadneServerConfig.fromJson(Map<String, dynamic> json) {
     return FastapiAriadneServerConfig(
+      port: (json['port'] as int?) ?? 8000,
+      graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
+      generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,
+      injectContext: (json['injectContext'] as bool?) ?? false,
+      useResolveInfo: (json['useResolveInfo'] as bool?) ?? false,
+    );
+  }
+}
+
+class DjangoAriadneServerConfig extends AriadneServerConfig {
+  DjangoAriadneServerConfig({
+    super.port,
+    super.graphqlPath,
+    super.generateEntryPoint,
+    super.injectContext,
+    super.useResolveInfo,
+  });
+
+  factory DjangoAriadneServerConfig.fromJson(Map<String, dynamic> json) {
+    return DjangoAriadneServerConfig(
       port: (json['port'] as int?) ?? 8000,
       graphqlPath: (json['graphqlPath'] as String?) ?? '/graphql',
       generateEntryPoint: (json['generateEntryPoint'] as bool?) ?? true,

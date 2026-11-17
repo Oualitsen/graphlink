@@ -4,6 +4,12 @@ KOTLIN_BLOCKING_PORT  = 9994
 KOTLIN_SUSPEND_PORT   = 9995
 PYTHON_FASTAPI_PORT   = 9975
 PYTHON_UPLOAD_PORT    = 9974
+PYTHON_DJANGO_PORT    = 9972
+PYTHON_DJANGO_UPLOAD_PORT = 9971
+PYTHON_FASTAPI_GRAPHQL_PORT = 9923
+PYTHON_FASTAPI_REST_PORT = 9922
+PYTHON_DJANGO_GRAPHQL_PORT = 9921
+PYTHON_DJANGO_REST_PORT = 9920
 
 CLIENTS = dart ts java kotlin java_reactive swift python go
 
@@ -11,6 +17,9 @@ CLIENTS = dart ts java kotlin java_reactive swift python go
         ci-faults-python-fastapi ci-rest-python-fastapi ci-graphql-python-fastapi ci-http-python-fastapi \
         python-fastapi-install python-fastapi-generate python-fastapi-start-server python-fastapi-stop-server \
         python-fastapi-test-client python-fastapi ci-python-fastapi-client ci-upload-python \
+        ci-faults-python-django ci-rest-python-django ci-graphql-python-django ci-http-python-django \
+        python-django-install python-django-generate python-django-start-server python-django-stop-server \
+        python-django-test-client python-django ci-python-django-client ci-upload-python-django \
         ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend \
         ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend \
         setup-client setup-client-install setup-all-clients clean-all generate-all \
@@ -119,6 +128,39 @@ ci-python-fastapi-client: python-fastapi-install python-fastapi-start-server
 	$(MAKE) python-fastapi-test-client CLIENT=$(CLIENT) || ($(MAKE) python-fastapi-stop-server && exit 1)
 	$(MAKE) python-fastapi-stop-server
 
+# ---- Python Django + Ariadne server (servers/python_django_server) ----
+
+python-django-install:
+	$(MAKE) -C servers/python_django_server install
+
+python-django-generate:
+	$(MAKE) -C servers/python_django_server generate
+
+python-django-start-server:
+	$(MAKE) -C servers/python_django_server start-server
+
+python-django-stop-server:
+	$(MAKE) -C servers/python_django_server stop-server
+
+python-django-test-client:
+	$(MAKE) -C clients/$(CLIENT)_client test PORT=$(PYTHON_DJANGO_PORT)
+
+python-django: python-django-install python-django-generate python-django-start-server setup-all-clients
+	status=0; \
+	for c in $(CLIENTS); do \
+		$(MAKE) python-django-stop-server python-django-start-server || status=1; \
+		$(MAKE) python-django-test-client CLIENT=$$c || status=1; \
+	done; \
+	$(MAKE) python-django-stop-server; \
+	exit $$status
+
+# Single client x the Django server, for CI matrix use. Assumes code has
+# already been generated (e.g. by a prior `make generate-all` job).
+ci-python-django-client: python-django-install python-django-start-server
+	$(MAKE) setup-client-install CLIENT=$(CLIENT)
+	$(MAKE) python-django-test-client CLIENT=$(CLIENT) || ($(MAKE) python-django-stop-server && exit 1)
+	$(MAKE) python-django-stop-server
+
 # ---- Upload suite (servers/typescript_upload_server + clients/dart_upload_client) ----
 # Orthogonal to the client x server matrix above: exercises file uploads with a
 # single dedicated Dart harness, not all four clients.
@@ -149,6 +191,13 @@ ci-upload-python:
 	$(MAKE) -C servers/python_upload_server start-server
 	$(MAKE) -C clients/dart_upload_client test PORT=$(PYTHON_UPLOAD_PORT) || ($(MAKE) -C servers/python_upload_server stop-server && exit 1)
 	$(MAKE) -C servers/python_upload_server stop-server
+
+ci-upload-python-django:
+	$(MAKE) -C servers/python_django_upload_server install
+	$(MAKE) -C clients/dart_upload_client install
+	$(MAKE) -C servers/python_django_upload_server start-server
+	$(MAKE) -C clients/dart_upload_client test PORT=$(PYTHON_DJANGO_UPLOAD_PORT) || ($(MAKE) -C servers/python_django_upload_server stop-server && exit 1)
+	$(MAKE) -C servers/python_django_upload_server stop-server
 
 # ---- Java server, MVC (servers/java_server) ----
 
@@ -299,14 +348,44 @@ $(eval $(call fault_rule,java-reactive,java_server_reactive,java-reactive-build,
 $(eval $(call fault_rule,kotlin-blocking,kotlin_server_blocking,kotlin-build,$(KOTLIN_BLOCKING_PORT)))
 $(eval $(call fault_rule,kotlin-suspend,kotlin_server_suspend,kotlin-build,$(KOTLIN_SUSPEND_PORT)))
 $(eval $(call fault_rule,python-fastapi,python_fastapi_server,python-fastapi-install,$(PYTHON_FASTAPI_PORT)))
+$(eval $(call fault_rule,python-django,python_django_server,python-django-install,$(PYTHON_DJANGO_PORT)))
 
-faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend ci-faults-python-fastapi
+# ---- Python servers generated from the GraphQL operations alone and from the REST operations alone ----
+# GraphQL only: fault and GraphQL suites, and no REST route answers. REST only: REST suite, and no GraphQL endpoint answers.
 
-rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend ci-rest-python-fastapi
+define python_mode_rule
+$(1)-install:
+	$$(MAKE) -C servers/$(2) install
 
-graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend ci-graphql-python-fastapi
+$(1)-start-server:
+	$$(MAKE) -C servers/$(2) start-server
 
-http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend ci-http-python-fastapi
+$(1)-stop-server:
+	$$(MAKE) -C servers/$(2) stop-server
+
+ci-http-$(1): $(1)-install $(1)-start-server
+	status=0; \
+	$(4) \
+	$$(MAKE) $(1)-stop-server; exit $$$$status
+endef
+
+GRAPHQL_ONLY_SUITES = python3 -I server_faults/run_faults.py $(1) $(2) || status=1; GRAPHQL_ONLY=1 python3 -I server_graphql/run_graphql.py $(1) $(2) || status=1; python3 -I server_rest/run_rest.py $(1) $(2) graphql-only || status=1;
+REST_ONLY_SUITES = python3 -I server_rest/run_rest.py $(1) $(2) rest-only || status=1;
+
+$(eval $(call python_mode_rule,python-fastapi-graphql,python_fastapi_graphql_server,$(PYTHON_FASTAPI_GRAPHQL_PORT),$(call GRAPHQL_ONLY_SUITES,python_fastapi_graphql_server,$(PYTHON_FASTAPI_GRAPHQL_PORT))))
+$(eval $(call python_mode_rule,python-fastapi-rest,python_fastapi_rest_server,$(PYTHON_FASTAPI_REST_PORT),$(call REST_ONLY_SUITES,python_fastapi_rest_server,$(PYTHON_FASTAPI_REST_PORT))))
+$(eval $(call python_mode_rule,python-django-graphql,python_django_graphql_server,$(PYTHON_DJANGO_GRAPHQL_PORT),$(call GRAPHQL_ONLY_SUITES,python_django_graphql_server,$(PYTHON_DJANGO_GRAPHQL_PORT))))
+$(eval $(call python_mode_rule,python-django-rest,python_django_rest_server,$(PYTHON_DJANGO_REST_PORT),$(call REST_ONLY_SUITES,python_django_rest_server,$(PYTHON_DJANGO_REST_PORT))))
+
+ci-http-python-modes: ci-http-python-fastapi ci-http-python-fastapi-graphql ci-http-python-fastapi-rest ci-http-python-django ci-http-python-django-graphql ci-http-python-django-rest
+
+faults: ci-faults-typescript ci-faults-java ci-faults-java-reactive ci-faults-kotlin-blocking ci-faults-kotlin-suspend ci-faults-python-fastapi ci-faults-python-django
+
+rest: ci-rest-typescript ci-rest-java ci-rest-java-reactive ci-rest-kotlin-blocking ci-rest-kotlin-suspend ci-rest-python-fastapi ci-rest-python-django
+
+graphql: ci-graphql-typescript ci-graphql-java ci-graphql-java-reactive ci-graphql-kotlin-blocking ci-graphql-kotlin-suspend ci-graphql-python-fastapi ci-graphql-python-django
+
+http: ci-http-typescript ci-http-java ci-http-java-reactive ci-http-kotlin-blocking ci-http-kotlin-suspend ci-http-python-fastapi ci-http-python-django
 
 # ---- Aggregate targets (local dev convenience: full matrix in one process) ----
 

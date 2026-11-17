@@ -2,7 +2,6 @@ from typing import Any, List, Optional
 
 from generated.context import GraphLinkContext
 from generated.enums.gl_interceptor_tag import GlInterceptorTag
-from generated.rest.support import RestError
 
 
 class InterceptorImpl:
@@ -10,6 +9,8 @@ class InterceptorImpl:
         self, tag: Optional[GlInterceptorTag], operation: str, args: List[Any], context: GraphLinkContext
     ) -> None:
         if operation.startswith("rest") and args and args[0] == "deny":
+            from generated.rest.core import RestError
+
             raise RestError(403, "Forbidden")
 
         if operation == "Team.members":
