@@ -1,6 +1,9 @@
 import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'dart:io';
 
+import 'package:graphlink/src/generators/openapi_generator.dart';
+import 'package:graphlink/src/serializers/spring_openapi_controller_serializer.dart';
+
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/io_utils.dart';
@@ -16,6 +19,8 @@ import 'package:graphlink/src/serializers/python/fastapi_ariadne_server_serializ
 import 'package:graphlink/src/serializers/python/django_ariadne_server_serializer.dart';
 import 'package:graphlink/src/serializers/python/python_ariadne_server_serializer.dart';
 import 'package:graphlink/src/serializers/python/python_rest_constants.dart';
+import 'package:graphlink/src/serializers/python/python_openapi_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/nest_apollo_rest_serializer.dart' show nestOpenApiControllerFile;
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_rest_constants.dart';
 import 'package:graphlink/src/serializers/typescript/express_apollo_server_serializer.dart';
@@ -62,7 +67,27 @@ void _writeDefinitions<T>({
   }
 }
 
+void _writeSpringOpenApiController(List<Future<File>> futures, OpenApiOutput? openApi, SpringServerConfigBase springConfig,
+    String destinationDir, String packageName, {required bool kotlin}) {
+  if (openApi == null || !openApi.serve || !springConfig.generateControllers) return;
+  final serializer = SpringOpenApiControllerSerializer(openApi, packageName);
+  futures.add(writeToFile(
+    data: kotlin ? serializer.serializeKotlin() : serializer.serializeJava(),
+    fileName: '$springOpenApiControllerName.${kotlin ? 'kt' : 'java'}',
+    subdir: 'controllers',
+    imports: kotlin ? serializer.kotlinImports : serializer.javaImports,
+    destinationDir: destinationDir,
+    packageName: packageName,
+  ));
+}
+
 Future<Set<String>> generateServerClasses(
+    GLParser grammar, GeneratorConfig config, DateTime started) async {
+  final written = await _generateServerTarget(grammar, config, started);
+  return {...written, ...await writeOpenApiFile(buildOpenApiOutput(grammar, config))};
+}
+
+Future<Set<String>> _generateServerTarget(
     GLParser grammar, GeneratorConfig config, DateTime started) async {
   final serverLang = config.serverConfig!.language;
   if (serverLang is ExpressApolloServerConfig) {
@@ -176,6 +201,7 @@ Future<Set<String>> generateServerClasses(
       appendStar: true,
     );
   }
+  _writeSpringOpenApiController(futures, buildOpenApiOutput(grammar, config), springConfig, destinationDir, packageName, kotlin: false);
   if (springConfig.generateControllers && grammar.restControllers.isNotEmpty) {
     _writeDefinitions(
       futures: futures,
@@ -383,6 +409,7 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
       packageName: packageName,
     );
   }
+  _writeSpringOpenApiController(futures, buildOpenApiOutput(grammar, config), springConfig, destinationDir, packageName, kotlin: true);
   if (springConfig.generateControllers && grammar.restControllers.isNotEmpty) {
     _writeDefinitions(
       futures: futures,
@@ -635,7 +662,7 @@ Future<Set<String>> _generateExpressApolloClasses(
       ));
     }
     futures.add(saveSource(
-      data: serverSerializer.serializeRestRouter(),
+      data: serverSerializer.serializeRestRouter(openApi: buildOpenApiOutput(grammar, config)),
       path: '$destinationDir/rest/build-rest-router.ts',
       typescriptSource: true,
     ));
@@ -670,7 +697,8 @@ Future<Set<String>> _generateNestApolloClasses(
   final destinationDir = config.outputDir;
   final tsSerializer = TypeScriptSerializer(grammar, importPrefix: '',
       typeMapOverrides: config.typeMappings ?? {});
-  final serializer = NestApolloServerSerializer(grammar, tsSerializer, nestConfig);
+  final openApi = buildOpenApiOutput(grammar, config);
+  final serializer = NestApolloServerSerializer(grammar, tsSerializer, nestConfig, openApi: openApi);
   final futures = <Future<File>>[];
 
   void add(String path, String data) {
@@ -726,6 +754,7 @@ Future<Set<String>> _generateNestApolloClasses(
       add('rest/${serializer.rest.controllerFileName(service)}.ts', serializer.rest.serializeController(service));
     }
     add('rest/rest-fallback.controller.ts', serializer.rest.serializeFallbackController());
+    if (serializer.rest.servesOpenApi) add('rest/$nestOpenApiControllerFile.ts', serializer.rest.serializeOpenApiController());
   }
 
   add(nestOptionsFileName, serializer.serializeOptions());
@@ -762,9 +791,10 @@ Future<Set<String>> _generateAriadneClasses(
     typeMapOverrides: config.typeMappings ?? {},
   );
   final isDjango = ariadneConfig is DjangoAriadneServerConfig;
+  final openApi = buildOpenApiOutput(grammar, config);
   final PythonAriadneServerSerializer serverSerializer = isDjango
-      ? DjangoAriadneServerSerializer(grammar, py, ariadneConfig)
-      : FastapiAriadneServerSerializer(grammar, py, ariadneConfig);
+      ? DjangoAriadneServerSerializer(grammar, py, ariadneConfig, openApi: openApi)
+      : FastapiAriadneServerSerializer(grammar, py, ariadneConfig, openApi: openApi);
   final files = <String, String>{};
   final exports = <String>[];
   final models = <String>[];
@@ -853,6 +883,10 @@ Future<Set<String>> _generateAriadneClasses(
       add('rest/urls.py', wrap(pythonRestDjangoUrls));
     } else {
       add('rest/router.py', wrap(pythonRestFastapiRouter));
+    }
+    if (serverSerializer.servesOpenApi) {
+      final openApiSerializer = PythonOpenApiSerializer(openApi!, py);
+      add(pythonOpenApiFile, wrap(isDjango ? openApiSerializer.serializeDjango() : openApiSerializer.serializeFastapi()));
     }
     files['rest/__init__.py'] = '';
   }

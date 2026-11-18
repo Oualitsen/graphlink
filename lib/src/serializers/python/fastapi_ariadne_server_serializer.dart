@@ -3,7 +3,7 @@ import 'package:graphlink/src/serializers/python/python_ariadne_server_serialize
 import 'package:graphlink/src/serializers/python/python_rest_serializer.dart';
 
 class FastapiAriadneServerSerializer extends PythonAriadneServerSerializer {
-  FastapiAriadneServerSerializer(super.grammar, super.py, super.config);
+  FastapiAriadneServerSerializer(super.grammar, super.py, super.config, {super.openApi});
 
   @override
   late final PythonRestSerializer rest = FastapiRestSerializer(grammar, py, config);
@@ -15,6 +15,7 @@ class FastapiAriadneServerSerializer extends PythonAriadneServerSerializer {
         ...graphqlImports,
         if (!grammar.restOnly) 'from starlette.routing import Route, WebSocketRoute',
         if (hasRest) 'from .rest.router import build_rest_router',
+        if (servesOpenApi) 'from .rest.openapi import build_openapi_router',
       ];
 
   @override
@@ -31,6 +32,7 @@ class FastapiAriadneServerSerializer extends PythonAriadneServerSerializer {
           'app.router.routes.append(Route($graphqlPath, graphql_app))',
           'app.router.routes.append(WebSocketRoute($graphqlPath, graphql_app))',
         ],
+        if (servesOpenApi) 'app.include_router(build_openapi_router())',
         if (hasRest) 'app.include_router(build_rest_router(services, lambda request: create_context(services, request)))',
         'return app',
       ],

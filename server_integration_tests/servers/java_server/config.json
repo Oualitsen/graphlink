@@ -11,6 +11,7 @@
         "Null": "null"
     },
   "serverConfig": {
+    "openapi": { "title": "GraphLink REST test", "version": "1.0.0" },
     "spring": {
       "basePackage": "dev.graphlink.javaserver.generated",
       "reactive": false,

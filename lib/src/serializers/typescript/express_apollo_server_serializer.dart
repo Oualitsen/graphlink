@@ -1,3 +1,4 @@
+import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
@@ -34,7 +35,7 @@ class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase
 
   String serializeRestDownloads() => _rest.serializeDownloads();
 
-  String serializeRestRouter() => _rest.serializeRestRouter();
+  String serializeRestRouter({OpenApiOutput? openApi}) => _rest.serializeRestRouter(openApi: openApi);
 
   String serializeRestSupport() => expressRestSupport;
 

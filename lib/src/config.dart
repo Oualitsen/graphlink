@@ -230,11 +230,72 @@ class GeneratorConfig {
 
 class ServerConfig {
   final ServerLanguageConfig language;
+  final OpenApiConfig? openApi;
 
-  ServerConfig(this.language);
+  ServerConfig(this.language, {this.openApi});
 
-  factory ServerConfig.fromJson(Map<String, dynamic> json) =>
-      ServerConfig(ServerLanguageConfig.fromJson(json));
+  factory ServerConfig.fromJson(Map<String, dynamic> json) => ServerConfig(
+        ServerLanguageConfig.fromJson(json),
+        openApi: json['openapi'] == null ? null : OpenApiConfig.fromJson(json['openapi']),
+      );
+}
+
+class OpenApiConfig {
+  final String? file;
+  final bool serve;
+  final String specPath;
+  final String docsPath;
+  final String title;
+  final String version;
+  final String serverUrl;
+
+  const OpenApiConfig({
+    this.file,
+    this.serve = true,
+    this.specPath = '/openapi.json',
+    this.docsPath = '/docs',
+    this.title = '',
+    this.version = '0.0.0',
+    this.serverUrl = '/',
+  });
+
+  factory OpenApiConfig.fromJson(Object? raw) {
+    if (raw is! Map) throw ArgumentError('openapi must be an object, got $raw.');
+    final config = OpenApiConfig(
+      file: _optionalString(raw, 'file'),
+      serve: _optionalBool(raw, 'serve') ?? true,
+      specPath: _optionalPath(raw, 'specPath') ?? '/openapi.json',
+      docsPath: _optionalPath(raw, 'docsPath') ?? '/docs',
+      title: _optionalString(raw, 'title') ?? '',
+      version: _optionalString(raw, 'version') ?? '0.0.0',
+      serverUrl: _optionalString(raw, 'serverUrl') ?? '/',
+    );
+    if (config.serve && config.specPath == config.docsPath) {
+      throw ArgumentError('openapi.specPath and openapi.docsPath must differ, both are ${config.specPath}.');
+    }
+    return config;
+  }
+
+  static String? _optionalString(Map raw, String key) {
+    final value = raw[key];
+    if (value == null) return null;
+    if (value is! String || value.isEmpty) throw ArgumentError('openapi.$key must be a non-empty string, got $value.');
+    return value;
+  }
+
+  static bool? _optionalBool(Map raw, String key) {
+    final value = raw[key];
+    if (value == null) return null;
+    if (value is! bool) throw ArgumentError('openapi.$key must be a boolean, got $value.');
+    return value;
+  }
+
+  static String? _optionalPath(Map raw, String key) {
+    final value = _optionalString(raw, key);
+    if (value == null) return null;
+    if (!value.startsWith('/')) throw ArgumentError('openapi.$key must start with "/", got $value.');
+    return value;
+  }
 }
 
 abstract class TypeScriptApolloServerConfig extends ServerLanguageConfig {

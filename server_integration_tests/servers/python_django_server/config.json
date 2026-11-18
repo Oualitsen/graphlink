@@ -3,6 +3,7 @@
   "mode": "server",
   "outputDir": "generated",
   "serverConfig": {
+    "openapi": { "title": "GraphLink REST test", "version": "1.0.0" },
     "djangoAriadne": {
       "port": 9972,
       "graphqlPath": "/graphql",

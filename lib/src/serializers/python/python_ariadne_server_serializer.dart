@@ -1,4 +1,5 @@
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -23,7 +24,11 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
   final AriadneServerConfig config;
   final cg = PythonCodeGenUtils();
 
-  PythonAriadneServerSerializer(super.grammar, this.py, this.config);
+  final OpenApiOutput? openApi;
+
+  PythonAriadneServerSerializer(super.grammar, this.py, this.config, {this.openApi});
+
+  bool get servesOpenApi => hasRest && openApi != null && openApi!.serve;
 
   PythonRestSerializer get rest;
 

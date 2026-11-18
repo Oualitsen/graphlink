@@ -50,13 +50,16 @@ Future<File> saveSource({
   bool graphqlSource = false,
   bool typescriptSource = false,
   bool hashCommentSource = false,
+  bool plainSource = false,
 }) {
-  final header = graphqlSource || hashCommentSource
+  final header = plainSource
+      ? ''
+      : graphqlSource || hashCommentSource
       ? graphqlHeadComment
       : typescriptSource
           ? fileHeadComment
           : "$fileHeadComment$dartIgnoreForFile\n";
-  final content = '$header\n$data\n';
+  final content = plainSource ? data : '$header\n$data\n';
   final hash = content.hashCode;
   var file = File(path);
   if (_outputHashCache[path] == hash && file.existsSync()) {

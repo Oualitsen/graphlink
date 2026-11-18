@@ -11,6 +11,7 @@
   },
   "outputDir": "src/generated",
   "serverConfig": {
+    "openapi": { "title": "GraphLink REST test", "version": "1.0.0" },
     "expressApollo": {
       "port": 9997,
       "graphqlPath": "/graphql",

@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -95,9 +98,10 @@ class ExpressApolloRestSerializer {
     return '${GLClassModel(imports: imports, body: '$expressRestUploadsRaw${hasMultipart ? expressRestUploadsMultipart : ''}').toFileContent()}\n';
   }
 
-  String serializeRestRouter() {
+  String serializeRestRouter({OpenApiOutput? openApi}) {
     final bindings = routeBindings();
     final routes = [for (final binding in bindings) _route(binding)];
+    final served = openApi != null && openApi.serve ? openApi : null;
     final usesContext = bindings.any((b) => injectsContext(b.op) || isIntercepted(b.op));
     final intercepted = bindings.any((b) => isIntercepted(b.op));
     final interceptor = intercepted ? grammar.interfaces[glInterceptorInterfaceName]! : null;
@@ -133,6 +137,11 @@ class ExpressApolloRestSerializer {
     body.writeln();
     body.writeln(shapesDeclaration(bindings));
     body.writeln();
+    if (served != null) {
+      body.writeln(_cg.constDecl('openApiSpec', jsonEncode(served.spec)));
+      body.writeln(_cg.constDecl('openApiDocsPage', jsonEncode(served.docsPage)));
+      body.writeln();
+    }
     if (usesContext) {
       body.writeln(_cg.createFunction(
         functionName: 'restContext',
@@ -154,6 +163,7 @@ class ExpressApolloRestSerializer {
         _cg.constDecl('router', 'Router()'),
         'router.use(express.json());',
         if (hasForm) "router.use(express.text({ type: 'application/x-www-form-urlencoded' }));",
+        if (served != null) ..._openApiRoutes(served),
         ...routes,
         ..._methodNotAllowedRoutes(bindings),
         ..._notFoundRoute(bindings),
@@ -162,6 +172,16 @@ class ExpressApolloRestSerializer {
       ],
     ));
     return '${GLClassModel(imports: imports, body: body.toString()).toFileContent()}\n';
+  }
+
+  List<String> _openApiRoutes(OpenApiOutput openApi) => [
+        _openApiRoute(openApi.config.specPath, 'application/json', 'openApiSpec'),
+        _openApiRoute(openApi.config.docsPath, 'text/html', 'openApiDocsPage'),
+      ];
+
+  String _openApiRoute(String path, String contentType, String constant) {
+    final handler = '(_req: Request, res: Response) => ${_cg.block(["res.type(${contentType.quote()}).send($constant);"])}';
+    return '${_cg.callExpression('router.get', [path.quote(), handler])};';
   }
 
   List<RouteBinding> routeBindings() {

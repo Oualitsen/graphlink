@@ -3,6 +3,7 @@
   "mode": "server",
   "outputDir": "src/main/kotlin/dev/graphlink/kotlinserversuspend/generated",
   "serverConfig": {
+    "openapi": { "title": "GraphLink REST test", "version": "1.0.0" },
     "kotlinSpring": {
       "basePackage": "dev.graphlink.kotlinserversuspend.generated",
       "generateControllers": true,

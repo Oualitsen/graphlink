@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_service.dart';
@@ -9,6 +12,8 @@ import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
 const nestRestControllersDir = 'rest';
 const nestRestFallbackControllerClass = 'RestFallbackController';
+const nestOpenApiControllerClass = 'OpenApiController';
+const nestOpenApiControllerFile = 'openapi.controller';
 
 const _expressOnlySupport = {'handle', 'methodNotAllowed', 'notFound', 'restErrorHandler'};
 
@@ -17,7 +22,11 @@ const _expressOnlySupport = {'handle', 'methodNotAllowed', 'notFound', 'restErro
 class NestApolloRestSerializer extends ExpressApolloRestSerializer {
   final _cg = TypeScriptCodeGenUtils();
 
-  NestApolloRestSerializer(super.grammar, super.tsSerializer, super.apolloConfig);
+  final OpenApiOutput? openApi;
+
+  NestApolloRestSerializer(super.grammar, super.tsSerializer, super.apolloConfig, {this.openApi});
+
+  bool get servesOpenApi => hasRest && openApi != null && openApi!.serve;
 
   @override
   String serviceAccess(String member) => 'this.$member';
@@ -37,6 +46,7 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
 
   /// Controller class names in registration order, the fallback last.
   List<String> get controllerClassNames => [
+        if (servesOpenApi) nestOpenApiControllerClass,
         for (final service in restServices) controllerClassName(service),
         if (hasRest) nestRestFallbackControllerClass,
       ];
@@ -49,6 +59,32 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
         for (final service in grammar.services.values)
           if (grammar.restOperationsOf(service).isNotEmpty) service,
       ];
+
+  String serializeOpenApiController() {
+    final spec = openApi!;
+    final methods = [
+      for (final route in [
+        [spec.config.specPath, 'spec', 'application/json', 'openApiSpec'],
+        [spec.config.docsPath, 'docs', 'text/html', 'openApiDocsPage'],
+      ])
+        '@Get(${route[0].quote()})\n${_cg.createMethod(
+          methodName: route[1],
+          arguments: ['@Res() res: Response'],
+          returnType: 'void',
+          statements: ['res.type(${route[2].quote()}).send(${route[3]});'],
+        )}',
+    ];
+    final imports = [
+      "import { Controller, Get, Res } from '@nestjs/common';",
+      "import type { Response } from 'express';",
+    ];
+    final body = [
+      _cg.constDecl('openApiSpec', jsonEncode(spec.spec)),
+      _cg.constDecl('openApiDocsPage', jsonEncode(spec.docsPage)),
+      '@Controller()\n${_cg.createClass(className: nestOpenApiControllerClass, statements: methods)}',
+    ].join('\n\n');
+    return '${GLClassModel(imports: imports, body: body).toFileContent()}\n';
+  }
 
   String serializeShapes() {
     final declaration = shapesDeclaration(routeBindings());

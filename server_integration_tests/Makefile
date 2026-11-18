@@ -378,10 +378,15 @@ ci-graphql-$(1): $(3) $(1)-start-server
 	python3 -I server_graphql/run_graphql.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
 	$(MAKE) $(1)-stop-server
 
+ci-openapi-$(1): $(3) $(1)-start-server
+	python3 -I server_openapi/run_openapi.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
+	$(MAKE) $(1)-stop-server
+
 ci-http-$(1): $(3) $(1)-start-server
 	status=0; \
 	python3 -I server_faults/run_faults.py $(2) $(4) || status=1; \
 	python3 -I server_rest/run_rest.py $(2) $(4) || status=1; \
+	python3 -I server_openapi/run_openapi.py $(2) $(4) || status=1; \
 	python3 -I server_graphql/run_graphql.py $(2) $(4) || status=1; \
 	$(MAKE) $(1)-stop-server; \
 	exit $$$$status
@@ -415,8 +420,8 @@ ci-http-$(1): $(1)-install $(1)-start-server
 	$$(MAKE) $(1)-stop-server; exit $$$$status
 endef
 
-GRAPHQL_ONLY_SUITES = python3 -I server_faults/run_faults.py $(1) $(2) || status=1; GRAPHQL_ONLY=1 python3 -I server_graphql/run_graphql.py $(1) $(2) || status=1; python3 -I server_rest/run_rest.py $(1) $(2) graphql-only || status=1;
-REST_ONLY_SUITES = python3 -I server_rest/run_rest.py $(1) $(2) rest-only || status=1;
+GRAPHQL_ONLY_SUITES = python3 -I server_faults/run_faults.py $(1) $(2) || status=1; GRAPHQL_ONLY=1 python3 -I server_graphql/run_graphql.py $(1) $(2) || status=1; python3 -I server_rest/run_rest.py $(1) $(2) graphql-only || status=1; python3 -I server_openapi/run_openapi.py $(1) $(2) graphql-only || status=1;
+REST_ONLY_SUITES = python3 -I server_rest/run_rest.py $(1) $(2) rest-only || status=1; python3 -I server_openapi/run_openapi.py $(1) $(2) || status=1;
 
 $(eval $(call python_mode_rule,python-fastapi-graphql,python_fastapi_graphql_server,$(PYTHON_FASTAPI_GRAPHQL_PORT),$(call GRAPHQL_ONLY_SUITES,python_fastapi_graphql_server,$(PYTHON_FASTAPI_GRAPHQL_PORT))))
 $(eval $(call python_mode_rule,python-fastapi-rest,python_fastapi_rest_server,$(PYTHON_FASTAPI_REST_PORT),$(call REST_ONLY_SUITES,python_fastapi_rest_server,$(PYTHON_FASTAPI_REST_PORT))))
