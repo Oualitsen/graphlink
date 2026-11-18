@@ -3,6 +3,7 @@
   "mode": "server",
   "outputDir": "generated",
   "serverConfig": {
+    "openapi": { "title": "GraphLink GraphQL only", "version": "1.0.0" },
     "djangoAriadne": {
       "port": 9921,
       "graphqlPath": "/graphql",

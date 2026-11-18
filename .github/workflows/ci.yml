@@ -602,7 +602,10 @@ jobs:
         with:
           name: server-integration-tests-generated
           path: server_integration_tests
+      - run: python3 -m pip install jsonschema openapi-spec-validator
       - run: make ci-http-${{ matrix.server }}
+        env:
+          REQUIRE_OPENAPI_CONFORMANCE: '1'
 
   # swift client x java server only — not folded into the full matrix above
   # to avoid a 5x job-count blowup for one extra client. Runs on macos-latest

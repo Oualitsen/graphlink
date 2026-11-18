@@ -1,4 +1,5 @@
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -26,9 +27,11 @@ const nestModuleFileName = 'graphlink.module.ts';
 class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
   final _cg = TypeScriptCodeGenUtils();
 
-  NestApolloServerSerializer(super.grammar, super.tsSerializer, NestApolloServerConfig super.apolloConfig);
+  final OpenApiOutput? openApi;
 
-  late final NestApolloRestSerializer rest = NestApolloRestSerializer(grammar, tsSerializer, apolloConfig);
+  NestApolloServerSerializer(super.grammar, super.tsSerializer, NestApolloServerConfig super.apolloConfig, {this.openApi});
+
+  late final NestApolloRestSerializer rest = NestApolloRestSerializer(grammar, tsSerializer, apolloConfig, openApi: openApi);
 
   bool get hasRest => rest.hasRest;
 
@@ -518,6 +521,7 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
           "import { ${fieldsResolverClassName(typeName)} } from './resolvers/${fieldsResolverFileName(typeName)}.js';",
       for (final service in rest.restServices)
         "import { ${rest.controllerClassName(service)} } from './rest/${rest.controllerFileName(service)}.js';",
+      if (rest.servesOpenApi) "import { $nestOpenApiControllerClass } from './rest/$nestOpenApiControllerFile.js';",
       if (hasRest) "import { $nestRestFallbackControllerClass } from './rest/rest-fallback.controller.js';",
       for (final service in loaderServices) ...[
         "import { ${service.token} } from './services/${kebabJs(service.token)}';",

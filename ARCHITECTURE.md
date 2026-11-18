@@ -131,6 +131,7 @@ These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
 | `gl_grammar_rest_validation_extension.dart` | REST routes, cache placement, list depth, upload rules |
 | `gl_grammar_rest_response_extension.dart` | Response kind (`json`/`text`/`binary`/`none`), `responsePath`, `Download`/`Void` markers |
 | `gl_grammar_rest_discriminator_extension.dart` | `@glRestDiscriminator` → `GLParser.restDiscriminators` |
+| `gl_grammar_openapi_extension.dart` | `buildOpenApiDocument(OpenApiConfig)` → `GLOpenApiDocument` (paths, parameters, bodies, responses, `components.schemas`) from `restOperations` and `restDiscriminators`; every IR-to-OpenAPI mapping rule lives here |
 | `gl_validation_extension.dart` | `validateSemantics()` — schema validation rules |
 
 ---
@@ -153,6 +154,7 @@ Under `lib/src/generators/`. Each generator:
 | `python_client_generator.dart` | Python client (pydantic models + asyncio client) |
 | `go_client_generator.dart` | Go client (one flat package: structs, `context`-aware client) |
 | `server_generator.dart` | Spring Boot or Express server (dispatches on config) |
+| `openapi_generator.dart` | `buildOpenApiOutput()` (spec + docs page, null without an `openapi` section or REST operations) and `writeOpenApiFile()` (`openapi.file` is its own path, not under `outputDir`); the server generators serve the output |
 | `barrel_file_handler.dart` | Barrel/index file generation (abstract base) |
 
 ---
@@ -175,6 +177,8 @@ Each serializer **only builds strings** — no schema queries.
 | `java/java_accessor_serializer.dart` | `JavaAccessorSerializer` | Java constructors, builders, getters and setters of types and inputs; reached as `javaSerializer.accessors` |
 | `code_generation_mode.dart` | `CodeGenerationMode` | Enum: `client` / `server` |
 | `gl_graphql_serializer.dart` | `GLGraphqlSerializer` | Emits GraphQL syntax (query strings) |
+| `openapi_serializer.dart` | `OpenApiSerializer` | `GLOpenApiDocument` → OpenAPI 3.1 JSON, no mapping logic; `openapi_constants.dart` holds the Swagger UI page |
+| `spring_openapi_controller_serializer.dart`, `python/python_openapi_serializer.dart` | — | Spring `GraphLinkOpenApiController` (Java/Kotlin) and the FastAPI router / Django urlpatterns serving `specPath` and `docsPath`; Express and NestJS add theirs in their REST serializers |
 | `gl_client_serializer.dart` | — | Shared client serializer base |
 
 ### Language type/input/enum serializers

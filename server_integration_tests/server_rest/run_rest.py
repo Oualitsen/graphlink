@@ -130,6 +130,18 @@ def build_request(case):
     return method, expand(case["path"]), body, headers, sent
 
 
+CONFORMANCE = None
+
+
+def load_conformance(port):
+    import importlib.util
+    path = os.path.join(HERE, "..", "server_openapi", "conformance.py")
+    spec = importlib.util.spec_from_file_location("openapi_conformance", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.load(port)
+
+
 def run_case(case, port):
     if "graphql" in case:
         return run_graphql_case(case, port)
@@ -142,6 +154,8 @@ def run_case(case, port):
         return [f"no response: {type(e).__name__}: {e}"]
     text = raw.decode("utf-8", "replace")
     problems = check_response(resolve_case(case, sent), status, content_type, text)
+    if CONFORMANCE is not None and not problems:
+        problems += CONFORMANCE.check(method, path, status, content_type, text)
     if status < 400:
         problems += check_download(case, raw, response_headers)
     return problems
@@ -299,6 +313,8 @@ def main():
     mode = sys.argv[3] if len(sys.argv) > 3 else "mix"
     if mode == "graphql-only":
         sys.exit(check_absent(port, mode))
+    global CONFORMANCE
+    CONFORMANCE = load_conformance(port)
     cases = json.load(open(os.path.join(HERE, "cases.json")))
     if mode == "rest-only":
         cases = [c for c in cases if "graphql" not in c and not c.get("graphqlSchemaHasNoRestOperations")]

@@ -4,7 +4,7 @@ import 'package:graphlink/src/serializers/python/python_ariadne_server_serialize
 import 'package:graphlink/src/serializers/python/python_rest_serializer.dart';
 
 class DjangoAriadneServerSerializer extends PythonAriadneServerSerializer {
-  DjangoAriadneServerSerializer(super.grammar, super.py, super.config);
+  DjangoAriadneServerSerializer(super.grammar, super.py, super.config, {super.openApi});
 
   @override
   late final PythonRestSerializer rest = DjangoRestSerializer(grammar, py, config);
@@ -18,6 +18,7 @@ class DjangoAriadneServerSerializer extends PythonAriadneServerSerializer {
           'from .$ariadneRuntimeDir.graph_link_websocket import GraphLinkWebSocketRouter',
         ],
         if (hasRest) 'from .rest.urls import build_rest_urlpatterns',
+        if (servesOpenApi) 'from .rest.openapi import build_openapi_urlpatterns',
       ];
 
   @override
@@ -42,6 +43,7 @@ class DjangoAriadneServerSerializer extends PythonAriadneServerSerializer {
             ]),
           ),
         if (!restOnly) 'patterns.append(path($routePath, view))',
+        if (servesOpenApi) 'patterns.extend(build_openapi_urlpatterns())',
         if (hasRest)
           'patterns.extend(build_rest_urlpatterns(services, lambda request: create_context(services, request)))',
         'return patterns',
