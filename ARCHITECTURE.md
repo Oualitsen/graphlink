@@ -8,7 +8,8 @@
 ## What this tool does
 
 `glink` reads `.graphql` schema files and emits fully-typed client/server code
-for Dart/Flutter, Java, Kotlin, Swift, Python, Go, TypeScript, and Spring Boot.
+for Dart/Flutter, Java, Kotlin, Swift, Python, Go and TypeScript clients, and Spring Boot
+(Java/Kotlin), Express, NestJS, FastAPI and Django servers.
 Generated files have **zero runtime dependency** on GraphLink.
 
 ---
@@ -28,7 +29,7 @@ CLI args + config file
         ▼
   GLParser (populated)     ← model/new_parser/gl_parser.dart
         │  parsed by gl_grammar_io.dart
-        │  enriched by gl_grammar_*_extension.dart (lazy getters)
+        │  enriched by parser_extensions/gl_grammar_*_extension.dart (lazy getters)
         │
         ▼
   Generator per target     ← generators/*.dart
@@ -113,7 +114,7 @@ All under `lib/src/model/`.
 
 ## Extension files (schema enrichment)
 
-These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
+All under `lib/src/parser_extensions/`. They hang **lazy computed getters** off `GLParser`.
 **All derivation logic must live here** — never in generators or serializers.
 
 | File | What it adds |
@@ -123,6 +124,7 @@ These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
 | `gl_grammar_annotation_extension.dart` | Annotation (`@`-prefixed) handling |
 | `gl_grammar_fragment_extension.dart` | Fragment dependency graph, typed fragments |
 | `gl_grammar_maps_to_extension.dart` | `@glMapsTo` / `@glMapField` input mapping |
+| `gl_grammar_mapped_to_type_extension.dart` | Types targeted by `@glMapsTo` |
 | `gl_grammar_projection_extension.dart` | Derives "projected types" — minimal types from query selection sets/fragments (not a directive) |
 | `gl_grammar_service_extension.dart` | Service/repository definitions for server mode |
 | `gl_grammar_upload_extension.dart` | File upload mutation detection |
@@ -131,7 +133,16 @@ These hang **lazy computed getters** off `GLParser` (or `GlSchema`).
 | `gl_grammar_rest_validation_extension.dart` | REST routes, cache placement, list depth, upload rules |
 | `gl_grammar_rest_response_extension.dart` | Response kind (`json`/`text`/`binary`/`none`), `responsePath`, `Download`/`Void` markers |
 | `gl_grammar_rest_discriminator_extension.dart` | `@glRestDiscriminator` → `GLParser.restDiscriminators` |
+| `gl_grammar_rest_nullable_extension.dart` | `@glRestNullable`: lenient `*Rest` copies of response types |
+| `gl_grammar_rest_server_extension.dart` | REST operations served by the server targets (REST controllers) |
 | `gl_grammar_openapi_extension.dart` | `buildOpenApiDocument(OpenApiConfig)` → `GLOpenApiDocument` (paths, parameters, bodies, responses, `components.schemas`) from `restOperations` and `restDiscriminators`; every IR-to-OpenAPI mapping rule lives here |
+| `gl_grammar_scalar_codec_extension.dart` | Custom scalar codecs |
+| `gl_grammar_strict_extension.dart`, `gl_grammar_throwing_decode_extension.dart` | Strict / throwing decoding |
+| `gl_grammar_source_extension.dart` | Parent-source passing to schema mappings |
+| `gl_grammar_intercept_extension.dart` | `@glIntercept` / `@glInjectContext` |
+| `gl_grammar_defaults_extension.dart`, `gl_grammar_hoist_args_extension.dart` | Default values, argument hoisting |
+| `gl_grammar_keyword_extension.dart`, `gl_grammar_member_conflict_extension.dart`, `gl_grammar_normalization_extension.dart`, `gl_grammar_recursion_extension.dart` | Reserved words, member-name conflicts, normalization, recursive types |
+| `gl_grammar_directive_validation_extension.dart` | Directive placement/argument validation |
 | `gl_validation_extension.dart` | `validateSemantics()` — schema validation rules |
 
 ---
@@ -151,9 +162,10 @@ Under `lib/src/generators/`. Each generator:
 | `java_client_generator.dart` | Java client |
 | `kotlin_client_generator.dart` | Kotlin client |
 | `typescript_client_generator.dart` | TypeScript client |
+| `swift_client_generator.dart` | Swift client |
 | `python_client_generator.dart` | Python client (pydantic models + asyncio client) |
 | `go_client_generator.dart` | Go client (one flat package: structs, `context`-aware client) |
-| `server_generator.dart` | Spring Boot or Express server (dispatches on config) |
+| `server_generator.dart` | Spring (Java/Kotlin), Express, NestJS, FastAPI or Django server (dispatches on config) |
 | `openapi_generator.dart` | `buildOpenApiOutput()` (spec + docs page, null without an `openapi` section or REST operations) and `writeOpenApiFile()` (`openapi.file` is its own path, not under `outputDir`); the server generators serve the output |
 | `barrel_file_handler.dart` | Barrel/index file generation (abstract base) |
 
@@ -260,9 +272,11 @@ GeneratorConfig
 ├── JavaClientConfig      (.java)
 ├── KotlinClientConfig    (.kt)
 ├── TypeScriptClientConfig (.ts)
+├── SwiftClientConfig     (.swift)
 ├── PythonClientConfig    (.python)
 ├── GoClientConfig        (.go)
-├── SpringServerConfig    (Spring Boot)
+├── SpringServerConfig    (Spring Boot, Java)
+├── KotlinSpringServerConfig (Spring Boot, Kotlin)
 ├── TypeScriptApolloServerConfig  (shared base)
 │   ├── ExpressApolloServerConfig (Express)
 │   └── NestApolloServerConfig    (NestJS)
@@ -334,9 +348,9 @@ Normally you don't need to touch these unless changing grammar.
 ## Tests
 
 ```bash
-dart test                              # all tests
-dart test test/cache/                  # single suite
-dart test test/cache/cache_test.dart   # single file
+fvm dart test                          # all tests (ask the user first)
+fvm dart test test/cache/              # single suite
+fvm dart test test/cache/cache_test.dart  # single file
 ```
 
 Each test is self-contained and builds its own `GLParser`. No shared fixtures.
@@ -347,7 +361,7 @@ fixtures are reserved for genuinely large schemas (e.g. `gitlab_schema/`); every
 test keeps its schema inline as a `const`.
 
 Notable suites: `new_parser/`, `queries_mutations/`, `cache/`, `maps_to/`,
-`upload/`, `fragments/`, `server/`, `java/`, `dart/`, `validation/`
+`upload/`, `fragments/`, `server/`, `java/`, `kotlin/`, `dart/`, `validation/`, `rest/`, `rest_nullable/`, `openapi/`, `scalars/`
 
 ---
 
@@ -388,9 +402,9 @@ cd server_integration_tests && make java                            # all 4 clie
 ## Build commands
 
 ```bash
-dart pub get
-dart run lib/src/main.dart -c path/to/config.json   # run (dev)
-dart compile exe lib/src/main.dart -o glink          # compile
+fvm dart pub get
+fvm dart run lib/src/main.dart -c path/to/config.json   # run (dev)
+fvm dart compile exe lib/src/main.dart -o glink          # compile
 make deploy                                          # compile + install to ~/bin
 make site-dev                                        # MkDocs live preview
 ```
