@@ -1,7 +1,8 @@
 # GraphLink — Agent Codebase Guide
 
 GraphLink is a Dart CLI (`glink`) that reads `.graphql` schema files and generates
-fully-typed client and server code for Dart/Flutter, Java, TypeScript, and Spring Boot.
+fully-typed client and server code. Clients: Dart/Flutter, Java, Kotlin, Swift, Python, Go, TypeScript.
+Servers: Spring Boot (Java/Kotlin), Express, NestJS, FastAPI and Django (Ariadne).
 Generated files have **zero runtime dependency** on GraphLink.
 
 ---
@@ -34,22 +35,24 @@ subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
 lib/src/
   main.dart                        # CLI entry: arg parsing, config loading, dispatch
   config.dart                      # GeneratorConfig + all per-target config types
-  grammar_factory.dart             # Builds GlSchema from parsed tokens
-  gl_grammar_io.dart               # Reads .graphql files → LogicalFile structures
-  gl_grammar_extension.dart        # Computed props on GlSchema (caching, directives …)
-  gl_grammar_annotation_extension.dart
-  gl_grammar_cache_extension.dart
-  gl_grammar_fragment_extension.dart
-  gl_grammar_maps_to_extension.dart   # @glMapsTo / @glMapField logic
-  gl_grammar_projection_extension.dart
-  gl_grammar_service_extension.dart
-  gl_grammar_upload_extension.dart    # File upload directive logic
-  gl_validation_extension.dart        # Schema validation rules
+  grammar_factory.dart             # createGrammar(config) → GLParser; buildExtraGql()
+  gl_grammar_io.dart               # Reads .graphql files → GLLogicalFile structures
+  code_gen_utils.dart, <lang>_code_gen_utils.dart  # CodeGenUtils builders (see rule above)
+  io_utils.dart                    # writeToFile(), cleanUpObsoleteFiles()
+  parser_extensions/               # Computed getters on GLParser — ALL derivation logic lives here
+    gl_grammar_extension.dart      # Core: decorators, skip-on-server, common getters
+    gl_grammar_{annotation,cache,fragment,projection,service,upload}_extension.dart
+    gl_grammar_maps_to_extension.dart, gl_grammar_mapped_to_type_extension.dart  # @glMapsTo / @glMapField
+    gl_grammar_rest{,_arguments,_validation,_response,_discriminator,_nullable,_server}_extension.dart  # @glRest*
+    gl_grammar_openapi_extension.dart  # buildOpenApiDocument(): every IR → OpenAPI mapping rule
+    gl_grammar_{scalar_codec,strict,throwing_decode,source,intercept,defaults,hoist_args}_extension.dart
+    gl_grammar_{keyword,member_conflict,normalization,recursion,directive_validation}_extension.dart
+    gl_validation_extension.dart   # validateSemantics(): schema validation rules
   model/                           # Intermediate representation (see Key model types)
   generators/                      # One entry-point generator per target
   serializers/                     # Code-writing logic (see Serializer map)
   tree/                            # AST / token tree used by lexer+parser
-  excpetions/                      # Custom exception types
+  exceptions/                      # ParseException(message, TokenInfo)
 
 test/                              # One subdirectory per scenario (schema + test file)
 plans/                             # Design docs for past/future features (read-only)
@@ -71,11 +74,11 @@ grammar_factory.createGrammar(config)           → GLParser instance
 gl_grammar_io.parseFiles(parser, logicalFiles)  → populates parser.types, .queries …
     │
     ▼
-Extension methods run lazily (gl_grammar_*_extension.dart)
+Extension methods run lazily (parser_extensions/gl_grammar_*_extension.dart)
   — compute derived data as Dart getters on GLParser
     │
     ▼
-Generator (dart/java/typescript/server)
+Generator (one per client target, server, openapi)
   — iterates GLParser, calls serializers
     │
     ▼
@@ -112,11 +115,14 @@ mapped inputs, etc.) so generators never duplicate derivation logic.
 | File | Responsibility |
 |---|---|
 | `generators/dart_client_generator.dart` | Dart/Flutter client output |
-| `generators/java_client_generator.dart` | Java client output |
+| `generators/java_client_generator.dart` | Java client output (blocking and reactive flavors) |
+| `generators/kotlin_client_generator.dart` | Kotlin client output |
+| `generators/swift_client_generator.dart` | Swift client output |
 | `generators/typescript_client_generator.dart` | TypeScript client output |
 | `generators/python_client_generator.dart` | Python client output (a package with `__init__.py` barrel) |
 | `generators/go_client_generator.dart` | Go client output (one flat package, no barrel) |
-| `generators/server_generator.dart` | Spring Boot / Express server output |
+| `generators/server_generator.dart` | Server output: Spring (Java/Kotlin), Express, NestJS, FastAPI, Django (dispatches on config) |
+| `generators/openapi_generator.dart` | OpenAPI spec + docs page for REST operations (`openapi` config section); servers serve it |
 | `generators/barrel_file_handler.dart` | Barrel/index file generation |
 
 Each generator owns the decision of *which* files to emit and *which* serializers to
@@ -128,7 +134,13 @@ call. It does not contain string-building logic — that lives in serializers.
 
 ```
 serializers/
-  gl_serializer.dart               # Base serializer interface/utilities
+  gl_type_naming.dart              # Root of the base chain: typeMap, resolveCodeName()
+  gl_import_rendering.dart         # extends GLTypeNaming: import lines
+  gl_serializer.dart               # extends GLImportRendering: abstract base for types/inputs/enums
+  gl_mapping_serializer.dart       # @glMapsTo contract (toMethod/fromMethod); <lang>/<lang>_mapping_serializer.dart implement it
+  json_expressions.dart            # shared toJsonExpr/fromJsonExpr logic
+  openapi_serializer.dart          # GLOpenApiDocument → OpenAPI 3.1 JSON (openapi_constants.dart: Swagger UI page)
+  spring_openapi_controller_serializer.dart  # Spring GraphLinkOpenApiController (Java/Kotlin)
   gl_client_serializer.dart        # Shared client serializer base
   gl_graphql_serializer.dart       # Query string generation (shared)
   annotation_serializer.dart       # Annotation helpers (shared by Dart/Java/JVM)
@@ -140,6 +152,7 @@ serializers/
   jvm_spring_rest_controller_serializer_base.dart  # Shared Java/Kotlin Spring REST controller planning (`@glRest*` on the server)
   dart/
     dart_serializer.dart           # Dart types, inputs, enums
+    dart_mapping_serializer.dart
     flutter_api.dart               # Flutter SDK/design-library switches
     flutter_types_serializer.dart  # Flutter widget types
     flutter_types/                 # layout, value renderer, companion, constants
@@ -148,6 +161,7 @@ serializers/
       flutter_inputs_companion_serializer.dart
       flutter_inputs_field_serializer.dart
       flutter_inputs_date_serializer.dart
+      flutter_inputs_number_serializer.dart  # (+ flutter_inputs_number_constants.dart)
       flutter_inputs_state_serializer.dart    # State class assembly + build()/validate()
       flutter_inputs_widget_serializer.dart   # The InputFormWidget (Form) class
       flutter_inputs_rows_serializer.dart     # _visibleRows, per-field row methods, build context
@@ -164,17 +178,23 @@ serializers/
   java/
     java_serializer.dart           # Java types, inputs, enums
     java_imports.dart              # Java import resolution
+    java_interface_serializer.dart # interface bodies, covariant list getters, __typename fromJson (javaSerializer.interfaces)
+    java_accessor_serializer.dart  # constructors, builders, getters/setters (javaSerializer.accessors)
+    java_mapping_serializer.dart
     java_spring_server_serializer.dart      # Spring Boot service interface
     java_spring_controller_serializer.dart  # Spring Boot controllers
     java_spring_rest_controller_serializer.dart  # Spring Boot REST controllers
     spring_map_type_resolver_config.dart
+    spring_rest_support.dart, spring_source_support.dart, spring_subscription_transport_config.dart  # static Spring runtime files
   kotlin/
     kotlin_serializer.dart         # Kotlin types, inputs, enums
     kotlin_imports.dart            # Kotlin import resolution
+    kotlin_mapping_serializer.dart
     kotlin_spring_server_serializer.dart
     kotlin_spring_controller_serializer.dart
     kotlin_spring_rest_controller_serializer.dart
     kotlin_map_type_resolver_config.dart
+    kotlin_spring_rest_support.dart, kotlin_source_support.dart, kotlin_subscription_transport_config.dart  # static Spring runtime files
   typescript/
     typescript_serializer.dart     # TypeScript types, inputs, enums
     express_apollo_server_serializer.dart   # Express/Apollo server
@@ -185,8 +205,9 @@ serializers/
     nest_apollo_server_serializer.dart      # NestJS: abstract-class services, @Resolver/@ResolveField classes, GraphLinkModule
     nest_apollo_rest_serializer.dart        # NestJS @Controller per service for `@glRest*`, 404/405 fallback
     nest_apollo_server_constants.dart       # NestJS runtime (REST support derived from Express, request guards)
-  swift/swift_serializer.dart      # Swift types, inputs, enums
-  python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums
+  swift/swift_serializer.dart      # Swift types, inputs, enums (+ swift_mapping_serializer.dart)
+  python/python_serializer.dart    # Python (pydantic v2) types, inputs, enums (+ python_mapping_serializer.dart)
+  python/python_openapi_serializer.dart  # FastAPI router / Django urlpatterns serving the OpenAPI spec and docs
   python/python_ariadne_server_serializer.dart  # shared Ariadne server base: Protocol services/guards, resolvers, loaders, GraphLinkServices
   python/fastapi_ariadne_server_serializer.dart  # FastAPI entry point (create_app)
   python/django_ariadne_server_serializer.dart   # Django entry point (create_urlpatterns with the GraphQL view, create_app for WebSocket)
@@ -194,12 +215,17 @@ serializers/
   python/python_ariadne_server_constants.dart    # static runtime (loader, source support, depth guard, WS handler, Django view and WebSocket wrapper)
   python/python_rest_serializer.dart             # abstract: framework-neutral route table for `@glRest*`
   python/python_rest_constants.dart              # REST runtime: framework-neutral core, Starlette and Django support/uploads/downloads, FastAPI router, Django urls
-  go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums
+  go/go_serializer.dart            # Go (structs + json tags) types, inputs, enums (+ go_mapping_serializer.dart)
   client_serializers/              # one subdirectory per language
-    <lang>/<lang>_client_serializer.dart   # client methods (queries/mutations/subs)
-    <lang>/<lang>_client_constants.dart    # static runtime templates
-    <lang>/<lang>_client_vars.dart         # reserved generated identifiers
-    java/, kotlin/                 # also *_client_operation_serializer.dart, *_client_context.dart
+    <lang>/<lang>_client_serializer.dart            # facade: generateClient, queries/mutations/subscriptions classes
+    <lang>/<lang>_client_operation_serializer.dart  # per-operation code
+    <lang>/<lang>_client_constants.dart             # static runtime templates
+    <lang>/<lang>_client_vars.dart                  # reserved generated identifiers
+    <lang>/<lang>_rest_operation_serializer.dart    # methods for GLRestOperations (runtime in <lang>_rest_constants.dart)
+    <lang>/<lang>_client_runtime_serializer.dart    # resolver base, cache, APQ, WS handler, exceptions, uploads (clientSerializer.runtime)
+    <lang>/<lang>_client_adapters_serializer.dart   # HTTP/WS/REST transport adapters (clientSerializer.adapters)
+                                   # runtime/adapters: Dart, Java, Kotlin, TypeScript, Python only; Swift and Go keep it in one file
+    java/, kotlin/                 # also *_client_context.dart; java/java_reactive_flavor.dart (Reactor/RxJava 3/Mutiny)
 ```
 
 ---
@@ -262,6 +288,12 @@ test/
   parse_errors/        # Parser error handling
   gl_expand/           # Query expansion
   gl_internal/         # Internal utilities
+  rest/, rest_nullable/  # @glRest* IR and generation, @glRestNullable
+  openapi/             # OpenAPI document generation
+  kotlin/              # Kotlin-specific generation
+  scalars/, strict/, throwing_decode/  # scalar codecs, strict decoding
+  persisted_queries/   # APQ
+  <lang>_serializer_tests/  # go, python, swift, typescript serializer unit tests
   ...
 ```
 
@@ -389,10 +421,11 @@ don't confuse them:
   server target (`servers/`) driven by every generated client harness (`clients/`).
   `servers/` holds one subdirectory per generated server target (`typescript_server`,
   `typescript_upload_server`, `java_server`, `java_server_reactive`,
-  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`, `nestjs_server`) — flat, not grouped by language.
+  `kotlin_server_blocking`, `kotlin_server_suspend`, `python_fastapi_server`, `python_django_server`, `nestjs_server`,
+  plus upload, GraphQL-only and REST-only variants and the shared `python_impl/`) — flat, not grouped by language.
   `clients/` holds one subdirectory per generated client harness (`dart_client`,
-  `ts_client`, `java_client`, `kotlin_client`, `python_client`, plus `dart_upload_client` for the
-  upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
+  `ts_client`, `java_client`, `java_reactive_client`, `kotlin_client`, `python_client`, `swift_client`, `go_client`,
+  plus `dart_upload_client` for the upload-only suite). The top-level `Makefile` has one `ci-<server>-client` target per
   server (parameterized by `CLIENT=dart|ts|java|kotlin|...`) so any client can be pointed at
   any server. This validates **generated server code**.
 
