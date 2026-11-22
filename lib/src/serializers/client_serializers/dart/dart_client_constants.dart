@@ -1095,3 +1095,40 @@ Object glDomainError(List<GraphLinkError> errors, String responseKey, List<Graph
   return errors;
 }
 ''';
+
+const dartRestDomainError = r'''
+class GraphLinkRestMatcher {
+  final int? status;
+  final List<String>? field;
+  final String value;
+  final GraphLinkDomainError Function(Map<String, dynamic> body, String message) build;
+
+  const GraphLinkRestMatcher(this.status, this.field, this.value, this.build);
+}
+
+GraphLinkDomainError? glRestDomainError(int status, String body, List<GraphLinkRestMatcher> matchers) {
+  Object? parsed;
+  try {
+    parsed = jsonDecode(body);
+  } catch (_) {}
+  final json = parsed is Map ? Map<String, dynamic>.from(parsed) : null;
+  for (final matcher in matchers) {
+    if (matcher.status != null && matcher.status != status) continue;
+    final path = matcher.field;
+    if (path != null) {
+      Object? found = json;
+      for (final segment in path) {
+        found = found is Map ? found[segment] : null;
+      }
+      if (found != matcher.value) continue;
+    }
+    final message = json?['message'];
+    try {
+      return matcher.build(json ?? const <String, dynamic>{}, message is String ? message : '');
+    } catch (_) {
+      continue;
+    }
+  }
+  return null;
+}
+''';

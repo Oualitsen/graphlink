@@ -3,6 +3,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_constants.dart';
@@ -97,7 +98,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
     return [
       "import { GraphLinkRestResolver } from './graph-link-rest-resolver.js';",
       "import * as GraphLinkJson from './graph-link-json.js';",
-      "import { GLDownload, restEncode, restEntries, restSpreadEntries, restHeader, restHeaders, restParts } from './graph-link-rest.js';",
+      "import { GLDownload, RestError, restEncode, restEntries, restSpreadEntries, restHeader, restHeaders, restParts } from './graph-link-rest.js';",
       "import type { DownloadProgressCallback, RestBody, RestPart, RestRequest } from './graph-link-rest.js';",
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
         "import type { GLUpload, UploadProgressCallback } from './graph-link-uploads.js';",
@@ -515,15 +516,23 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   }
 
   List<String> _thrownErrorImports(GLQueryType type) {
-    final errors = {
-      for (final entry in _parser.thrownErrors.entries)
-        if (entry.key.type == type) ...entry.value,
-    };
-    if (errors.isEmpty) return const [];
+    final graphql = <GLErrorDefinition>{};
+    final rest = <GLErrorDefinition>{};
+    for (final entry in _parser.thrownErrors.entries) {
+      if (entry.key.type != type) continue;
+      (_parser.restOperations.containsKey(entry.key) ? rest : graphql).addAll(entry.value);
+    }
+    if (graphql.isEmpty && rest.isEmpty) return const [];
     return [
-      "import { glDomainError } from './$tsDomainErrorModule';",
-      "import type { GraphLinkDomainMatcher } from './$tsDomainErrorModule';",
-      for (final error in errors)
+      if (graphql.isNotEmpty) ...[
+        "import { glDomainError } from './$tsDomainErrorModule';",
+        "import type { GraphLinkDomainMatcher } from './$tsDomainErrorModule';",
+      ],
+      if (rest.isNotEmpty) ...[
+        "import { glRestDomainError } from './$tsDomainErrorModule';",
+        "import type { GraphLinkRestMatcher } from './$tsDomainErrorModule';",
+      ],
+      for (final error in {...graphql, ...rest})
         "import { ${error.type.codeName} } from '../errors/${serializer.getFileNameFor(error.type).replaceAll('.ts', '.js')}';",
     ];
   }

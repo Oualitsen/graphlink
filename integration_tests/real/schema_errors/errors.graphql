@@ -8,7 +8,17 @@ type TitleTaken @glError { title: String! suggestions: [String!] }
 type Banned @glError(value: "BANNED") { reason: Reason! until: Int }
 type Forbidden @glError(field: "extensions.kind", value: "forbidden") { }
 
+type Item { id: ID! name: String! }
+input ItemInput { name: String! }
+
+type ItemNotFound @glError(status: 404) { id: ID }
+type ItemConflict @glError(status: 409, value: "CONFLICT") { reason: String! }
+type RateLimited @glError(field: "error.kind", value: "rate") { retryAfter: Int! }
+type Teapot @glError(status: 418) { }
+
 type Query {
+  item(id: ID!): Item! @glRest(path: "/items/{id}") @glThrows(errors: [ItemNotFound, ItemConflict, RateLimited, Teapot])
+  itemPlain(id: ID!): Item! @glRest(path: "/plain/{id}")
   article(id: ID!): Article @glThrows(errors: [ArticleNotFound, Forbidden])
   secret: String @glThrows(errors: [Forbidden])
   plain(id: ID!): Article
@@ -16,6 +26,7 @@ type Query {
 }
 
 type Mutation {
+  createItem(input: ItemInput! @glRestBody): Item! @glRest(path: "/items", method: POST) @glThrows(errors: [ItemConflict])
   createArticle(input: ArticleInput!): Article @glThrows(errors: [TitleTaken, Banned])
 }
 

@@ -861,13 +861,17 @@ const kotlinDomainError = r'''
 open class GraphLinkDomainError(message: String = "") : RuntimeException(message)
 ''';
 
-const kotlinDomainMatcher = r'''
+const kotlinDomainMatcherHeader = r'''
 class GraphLinkDomainMatcher(
-  val field: List<String>,
+  val field: List<String>?,
   val value: String,
+  val status: Int? = null,
   val build: (Map<String, Any?>, String) -> GraphLinkDomainError,
 ) {
-  companion object {
+  companion object {''';
+
+const kotlinDomainMatcherGraphQl = r'''
+
     fun resolve(error: Throwable, responseKey: String, matchers: List<GraphLinkDomainMatcher>): Throwable {
       if (error !is GraphLinkException) return error
       for (entry in error.errors) {
@@ -877,7 +881,7 @@ class GraphLinkDomainMatcher(
         val message = entry.message ?: ""
         for (matcher in matchers) {
           var found: Any? = mapOf("message" to message, "path" to path, "extensions" to extensions)
-          for (segment in matcher.field) {
+          for (segment in matcher.field.orEmpty()) {
             found = (found as? Map<*, *>)?.get(segment)
           }
           if (found != matcher.value) continue
@@ -889,7 +893,34 @@ class GraphLinkDomainMatcher(
         }
       }
       return error
-    }
-  }
-}
-''';
+    }''';
+
+const kotlinDomainMatcherRest = r'''
+
+    fun resolveRest(error: Throwable, decoder: GraphLinkJsonDecoder, matchers: List<GraphLinkDomainMatcher>): Throwable {
+      if (error !is RestError) return error
+      val body: Map<String, Any?>? = try {
+        decoder.decode(error.body)
+      } catch (_: Exception) {
+        null
+      }
+      for (matcher in matchers) {
+        if (matcher.status != null && matcher.status != error.status) continue
+        val path = matcher.field
+        if (path != null) {
+          var found: Any? = body
+          for (segment in path) {
+            found = (found as? Map<*, *>)?.get(segment)
+          }
+          if (found != matcher.value) continue
+        }
+        val message = body?.get("message") as? String ?: ""
+        try {
+          return matcher.build(body ?: emptyMap(), message)
+        } catch (_: Exception) {
+          continue
+        }
+      }
+      return error
+    }''';
+

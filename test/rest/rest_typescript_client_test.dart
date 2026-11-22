@@ -3,6 +3,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:test/test.dart';
+import '../errors/error_test_support.dart';
 
 const _types = '''
 scalar Upload @glUpload
@@ -82,6 +83,15 @@ String _types_(String schema) {
   }
   return buffer.toString();
 }
+
+const _errors = r"""
+type NotFound @glError(status: 404) { id: ID }
+type Conflict @glError(status: 409, value: "CONFLICT") { reason: String! }
+extend type Query {
+  one(id: ID!): Product @glRest(path: "/one/{id}") @glThrows(errors: [NotFound, Conflict])
+  plain(id: ID!): Product @glRest(path: "/plain/{id}")
+}
+""";
 
 void main() {
   final mixed = _generate('$_graphql$_rest');
@@ -239,6 +249,22 @@ void main() {
       expect(make(TypeScriptHttpAdapter.fetch).adapters.generateRestAdaptersFile()!.toFileContent(), contains('createRestFetchAdapter'));
       expect(make(TypeScriptHttpAdapter.axios).adapters.generateRestAdaptersFile()!.toFileContent(), contains('createRestAxiosAdapter'));
       expect(make(TypeScriptHttpAdapter.none).adapters.generateRestAdaptersFile(), isNull);
+    });
+  });
+  group('typed errors', () {
+    test('a throwing operation maps RestError through its matchers', () {
+      final out = flat(_generate('$_graphql$_errors'));
+      expect(out, contains('catch (e) { if (!(e instanceof RestError)) { throw e; }'));
+      expect(out, contains('throw glRestDomainError(e.status, e.body, [{ status: 404, field: null, value: "NotFound"'));
+      expect(out, contains('{ status: 409, field: ["code"], value: "CONFLICT"'));
+      expect(out, contains('?? e;'));
+      expect(out, contains('GraphLinkRestMatcher'));
+    });
+
+    test('an operation without @glThrows stays untouched', () {
+      final out = _generate('$_graphql$_errors');
+      final plain = out.substring(out.indexOf('plain'));
+      expect(plain, isNot(contains('RestDomainError')));
     });
   });
 }

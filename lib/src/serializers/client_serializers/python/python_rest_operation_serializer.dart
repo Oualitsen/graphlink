@@ -2,6 +2,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
@@ -56,13 +57,39 @@ class PythonRestOperationSerializer {
       methodName: op.field.codeName,
       arguments: _signature(op),
       returnType: _returnType(op),
-      statements: [
+      statements: _throwingTypedErrors(op, [
         ..._sentinels(op),
         ..._bodyStatements(op),
         _cg.constDecl(_request, _requestExpression(op)),
         ..._execution(op),
-      ],
+      ]),
     );
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return _cg.callExpression('GraphLinkRestMatcher', [
+        e.status == null ? 'None' : '${e.status}',
+        field == null ? 'None' : '[${field.map((s) => '"$s"').join(', ')}]',
+        '"${e.value}"',
+        'lambda body, message: ${_serializer.resolveCodeName(e.type.token)}.from_json(body, message)',
+      ]);
+    });
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: 'not isinstance(e, RestError)', ifBlockStatements: ['raise']),
+          _cg.constDecl('typed', 'gl_rest_domain_error(e.status, e.body, [${matchers.join(', ')}])'),
+          _cg.ifStatement(condition: 'typed is None', ifBlockStatements: ['raise']),
+          'raise typed from e',
+        ],
+      ),
+    ];
   }
 
   String _returnType(GLRestOperation op) {

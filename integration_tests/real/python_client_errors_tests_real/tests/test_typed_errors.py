@@ -18,7 +18,7 @@ URL = "http://127.0.0.1:9930/graphql"
 
 class TypedErrorsTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
-        self.client = GraphLinkClient.with_http(url=URL)
+        self.client = GraphLinkClient.with_http(url=URL, rest_base_url="http://127.0.0.1:9930")
 
     async def thrown_by(self, call: Callable[[], Awaitable[Any]]) -> BaseException:
         try:

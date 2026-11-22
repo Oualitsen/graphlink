@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/python/python_client_constants.dart';
@@ -13,7 +14,11 @@ class PythonClientRuntimeSerializer {
 
   GLClassModel generateExceptionFile() => _client.static(pythonException);
 
-  GLClassModel generateDomainErrorFile() => _client.static(pythonDomainError);
+  GLClassModel generateDomainErrorFile() => _client.static(
+        _client.parser.restThrowsTypedErrors
+            ? 'import json\n$pythonDomainError$pythonRestDomainError'
+            : pythonDomainError,
+      );
 
   GLClassModel generateLockFile() => _client.static(pythonLock);
 

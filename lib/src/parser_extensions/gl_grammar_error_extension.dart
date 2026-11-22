@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -47,7 +48,11 @@ extension GLGrammarErrorExtension on GLParser {
     return GLThrownErrors(element.alias?.token ?? element.token, errors);
   }
 
-  bool get throwsTypedErrors => thrownErrors.isNotEmpty;
+  List<GLErrorDefinition> restThrownErrorsOf(GLRestOperation op) => thrownErrors[op.key] ?? const [];
+
+  bool get restThrowsTypedErrors => restOperations.values.any((op) => restThrownErrorsOf(op).isNotEmpty);
+
+  bool get throwsTypedErrors => thrownErrors.keys.any((key) => !restOperations.containsKey(key));
 
   /// Moves every `@glError` type out of [GLParser.types] into [GLParser.errors], after checking it is used
   /// nowhere as a normal type. Runs right after the directives are validated so no later pass sees them.
@@ -138,6 +143,7 @@ extension GLGrammarErrorExtension on GLParser {
       throw ParseException("$glThrows on '$at' must list at least one error", info: directive.tokenInfo);
     }
     final result = <GLErrorDefinition>[];
+    final isRest = field.hasDirective(glRest) || field.hasDirective(glRestPrefix);
     for (final name in names) {
       final error = errors[name];
       if (error == null) {
@@ -146,11 +152,11 @@ extension GLGrammarErrorExtension on GLParser {
       if (result.contains(error)) {
         throw ParseException("$glThrows on '$at' lists '$name' more than once", info: directive.tokenInfo);
       }
-      final clashList = result.where((other) => _sameMatch(other, error)).toList();
+      final clashList = result.where((other) => isRest ? _sameRestMatch(other, error) : _sameMatch(other, error)).toList();
       final clash = clashList.isEmpty ? null: clashList.first;
       if (clash != null) {
         throw ParseException(
-            "$glThrows on '$at' is ambiguous: '${clash.name}' and '$name' both match ${error.field.join('.')} == '${error.value}'",
+            "$glThrows on '$at' is ambiguous: '${clash.name}' and '$name' both match ${isRest ? _restCondition(error) : "${error.field.join('.')} == '${error.value}'"}",
             info: directive.tokenInfo);
       }
       result.add(error);
@@ -161,6 +167,16 @@ extension GLGrammarErrorExtension on GLParser {
   bool _sameMatch(GLErrorDefinition a, GLErrorDefinition b) =>
       a.field.join('.') == b.field.join('.') && a.value == b.value && a.status == b.status;
 
+  bool _sameRestMatch(GLErrorDefinition a, GLErrorDefinition b) =>
+      a.status == b.status && a.restField?.join('.') == b.restField?.join('.') && (a.matchesStatusOnly || a.value == b.value);
+
+  String _restCondition(GLErrorDefinition error) {
+    final status = error.status == null ? '' : 'status ${error.status}';
+    final path = error.restField;
+    final body = path == null ? '' : "${path.join('.')} == '${error.value}'";
+    return [status, body].where((e) => e.isNotEmpty).join(' and ');
+  }
+
   GLErrorDefinition _definitionOf(GLTypeDefinition type) {
     final directive = type.getDirectiveByName(glError)!;
     _validateFields(type);
@@ -169,6 +185,8 @@ extension GLGrammarErrorExtension on GLParser {
       field: _discriminatorPath(directive),
       value: _discriminatorValue(directive, type),
       status: _status(directive),
+      explicitField: directive.getArgValueAsString(glErrorFieldArg) != null,
+      explicitValue: directive.getArgValueAsString(glErrorValueArg) != null,
     );
   }
 

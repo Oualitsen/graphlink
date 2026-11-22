@@ -6,7 +6,7 @@ const _url = 'http://127.0.0.1:9930/graphql';
 void main() {
   late GraphLinkClient client;
 
-  setUp(() => client = GraphLinkClient.withHttp(url: _url));
+  setUp(() => client = GraphLinkClient.withHttp(url: _url, restBaseUrl: 'http://127.0.0.1:9930'));
 
   Future<Object> thrownBy(Future<Object?> Function() call) async {
     try {

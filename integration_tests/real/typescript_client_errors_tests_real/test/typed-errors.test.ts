@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GraphLinkClient } from '../lib/generated/client/graph-link-client';
 import { createFetchAdapter } from '../lib/generated/client/graph-link-adapters';
+import { createRestFetchAdapter } from '../lib/generated/client/graph-link-rest-adapters';
 import { ArticleNotFound } from '../lib/generated/errors/article-not-found';
 import { Banned } from '../lib/generated/errors/banned';
 import { Forbidden } from '../lib/generated/errors/forbidden';
@@ -8,7 +9,7 @@ import { TitleTaken } from '../lib/generated/errors/title-taken';
 import { GraphLinkDomainError } from '../lib/generated/client/graph-link-domain-error';
 import { Reason } from '../lib/generated/enums/reason';
 
-const client = new GraphLinkClient(createFetchAdapter('http://127.0.0.1:9930/graphql'));
+const client = new GraphLinkClient(createFetchAdapter('http://127.0.0.1:9930/graphql'), createRestFetchAdapter('http://127.0.0.1:9930'));
 
 async function thrownBy(call: () => Promise<unknown>): Promise<unknown> {
   try {

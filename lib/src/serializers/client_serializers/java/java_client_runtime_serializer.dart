@@ -6,6 +6,7 @@ import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_client_vars.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
@@ -895,11 +896,18 @@ class JavaClientRuntimeSerializer {
       body: subscriptionHandlerClass,
     );
   }
-  GLClassModel generateDomainMatcherFile() => GLClassModel(
-        imports: [JavaImports.list, JavaImports.map, JavaImports.hashMap, JavaImports.collections, 'java.util.function.BiFunction'],
-        importDepencies: [_grammar.getTokenByKey('GraphLinkError')!],
-        body: javaDomainMatcher,
-      );
+  GLClassModel generateDomainMatcherFile() {
+    final graphql = _grammar.throwsTypedErrors;
+    final rest = _grammar.restThrowsTypedErrors;
+    return GLClassModel(
+      imports: [JavaImports.list, JavaImports.map, JavaImports.hashMap, JavaImports.collections, 'java.util.function.BiFunction'],
+      importDepencies: [
+        if (graphql) _grammar.getTokenByKey('GraphLinkError')!,
+        if (rest) _grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+      ],
+      body: '$javaDomainMatcherHeader${graphql ? javaDomainMatcherGraphQl : ''}${rest ? javaDomainMatcherRest : ''}}\n',
+    );
+  }
 
   GLClassModel generateDomainErrorFile() {
     final body = codeGenUtils.createClass(

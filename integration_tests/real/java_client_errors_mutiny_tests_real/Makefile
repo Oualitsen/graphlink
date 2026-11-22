@@ -1,4 +1,5 @@
 CLIENT_DIR = client-app
+MVN_SETTINGS ?=
 ERRORS_PORT = 9930
 GENERATED_DIR = client-app/src/main/java/dev/graphlink/errors/generated
 
@@ -14,7 +15,7 @@ generate: clean install
 	dart run ../../generate.dart
 
 test:
-	cd $(CLIENT_DIR) && mvn -B -q test && grep -h "Tests run" target/surefire-reports/*.txt
+	cd $(CLIENT_DIR) && mvn -B -q $(if $(MVN_SETTINGS),-s $(MVN_SETTINGS)) test && grep -h "Tests run" target/surefire-reports/*.txt
 
 run: generate test
 

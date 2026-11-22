@@ -1,7 +1,7 @@
 # Typed domain errors (`@glError`, `@glThrows`)
 
-Status: phases 1 and 2 done (IR, exception classes, `@glThrows`, matching and throwing for GraphQL in every client). REST
-and the server side are later phases. Target: v7 (breaking changes allowed).
+Status: phases 1 to 4 done (IR, exception classes, `@glThrows`, matching and throwing for GraphQL and REST in every client,
+OpenAPI responses, docs). The server side is phase 5. Target: v7 (breaking changes allowed).
 
 ## Goal
 
@@ -27,9 +27,9 @@ GraphQL and REST work the same way, so moving an operation from one to the other
 |---|---|---|
 | 1 | `@glError` IR + validation + exception classes and the `GraphLinkDomainError` base in every client | done |
 | 2 | `@glThrows`, matching and throwing for GraphQL (client) | done: `integration_tests/real/*_client_errors_tests_real` |
-| 3 | Matching and throwing for REST (client) | later |
-| 4 | OpenAPI responses, docs page, `llms.txt` | later |
-| 5 | Server side | later, own plan |
+| 3 | Matching and throwing for REST (client) | done: the REST cases of `integration_tests/real/*_client_errors_tests_real` |
+| 4 | OpenAPI responses, docs page, `llms.txt` | done (`llms.txt` is generated from `site/docs-src`) |
+| 5 | Server side | not started, design in §6 |
 
 Everything below that describes matching or throwing is phase 2 or 3.
 
@@ -245,16 +245,37 @@ both the entry and the body. Unsolved on purpose: use two types.
 
 ---
 
-## 6. Server side (later, separate feature)
+## 6. Server side (phase 5, not started)
 
-Sketch only:
+The only contract with the client is the wire convention of §2, so the server is independent of the client phases.
 
-- The service throws the generated exception (`throw ArticleNotFound(id)`).
-- The generated server catches the base class and writes the GraphQL error entry (`extensions.code` = `value`,
-  fields in `extensions`) or, for REST, `status` and the JSON body.
-- `@glError` types are not served in the schema.
+- The service throws the generated exception (`throw ArticleNotFound(id)`); a service that needs nothing generated can
+  also throw a plain exception, which stays a normal server error.
+- Every `@glError` type is generated on the server too: the same classes as the clients (`serializeErrorDefinition` in
+  server mode) plus the `GraphLinkDomainError` base, in `errors/`. They are still not types of the schema.
+- A server needs the reverse of the client's `fromJson`: a `toJson` (or the class fields read by name) so the fields go
+  on the wire. Add it to the error classes of every target.
+- GraphQL: catch the base class at the resolver boundary and answer a GraphQL error whose `message` is the exception's
+  message, `path` the field's path and `extensions` = `{ <field>: <value> (the discriminator, default code), ...fields }`.
+  A `field` such as `extensions.kind` writes the value at that path.
+- REST: the REST handler answers `status` (an error without a status answers `400`) and a JSON body
+  `{ <discriminator path>: value, ...fields, "message": ... }`. This is what the clients of phase 3 match.
+- `@glThrows` is not required on the server (any generated error may be thrown); it can later become a check that a
+  service only throws declared errors.
 
-The only contract with the client is the wire convention of §2.
+Per target, the hook where the catch goes:
+
+| Target | Hook |
+|---|---|
+| Spring (Java, Kotlin, blocking and reactive) | a generated `DataFetcherExceptionResolver` bean (GraphQL) and `@RestControllerAdvice` on the REST controllers |
+| Express | the resolver wrapper and the REST router's error handler |
+| NestJS | the exception filter (GraphQL errors on the GraphQL path, REST errors elsewhere) |
+| FastAPI / Django (Ariadne) | `error_formatter` of the GraphQL app and the REST handlers' exception mapping |
+
+Tests: one service operation per declared error in `server_integration_tests/servers/*` (`impl/`), driven by the client
+harnesses of the matrix with `@glThrows` in `schema_graphql` / `schema_rest` so that the generated client catches the
+typed class end to end, plus a raw-HTTP case file (`server_graphql/cases.json`, `server_rest/cases.json`) that pins the
+exact wire shape. Start with Express (one `errors.ts` plus one handler), then the others.
 
 ---
 

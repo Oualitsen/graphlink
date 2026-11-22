@@ -2,7 +2,9 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_serializer.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
@@ -54,12 +56,12 @@ class TypeScriptRestOperationSerializer {
   String operationToMethod(GLRestOperation op) {
     final returnType = _returnType(op);
     final signature = _signature(op);
-    final statements = [
+    final statements = _throwingTypedErrors(op, [
       ..._defaults(op),
       ..._bodyStatements(op),
       _cg.constDecl(_request, _requestExpression(op), type: 'RestRequest'),
       ..._execution(op),
-    ];
+    ]);
     if (observables) {
       final wrapped = _cg.observableExpr(returnType, [
         '${_cg.iife(statements).replaceFirst(RegExp(r';$'), '')}.then(',
@@ -81,6 +83,26 @@ class TypeScriptRestOperationSerializer {
       async: true,
       statements: statements,
     );
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return '{ status: ${e.status ?? 'null'}, field: ${field == null ? 'null' : '[${field.map((f) => f.quote()).join(', ')}]'}, '
+          'value: ${e.value.quote()}, build: (body, message) => ${e.type.codeName}.fromJson(body, message) }';
+    });
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: '!(e instanceof RestError)', ifBlockStatements: ['throw e;']),
+          'throw glRestDomainError(e.status, e.body, [${matchers.join(', ')}]) ?? e;',
+        ],
+      ),
+    ];
   }
 
   String _returnType(GLRestOperation op) {

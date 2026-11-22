@@ -6,7 +6,9 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
+import 'package:graphlink/src/serializers/client_serializers/java/java_client_vars.dart';
 import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_flavor.dart';
 import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
@@ -89,14 +91,52 @@ class JavaRestOperationSerializer {
       returnType: 'public ${_returnType(op)}',
       methodName: op.field.codeName,
       arguments: [..._signature(op), ..._progressParams(op)],
-      statements: [
+      statements: _throwingTypedErrors(op, container, [
         ..._defaultCoalesces(op),
         ..._nullChecks(op),
         ..._bodyStatements(op),
         _cg.constDecl(_request, _requestExpression(op), type: 'RestRequest'),
         ..._execution(op),
-      ],
+      ]),
     );
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, GLImportContainer container, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final prefix = _serializer.importPrefix;
+    container.imports.addAll([
+      JavaImports.list,
+      JavaImports.arrays,
+      for (final error in thrown) '$prefix.errors.${error.type.codeName}',
+    ]);
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return 'new GraphLinkDomainMatcher(${e.status ?? 'null'}, ${field == null ? 'null' : 'Arrays.asList(${field.map((f) => '"$f"').join(', ')})'}, '
+          '"${e.value}", (body, message) -> ${e.type.codeName}.fromJson(body, message))';
+    }).join(', ');
+    String resolve(String error) => 'GraphLinkDomainMatcher.resolveRest($error, $svDecoder, Arrays.asList($matchers))';
+    if (_flavor.isReactive) {
+      final last = statements.last;
+      final at = last.lastIndexOf('return ');
+      final expression = last.substring(at + 'return '.length, last.lastIndexOf(';'));
+      final mapped = _flavor.onErrorMapRest(expression, 'e', resolve('e'),
+          empty: op.allowsEmptyBody && op.responseKind != RestResponseKind.none, isVoid: op.responseKind == RestResponseKind.none);
+      return [
+        ...statements.sublist(0, statements.length - 1),
+        '${last.substring(0, at)}return $mapped;',
+      ];
+    }
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: '!(e instanceof RestError)', ifBlockStatements: ['throw e;']),
+          'throw (RuntimeException) ${resolve('e')};',
+        ],
+      ),
+    ];
   }
 
   String _overload(GLRestOperation op) {

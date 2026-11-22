@@ -109,7 +109,7 @@ Future<Set<String>> generateKotlinClientClasses(
     ));
   }
 
-  if (parser.throwsTypedErrors) {
+  if (parser.throwsTypedErrors || parser.restThrowsTypedErrors) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainMatcherFile()),
       fileName: 'GraphLinkDomainMatcher.kt',

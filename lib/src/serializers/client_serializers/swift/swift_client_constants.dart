@@ -1759,17 +1759,22 @@ extension GraphLinkDomainError: LocalizedError {
 }
 ''';
 
-const swiftDomainMatcher = r'''
+const swiftDomainMatcherHeader = r'''
 public struct GraphLinkDomainMatcher {
-    public let field: [String]
+    public let status: Int?
+    public let field: [String]?
     public let value: String
     public let build: ([String: Any?], String) throws -> GraphLinkDomainError
 
-    public init(field: [String], value: String, build: @escaping ([String: Any?], String) throws -> GraphLinkDomainError) {
+    public init(status: Int? = nil, field: [String]?, value: String, build: @escaping ([String: Any?], String) throws -> GraphLinkDomainError) {
+        self.status = status
         self.field = field
         self.value = value
         self.build = build
     }
+''';
+
+const swiftDomainMatcherGraphQl = r'''
 
     public static func resolve(_ error: Error, responseKey: String, matchers: [GraphLinkDomainMatcher]) -> Error {
         guard let exception = error as? GraphLinkException else { return error }
@@ -1778,7 +1783,7 @@ public struct GraphLinkDomainMatcher {
             let extensions = entry.extensions ?? [:]
             for matcher in matchers {
                 var found: Any? = ["message": entry.message, "extensions": extensions] as [String: Any?]
-                for segment in matcher.field {
+                for segment in matcher.field ?? [] {
                     found = (found as? [String: Any?])?[segment] ?? nil
                 }
                 guard let text = found as? String, text == matcher.value else { continue }
@@ -1789,5 +1794,32 @@ public struct GraphLinkDomainMatcher {
         }
         return error
     }
-}
 ''';
+
+const swiftDomainMatcherRest = r'''
+
+    public static func resolveRest(_ error: Error, matchers: [GraphLinkDomainMatcher]) -> Error {
+        guard let failure = error as? RestError else { return error }
+        var body: [String: Any?]?
+        if let data = failure.body.data(using: .utf8),
+           let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+            body = object.mapValues { $0 as Any? }
+        }
+        for matcher in matchers {
+            if let status = matcher.status, status != failure.status { continue }
+            if let path = matcher.field {
+                var found: Any? = body
+                for segment in path {
+                    found = (found as? [String: Any?])?[segment] ?? nil
+                }
+                guard let text = found as? String, text == matcher.value else { continue }
+            }
+            let message = (body?["message"] as? String) ?? ""
+            if let typed = try? matcher.build(body ?? [:], message) {
+                return typed
+            }
+        }
+        return error
+    }
+''';
+

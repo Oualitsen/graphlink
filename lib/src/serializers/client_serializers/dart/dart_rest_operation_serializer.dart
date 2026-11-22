@@ -4,6 +4,7 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 
@@ -49,12 +50,36 @@ class DartRestOperationSerializer {
       methodName: op.field.codeName,
       arguments: _signature(op),
       async: true,
-      statements: [
+      statements: _throwingTypedErrors(op, [
         ..._bodyStatements(op),
         _cg.constDecl(_request, _requestExpression(op)),
         ..._execution(op),
-      ],
+      ]),
     );
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return _cg.callExpression('GraphLinkRestMatcher', [
+        '${e.status}',
+        field == null ? 'null' : '[${field.map((s) => s.quote()).join(', ')}]',
+        e.value.quote(),
+        '(body, message) => ${e.type.codeName}.fromJson(body, message: message)',
+      ]);
+    }).join(', ');
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: 'e is! RestError', ifBlockStatements: ['rethrow;']),
+          'throw glRestDomainError(e.status, e.body, [$matchers]) ?? e;',
+        ],
+      ),
+    ];
   }
 
   List<String> _signature(GLRestOperation op) {

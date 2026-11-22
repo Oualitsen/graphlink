@@ -18,7 +18,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.fail
 
 class TypedErrorsTest {
-    private val client = GraphLinkClient.create("http://127.0.0.1:9930/graphql")
+    private val client = GraphLinkClient.create("http://127.0.0.1:9930/graphql", "http://127.0.0.1:9930")
 
     private fun thrownBy(call: suspend () -> Any?): Throwable {
         try {

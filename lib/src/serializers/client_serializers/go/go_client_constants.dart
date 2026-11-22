@@ -2193,3 +2193,54 @@ func glDomainError(err error, responseKey string, matchers []GraphLinkDomainMatc
 	return err
 }
 ''';
+
+const goRestDomainError = r'''
+
+type GraphLinkRestMatcher struct {
+	Status int
+	Field  []string
+	Value  string
+	Build  func(body map[string]any, message string) (error, bool)
+}
+
+func glRestDomainError(err error, matchers []GraphLinkRestMatcher) error {
+	var failure *RestError
+	if !errors.As(err, &failure) {
+		return err
+	}
+	var data map[string]any
+	decoder := json.NewDecoder(strings.NewReader(failure.Body))
+	decoder.UseNumber()
+	if decodeErr := decoder.Decode(&data); decodeErr != nil {
+		data = nil
+	}
+	for _, matcher := range matchers {
+		if matcher.Status != 0 && matcher.Status != failure.Status {
+			continue
+		}
+		if matcher.Field != nil {
+			var found any = data
+			for _, segment := range matcher.Field {
+				object, ok := found.(map[string]any)
+				if !ok {
+					found = nil
+					break
+				}
+				found = object[segment]
+			}
+			if found != matcher.Value {
+				continue
+			}
+		}
+		message, _ := data["message"].(string)
+		body := data
+		if body == nil {
+			body = map[string]any{}
+		}
+		if typed, ok := matcher.Build(body, message); ok {
+			return typed
+		}
+	}
+	return err
+}
+''';

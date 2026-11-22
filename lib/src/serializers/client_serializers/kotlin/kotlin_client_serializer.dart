@@ -264,7 +264,7 @@ class KotlinClientSerializer extends GLClientSerializer {
     final restOperations = _restOperations(type);
     final methods = [
       ...buildOperationMethods(type),
-      ...restOperations.map(_restSer.operationToMethod),
+      ...restOperations.map((op) => _restSer.operationToMethod(op, container)),
     ];
     if (methods.isEmpty) return null;
 

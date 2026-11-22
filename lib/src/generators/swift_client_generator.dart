@@ -114,7 +114,7 @@ Future<Set<String>> generateSwiftClientClasses(
     clientFiles['GraphLinkDomainError.swift'] = clientSerializer.generateDomainErrorFile();
   }
 
-  if (parser.throwsTypedErrors) {
+  if (parser.throwsTypedErrors || parser.restThrowsTypedErrors) {
     clientFiles['GraphLinkDomainMatcher.swift'] = clientSerializer.generateDomainMatcherFile();
   }
 

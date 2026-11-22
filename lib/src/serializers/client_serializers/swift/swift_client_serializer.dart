@@ -1,5 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
@@ -216,7 +217,13 @@ class SwiftClientSerializer extends GLClientSerializer {
 
   GLClassModel generateDomainErrorFile() => const GLClassModel(imports: ['Foundation'], body: swiftDomainError);
 
-  GLClassModel generateDomainMatcherFile() => const GLClassModel(body: swiftDomainMatcher);
+  GLClassModel generateDomainMatcherFile() {
+    final rest = grammar.restThrowsTypedErrors;
+    return GLClassModel(
+      imports: [if (rest) 'Foundation'],
+      body: '$swiftDomainMatcherHeader${grammar.throwsTypedErrors ? swiftDomainMatcherGraphQl : ''}${rest ? swiftDomainMatcherRest : ''}}\n',
+    );
+  }
 
   GLClassModel generateExceptionFile() => const GLClassModel(body: swiftGraphLinkException);
 

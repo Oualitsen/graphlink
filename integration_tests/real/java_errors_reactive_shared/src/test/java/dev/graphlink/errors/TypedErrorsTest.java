@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TypedErrorsTest {
 
-    private final GraphLinkClient client = new GraphLinkClient("http://127.0.0.1:9930/graphql");
+    private final GraphLinkClient client = new GraphLinkClient("http://127.0.0.1:9930/graphql", "http://127.0.0.1:9930");
 
     private static RuntimeException thrownBy(Supplier<Object> call) {
         try {

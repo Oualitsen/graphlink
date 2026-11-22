@@ -1,5 +1,6 @@
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_rest_constants.dart';
@@ -792,10 +793,17 @@ class KotlinClientRuntimeSerializer {
     );
   }
 
-  GLClassModel generateDomainMatcherFile() => GLClassModel(
-        importDepencies: [_client.grammar.getTokenByKey('GraphLinkError')!],
-        body: kotlinDomainMatcher,
-      );
+  GLClassModel generateDomainMatcherFile() {
+    final graphql = _client.grammar.throwsTypedErrors;
+    final rest = _client.grammar.restThrowsTypedErrors;
+    return GLClassModel(
+      importDepencies: [
+        if (graphql) _client.grammar.getTokenByKey('GraphLinkError')!,
+        if (rest) _client.grammar.getTokenByKey('GraphLinkJsonDecoder')!,
+      ],
+      body: '$kotlinDomainMatcherHeader${graphql ? kotlinDomainMatcherGraphQl : ''}${rest ? kotlinDomainMatcherRest : ''}\n  }\n}\n',
+    );
+  }
 
   GLClassModel generateDomainErrorFile() => const GLClassModel(body: kotlinDomainError);
 
