@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'lib/**'
+      - 'integration_tests/external_mappers/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/ci.yml'
@@ -22,6 +23,11 @@ jobs:
       - uses: dart-lang/setup-dart@v1
       - run: dart pub get
       - run: dart test
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: integration_tests/external_mappers/run.sh
 
   # Generate every integration_tests client exactly once, then hand the result
   # to the client jobs below via artifact. Runs in parallel with every other
