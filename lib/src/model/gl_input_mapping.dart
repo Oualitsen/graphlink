@@ -28,6 +28,11 @@ extension GLMapsToSource on GLTokenWithFields {
     ];
   }
 
+  bool get isExternalType {
+    final self = this;
+    return self is GLDirectivesMixin && (self as GLDirectivesMixin).isExternal;
+  }
+
   bool mapsToTarget(String targetName) => mapsTo.any((m) => m.targetName == targetName);
 
   String get mappingCodeName {
@@ -37,6 +42,7 @@ extension GLMapsToSource on GLTokenWithFields {
 
   Set<GLToken> mappingDependencies(GLParser g) {
     final result = <GLToken>{};
+    if (g.mapsInMapperClass(this)) return result;
     for (final mapping in g.resolveMappings(this, g.mode)) {
       result.add(mapping.target);
       for (final f in mapping.plan.requiredParams) {

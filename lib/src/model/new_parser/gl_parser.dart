@@ -255,6 +255,7 @@ class GLParser {
   final bool nullableFieldsRequired;
   final bool tolerantEnums;
   final bool generateMappers;
+  final bool mapperAsClass;
   final bool persistedQueries;
   final bool persistedQueriesUseGet;
   final bool autoGenerateQueries;
@@ -355,6 +356,7 @@ class GLParser {
     this.nullableFieldsRequired = false,
     this.tolerantEnums = false,
     this.generateMappers = false,
+    this.mapperAsClass = false,
     this.persistedQueries = false,
     this.persistedQueriesUseGet = false,
     this.autoGenerateQueries = false,

@@ -264,6 +264,8 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
 
   /// `public enum Name: String, Conformances { case ... }` for a
   /// GraphQL enum, `String`-backed so `rawValue` gives `toJson` for free.
+  String namespaceEnum(String name, List<String> members) => 'public enum $name ${block(members)}';
+
   String enumDecl({
     required String name,
     required List<String> cases,

@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
@@ -51,6 +52,10 @@ Future<Set<String>> generateGoClientClasses(GLParser parser, GeneratorConfig con
   allProjectedTypes.forEach((_, def) {
     add(serializer.getFileNameFor(def), serializer.serializeTypeDefinition(def));
   });
+
+  for (final def in parser.mapperClassSources) {
+    add(serializer.getMapperFileName(def), serializer.serializeMapperClass(def) ?? '');
+  }
 
   parser.errors.forEach((_, def) {
     add(serializer.getFileNameFor(def.type), serializer.serializeErrorDefinition(def));

@@ -13,12 +13,32 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
   const TypeScriptMappingSerializer(this._owner);
 
   @override
-  String toMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan) {
-    final targetType = target.mappingCodeName;
+  String toMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan) =>
+      _method(def, target, plan, inMapper: false);
+
+  @override
+  String mapperMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan) =>
+      _method(def, target, plan, inMapper: true);
+
+  @override
+  String mapperFileName(GLTokenWithFields def) => '${mapperName(def).toKebabCase()}.ts';
+
+  @override
+  String mapperImport(GLTokenWithFields def) =>
+      "import { ${mapperName(def)} } from './${mapperName(def).toKebabCase()}.js';";
+
+  @override
+  String mapperFile(GLTokenWithFields def, List<String> methods, List<String> imports) {
+    final body = 'export namespace ${mapperName(def)} ${_owner.codeGenUtils.block([methods.join('\n\n')])}';
+    return [...imports, '', body].join('\n');
+  }
+
+  String _method(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan, {required bool inMapper}) {
+    final targetType = inMapper ? _owner.mappingTypeName(target) : target.mappingCodeName;
     const source = 'obj';
 
     final params = [
-      '$source: ${def.mappingCodeName}',
+      '$source: ${inMapper ? _owner.mappingTypeName(def) : def.mappingCodeName}',
       ...plan.requiredParams.map((f) => '${f.targetField.codeName}: ${_owner.serializeType(f.targetField.type)}'),
       ...plan.defaultParams
           .map((f) => 'default${f.targetField.codeName.firstUp}: ${_owner.serializeType(f.targetField.type)}'),
@@ -38,7 +58,7 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
       final auto = autoByTarget[key];
       final withDefault = defaultByTarget[key];
       if (auto != null) {
-        final expr = _mapExpr('$source.${auto.sourceField!.codeName}', auto.sourceField!.type, auto.targetField.type, 0);
+        final expr = _mapExpr('$source.${auto.sourceField!.codeName}', auto.sourceField!.type, auto.targetField.type, 0, inMapper);
         final needsNull = _isOptional(def, auto.sourceField!.type.nullable) && !_isOptional(target, auto.targetField.type.nullable);
         entries.add('$name: ${needsNull ? (expr.contains(' ? ') ? '($expr) ?? null' : '$expr ?? null') : expr}');
       } else if (withDefault != null) {
@@ -49,7 +69,7 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
     }
 
     return _owner.codeGenUtils.createFunction(
-      functionName: 'to${targetType.firstUp}',
+      functionName: 'to${target.mappingCodeName.firstUp}',
       exported: true,
       arguments: params,
       returnType: targetType,
@@ -60,17 +80,18 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
   bool _isOptional(GLTokenWithFields owner, bool nullable) =>
       nullable && owner is GLInputDefinition && _owner.optionalNullableInputFields;
 
-  String _mapExpr(String expr, GLType sourceType, GLType targetType, int index) {
+  String _mapExpr(String expr, GLType sourceType, GLType targetType, int index, bool inMapper) {
     if (sourceType.isList) {
       if (sourceType.firstType.token == targetType.firstType.token) return expr;
       final element = 'e$index';
-      final inner = _mapExpr(element, sourceType.inlineType, targetType.inlineType, index + 1);
+      final inner = _mapExpr(element, sourceType.inlineType, targetType.inlineType, index + 1, inMapper);
       final access = sourceType.nullable ? '?.' : '.';
       return '$expr${access}map(($element) => $inner)';
     }
     final source = _owner.grammar.mappingToken(sourceType.token);
     if (source != null && source.mapsToTarget(targetType.token)) {
-      final call = '${_owner.resolveCodeName(sourceType.token)}.to${_owner.resolveCodeName(targetType.token).firstUp}($expr)';
+      final owner = inMapper ? mapperName(source) : _owner.resolveCodeName(sourceType.token);
+      final call = '$owner.to${_owner.resolveCodeName(targetType.token).firstUp}($expr)';
       return sourceType.nullable ? '$expr == null ? $expr : $call' : call;
     }
     return expr;

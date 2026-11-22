@@ -46,6 +46,70 @@ class GoMappingSerializer extends GLMappingSerializer {
     );
   }
 
+  @override
+  String mapperFileName(GLTokenWithFields def) => '${_owner.fileStem(mapperName(def))}.go';
+
+  @override
+  String mapperImport(GLTokenWithFields def) => '';
+
+  @override
+  String mapperFile(GLTokenWithFields def, List<String> methods, List<String> imports) {
+    final body = [_owner.codeGenUtils.structDecl(mapperName(def), const []), ...methods].join('\n\n');
+    final extra = {for (final i in imports) i.replaceAll('"', '').trim()}..remove('');
+    return _owner.assembleFile(body, extraImports: extra);
+  }
+
+  @override
+  String mapperMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan) {
+    final targetType = _owner.mappingTypeName(target);
+    final params = [
+      'source ${_owner.mappingTypeName(def)}',
+      ...plan.requiredParams
+          .map((f) => '${_lowerFirst(f.targetField.codeName)} ${_owner.serializeType(f.targetField.type)}'),
+      ...plan.defaultParams.map((f) => 'default${f.targetField.codeName.firstUp} ${_owner.serializeType(f.targetField.type)}'),
+    ];
+    final prelude = <String>[];
+    final assignments = [
+      ...plan.autoMapped.map((f) =>
+          '${f.targetField.codeName}: ${_mapperExpr('source.${f.sourceField!.codeName}', f.sourceField!.type, f.targetField.type, 0)},'),
+      ...plan.defaultParams.map((f) {
+        final local = 'resolved${f.targetField.codeName.firstUp}';
+        final value = 'source.${f.sourceField!.codeName}';
+        prelude.add(_owner.codeGenUtils.constDecl(local, 'default${f.targetField.codeName.firstUp}'));
+        prelude.add(_owner.codeGenUtils.ifStatement(
+          condition: '$value != nil',
+          ifBlockStatements: ['$local = ${_owner.usesPointer(f.sourceField!.type) ? '*$value' : value}'],
+        ));
+        return '${f.targetField.codeName}: $local,';
+      }),
+      ...plan.requiredParams.map((f) => '${f.targetField.codeName}: ${_lowerFirst(f.targetField.codeName)},'),
+    ];
+    return _owner.codeGenUtils.createMethod(
+      receiver: mapperName(def),
+      methodName: 'To${target.mappingCodeName.firstUp}',
+      arguments: params,
+      returnType: targetType,
+      statements: [...prelude, 'return $targetType{\n${assignments.join('\n').identGo()}\n}'],
+    );
+  }
+
+  String _mapperExpr(String expr, GLType sourceType, GLType targetType, int index) {
+    if (sourceType.isList) {
+      if (sourceType.firstType.token == targetType.firstType.token) return expr;
+      final variable = 'e$index';
+      final inner = _mapperExpr(variable, sourceType.inlineType, targetType.inlineType, index + 1);
+      return 'glMapSlice($expr, func($variable ${_owner.serializeType(sourceType.inlineType)}) ${_owner.serializeType(targetType.inlineType)} { return $inner })';
+    }
+    final source = _owner.grammar.mappingToken(sourceType.token);
+    if (source != null && source.mapsToTarget(targetType.token)) {
+      final call = '${mapperName(source)}{}.To${_owner.resolveCodeName(targetType.token).firstUp}';
+      return sourceType.nullable
+          ? 'glMapPtr($expr, func(x ${_owner.mappingTypeName(source)}) ${_owner.serializeType(targetType)} { return $call(x) })'
+          : '$call($expr)';
+    }
+    return expr;
+  }
+
   String _mapToExpr(String expr, GLType sourceType, GLType targetType, int index) {
     if (sourceType.isList) {
       if (sourceType.firstType.token == targetType.firstType.token) return expr;
