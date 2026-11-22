@@ -3,7 +3,7 @@ import XCTest
 @testable import GraphLinkGenerated
 
 final class TypedErrorsTests: XCTestCase {
-    let client = GraphLinkClient(adapter: DefaultGraphLinkURLSessionAdapter(url: URL(string: "http://127.0.0.1:9930/graphql")!).execute)
+    let client = GraphLinkClient(adapter: DefaultGraphLinkURLSessionAdapter(url: URL(string: "http://127.0.0.1:9930/graphql")!).execute, restAdapter: DefaultGraphLinkRestAdapter(baseUrl: "http://127.0.0.1:9930").execute)
 
     func thrownBy(_ call: () async throws -> Any) async -> Error {
         do {

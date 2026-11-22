@@ -1148,3 +1148,40 @@ export function glDomainError(error: unknown, responseKey: string, matchers: Gra
   return error;
 }
 ''';
+
+const tsRestDomainError = r'''
+
+export interface GraphLinkRestMatcher {
+  status: number | null;
+  field: string[] | null;
+  value: string;
+  build: (body: Record<string, unknown>, message: string) => GraphLinkDomainError;
+}
+
+export function glRestDomainError(status: number, body: string, matchers: GraphLinkRestMatcher[]): GraphLinkDomainError | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch (_) {
+    parsed = undefined;
+  }
+  const data = parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
+  for (const matcher of matchers) {
+    if (matcher.status !== null && matcher.status !== status) continue;
+    if (matcher.field !== null) {
+      let found: unknown = data;
+      for (const segment of matcher.field) {
+        found = found !== null && typeof found === 'object' ? (found as Record<string, unknown>)[segment] : undefined;
+      }
+      if (found !== matcher.value) continue;
+    }
+    const message = data !== null && typeof data['message'] === 'string' ? (data['message'] as string) : '';
+    try {
+      return matcher.build(data ?? {}, message);
+    } catch (_) {
+      continue;
+    }
+  }
+  return null;
+}
+''';

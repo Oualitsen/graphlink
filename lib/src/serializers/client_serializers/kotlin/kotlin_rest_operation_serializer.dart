@@ -1,5 +1,7 @@
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
+import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -47,17 +49,42 @@ class KotlinRestOperationSerializer {
   String _presentValue(GLRestArgument a) =>
       _serializer.toJsonExpr(_nonNull(a.argument.type), _name(a));
 
-  String operationToMethod(GLRestOperation op) {
+  String operationToMethod(GLRestOperation op, GLImportContainer container) {
     return _cg.suspendFun(
       name: op.field.codeName,
       arguments: _signature(op),
       returnType: _returnType(op),
-      statements: [
+      statements: _throwingTypedErrors(op, container, [
         ..._bodyStatements(op),
         _cg.constDecl(_request, _requestExpression(op)),
         ..._execution(op),
-      ],
+      ]),
     );
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, GLImportContainer container, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final prefix = _serializer.importPrefix;
+    container.imports.addAll([
+      '$prefix.client.GraphLinkDomainMatcher',
+      for (final error in thrown) '$prefix.errors.${error.type.codeName}',
+    ]);
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return 'GraphLinkDomainMatcher(${field == null ? 'null' : 'listOf(${field.map((f) => '"$f"').join(', ')})'}, "${e.value}", ${e.status ?? 'null'}) '
+          '{ body, message -> ${e.type.codeName}.fromJson(body, message) }';
+    }).join(', ');
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: 'e !is RestError', ifBlockStatements: ['throw e']),
+          'throw GraphLinkDomainMatcher.resolveRest(e, decoder, listOf($matchers))',
+        ],
+      ),
+    ];
   }
 
   String _returnType(GLRestOperation op) {

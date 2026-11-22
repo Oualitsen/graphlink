@@ -145,6 +145,13 @@ class JavaReactiveFlavor {
     }
   }
 
+  /// Like [onErrorMap] for the REST types: RxJava replaces the error with the signal type of the operation.
+  String onErrorMapRest(String src, String param, String replacement, {required bool empty, required bool isVoid}) {
+    if (single != 'Single') return onErrorMap(src, param, replacement);
+    final type = isVoid ? 'Completable' : (empty ? 'Maybe' : 'Single');
+    return '$src.onErrorResumeNext($param -> $type.error($replacement))';
+  }
+
   /// `src.flatMap(fn)` for Reactor/RxJava; Mutiny names it `chain`.
   String flatMap(String src, String fn) => '$src.${flatMapName}($fn)';
 

@@ -7,6 +7,7 @@ import 'package:graphlink/src/serializers/client_serializers/java/java_reactive_
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
 import 'package:test/test.dart';
+import '../errors/error_test_support.dart';
 
 const _types = '''
 scalar Upload @glUpload
@@ -96,6 +97,15 @@ Map<String, String> _restFiles({
   final client = JavaClientSerializer(g, JavaSerializer(g, importPrefix: ''), flavor: flavor, reactiveHttpClient: http);
   return client.generateRestFiles().map((name, model) => MapEntry(name, model.toFileContent()));
 }
+
+const _errors = r"""
+type NotFound @glError(status: 404) { id: ID }
+type Conflict @glError(status: 409, value: "CONFLICT") { reason: String! }
+extend type Query {
+  one(id: ID!): Product @glRest(path: "/one/{id}") @glThrows(errors: [NotFound, Conflict])
+  plain(id: ID!): Product @glRest(path: "/plain/{id}")
+}
+""";
 
 void main() {
   final mixed = _generate('$_graphql$_rest');
@@ -336,6 +346,26 @@ void main() {
       expect(d.restHttpAdapter, JavaRestHttpAdapter.none);
       expect(d.queryListStyle, RestQueryListStyle.comma);
       expect(d.formNesting, RestFormNesting.bracket);
+    });
+  });
+  group('typed errors', () {
+    test('a throwing operation maps RestError through its matchers', () {
+      final out = flat(_generate('$_graphql$_errors'));
+      expect(out, contains('catch (Exception e) { if (!(e instanceof RestError)) { throw e; }'));
+      expect(out, contains('GraphLinkDomainMatcher.resolveRest(e, glDecoder__, Arrays.asList(new GraphLinkDomainMatcher(404, null, "NotFound",'));
+      expect(out, contains('new GraphLinkDomainMatcher(409, Arrays.asList("code"), "CONFLICT",'));
+    });
+
+    test('a reactive flavor rewrites the returned signal instead', () {
+      final out = flat(_generate('$_graphql$_errors', flavor: _reactor));
+      expect(out, contains('.onErrorMap(e -> GraphLinkDomainMatcher.resolveRest(e, glDecoder__,'));
+      expect(out, isNot(contains('instanceof RestError')));
+    });
+
+    test('an operation without @glThrows stays untouched', () {
+      final out = _generate('$_graphql$_errors');
+      final plain = out.substring(out.indexOf('plain'));
+      expect(plain, isNot(contains('RestDomainError')));
     });
   });
 }

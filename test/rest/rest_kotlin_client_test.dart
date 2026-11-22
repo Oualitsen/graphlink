@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/kotlin/kotlin_client_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_serializer.dart';
 import 'package:test/test.dart';
+import '../errors/error_test_support.dart';
 
 const _types = '''
 scalar Upload @glUpload
@@ -65,6 +66,15 @@ String _generate(String schema, {bool comma = false, bool bracket = false, Kotli
   }
   return buffer.toString();
 }
+
+const _errors = r"""
+type NotFound @glError(status: 404) { id: ID }
+type Conflict @glError(status: 409, value: "CONFLICT") { reason: String! }
+extend type Query {
+  one(id: ID!): Product @glRest(path: "/one/{id}") @glThrows(errors: [NotFound, Conflict])
+  plain(id: ID!): Product @glRest(path: "/plain/{id}")
+}
+""";
 
 void main() {
   final mixed = _generate('$_graphql$_rest');
@@ -185,6 +195,20 @@ void main() {
       expect(d.effectiveRestHttpAdapter, KotlinWsAdapter.none);
       expect(d.queryListStyle, RestQueryListStyle.comma);
       expect(d.formNesting, RestFormNesting.bracket);
+    });
+  });
+  group('typed errors', () {
+    test('a throwing operation maps RestError through its matchers', () {
+      final out = flat(_generate('$_graphql$_errors'));
+      expect(out, contains('catch (e: Exception) { if (e !is RestError) { throw e }'));
+      expect(out, contains('throw GraphLinkDomainMatcher.resolveRest(e, decoder, listOf(GraphLinkDomainMatcher(null, "NotFound", 404)'));
+      expect(out, contains('GraphLinkDomainMatcher(listOf("code"), "CONFLICT", 409)'));
+    });
+
+    test('an operation without @glThrows stays untouched', () {
+      final out = _generate('$_graphql$_errors');
+      final plain = out.substring(out.indexOf('plain'));
+      expect(plain, isNot(contains('RestDomainError')));
     });
   });
 }

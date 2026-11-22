@@ -7,6 +7,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extensio
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_cache_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_operation_serializer.dart';
@@ -86,7 +87,10 @@ class GoClientSerializer extends GLClientSerializer {
 
   GLClassModel generateExceptionFile() => const GLClassModel(body: goException);
 
-  GLClassModel generateDomainErrorFile() => const GLClassModel(body: goDomainError);
+  GLClassModel generateDomainErrorFile() => GLClassModel(
+        imports: _parser.restThrowsTypedErrors ? const ['"encoding/json"', '"strings"'] : const [],
+        body: _parser.restThrowsTypedErrors ? '$goDomainError$goRestDomainError' : goDomainError,
+      );
 
   GLClassModel generateCacheFile() => const GLClassModel(body: goCache);
 

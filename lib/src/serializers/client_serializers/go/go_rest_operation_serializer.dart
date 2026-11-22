@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/go/go_serializer.dart';
 
@@ -98,9 +99,42 @@ class GoRestOperationSerializer {
       methodName: op.field.codeName,
       arguments: signature,
       returnType: returnType.isEmpty ? 'error' : '($returnType, error)',
-      statements: statements,
+      statements: _throwingTypedErrors(op, returnType, statements),
     );
     return _hasOptions(op) ? '${_optionsStruct(op)}\n\n$method' : method;
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, String returnType, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final matchers = thrown.map((e) {
+      final build = _cg.functionLiteral(
+        ['m map[string]any', 'message string'],
+        [
+          'glTyped__, err := ${e.type.codeName}FromJson(m, message)',
+          _cg.ifStatement(condition: 'err != nil', ifBlockStatements: ['return nil, false']),
+          'return glTyped__, true',
+        ],
+        returns: '(error, bool)',
+      );
+      final field = e.restField;
+      return 'GraphLinkRestMatcher{Status: ${e.status ?? 0}, Field: ${field == null ? 'nil' : '[]string{${field.map((f) => f.quote()).join(', ')}}'}, '
+          'Value: ${e.value.quote()}, Build: $build}';
+    }).join(', ');
+    final wrapped = 'glRestDomainError(glErr__, []GraphLinkRestMatcher{$matchers})';
+    if (returnType.isEmpty) {
+      return [
+        'glErr__ := ${_cg.functionLiteral([], statements, returns: 'error')}()',
+        _cg.ifStatement(condition: 'glErr__ != nil', ifBlockStatements: ['return $wrapped']),
+        'return nil',
+      ];
+    }
+    return [
+      'var $_zero $returnType',
+      'glResult__, glErr__ := ${_cg.functionLiteral([], statements.where((s) => s != 'var $_zero $returnType').toList(), returns: '($returnType, error)')}()',
+      _cg.ifStatement(condition: 'glErr__ != nil', ifBlockStatements: ['return $_zero, $wrapped']),
+      'return glResult__, nil',
+    ];
   }
 
   String _optionsStruct(GLRestOperation op) {

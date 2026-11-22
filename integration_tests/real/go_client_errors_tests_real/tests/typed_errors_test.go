@@ -13,7 +13,7 @@ const url = "http://127.0.0.1:9930/graphql"
 
 func newClient(t *testing.T) *gl.GraphLinkClient {
 	t.Helper()
-	client, err := gl.NewGraphLinkClientWithHttp(gl.GraphLinkHttpOptions{URL: url})
+	client, err := gl.NewGraphLinkClientWithHttp(gl.GraphLinkHttpOptions{URL: url, RestBaseURL: "http://127.0.0.1:9930"})
 	if err != nil {
 		t.Fatal(err)
 	}

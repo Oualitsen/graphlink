@@ -73,6 +73,39 @@ def gl_domain_error(error: BaseException, response_key: str, matchers: List[Grap
                 continue
     return None
 ''';
+const pythonRestDomainError = r'''
+
+class GraphLinkRestMatcher:
+    def __init__(self, status: Optional[int], field: Optional[List[str]], value: str, build: Callable[[Dict[str, Any], str], "GraphLinkDomainError"]) -> None:
+        self.status = status
+        self.field = field
+        self.value = value
+        self.build = build
+
+
+def gl_rest_domain_error(status: int, body: str, matchers: List[GraphLinkRestMatcher]) -> Optional[GraphLinkDomainError]:
+    try:
+        parsed = json.loads(body)
+    except Exception:
+        parsed = None
+    data = parsed if isinstance(parsed, dict) else None
+    for matcher in matchers:
+        if matcher.status is not None and matcher.status != status:
+            continue
+        if matcher.field is not None:
+            found: Any = data
+            for segment in matcher.field:
+                found = found.get(segment) if isinstance(found, dict) else None
+            if found != matcher.value:
+                continue
+        message = data.get("message") if data is not None else None
+        try:
+            return matcher.build(data if data is not None else {}, message if isinstance(message, str) else "")
+        except Exception:
+            continue
+    return None
+''';
+
 
 const pythonJsonChecks = r'''
 import math

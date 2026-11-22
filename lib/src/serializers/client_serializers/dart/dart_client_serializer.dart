@@ -283,7 +283,7 @@ class DartClientSerializer extends GLClientSerializer {
 
   List<GLToken> _tokensForType(GLQueryType type) => {
         if (type == GLQueryType.query) _parser.getTokenByKey('GraphLinkFullResponse')!,
-        if (_errorImportsFor(type).isNotEmpty) _parser.getTokenByKey('GraphLinkError')!,
+        if (_errorImportsFor(type).isNotEmpty && _parser.getTokenByKey('GraphLinkError') != null) _parser.getTokenByKey('GraphLinkError')!,
         ...schemaTokensFor(type),
         ..._restTokensFor(type),
       }.toList();

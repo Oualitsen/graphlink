@@ -1167,17 +1167,26 @@ public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
 }
 ''';
 
-const javaDomainMatcher = r'''
+const javaDomainMatcherHeader = r'''
 public class GraphLinkDomainMatcher {
+  private final Integer status;
   private final List<String> field;
   private final String value;
   private final BiFunction<Map<String, Object>, String, GraphLinkDomainError> build;
 
   public GraphLinkDomainMatcher(List<String> field, String value, BiFunction<Map<String, Object>, String, GraphLinkDomainError> build) {
+    this(null, field, value, build);
+  }
+
+  public GraphLinkDomainMatcher(Integer status, List<String> field, String value, BiFunction<Map<String, Object>, String, GraphLinkDomainError> build) {
+    this.status = status;
     this.field = field;
     this.value = value;
     this.build = build;
   }
+''';
+
+const javaDomainMatcherGraphQl = r'''
 
   public static Throwable resolve(Throwable error, String responseKey, List<GraphLinkDomainMatcher> matchers) {
     if (!(error instanceof GraphLinkException)) {
@@ -1211,5 +1220,42 @@ public class GraphLinkDomainMatcher {
     }
     return error;
   }
-}
 ''';
+
+const javaDomainMatcherRest = r'''
+
+  public static Throwable resolveRest(Throwable error, GraphLinkJsonDecoder decoder, List<GraphLinkDomainMatcher> matchers) {
+    if (!(error instanceof RestError)) {
+      return error;
+    }
+    RestError failure = (RestError) error;
+    Map<String, Object> body = null;
+    try {
+      body = decoder.decode(failure.getBody());
+    } catch (RuntimeException ignored) {
+      // not a JSON object: only a status-only matcher can still match
+    }
+    for (GraphLinkDomainMatcher matcher : matchers) {
+      if (matcher.status != null && matcher.status != failure.getStatus()) {
+        continue;
+      }
+      if (matcher.field != null) {
+        Object found = body;
+        for (String segment : matcher.field) {
+          found = found instanceof Map ? ((Map<?, ?>) found).get(segment) : null;
+        }
+        if (!matcher.value.equals(found)) {
+          continue;
+        }
+      }
+      Object message = body == null ? null : body.get("message");
+      try {
+        return matcher.build.apply(body == null ? Collections.<String, Object>emptyMap() : body, message instanceof String ? (String) message : "");
+      } catch (RuntimeException ignored) {
+        // a field is missing or has the wrong type: try the next matcher, then fall back
+      }
+    }
+    return error;
+  }
+''';
+

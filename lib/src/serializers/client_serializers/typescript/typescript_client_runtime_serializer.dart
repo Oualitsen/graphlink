@@ -1,5 +1,6 @@
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_vars.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/typescript/typescript_rest_constants.dart';
@@ -28,7 +29,8 @@ class TypeScriptClientRuntimeSerializer {
   GLClassModel generateJsonChecksFile() =>
       const GLClassModel(body: tsJsonChecks);
 
-  GLClassModel generateDomainErrorFile() => const GLClassModel(body: tsDomainError);
+  GLClassModel generateDomainErrorFile() =>
+      GLClassModel(body: _client.parser.restThrowsTypedErrors ? '$tsDomainError$tsRestDomainError' : tsDomainError);
 
   GLClassModel generateLockFile() =>
       const GLClassModel(body: tsLock);

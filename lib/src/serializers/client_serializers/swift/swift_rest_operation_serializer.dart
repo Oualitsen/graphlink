@@ -2,6 +2,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/swift/swift_serializer.dart';
 import 'package:graphlink/src/swift_code_gen_utils.dart';
@@ -42,13 +43,30 @@ class SwiftRestOperationSerializer {
   String _value(GLRestArgument a) => _serializer.toJsonExpr(a.argument.type, _name(a));
 
   String operationToMethod(GLRestOperation op) {
-    final statements = [
+    final statements = _throwingTypedErrors(op, [
       ..._bodyStatements(op),
       _requestDecl(op),
       ..._execution(op),
-    ];
+    ]);
     final returns = _returnType(op) == 'Void' ? '' : ' -> ${_returnType(op)}';
     return 'public func ${op.field.codeName}${_cg.parentheses(_signature(op))} async throws$returns ${_cg.block(statements)}';
+  }
+
+  List<String> _throwingTypedErrors(GLRestOperation op, List<String> statements) {
+    final thrown = _grammar.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return statements;
+    final matchers = thrown.map((e) {
+      final field = e.restField;
+      return 'GraphLinkDomainMatcher(status: ${e.status ?? 'nil'}, field: ${field == null ? 'nil' : '[${field.map((f) => '"$f"').join(', ')}]'}, '
+          'value: "${e.value}") { body, message in try ${e.type.codeName}.fromJson(body, message: message) }';
+    }).join(', ');
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'error',
+        catchStatements: ['throw GraphLinkDomainMatcher.resolveRest(error, matchers: [$matchers])'],
+      ),
+    ];
   }
 
   String _requestDecl(GLRestOperation op) {

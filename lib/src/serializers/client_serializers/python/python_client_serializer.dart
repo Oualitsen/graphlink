@@ -1,5 +1,6 @@
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_scalar_codec_extension.dart';
 import 'package:graphlink/src/model/gl_rest_operation.dart';
@@ -141,21 +142,24 @@ class PythonClientSerializer extends GLClientSerializer {
     return [
       'from . import graph_link_json',
       'from .graph_link_rest_resolver import GraphLinkRestResolver',
-      'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestFormBody, RestJsonBody, RestMultipartBody, RestPart, RestRawBody, RestRequest, RestBody, rest_encode, rest_encode_json, rest_entries, rest_header, rest_headers, rest_parts, rest_spread_entries, rest_text',
+      'from .graph_link_rest import DownloadProgressCallback, GLDownload, GLRestAdapter, RestFormBody, RestJsonBody, RestMultipartBody, RestError, RestPart, RestRawBody, RestRequest, RestBody, rest_encode, rest_encode_json, rest_entries, rest_header, rest_headers, rest_parts, rest_spread_entries, rest_text',
       if (!(type == GLQueryType.mutation && _parser.hasUploadMutations))
         'from .graph_link_uploads import GLUpload, UploadProgressCallback',
     ];
   }
 
   List<String> _errorImportsFor(GLQueryType type) {
-    final errors = {
-      for (final entry in _parser.thrownErrors.entries)
-        if (entry.key.type == type) ...entry.value,
-    };
-    if (errors.isEmpty) return const [];
+    final graphql = <GLErrorDefinition>{};
+    final rest = <GLErrorDefinition>{};
+    for (final entry in _parser.thrownErrors.entries) {
+      if (entry.key.type != type) continue;
+      (_parser.restOperations.containsKey(entry.key) ? rest : graphql).addAll(entry.value);
+    }
+    if (graphql.isEmpty && rest.isEmpty) return const [];
     return [
-      'from .$pythonDomainErrorModule import GraphLinkDomainMatcher, gl_domain_error',
-      for (final error in errors) 'from ..errors.${_py.moduleNameFor(error.type)} import ${error.type.codeName}',
+      if (graphql.isNotEmpty) 'from .$pythonDomainErrorModule import GraphLinkDomainMatcher, gl_domain_error',
+      if (rest.isNotEmpty) 'from .$pythonDomainErrorModule import GraphLinkRestMatcher, gl_rest_domain_error',
+      for (final error in {...graphql, ...rest}) 'from ..errors.${_py.moduleNameFor(error.type)} import ${error.type.codeName}',
     ];
   }
 

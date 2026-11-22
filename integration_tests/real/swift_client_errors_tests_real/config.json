@@ -16,6 +16,7 @@
       "autoGenerateQueries":        true,
       "nullableFieldsRequired":     false,
       "wsAdapter":                  "none",
+      "restHttpAdapter":            "urlsession",
       "captureErrors":              false
     }
   }

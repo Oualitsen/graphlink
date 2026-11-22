@@ -1,4 +1,5 @@
 import 'package:graphlink/src/config.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_openapi_document.dart';
@@ -7,6 +8,7 @@ import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
@@ -108,13 +110,67 @@ class _OpenApiBuilder {
       operationId: op.name,
       parameters: parameters,
       body: body,
-      responses: [
+      responses: _withDeclaredErrors(op, [
         ..._successResponses(op),
         if (parameters.isNotEmpty || body != null) const GLOpenApiResponse(status: '400', ref: '400'),
         if (op.placeholders.isNotEmpty) const GLOpenApiResponse(status: '404', ref: '404'),
         const GLOpenApiResponse(status: '500', ref: '500'),
-      ],
+      ]),
     );
+  }
+
+  List<GLOpenApiResponse> _withDeclaredErrors(GLRestOperation op, List<GLOpenApiResponse> responses) {
+    final thrown = parser.restThrownErrorsOf(op);
+    if (thrown.isEmpty) return responses;
+    final byStatus = <String, List<GLErrorDefinition>>{};
+    for (final error in thrown) {
+      byStatus.putIfAbsent(error.status?.toString() ?? 'default', () => []).add(error);
+      schemas.putIfAbsent(error.name, () => _errorSchemaOf(error));
+    }
+    final declared = {
+      for (final entry in byStatus.entries)
+        entry.key: GLOpenApiResponse(
+          status: entry.key,
+          description: entry.value.map((e) => e.name).join(', '),
+          content: {
+            'application/json': entry.value.length == 1
+                ? GLOpenApiSchema.reference(entry.value.single.name)
+                : GLOpenApiSchema(oneOf: [for (final e in entry.value) GLOpenApiSchema.reference(e.name)]),
+          },
+        ),
+    };
+    return [
+      for (final response in responses)
+        if (!declared.containsKey(response.status)) response,
+      ...declared.values,
+    ];
+  }
+
+  GLOpenApiSchema _errorSchemaOf(GLErrorDefinition error) {
+    final properties = <String, GLOpenApiSchema>{
+      for (final field in error.type.fields) field.name.token: _typeSchema(field.type),
+      'message': GLOpenApiSchema.scalar('string'),
+    };
+    final required = [
+      for (final field in error.type.fields)
+        if (!field.type.nullable) field.name.token,
+    ];
+    final path = error.restField;
+    if (path != null) _putDiscriminator(properties, required, path, error.value);
+    return GLOpenApiSchema.object(properties, required: required);
+  }
+
+  void _putDiscriminator(Map<String, GLOpenApiSchema> properties, List<String> required, List<String> path, String value) {
+    final head = path.first;
+    if (!required.contains(head)) required.add(head);
+    if (path.length == 1) {
+      properties[head] = GLOpenApiSchema.constant(value);
+      return;
+    }
+    final nested = Map<String, GLOpenApiSchema>.from(properties[head]?.properties ?? const {});
+    final nestedRequired = List<String>.from(properties[head]?.required ?? const []);
+    _putDiscriminator(nested, nestedRequired, path.sublist(1), value);
+    properties[head] = GLOpenApiSchema.object(nested, required: nestedRequired);
   }
 
   List<GLOpenApiParameter> _parameters(GLRestArgument arg) {

@@ -20,7 +20,13 @@ class DartClientRuntimeSerializer {
     );
   }
 
-  GLClassModel generateDomainErrorFile() => const GLClassModel(body: dartDomainError);
+  GLClassModel generateDomainErrorFile() {
+    final rest = _client.parser.restThrowsTypedErrors;
+    return GLClassModel(
+      imports: [if (rest) "import 'dart:convert';"],
+      body: rest ? '$dartDomainError\n$dartRestDomainError' : dartDomainError,
+    );
+  }
 
   /// Returns the standalone [GraphLinkLock] file.
   GLClassModel generateLockFile() => const GLClassModel(body: glLock);

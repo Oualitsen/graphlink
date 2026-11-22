@@ -122,7 +122,7 @@ Future<Set<String>> generateJavaClientClasses(
     ));
   }
 
-  if (parser.throwsTypedErrors) {
+  if (parser.throwsTypedErrors || parser.restThrowsTypedErrors) {
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainMatcherFile()),
       fileName: 'GraphLinkDomainMatcher.java',

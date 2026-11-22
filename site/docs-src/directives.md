@@ -201,8 +201,8 @@ public class GetUserFullResponse {
 **Target:** CLIENT · **Placement:** `OBJECT`
 
 !!! note "Preview"
-    GraphQL operations throw these classes when they declare them with [`@glThrows`](#glthrows). REST (`status`) and the
-    server side come in later releases.
+    GraphQL and REST operations throw these classes when they declare them with [`@glThrows`](#glthrows). The server
+    side comes in a later release.
 
 Declares a business error. The type becomes an **exception class** in every client, with its fields as typed members,
 and is not a type of your API: it is never a field type, an argument, an input, an interface implementer or a union
@@ -210,9 +210,9 @@ member (the schema is rejected with a message if you try), and a server does not
 
 | Argument | Type | Default | Description |
 |---|---|---|---|
-| `field` | `String` | `"extensions.code"` | Dotted path of the discriminator, relative to the GraphQL error entry |
+| `field` | `String` | GraphQL: `"extensions.code"`, REST: `"code"` | Dotted path of the discriminator, relative to the GraphQL error entry (GraphQL) or the JSON body (REST) |
 | `value` | `String` | the type name | The string the discriminator must equal |
-| `status` | `Int` | none | HTTP status (REST). Accepted today, used by a later release |
+| `status` | `Int` | none | REST only: the HTTP status the response must have |
 
 ```graphql title="Example"
 type ArticleNotFound @glError { id: ID! }
@@ -253,10 +253,11 @@ class TitleTaken extends GraphLinkDomainError {
 
 ## @glThrows
 
-**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` (a root field of `Query` or `Mutation`)
+**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` (a root field of `Query` or `Mutation`, GraphQL or `@glRest`)
 
 Lists the [`@glError`](#glerror) types an operation can throw. The generated method throws the matching class, so the
-caller writes `catch (ArticleNotFound e)` instead of inspecting `GraphLinkException`.
+caller writes `catch (ArticleNotFound e)` instead of inspecting `GraphLinkException` or `RestError`. GraphQL and REST
+work the same way: moving an operation from one to the other changes no caller code.
 
 | Argument | Type | Description |
 |---|---|---|
@@ -287,6 +288,32 @@ the entry's `message`, `path` and `extensions` only.
 What keeps throwing `GraphLinkException` (it carries every entry): no match, an entry without `path`, a missing or
 mistyped field, an operation without `@glThrows`, an operation with several root fields, and, with `@glCaptureErrors`,
 nothing is thrown at all.
+
+### REST operations
+
+On a `@glRest` operation the error is matched on a non-2xx response. The JSON body plays the role of the GraphQL entry:
+
+```graphql title="Example"
+type ItemNotFound  @glError(status: 404) { id: ID }                         # status alone decides
+type ItemConflict  @glError(status: 409, value: "CONFLICT") { reason: String! }  # status and body.code
+type RateLimited   @glError(field: "error.kind", value: "rate") { retryAfter: Int! }  # body.error.kind
+
+type Query {
+  item(id: ID!): Item! @glRest(path: "/items/{id}") @glThrows(errors: [ItemNotFound, ItemConflict, RateLimited])
+}
+```
+
+- `status`, when set, must equal the response status. Without `field` and `value`, the status alone decides and the body
+  is not needed (a `404` with an HTML body is still an `ItemNotFound` whose fields are empty, which only works if they
+  are all optional).
+- Otherwise the discriminator is the body's top-level `code` (or the `field` path) equal to `value` (default the type name).
+- The error is built from the body, its `message` (a string, if the body has one) becomes the exception's message. The
+  first error of the list that matches is thrown.
+- No match, a body that does not decode (HTML from a proxy), a missing or mistyped field, or an operation without
+  `@glThrows` keep throwing `RestError`.
+
+The generated OpenAPI document lists each REST error as a response (`status` and a schema with its fields, `message` and
+the discriminator; two errors with one status become a `oneOf`, an error without a status is the `default` response).
 
 The schema is rejected if `@glThrows` is on a nested field, a subscription, a type, a custom `query` / `mutation`
 operation, if it names a type that is not an `@glError`, repeats one, or lists two errors that match the same way.
