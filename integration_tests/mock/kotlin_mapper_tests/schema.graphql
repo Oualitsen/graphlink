@@ -1,0 +1,33 @@
+type Query {
+  user(id: ID!): User
+  summary(id: ID!): UserSummary
+}
+
+type AddressEntity @glExternal(glClass: "AddressEntity", glImport: "dev.graphlink.mappermock.persistence.AddressEntity") @glMapsTo(type: "Address") {
+  street: String!
+}
+
+type Address @glMapsTo(type: "AddressEntity") {
+  street: String!
+}
+
+type UserEntity @glExternal(glClass: "UserEntity", glImport: "dev.graphlink.mappermock.persistence.UserEntity") @glMapsTo(type: "User") {
+  id: ID!
+  fullName: String!
+  nick: String
+  addresses: [AddressEntity!]!
+  home: AddressEntity
+}
+
+type User @glMapsTo(type: "UserEntity") @glMapsTo(type: "UserSummary") {
+  id: ID!
+  fullName: String! @glMapField(to: "name", target: "UserSummary")
+  nick: String!
+  addresses: [Address!]!
+  home: Address
+}
+
+type UserSummary {
+  id: ID!
+  name: String!
+}

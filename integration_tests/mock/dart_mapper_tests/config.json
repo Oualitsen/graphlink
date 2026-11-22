@@ -1,0 +1,18 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "mapperStyle": "class",
+  "typeMappings": {"ID": "String", "String": "String", "Float": "double", "Int": "int", "Boolean": "bool", "Null": "null"},
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName": "graphlink_mapper_tests",
+      "httpAdapter": "none",
+      "generateMappers": true,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "immutableInputFields": true,
+      "immutableTypeFields": true
+    }
+  }
+}

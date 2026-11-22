@@ -1,0 +1,18 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "mapperStyle": "class",
+  "typeMappings": {"ID": "String", "String": "String", "Float": "Double", "Int": "Int", "Boolean": "Boolean"},
+  "outputDir": "client-app/src/main/kotlin/dev/graphlink/mappermock/generated",
+  "clientConfig": {
+    "kotlin": {
+      "packageName": "dev.graphlink.mappermock.generated",
+      "generateMappers": true,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "inputAsDataClass": true,
+      "typeAsDataClass": true,
+      "wsAdapter": "none"
+    }
+  }
+}

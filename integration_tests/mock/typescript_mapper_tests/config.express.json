@@ -1,0 +1,22 @@
+{
+  "schemaPaths": [
+    "schema.graphql"
+  ],
+  "mode": "server",
+  "mapperStyle": "class",
+  "typeMappings": {
+    "ID": "string",
+    "String": "string",
+    "Float": "number",
+    "Int": "number",
+    "Boolean": "boolean",
+    "Null": "null"
+  },
+  "outputDir": "lib/generated_express",
+  "serverConfig": {
+    "expressApollo": {
+      "port": 1,
+      "generateEntryPoint": false
+    }
+  }
+}

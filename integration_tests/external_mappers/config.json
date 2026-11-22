@@ -1,8 +1,0 @@
-{
-  "schemaPaths": ["SCHEMA_PATH"],
-  "mode": "server",
-  "identityFields": [],
-  "typeMappings": {"ID": "String", "String": "String"},
-  "outputDir": "OUT_DIR",
-  "serverConfig": {"spring": {"basePackage": "com.acme", "generateControllers": false}}
-}
