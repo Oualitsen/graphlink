@@ -20,6 +20,7 @@ import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_va
 import 'package:graphlink/src/serializers/gl_client_serializer.dart';
 
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart' show dartDomainErrorFile;
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_runtime_serializer.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_adapters_serializer.dart';
@@ -121,6 +122,7 @@ class DartClientSerializer extends GLClientSerializer {
         _useRestDio ? "import 'graph_link_rest_dio_adapter.dart';" : "import 'graph_link_rest_http_adapter.dart';",
       if (generateAdapters && _parser.hasSubscriptions)
         "import 'graph_link_websocket_adapter.dart';",
+      ..._errorImportsFor(null),
       ...serializeImports(_parser)
           .split('\n')
           .where((l) => l.trim().isNotEmpty),
@@ -244,8 +246,21 @@ class DartClientSerializer extends GLClientSerializer {
 
   // ── Import helpers ─────────────────────────────────────────────────────────
 
+  List<String> _errorImportsFor(GLQueryType? type) {
+    final names = {
+      for (final entry in _parser.thrownErrors.entries)
+        if (type == null || entry.key.type == type) ...entry.value.map((e) => e.type),
+    };
+    if (names.isEmpty) return [];
+    return [
+      "import '$dartDomainErrorFile';",
+      for (final error in names) serializer.serializeImport('${serializer.importPrefix}/errors/${serializer.getFileNameFor(error)}'),
+    ];
+  }
+
   List<String> _importsForType(GLQueryType type) {
     return {
+      ..._errorImportsFor(type),
       if (type != GLQueryType.subscription) "import 'dart:convert';",
       "import 'dart:async';",
       "import 'graph_link_cache_store.dart';",
@@ -268,6 +283,7 @@ class DartClientSerializer extends GLClientSerializer {
 
   List<GLToken> _tokensForType(GLQueryType type) => {
         if (type == GLQueryType.query) _parser.getTokenByKey('GraphLinkFullResponse')!,
+        if (_errorImportsFor(type).isNotEmpty) _parser.getTokenByKey('GraphLinkError')!,
         ...schemaTokensFor(type),
         ..._restTokensFor(type),
       }.toList();

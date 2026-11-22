@@ -1,5 +1,6 @@
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/capture_errors_utils.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -16,6 +17,30 @@ class KotlinClientOperationSerializer {
   final KotlinClientContext _ctx;
 
   KotlinClientOperationSerializer(this._ctx);
+
+  List<String> _throwingTypedErrors(GLQueryDefinition def, GLImportContainer container, List<String> statements) {
+    final thrown = _ctx.grammar.thrownErrorsOf(def);
+    if (thrown == null) return statements;
+    final prefix = _ctx.serializer.importPrefix;
+    container.imports.addAll([
+      '$prefix.client.GraphLinkDomainMatcher',
+      for (final error in thrown.errors) '$prefix.errors.${error.type.codeName}',
+    ]);
+    final matchers = thrown.errors
+        .map((e) => 'GraphLinkDomainMatcher(listOf(${e.field.map((f) => '"$f"').join(', ')}), "${e.value}") '
+            '{ extensions, message -> ${e.type.codeName}.fromJson(extensions, message) }')
+        .join(', ');
+    return [
+      _ctx.codeGenUtils.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _ctx.codeGenUtils.ifStatement(condition: 'e !is $_clientException', ifBlockStatements: ['throw e']),
+          'throw GraphLinkDomainMatcher.resolve(e, "${thrown.responseKey}", listOf($matchers))',
+        ],
+      ),
+    ];
+  }
 
   // ── Query (cache-aware) ────────────────────────────────────────────────────
 
@@ -49,7 +74,7 @@ class KotlinClientOperationSerializer {
       name: def.codeName,
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
-      statements: statements,
+      statements: _throwingTypedErrors(def, container, statements),
     );
   }
 
@@ -71,7 +96,7 @@ class KotlinClientOperationSerializer {
       name: def.codeName,
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
-      statements: statements,
+      statements: _throwingTypedErrors(def, container, statements),
     );
   }
 
@@ -119,7 +144,7 @@ class KotlinClientOperationSerializer {
       name: methodName,
       arguments: getArguments(def),
       returnType: returnTypeByQueryType(def),
-      statements: statements,
+      statements: _throwingTypedErrors(def, container, statements),
     );
   }
 
@@ -230,7 +255,7 @@ class KotlinClientOperationSerializer {
         name: methodName,
         arguments: argsWithProgress,
         returnType: returnType,
-        statements: body,
+        statements: _throwingTypedErrors(def, container, body),
       ),
     ].join('\n\n');
   }

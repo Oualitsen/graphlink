@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/reserved_words.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/serializers/client_serializers/go/go_client_vars.dart';
@@ -12,6 +13,9 @@ import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/serializers/go/go_serializer.dart';
 
 const _zero = 'glZero__';
+const svDomain = 'glDomain__';
+const svErr = 'glErr__';
+const svTyped = 'glTyped__';
 
 class GoClientOperationSerializer {
   final GLParser _grammar;
@@ -112,10 +116,35 @@ class GoClientOperationSerializer {
       statements: [
         if (!isSubscription) 'var $_zero $returnType',
         if (_hasOptions(def)) ..._optionsUnpack(def),
-        body,
+        _throwingTypedErrors(def, returnType, body),
       ],
     );
     return _hasOptions(def) ? '${_optionsStruct(def)}\n\n$method' : method;
+  }
+
+  String _throwingTypedErrors(GLQueryDefinition def, String returnType, String body) {
+    final thrown = _grammar.thrownErrorsOf(def);
+    if (thrown == null) return body;
+    final matchers = thrown.errors.map((e) {
+      final build = _cg.functionLiteral(
+        ['m map[string]any', 'message string'],
+        [
+          '$svDomain, err := ${e.type.codeName}FromJson(m, message)',
+          _cg.ifStatement(condition: 'err != nil', ifBlockStatements: ['return nil, false']),
+          'return $svDomain, true',
+        ],
+        returns: '(error, bool)',
+      );
+      return 'GraphLinkDomainMatcher{Field: []string{${e.field.map((f) => f.quote()).join(', ')}}, Value: ${e.value.quote()}, Build: $build}';
+    }).join(', ');
+    return [
+      '$svTyped, $svErr := ${_cg.functionLiteral([], [body], returns: '($returnType, error)')}()',
+      _cg.ifStatement(
+        condition: '$svErr != nil',
+        ifBlockStatements: ['return $_zero, glDomainError($svErr, ${thrown.responseKey.quote()}, []GraphLinkDomainMatcher{$matchers})'],
+      ),
+      'return $svTyped, nil',
+    ].join('\n');
   }
 
   String _optionsStruct(GLQueryDefinition def) {

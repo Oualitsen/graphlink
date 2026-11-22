@@ -860,3 +860,36 @@ fun glRequireData(decoded: Map<String, Any?>, text: String): Map<String, Any?> {
 const kotlinDomainError = r'''
 open class GraphLinkDomainError(message: String = "") : RuntimeException(message)
 ''';
+
+const kotlinDomainMatcher = r'''
+class GraphLinkDomainMatcher(
+  val field: List<String>,
+  val value: String,
+  val build: (Map<String, Any?>, String) -> GraphLinkDomainError,
+) {
+  companion object {
+    fun resolve(error: Throwable, responseKey: String, matchers: List<GraphLinkDomainMatcher>): Throwable {
+      if (error !is GraphLinkException) return error
+      for (entry in error.errors) {
+        val path = entry.path
+        if (path.isNullOrEmpty() || path[0] != responseKey) continue
+        val extensions = entry.extensions ?: emptyMap()
+        val message = entry.message ?: ""
+        for (matcher in matchers) {
+          var found: Any? = mapOf("message" to message, "path" to path, "extensions" to extensions)
+          for (segment in matcher.field) {
+            found = (found as? Map<*, *>)?.get(segment)
+          }
+          if (found != matcher.value) continue
+          try {
+            return matcher.build(extensions, message)
+          } catch (_: Exception) {
+            continue
+          }
+        }
+      }
+      return error
+    }
+  }
+}
+''';

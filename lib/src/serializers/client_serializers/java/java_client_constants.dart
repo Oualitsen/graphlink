@@ -1166,3 +1166,50 @@ public class DefaultGraphLinkGetAdapter implements GraphLinkClientAdapter {
   }
 }
 ''';
+
+const javaDomainMatcher = r'''
+public class GraphLinkDomainMatcher {
+  private final List<String> field;
+  private final String value;
+  private final BiFunction<Map<String, Object>, String, GraphLinkDomainError> build;
+
+  public GraphLinkDomainMatcher(List<String> field, String value, BiFunction<Map<String, Object>, String, GraphLinkDomainError> build) {
+    this.field = field;
+    this.value = value;
+    this.build = build;
+  }
+
+  public static Throwable resolve(Throwable error, String responseKey, List<GraphLinkDomainMatcher> matchers) {
+    if (!(error instanceof GraphLinkException)) {
+      return error;
+    }
+    for (GraphLinkError entry : ((GraphLinkException) error).getErrors()) {
+      List<Object> path = entry.getPath();
+      if (path == null || path.isEmpty() || !responseKey.equals(path.get(0))) {
+        continue;
+      }
+      Map<String, Object> extensions = entry.getExtensions() == null ? Collections.<String, Object>emptyMap() : entry.getExtensions();
+      String message = entry.getMessage() == null ? "" : entry.getMessage();
+      for (GraphLinkDomainMatcher matcher : matchers) {
+        Map<String, Object> root = new HashMap<>();
+        root.put("message", message);
+        root.put("path", path);
+        root.put("extensions", extensions);
+        Object found = root;
+        for (String segment : matcher.field) {
+          found = found instanceof Map ? ((Map<?, ?>) found).get(segment) : null;
+        }
+        if (!matcher.value.equals(found)) {
+          continue;
+        }
+        try {
+          return matcher.build.apply(extensions, message);
+        } catch (RuntimeException ignored) {
+          // a field is missing or has the wrong type: try the next matcher, then fall back
+        }
+      }
+    }
+    return error;
+  }
+}
+''';

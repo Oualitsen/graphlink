@@ -2,6 +2,8 @@ import 'package:graphlink/src/cache_store_dart.dart';
 import 'package:graphlink/src/constants.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
+import 'package:graphlink/src/serializers/dart/dart_serializer.dart' show dartDomainErrorFile;
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_constants.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_vars.dart';
 import 'package:graphlink/src/serializers/client_serializers/dart/dart_client_serializer.dart';
@@ -81,6 +83,7 @@ class DartClientRuntimeSerializer {
         "import 'dart:async';",
         if (payloadImport.isNotEmpty) payloadImport,
         if (errorImport.isNotEmpty) errorImport,
+        if (_client.parser.throwsTypedErrors) "import '$dartDomainErrorFile';",
         "import 'graph_link_cache_entry.dart';",
         "import 'graph_link_lock.dart';",
         "import 'graph_link_tag_entry.dart';",
@@ -189,6 +192,7 @@ class DartClientRuntimeSerializer {
           "static const glAllEpochKey__ = '\\u0000all';",
                     'late final Map<String, String> $svFragMap;',
           _client.declareHttpAdapter(),
+          if (_client.parser.throwsTypedErrors) dartDomainErrorMatch.trim(),
           if (_client.parser.persistedQueries) ...[
             'final Map<String, String> _glHashes = {};',
             'bool glPersistedUnsupported__ = false;',

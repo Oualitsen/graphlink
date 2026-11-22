@@ -1,5 +1,6 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -73,6 +74,18 @@ class TypeScriptClientOperationSerializer {
   String _fromJson(String expr, String typeName) =>
       '$typeName.fromJson($expr as Record<string, unknown>)';
 
+  String _typedError(GLQueryDefinition def, String errors) {
+    final thrown = _parser.thrownErrorsOf(def);
+    if (thrown == null) return errors;
+    final matchers = thrown.errors.map((e) => '{ field: [${e.field.map((f) => f.quote()).join(', ')}], value: ${e.value.quote()}, '
+        'build: (extensions, message) => ${e.type.codeName}.fromJson(extensions, message) }');
+    return "glDomainError($errors, '${thrown.responseKey}', [${matchers.join(', ')}])";
+  }
+
+  String _throwErrors(GLQueryDefinition def, String errors) => observables
+      ? 'subscriber.error(${_typedError(def, errors)});'
+      : 'throw ${_typedError(def, errors)};';
+
   // ── Query method ──────────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
@@ -102,8 +115,8 @@ class TypeScriptClientOperationSerializer {
         _cg.ifStatement(
           condition: 'gl_fullResponse__.errors',
           ifBlockStatements: observables
-              ? ['subscriber.error(gl_fullResponse__.errors);', 'return;']
-              : ['throw gl_fullResponse__.errors;'],
+              ? [_throwErrors(def, 'gl_fullResponse__.errors'), 'return;']
+              : [_throwErrors(def, 'gl_fullResponse__.errors')],
         ),
       if (observables) ...[
         isCE
@@ -223,7 +236,7 @@ class TypeScriptClientOperationSerializer {
           _cg.ifStatement(
             condition: '$svRemainingCount > 0',
             ifBlockStatements: [
-              if (observables) ...['subscriber.error(e);', 'return;'] else 'throw e;',
+              if (observables) ...[_throwErrors(def, 'e'), 'return;'] else _throwErrors(def, 'e'),
             ],
           ),
           if (observables) ...[
@@ -282,8 +295,8 @@ class TypeScriptClientOperationSerializer {
         _cg.ifStatement(
           condition: 'gl_fullResponse__.errors',
           ifBlockStatements: observables
-              ? ['subscriber.error(gl_fullResponse__.errors);', 'return;']
-              : ['throw gl_fullResponse__.errors;'],
+              ? [_throwErrors(def, 'gl_fullResponse__.errors'), 'return;']
+              : [_throwErrors(def, 'gl_fullResponse__.errors')],
         ),
       if (invalidation.isNotEmpty)
         isCaptureErrors
@@ -397,7 +410,7 @@ class TypeScriptClientOperationSerializer {
       _cg.constDecl('gl_fullResponse__', _fromJson(svResult, fullResponseTypeName)),
       _cg.ifStatement(
         condition: 'gl_fullResponse__.errors',
-        ifBlockStatements: ['throw gl_fullResponse__.errors;'],
+        ifBlockStatements: [_throwErrors(def, 'gl_fullResponse__.errors')],
       ),
       if (invalidation.isNotEmpty) invalidation,
       if (observables) ...[

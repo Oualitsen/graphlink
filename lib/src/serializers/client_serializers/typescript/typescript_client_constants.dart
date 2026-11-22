@@ -1119,4 +1119,32 @@ export class GraphLinkDomainError extends Error {
     this.name = new.target.name;
   }
 }
+
+export interface GraphLinkDomainMatcher {
+  field: string[];
+  value: string;
+  build: (extensions: Record<string, unknown>, message: string) => GraphLinkDomainError;
+}
+
+export function glDomainError(error: unknown, responseKey: string, matchers: GraphLinkDomainMatcher[]): unknown {
+  if (!Array.isArray(error)) return error;
+  for (const entry of error as Array<{ message?: string; path?: unknown[] | null; extensions?: Record<string, unknown> | null }>) {
+    if (!entry || !entry.path || entry.path[0] !== responseKey) continue;
+    const extensions = entry.extensions ?? {};
+    const message = entry.message ?? '';
+    for (const matcher of matchers) {
+      let found: unknown = { message, path: entry.path, extensions };
+      for (const segment of matcher.field) {
+        found = found !== null && typeof found === 'object' ? (found as Record<string, unknown>)[segment] : undefined;
+      }
+      if (found !== matcher.value) continue;
+      try {
+        return matcher.build(extensions, message);
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+  return error;
+}
 ''';

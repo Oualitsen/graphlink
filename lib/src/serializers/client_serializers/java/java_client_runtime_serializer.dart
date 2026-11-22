@@ -895,6 +895,12 @@ class JavaClientRuntimeSerializer {
       body: subscriptionHandlerClass,
     );
   }
+  GLClassModel generateDomainMatcherFile() => GLClassModel(
+        imports: [JavaImports.list, JavaImports.map, JavaImports.hashMap, JavaImports.collections, 'java.util.function.BiFunction'],
+        importDepencies: [_grammar.getTokenByKey('GraphLinkError')!],
+        body: javaDomainMatcher,
+      );
+
   GLClassModel generateDomainErrorFile() {
     final body = codeGenUtils.createClass(
       className: 'GraphLinkDomainError',

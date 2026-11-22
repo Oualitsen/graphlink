@@ -35,12 +35,43 @@ class GraphLinkException(Exception):
 ''';
 
 const pythonDomainError = r'''
+from typing import Any, Callable, Dict, List, Optional
+
+
 class GraphLinkDomainError(Exception):
     message: str
 
     def __init__(self, message: str = "") -> None:
         super().__init__(message)
         self.message = message
+
+
+class GraphLinkDomainMatcher:
+    def __init__(self, field: List[str], value: str, build: Callable[[Dict[str, Any], str], "GraphLinkDomainError"]) -> None:
+        self.field = field
+        self.value = value
+        self.build = build
+
+
+def gl_domain_error(error: BaseException, response_key: str, matchers: List[GraphLinkDomainMatcher]) -> Optional[GraphLinkDomainError]:
+    for entry in getattr(error, "errors", None) or []:
+        path = getattr(entry, "path", None)
+        if not path or path[0] != response_key:
+            continue
+        extensions = getattr(entry, "extensions", None) or {}
+        message = getattr(entry, "message", "") or ""
+        found: Any = {"message": message, "path": path, "extensions": extensions}
+        for matcher in matchers:
+            found = {"message": message, "path": path, "extensions": extensions}
+            for segment in matcher.field:
+                found = found.get(segment) if isinstance(found, dict) else None
+            if found != matcher.value:
+                continue
+            try:
+                return matcher.build(extensions, message)
+            except Exception:
+                continue
+    return None
 ''';
 
 const pythonJsonChecks = r'''

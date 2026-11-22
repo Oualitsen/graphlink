@@ -1,0 +1,25 @@
+{
+  "schemaPaths": ["../schema_errors/errors.graphql"],
+  "mode": "client",
+  "typeMappings": {
+    "ID":      "String",
+    "String":  "String",
+    "Float":   "double",
+    "Int":     "int",
+    "Boolean": "bool",
+    "Null":    "null"
+  },
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "dart": {
+      "packageName":               "graphlink_dart_errors_real_tests",
+      "httpAdapter":               "http",
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries":       true,
+      "nullableFieldsRequired":    false,
+      "immutableInputFields":      true,
+      "immutableTypeFields":       true,
+      "captureErrors":             false
+    }
+  }
+}

@@ -131,6 +131,20 @@ class JavaReactiveFlavor {
     }
   }
 
+  /// Replaces the failure of [src] with [replacement], an expression over the throwable named [param].
+  String onErrorMap(String src, String param, String replacement) {
+    switch (single) {
+      case 'Mono':
+        return '$src.onErrorMap($param -> $replacement)';
+      case 'Single':
+        return '$src.onErrorResumeNext($param -> Single.error($replacement))';
+      case 'Uni':
+        return '$src.onFailure().transform($param -> $replacement)';
+      default:
+        return src;
+    }
+  }
+
   /// `src.flatMap(fn)` for Reactor/RxJava; Mutiny names it `chain`.
   String flatMap(String src, String fn) => '$src.${flatMapName}($fn)';
 

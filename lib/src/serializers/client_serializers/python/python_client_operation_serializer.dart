@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
@@ -34,6 +35,27 @@ class PythonClientOperationSerializer {
 
   String _stringList(Iterable<String> values) => '[${values.map(_literal).join(', ')}]';
 
+  List<String> _throwingTypedErrors(GLQueryDefinition def, List<String> statements) {
+    final thrown = _grammar.thrownErrorsOf(def);
+    if (thrown == null) return statements;
+    final matchers = thrown.errors.map((e) => _cg.callExpression('GraphLinkDomainMatcher', [
+          _stringList(e.field),
+          _literal(e.value),
+          'lambda extensions, message: ${_typeName(e.type.token)}.from_json(extensions, message)',
+        ]));
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.constDecl('typed', 'gl_domain_error(e, ${_literal(thrown.responseKey)}, [${matchers.join(', ')}])'),
+          _cg.ifStatement(condition: 'typed is None', ifBlockStatements: ['raise']),
+          'raise typed from e',
+        ],
+      ),
+    ];
+  }
+
   // ── Entry points ───────────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
@@ -58,10 +80,12 @@ class PythonClientOperationSerializer {
       returnType: _returnType(def),
       statements: [
         ..._argumentDefaults(def),
-        _cg.constDecl(svQuery, _literal(_gqlSerializer.serializeQueryDefinition(def))),
-        _cg.constDecl(svFragmentNames, _stringList(_fragmentsFor(def).map((f) => f.tokenInfo.token))),
-        if (_variablesStatement(def).isNotEmpty) _variablesStatement(def),
-        capture ? 'return await $call' : 'return (await $call).data',
+        ..._throwingTypedErrors(def, [
+          _cg.constDecl(svQuery, _literal(_gqlSerializer.serializeQueryDefinition(def))),
+          _cg.constDecl(svFragmentNames, _stringList(_fragmentsFor(def).map((f) => f.tokenInfo.token))),
+          if (_variablesStatement(def).isNotEmpty) _variablesStatement(def),
+          capture ? 'return await $call' : 'return (await $call).data',
+        ]),
       ],
     );
   }
@@ -85,9 +109,11 @@ class PythonClientOperationSerializer {
       returnType: _returnType(def),
       statements: [
         ..._argumentDefaults(def),
-        if (_variablesStatement(def).isNotEmpty) _variablesStatement(def),
-        _cg.constDecl(svPartialQueries, '[\n${divided.map(_partialQuery).join(',\n').identPy()}\n]'),
-        capture ? 'return await $call' : 'return (await $call).data',
+        ..._throwingTypedErrors(def, [
+          if (_variablesStatement(def).isNotEmpty) _variablesStatement(def),
+          _cg.constDecl(svPartialQueries, '[\n${divided.map(_partialQuery).join(',\n').identPy()}\n]'),
+          capture ? 'return await $call' : 'return (await $call).data',
+        ]),
       ],
     );
   }
@@ -102,6 +128,7 @@ class PythonClientOperationSerializer {
       returnType: _returnType(def),
       statements: [
         ..._argumentDefaults(def),
+        ..._throwingTypedErrors(def, [
         _cg.constDecl(svQuery, _literal(_gqlSerializer.serializeQueryDefinition(def))),
         _cg.constDecl(svFragmentNames, _stringList(_fragmentsFor(def).map((f) => f.tokenInfo.token))),
         if (isSubscription || isUpload) _cg.constDecl(svFullQuery, 'self.assemble_query($svQuery, $svFragmentNames)'),
@@ -116,6 +143,7 @@ class PythonClientOperationSerializer {
             ]),
           ),
         _adapterCall(def),
+        ]),
       ],
     );
   }

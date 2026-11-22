@@ -792,6 +792,11 @@ class KotlinClientRuntimeSerializer {
     );
   }
 
+  GLClassModel generateDomainMatcherFile() => GLClassModel(
+        importDepencies: [_client.grammar.getTokenByKey('GraphLinkError')!],
+        body: kotlinDomainMatcher,
+      );
+
   GLClassModel generateDomainErrorFile() => const GLClassModel(body: kotlinDomainError);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────

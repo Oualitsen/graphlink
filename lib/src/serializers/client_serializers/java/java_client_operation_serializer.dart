@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -14,6 +15,40 @@ class JavaClientOperationSerializer {
   final JavaClientContext _ctx;
 
   JavaClientOperationSerializer(this._ctx);
+
+  List<String> _throwingTypedErrors(GLQueryDefinition def, GLImportContainer container, List<String> statements) {
+    final thrown = _ctx.grammar.thrownErrorsOf(def);
+    if (thrown == null) return statements;
+    final prefix = _ctx.serializer.importPrefix;
+    container.imports.addAll([
+      JavaImports.list,
+      JavaImports.arrays,
+      for (final error in thrown.errors) '$prefix.errors.${error.type.codeName}',
+    ]);
+    final matchers = thrown.errors
+        .map((e) => 'new GraphLinkDomainMatcher(Arrays.asList(${e.field.map((f) => '"$f"').join(', ')}), "${e.value}", '
+            '(extensions, message) -> ${e.type.codeName}.fromJson(extensions, message))')
+        .join(', ');
+    final resolve = 'GraphLinkDomainMatcher.resolve(%s, "${thrown.responseKey}", Arrays.asList($matchers))';
+    if (_ctx.flavor.isReactive) {
+      final last = statements.last.trim();
+      final single = last.substring('return '.length, last.length - 1);
+      return [
+        ...statements.sublist(0, statements.length - 1),
+        'return ${_ctx.flavor.onErrorMap(single, 'e', resolve.replaceFirst('%s', 'e'))};',
+      ];
+    }
+    return [
+      _ctx.codeGenUtils.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _ctx.codeGenUtils.ifStatement(condition: '!(e instanceof $clientExceptionName)', ifBlockStatements: ['throw e;']),
+          'throw (RuntimeException) ${resolve.replaceFirst('%s', 'e')};',
+        ],
+      ),
+    ];
+  }
 
 	String queryToMethod(GLQueryDefinition def, GLImportContainer container) {
 	    final dividedQueries = _ctx.gqlSerializer.divideQueryDefinition(def, _ctx.grammar);
@@ -40,7 +75,7 @@ class JavaClientOperationSerializer {
 	        returnType: 'public ${returnTypeByQueryType(def)}',
 	        methodName: def.codeName,
 	        arguments: getArguments(def),
-	        statements: [
+	        statements: _throwingTypedErrors(def, container, [
 	          ..._defaultCoalesces(def),
 	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
@@ -50,7 +85,7 @@ class JavaClientOperationSerializer {
 	            'return ${_ctx.codeGenUtils.callExpression('executeFull', ['${svQuery}', '${svFragmentNames}', '"${def.tokenInfo.token}"', '${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}', '$parseType::fromJson'])};'
 	          else
 	            'return executeData(${svQuery}, ${svFragmentNames}, "${def.tokenInfo.token}", ${def.arguments.isEmpty ? "Collections.emptyMap()" : svVariables}, $parseType::fromJson)${_getDataCall(def)};',
-	        ]);
+	        ]));
 	  }
 
 	  String _cachedQueryToMethod(GLQueryDefinition def, GLImportContainer container,
@@ -67,14 +102,14 @@ class JavaClientOperationSerializer {
 	        returnType: 'public ${returnTypeByQueryType(def)}',
 	        methodName: def.codeName,
 	        arguments: getArguments(def),
-	        statements: [
+	        statements: _throwingTypedErrors(def, container, [
 	          ..._defaultCoalesces(def),
 	          ..._nullChecks(def, container),
 	          if (def.arguments.isNotEmpty) generateVariables(def, container),
 	          'List<GraphLinkPartialQuery> ${svPartialQueries} = new ArrayList<>();',
 	          ...dividedQueries.map(serializePartialQueryJava),
 	          'return executeCached(${svPartialQueries}, "${def.tokenInfo.token}", "$directives", $parseType::fromJson, ${def.isCaptureErrors(_ctx.grammar) ? 'true' : 'false'})${_getDataCall(def)};',
-	        ]);
+	        ]));
 	  }
 
   /// Tail appended to an `execute*` call to unwrap the data payload.
@@ -157,14 +192,14 @@ class JavaClientOperationSerializer {
         'UploadProgressCallback onProgress'
       ];
 
-      final body = _ctx.codeGenUtils.block([
+      final body = _ctx.codeGenUtils.block(_throwingTypedErrors(def, container, [
         ...queryLine,
         'String ${svFullQuery} = assembleQuery(${svQuery}, ${svFragmentNames});',
         ..._defaultCoalesces(def),
         ..._nullChecks(def, container),
         if (def.arguments.isNotEmpty) generateVariables(def, container),
         _serializeMultipartAdapterCall(def, container),
-      ]);
+      ]));
 
       // overload without onProgress delegates to the full method with null
       final noProgressBody = _ctx.codeGenUtils.block([
@@ -184,13 +219,13 @@ class JavaClientOperationSerializer {
         returnType: returnType,
         methodName: methodName,
         arguments: getArguments(def),
-        statements: [
+        statements: _throwingTypedErrors(def, container, [
           ...queryLine,
           ..._defaultCoalesces(def),
           ..._nullChecks(def, container),
           if (def.arguments.isNotEmpty) generateVariables(def, container),
           _serializeAdapterCall(def),
-        ]);
+        ]));
   }
 
   String _serializeMultipartAdapterCall(

@@ -10,8 +10,9 @@ ArticleService`) and puts their business logic there.
 Target: version **5.1**. This plan adds an **opt-in** server layout that reorganizes the same
 generated output into a **ports & adapters ("close to hexagonal")** structure, plus one
 behavioral change (drop repository generation in this mode). It is deliberately a
-**packaging/relocation feature, not a rewrite** — no serializer changes, no method renames, no
-new runtime behavior.
+**packaging/relocation feature, not a rewrite** — no change to generated logic, no method
+renames, no new runtime behavior. Serializers still change where they compute `package`
+declarations and imports (`java_imports.dart`, `kotlin_imports.dart` and the Spring serializers).
 
 The name is honest about its limits: it is *close to* hexagonal, not textbook DDD hexagonal.
 See "Honest limitations" below.
@@ -49,11 +50,14 @@ GraphQL** and stays developer-owned. This is a hard limit, not a v1 shortcut.
 
 ### Trigger
 
-A new config key under `serverConfig.kotlinSpring` (and the other server targets as they
-adopt it):
+A new config key on `SpringServerConfigBase` (`config.dart`), so both `serverConfig.spring`
+(`SpringServerConfig`, Java) and `serverConfig.kotlinSpring` (`KotlinSpringServerConfig`) get it.
+Java and Kotlin share `JvmSpringServerSerializerBase`, `JvmSpringControllerSerializerBase` and
+`JvmSpringRestControllerSerializerBase`, so the relocation is done once for both:
 
 ```json
 { "serverConfig": { "kotlinSpring": { "architecture": "hexagonal" } } }
+{ "serverConfig": { "spring": { "architecture": "hexagonal" } } }
 ```
 
 - Default: **absent / `"layered"`** → current by-kind layout, unchanged. Existing users' output
@@ -77,7 +81,9 @@ adopt it):
   adapter/
     in/
       graphql/                 # driving adapters = today's controllers
-  config/                      # unchanged (RuntimeWiring, type resolver, ...)
+      rest/                    # driving adapters = REST controllers (`@glRest*`) + GraphLinkOpenApiController
+  config/                      # RuntimeWiring, type resolver, GraphLinkRest, GraphLinkSource,
+                               # subscription transport config (static runtime files)
   security/                    # unchanged
 ```
 
@@ -85,6 +91,8 @@ adopt it):
   developer creates them and fills them; regeneration never touches files GraphLink did not
   emit (existing non-destructive generation semantic).
 - **No repositories generated in this mode** (see decision D1).
+- `config/` imports `domain/` types (type resolver, wiring). That direction is allowed: outer
+  rings depend on the core, never the reverse.
 
 ### The purity bar we are committing to — **Bar B**
 
@@ -109,6 +117,11 @@ primitives and sibling `domain/` types. A stdlib `toJson(): Map<String, Any?>` o
 permitted and is not considered a framework leak. Enforce as a generation-time assertion or an
 integration-test grep (no `springframework`, `graphql.`, `jackson`, or generated
 `config/`/`controllers/` imports under `domain/`).
+
+**User decorators are out of scope of the bar.** `@glDecorators` lets a schema put arbitrary code
+(e.g. `@Entity`, `@JsonProperty`) in front of a generated type or field, which brings a framework
+import into `domain/`. That is the user's choice, not a GraphLink leak: the acceptance check runs on
+a schema without decorators, and the docs state that decorators can break the purity of `domain/`.
 
 ### Method names — unchanged
 
@@ -167,14 +180,15 @@ the `Article` service/controller pair. In hexagonal mode this grouping lands in 
 
 | Change | Effort |
 |---|---|
-| New `architecture` config key in `config.dart` (`KotlinSpringConfig`) | small |
+| New `architecture` config key in `config.dart` (`SpringServerConfigBase`, Java and Kotlin) | small |
 | Relocate generated files into hexagonal packages (path/package computation only) | medium |
-| Update generated `package` declarations + cross-package imports to new paths | medium |
+| Update generated `package` declarations + cross-package imports to new paths (package/import computation in serializers and `*_imports.dart`) | medium |
+| Place REST controllers, OpenAPI controller and static runtime files | small |
 | Ignore+warn on `generateRepositories` when `hexagonal` | small |
 | Bar B acceptance assertion / integration-test check | small |
 | Docs page + `llms.txt` / `llms-full.txt` / SEO sync | small |
 
-**Not in scope:** serializer changes, method renames, driven-side generation, any runtime
+**Not in scope:** changes to generated logic, method renames, driven-side generation, any runtime
 behavior change, rich-domain behavior.
 
 ---
@@ -182,9 +196,11 @@ behavior change, rich-domain behavior.
 ## Test plan
 
 - Unit: given `architecture: hexagonal`, assert each artifact's emitted `package` and output path
-  match the layout table; assert `generateRepositories` produces no repository files and warns.
-- Acceptance (Bar B): grep every `domain/**` file for forbidden imports (`springframework`,
+  match the layout table; for Java and Kotlin, including REST controllers, the OpenAPI controller
+  and the static runtime files; assert `generateRepositories` produces no repository files and warns.
+- Acceptance (Bar B, schema without `@glDecorators`): grep every `domain/**` file for forbidden imports (`springframework`,
   `graphql.`, `jackson`, generated `controllers`/`config` packages) → must be empty.
 - Regression: with the key absent, output is byte-identical to today's by-kind layout.
-- End-to-end: regenerate `server_integration_tests/kotlin/kotlin_server_blocking/` in hexagonal
-  mode, `./gradlew compileKotlin` → BUILD SUCCESSFUL, existing harness passes.
+- End-to-end: regenerate `server_integration_tests/servers/kotlin_server_blocking/` and
+  `servers/java_server/` in hexagonal mode; they compile and `ci-http-<server>` (faults, REST,
+  GraphQL suites) plus `ci-<server>-client` pass unchanged.

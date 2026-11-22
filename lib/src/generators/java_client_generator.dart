@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
@@ -114,6 +115,17 @@ Future<Set<String>> generateJavaClientClasses(
     futures.add(writeToFile(
       data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainErrorFile()),
       fileName: 'GraphLinkDomainError.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
+  if (parser.throwsTypedErrors) {
+    futures.add(writeToFile(
+      data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainMatcherFile()),
+      fileName: 'GraphLinkDomainMatcher.java',
       subdir: 'client',
       imports: [],
       destinationDir: destinationDir,

@@ -1,6 +1,7 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/dart_code_gen_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_fragment.dart';
@@ -38,6 +39,28 @@ class DartClientOperationSerializer {
   List<DividedQuery> _divideQuery(GLQueryDefinition def) =>
       _gqlSerializer.divideQueryDefinition(def, _grammar);
 
+  List<String> _throwingTypedErrors(GLQueryDefinition def, List<String> statements) {
+    final thrown = _grammar.thrownErrorsOf(def);
+    if (thrown == null) return statements;
+    final matchers = thrown.errors
+        .map((e) => _cg.callExpression('GraphLinkDomainMatcher', [
+              '[${e.field.map((s) => s.quote()).join(', ')}]',
+              e.value.quote(),
+              '(extensions, message) => ${e.type.codeName}.fromJson(extensions, message: message)',
+            ]))
+        .join(', ');
+    return [
+      _cg.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'e',
+        catchStatements: [
+          _cg.ifStatement(condition: 'e is! List<GraphLinkError>', ifBlockStatements: ['rethrow;']),
+          "throw glDomainError(e, '${thrown.responseKey}', [$matchers]);",
+        ],
+      ),
+    ];
+  }
+
   // ── Public entry points ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
@@ -61,7 +84,7 @@ class DartClientOperationSerializer {
         methodName: def.codeName,
         arguments: getArguments(def),
         async: true,
-        statements: [
+        statements: _throwingTypedErrors(def, [
           "const $svQuery = ${_serializer.stringLiteral(queryString)};",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           generateVariables(def),
@@ -69,7 +92,7 @@ class DartClientOperationSerializer {
             "return ${_cg.callExpression("executeFull", ["$svQuery", "$svFragmentNames", "'${def.tokenInfo}'", "${_variablesExpr(def)}", "$fullResponseToken.fromJson"])};"
           else
             "return (await executeData($svQuery, $svFragmentNames, '${def.tokenInfo}', ${_variablesExpr(def)}, $fullResponseToken.fromJson)).data!;",
-        ]);
+        ]));
   }
 
   String _cachedQueryMethodBody(GLQueryDefinition def) {
@@ -88,14 +111,14 @@ class DartClientOperationSerializer {
         methodName: def.codeName,
         arguments: getArguments(def),
         async: true,
-        statements: [
+        statements: _throwingTypedErrors(def, [
           generateVariables(def),
           _cg.constDecl(svPartialQueries, '${dividedQueries.map((e) => _serializePartialQuery(e)).toList()}'),
           if (isCaptureErrors)
             "return $executeCachedCall;"
           else
             "return (await $executeCachedCall).data!;",
-        ]);
+        ]));
   }
 
   String mutationToMethod(GLQueryDefinition def) {
@@ -112,7 +135,7 @@ class DartClientOperationSerializer {
         methodName: def.codeName,
         arguments: getArguments(def),
         async: !isSubscription,
-        statements: [
+        statements: _throwingTypedErrors(def, [
           "const $svQuery = ${_serializer.stringLiteral(queryText)};",
           'const $svFragmentNames = ${fragmentNames.isEmpty ? "<String>{};" : "<String>{${fragmentNames.join(", ")}};"}',
           // assembleQuery/payload are only needed for the subscription and upload
@@ -123,7 +146,7 @@ class DartClientOperationSerializer {
           if (isSubscription)
             _cg.constDecl(svPayload, _cg.callExpression("GraphLinkPayload", ["query: $svFullQuery", "operationName: '${def.tokenInfo}'", "variables: ${_variablesExpr(def)}"])),
           _serializeAdapterCall(def),
-        ]);
+        ]));
   }
 
   // ── Variable generation ────────────────────────────────────────────────────

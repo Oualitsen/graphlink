@@ -1063,4 +1063,35 @@ class GraphLinkDomainError implements Exception {
   @override
   String toString() => message.isEmpty ? runtimeType.toString() : '$runtimeType: $message';
 }
+
+class GraphLinkDomainMatcher {
+  final List<String> field;
+  final String value;
+  final GraphLinkDomainError Function(Map<String, dynamic> extensions, String message) build;
+
+  const GraphLinkDomainMatcher(this.field, this.value, this.build);
+}
+''';
+
+const dartDomainErrorMatch = r'''
+Object glDomainError(List<GraphLinkError> errors, String responseKey, List<GraphLinkDomainMatcher> matchers) {
+  for (final error in errors) {
+    final path = error.path;
+    if (path == null || path.isEmpty || path.first != responseKey) continue;
+    final entry = <String, dynamic>{'message': error.message, 'path': path, 'extensions': error.extensions};
+    for (final matcher in matchers) {
+      Object? found = entry;
+      for (final segment in matcher.field) {
+        found = found is Map ? found[segment] : null;
+      }
+      if (found != matcher.value) continue;
+      try {
+        return matcher.build(error.extensions ?? const <String, dynamic>{}, error.message);
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+  return errors;
+}
 ''';
