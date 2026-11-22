@@ -169,3 +169,12 @@ extension GLGrammarAnnotationExtension on GLParser {
     annotations.map((e) => e.token).forEach(mixin.removeDirectiveByName);
   }
 }
+
+extension GLGrammarDecoratorImportsExtension on GLParser {
+  List<String> decoratorImportsOf(Iterable<GLDirectivesMixin> elements, {bool skipGenerated = false}) => {
+        for (final e in elements)
+          for (final d in e.getDirectives(skipGenerated: skipGenerated))
+            if (d.token == glDecorators && d.getArgValueAsString(glImport) != null) d.getArgValueAsString(glImport)!,
+      }.toList()
+        ..sort();
+}

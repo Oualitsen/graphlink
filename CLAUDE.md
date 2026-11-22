@@ -29,6 +29,32 @@ subclasses are `DartCodeGenUtils`, `JavaCodeGenUtils`, `KotlinCodeGenUtils`,
 
 ---
 
+## Rule: decisions live in the IR, serializers only render
+
+Everything that can be *decided* (which decorator/annotation applies, on what, with which
+arguments, which import it needs, whether a member is skipped or nullable) is computed on the
+IR (`parser_extensions/` getters, or a directive added to the element) and unit-tested there
+with an inline schema. A serializer only turns an already-decided value into text with the
+language's `*CodeGenUtils`.
+
+- **Annotations and decorators.** User-declared `@glAnnotation` / `@glDecorators` flow through
+  `GLGrammarAnnotationExtension` (`handleAnnotations` / `convertAnnotationsToDecorators`).
+  The IR never emits syntax: each language passes a `String Function(GLDirectiveValue)` that
+  renders one annotation in its own syntax (Java/Kotlin/Dart today). The serializer then reads
+  the result with `serializeDecorators`. A new target or backend MUST wire this up, even if it
+  ignores `@glAnnotation` at first, and MUST NOT hand-build user decorators.
+- **Framework decorators** (`@Query`, `@ResolveField`, `@binding.field(...)`, `@router.get(...)`)
+  are not user data, but *which one* and *its arguments* are decided on the IR (a getter that
+  returns a small value, e.g. a resolver kind plus wire name). The serializer only renders it
+  and passes it to `createMethod(decorators: ...)`. No string gluing like `'$decorator\n$method'`.
+- **Test first.** A new rule gets an IR test (no generated string) before any serializer test.
+- Resolver bindings live in `gl_grammar_resolver_binding_extension.dart` (`GLResolverBinding`:
+  kind + wire name); NestJS and Ariadne (FastAPI, Django) render it. User annotations are
+  rendered by `typescript_annotation_serializer.dart` and `python_annotation_serializer.dart`
+  (`glImport` is a verbatim import line there). Express has no decorators.
+
+---
+
 ## Repository layout
 
 ```
@@ -45,6 +71,7 @@ lib/src/
     gl_grammar_maps_to_extension.dart, gl_grammar_mapped_to_type_extension.dart  # @glMapsTo / @glMapField
     gl_grammar_rest{,_arguments,_validation,_response,_discriminator,_nullable,_server}_extension.dart  # @glRest*
     gl_grammar_openapi_extension.dart  # buildOpenApiDocument(): every IR → OpenAPI mapping rule
+    gl_grammar_resolver_binding_extension.dart  # GLResolverBinding: which resolver decorator a root/type field gets
     gl_grammar_{scalar_codec,strict,throwing_decode,source,intercept,defaults,hoist_args}_extension.dart
     gl_grammar_{keyword,member_conflict,normalization,recursion,directive_validation}_extension.dart
     gl_validation_extension.dart   # validateSemantics(): schema validation rules
