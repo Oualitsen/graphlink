@@ -407,3 +407,41 @@ class GraphLinkWebSocketRouter:
                 await send({"type": "lifespan.shutdown.complete"})
                 return
 ''';
+
+const pythonServerDomainError = r'''
+from typing import Any, Dict, List, Optional, Tuple
+
+
+class GraphLinkDomainError(Exception):
+    message: str
+
+    def __init__(self, message: str = "") -> None:
+        super().__init__(message)
+        self.message = message
+
+
+def _set_path(target: Dict[str, Any], path: List[str], value: Any) -> None:
+    node = target
+    for segment in path[:-1]:
+        nxt = node.get(segment)
+        if not isinstance(nxt, dict):
+            nxt = {}
+            node[segment] = nxt
+        node = nxt
+    node[path[-1]] = value
+
+
+def domain_error_entry(error: GraphLinkDomainError) -> Dict[str, Any]:
+    wire = getattr(error, "wire")
+    entry: Dict[str, Any] = {"extensions": dict(getattr(error, "to_json")())}
+    _set_path(entry, wire["field"], wire["value"])
+    return entry
+
+
+def domain_error_response(error: GraphLinkDomainError) -> Tuple[int, Dict[str, Any]]:
+    wire = getattr(error, "wire")
+    body: Dict[str, Any] = {**getattr(error, "to_json")(), "message": error.message}
+    if wire["rest_field"] is not None:
+        _set_path(body, wire["rest_field"], wire["value"])
+    return (wire["status"] or 400), body
+''';

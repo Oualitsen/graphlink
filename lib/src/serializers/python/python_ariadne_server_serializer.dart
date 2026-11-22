@@ -88,7 +88,24 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
 
   String serializeLoaderRuntime() => ariadneLoaderRuntime;
 
-  String serializeGuards() => ariadneGuards;
+  String serializeGuards() {
+    if (grammar.errors.isEmpty) return ariadneGuards;
+    return ariadneGuards
+        .replaceFirst('from graphql import (', 'from .graph_link_domain_error import GraphLinkDomainError, domain_error_entry\nfrom graphql import (')
+        .replaceFirst('    formatted: Dict[str, Any] = {"message": error.message}\n', '''    original = error.original_error
+    if isinstance(original, GraphLinkDomainError):
+        domain: Dict[str, Any] = {"message": original.message}
+        if error.locations:
+            domain["locations"] = [{"line": l.line, "column": l.column} for l in error.locations]
+        if error.path:
+            domain["path"] = list(error.path)
+        domain.update(domain_error_entry(original))
+        return domain
+    formatted: Dict[str, Any] = {"message": error.message}
+''');
+  }
+
+  String serializeDomainErrorRuntime() => pythonServerDomainError;
 
   String serializeWsHandler() => ariadneWsHandler;
 

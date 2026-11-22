@@ -1,4 +1,5 @@
 import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -355,10 +356,23 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
         name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
   }
 
+  List<String> _serverWire(GLErrorDefinition def, List<GLField> fields) {
+    String list(List<String>? items) => items == null ? 'null' : 'listOf(${items.map((e) => '"$e"').join(', ')})';
+    return [
+      'override fun toJson(): Map<String, Any?> = mapOf(${fields.map((f) => '"${f.name.token}" to ${toJsonExpr(f.type, f.codeName)}').join(', ')})',
+      'override fun wireField(): List<String> = ${list(def.field)}',
+      'override fun wireRestField(): List<String>? = ${list(def.restField)}',
+      'override fun wireValue(): String = "${def.value}"',
+      'override fun wireStatus(): Int? = ${def.status ?? 'null'}',
+      '',
+    ];
+  }
+
   String serializeErrorDefinition(GLErrorDefinition def) {
     final type = def.type;
     final name = type.codeName;
     final fields = type.getSerializableFields(grammar.mode);
+    final server = grammar.mode == CodeGenerationMode.server;
     final params = [
       ...fields.map((f) => 'val ${f.codeName}: ${serializeType(f.type)}${f.type.nullable ? ' = null' : ''}'),
       'message: String = ""',
@@ -377,9 +391,12 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
       name: name,
       params: params,
       interfaces: ['$kotlinDomainErrorBase(message)'],
-      body: [codeGenUtils.companionObject([fromJson])],
+      body: [
+        if (server) ..._serverWire(def, fields),
+        codeGenUtils.companionObject([fromJson]),
+      ],
     );
-    return serializeWithImport(type, '${serializeImport('$importPrefix.client.$kotlinDomainErrorBase')}\n\n$source');
+    return serializeWithImport(type, '${serializeImport('$importPrefix.${server ? 'errors' : 'client'}.$kotlinDomainErrorBase')}\n\n$source');
   }
 
   String serializeInterface(GLInterfaceDefinition def,

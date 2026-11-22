@@ -447,7 +447,15 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
       "import { ArgumentsHost, Catch, ExceptionFilter } from '@nestjs/common';",
       "import type { Request, Response } from 'express';",
       if (restFormat) "import { RestError, sendError } from './rest/support.js';",
+      if (restFormat && hasDomainErrors) "import { GraphLinkDomainError, domainErrorResponse } from './errors/graph-link-domain-error.js';",
     ];
+    final domainErrorResponse = restFormat && hasDomainErrors
+        ? _cg.ifStatement(condition: 'error instanceof GraphLinkDomainError', ifBlockStatements: [
+            'const failure = domainErrorResponse(error);',
+            'res.status(failure.status).json(failure.body);',
+            'return undefined;',
+          ])
+        : null;
     final handling = [
       if (graphql && restFormat)
         'if (req.path === graphqlPath) ${_cg.block([
@@ -471,6 +479,7 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
         _cg.constDecl('req', 'http.getRequest<Request>()'),
         _cg.constDecl('res', 'http.getResponse<Response>()'),
         _cg.ifStatement(condition: 'res.headersSent', ifBlockStatements: ['res.end();', 'return undefined;']),
+        if (domainErrorResponse != null) domainErrorResponse,
         ...handling,
         'return undefined;',
       ],
@@ -510,6 +519,7 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
         ],
         "import { GraphLinkContext } from './context.js';",
         "import { typeDefs } from './typeDefs.js';",
+        if (hasDomainErrors) "import { formatDomainError } from './errors/graph-link-domain-error.js';",
         "import { defaultMaxQueryDepth, queryDepthGuard${hasSubscriptions ? ', subscribeErrors' : ''} } from './graphlink-request-guards.js';",
       ],
       "import { GRAPHLINK_OPTIONS, GraphLinkModuleOptions } from './graphlink.options.js';",
@@ -616,6 +626,7 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
         'csrfPrevention: false,',
       ],
       'includeStacktraceInErrorResponses: false,',
+      if (hasDomainErrors) 'formatError: formatDomainError,',
       if (hasSubscriptions)
         "subscriptions: ${_cg.block([
               "'graphql-ws': ${_cg.block([

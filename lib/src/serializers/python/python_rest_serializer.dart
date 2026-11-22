@@ -54,7 +54,19 @@ abstract class PythonRestSerializer {
 
   String serializeCore() => pythonRestCore.trimLeft();
 
-  String serializeSupport() => supportRuntime.trimLeft();
+  String get domainJsonResponse;
+
+  String serializeSupport() {
+    final support = supportRuntime.trimLeft();
+    if (grammar.errors.isEmpty) return support;
+    return support
+        .replaceFirst('from .core import (', 'from ..runtime.graph_link_domain_error import GraphLinkDomainError, domain_error_response\nfrom .core import (')
+        .replaceFirst('        except RestError as error:\n', '''        except GraphLinkDomainError as error:
+            status, body = domain_error_response(error)
+            return $domainJsonResponse
+        except RestError as error:
+''');
+  }
 
   String serializeDownloads() => downloadRuntime.trimLeft();
 

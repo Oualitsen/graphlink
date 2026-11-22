@@ -1,0 +1,22 @@
+# Typed domain errors thrown by the services. Consumed only by the servers that implement them (their config.json
+# lists it), exercised over raw HTTP by server_errors/. Cross-language: no language-specific directives.
+
+type ErrItem {
+    id: ID!
+}
+
+type ErrNotFound @glError(status: 404) {
+    id: ID!
+}
+
+type ErrForbidden @glError(field: "extensions.kind", value: "forbidden") {
+}
+
+type ErrConflict @glError(status: 409, value: "CONFLICT") {
+    reason: String!
+}
+
+extend type Query {
+    errProbe(id: ID!): ErrItem! @glThrows(errors: [ErrNotFound, ErrForbidden])
+    errRest(id: ID!): ErrItem! @glRest(path: "/rest/errors/{id}") @glThrows(errors: [ErrNotFound, ErrConflict])
+}

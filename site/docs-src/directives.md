@@ -201,8 +201,8 @@ public class GetUserFullResponse {
 **Target:** CLIENT · **Placement:** `OBJECT`
 
 !!! note "Preview"
-    GraphQL and REST operations throw these classes when they declare them with [`@glThrows`](#glthrows). The server
-    side comes in a later release.
+    GraphQL and REST operations throw these classes when they declare them with [`@glThrows`](#glthrows). On a generated
+    server the service throws them too (see [On the server](#on-the-server)).
 
 Declares a business error. The type becomes an **exception class** in every client, with its fields as typed members,
 and is not a type of your API: it is never a field type, an argument, an input, an interface implementer or a union
@@ -314,6 +314,20 @@ type Query {
 
 The generated OpenAPI document lists each REST error as a response (`status` and a schema with its fields, `message` and
 the discriminator; two errors with one status become a `oneOf`, an error without a status is the `default` response).
+
+### On the server
+
+The generated servers (Spring Java and Kotlin, blocking and reactive, Express, NestJS, FastAPI and Django) generate the
+same classes under `errors/`, so a service just throws one: `throw new ArticleNotFound(id, "Article 42 not found")`.
+The server answers the wire convention the clients match, with no code from you:
+
+| Protocol | Answer |
+|---|---|
+| GraphQL | an `errors` entry with the exception's `message`, `path` of the field, and `extensions` holding the fields plus the discriminator (default `code` = the type name, or the `field` path with `value`) |
+| REST | the `status` of the error (`400` if it has none) and a JSON body with the fields, `message` and, unless the error is status-only, the discriminator (`code` by default) |
+
+Any other exception keeps today's behavior (an internal error). A generated server does not require `@glThrows` to
+throw an error. A `field` that starts outside `extensions` is written under `extensions` too.
 
 The schema is rejected if `@glThrows` is on a nested field, a subscription, a type, a custom `query` / `mutation`
 operation, if it names a type that is not an `@glError`, repeats one, or lists two errors that match the same way.

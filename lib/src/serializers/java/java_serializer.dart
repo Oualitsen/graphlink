@@ -1,3 +1,4 @@
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
@@ -686,6 +687,7 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
     final type = def.type;
     final name = type.codeName;
     final fields = type.getSerializableFields(grammar.mode);
+    final server = grammar.mode == CodeGenerationMode.server;
     type
       ..addImport(JavaImports.map)
       ..addImport(JavaImports.suppressWarnings);
@@ -743,9 +745,39 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
             ');',
           ],
         ),
+        if (server) ..._serverWire(def, type, fields),
       ],
     );
-    return serializeWithImport(type, '${serializeImport('$importPrefix.client.$javaDomainErrorBase')}\n\n$source');
+    return serializeWithImport(type, '${serializeImport('$importPrefix.${server ? 'errors' : 'client'}.$javaDomainErrorBase')}\n\n$source');
+  }
+
+  List<String> _serverWire(GLErrorDefinition def, GLTypeDefinition type, List<GLField> fields) {
+    type
+      ..addImport(JavaImports.list)
+      ..addImport(JavaImports.arrays)
+      ..addImport('java.util.LinkedHashMap');
+    String list(List<String>? items) => items == null ? 'null' : 'Arrays.asList(${items.map((e) => '"$e"').join(', ')})';
+    String method(String returnType, String name, String value) => '@Override\n${codeGenUtils.createMethod(
+      returnType: 'public $returnType',
+      methodName: name,
+      statements: ['return $value;'],
+    )}';
+    return [
+      '',
+      '@Override\n${codeGenUtils.createMethod(
+        returnType: 'public Map<String, Object>',
+        methodName: 'toJson',
+        statements: [
+          'Map<String, Object> map = new LinkedHashMap<>();',
+          ...fields.map((f) => 'map.put("${f.name.token}", ${toJsonExpr(f.type, f.codeName, context: type)});'),
+          'return map;',
+        ],
+      )}',
+      method('List<String>', 'wireField', list(def.field)),
+      method('List<String>', 'wireRestField', list(def.restField)),
+      method('String', 'wireValue', '"${def.value}"'),
+      method('Integer', 'wireStatus', def.status == null ? 'null' : '${def.status}'),
+    ];
   }
 
   String generateEqualsAndHashCode(GLTypeDefinition def) {

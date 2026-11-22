@@ -37,7 +37,20 @@ class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase
 
   String serializeRestRouter({OpenApiOutput? openApi}) => _rest.serializeRestRouter(openApi: openApi);
 
-  String serializeRestSupport() => expressRestSupport;
+  String serializeRestSupport() {
+    if (!hasDomainErrors) return expressRestSupport;
+    return "import { GraphLinkDomainError, domainErrorResponse } from '../errors/graph-link-domain-error.js';\n${expressRestSupport.replaceFirst(
+      '         if (error instanceof RestError) {',
+      '''         if (error instanceof GraphLinkDomainError) {
+            const failure = domainErrorResponse(error);
+            res.status(failure.status).json(failure.body);
+            return;
+         }
+         if (error instanceof RestError) {''',
+    )}";
+  }
+
+
 
   // ── services/XxxService.ts ────────────────────────────────────────────────
 
@@ -392,6 +405,7 @@ class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase
       "import { DocumentNode, GraphQLError, Kind, parse, SelectionSetNode } from 'graphql';",
       "import cors from 'cors';",
       "import { ApolloServer } from '@apollo/server';",
+      if (hasDomainErrors && !grammar.restOnly) "import { formatDomainError } from './errors/graph-link-domain-error.js';",
       "import { expressMiddleware } from '@apollo/server/express4';",
       if (hasSubscriptions) ...[
         "import { createServer as createHttpServer, Server } from 'http';",
@@ -525,6 +539,7 @@ class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase
         _cg.constDecl('server', 'new ApolloServer<GraphLinkContext>(${_cg.block([
           'schema,',
           'includeStacktraceInErrorResponses: false,',
+          if (hasDomainErrors) 'formatError: formatDomainError,',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',
@@ -549,6 +564,7 @@ class ExpressApolloServerSerializer extends TypeScriptApolloServerSerializerBase
           'typeDefs,',
           'resolvers: buildResolvers($resolverArgs),',
           'includeStacktraceInErrorResponses: false,',
+          if (hasDomainErrors) 'formatError: formatDomainError,',
           // graphql-upload sends multipart/form-data, which Apollo's CSRF prevention
           // blocks by default unless the client sends a preflight-style header.
           if (hasUploads) 'csrfPrevention: false,',

@@ -44,6 +44,18 @@ def substitute(value, captured):
     return value
 
 
+ERRORS_SUITE_FIELDS = {"errProbe", "errRest"}
+
+
+def without_errors_suite(value):
+    """The fields of schema_errors/ belong to server_errors/; the servers that load it must still match these cases."""
+    if isinstance(value, list):
+        return [without_errors_suite(v) for v in value if not (isinstance(v, dict) and v.get("name") in ERRORS_SUITE_FIELDS)]
+    if isinstance(value, dict):
+        return {k: without_errors_suite(v) for k, v in value.items()}
+    return value
+
+
 def squash(text):
     return re.sub(r"\s+", "", text)
 
@@ -158,7 +170,7 @@ def check_response(step, doc, captured, label):
         if errors[0].get("path") != expect["errorPath"]:
             problems.append(f"{label}: error path {errors[0].get('path')!r} != {expect['errorPath']!r}")
     if "data" in expect:
-        diff = matches(expect["data"], doc.get("data") if isinstance(doc, dict) else None)
+        diff = matches(expect["data"], without_errors_suite(doc.get("data")) if isinstance(doc, dict) else None)
         if diff:
             problems.append(f"{label}: {diff}")
     for name, dotted in step.get("capture", {}).items():

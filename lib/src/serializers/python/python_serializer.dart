@@ -1,4 +1,5 @@
 import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
+import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
@@ -263,9 +264,25 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
             'return cls(\n${fromJsonArgs.join(',\n').identPy()}\n)',
           ],
         ),
+        if (grammar.mode == CodeGenerationMode.server) ...[
+          '',
+          'wire = ${_wireLiteral(def)}',
+          '',
+          codeGenUtils.createMethod(
+            methodName: 'to_json',
+            arguments: ['self'],
+            returnType: 'Dict[str, Any]',
+            statements: ['return {${fields.map((f) => '"${f.name.token}": ${toJsonExpr(f.type, 'self.${f.codeName}')}').join(', ')}}'],
+          ),
+        ],
       ],
     );
     return serializeWithImport(type, 'from ..$runtimeDir.$pythonDomainErrorModule import $pythonDomainErrorBase\n\n\n$source');
+  }
+
+  String _wireLiteral(GLErrorDefinition def) {
+    String list(List<String>? items) => items == null ? 'None' : '[${items.map((e) => '"$e"').join(', ')}]';
+    return '{"field": ${list(def.field)}, "rest_field": ${list(def.restField)}, "value": "${def.value}", "status": ${def.status ?? 'None'}}';
   }
 
   List<String> _equalsAndHash(GLTypeDefinition def, Set<String> identityFields) {

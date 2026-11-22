@@ -159,7 +159,7 @@ def check_spec(port, spec_path, failures):
     expected = rest_operations()
     missing = sorted(expected - set(operations))
     schema = open(os.path.join(HERE, "..", "schema_rest", "rest.gql"), encoding="utf-8").read()
-    unknown = sorted(op for op in operations if not re.search(rf"\b{re.escape(str(op))}\b", schema))
+    unknown = sorted(op for op in operations if op != "errRest" and not re.search(rf"\b{re.escape(str(op))}\b", schema))
     if missing:
         failures.append(f"operations missing from the spec: {missing}")
     if unknown:
