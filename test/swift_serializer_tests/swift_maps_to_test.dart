@@ -183,19 +183,7 @@ void main() {
       expect(lines, containsAll(['street: street,', 'city: city,', 'country: country']));
     });
 
-    test('fromAddress() is a static factory with an unlabeled Address param', () {
-      final lines = _lines(_case1, 'CreateAddressInput');
-      expect(lines, contains('public static func fromAddress(_ address: Address) -> CreateAddressInput {'));
-    });
 
-    test('fromAddress() reads all fields from the Address instance', () {
-      final lines = _lines(_case1, 'CreateAddressInput');
-      expect(lines, containsAll([
-        'street: address.street,',
-        'city: address.city,',
-        'country: address.country',
-      ]));
-    });
   });
 
   group('Case 2 — @glMapField aliases', () {
@@ -209,19 +197,7 @@ void main() {
       expect(lines, containsAll(['firstName: fname,', 'lastName: lname,', 'email: email', 'id: id,']));
     });
 
-    test('fromPerson() takes an unlabeled person: Person first param', () {
-      final lines = _lines(_case2, 'CreatePersonInput');
-      expect(lines, contains('public static func fromPerson(_ person: Person) -> CreatePersonInput {'));
-    });
 
-    test('fromPerson() reverses aliases: firstName→fname, lastName→lname', () {
-      final lines = _lines(_case2, 'CreatePersonInput');
-      expect(lines, containsAll([
-        'fname: person.firstName,',
-        'lname: person.lastName,',
-        'email: person.email',
-      ]));
-    });
   });
 
   group('Case 3 — nullability mismatch (nullable input → non-null type)', () {
@@ -235,15 +211,7 @@ void main() {
       expect(lines, contains('role: role ?? defaultRole'));
     });
 
-    test('fromUser() takes an unlabeled user: User — no extra params needed', () {
-      final lines = _lines(_case3, 'CreateUserInput');
-      expect(lines, contains('public static func fromUser(_ user: User) -> CreateUserInput {'));
-    });
 
-    test('fromUser() maps username and role directly', () {
-      final lines = _lines(_case3, 'CreateUserInput');
-      expect(lines, containsAll(['username: user.username,', 'role: user.role']));
-    });
   });
 
   group('Case 4 — input-only fields', () {
@@ -260,21 +228,7 @@ void main() {
       expect(toAccountBlock, isNot(contains('password')));
     });
 
-    test('fromAccount() takes an unlabeled account param plus both input-only params', () {
-      final lines = _lines(_case4, 'RegisterAccountInput');
-      expect(lines, contains(
-          'public static func fromAccount(_ account: Account, password: String, confirmPassword: String) -> RegisterAccountInput {'));
-    });
 
-    test('fromAccount() assigns email/displayName from account and passes through input-only fields', () {
-      final lines = _lines(_case4, 'RegisterAccountInput');
-      expect(lines, containsAll([
-        'email: account.email,',
-        'displayName: account.displayName,',
-        'password: password,',
-        'confirmPassword: confirmPassword',
-      ]));
-    });
   });
 
   group('Nested mapped input — auto-mapped via .toPeriod()', () {
@@ -289,10 +243,6 @@ void main() {
       expect(body, contains('maintenancePeriod.toPeriod()'));
     });
 
-    test('fromEquipment() reverses via PeriodInput.fromPeriod()', () {
-      final body = _lines(_nestedMapped, 'EquipmentInput').join('\n');
-      expect(body, contains('PeriodInput.fromPeriod('));
-    });
   });
 
   group('Nested unmapped input — becomes required param', () {
@@ -313,11 +263,6 @@ void main() {
       expect(body, contains('maintenancePeriod?.toPeriod()'));
     });
 
-    test('fromEquipment() uses Optional.map (plain .map, no ?) for nullable reverse mapping', () {
-      final body = _lines(_nestedNullable, 'EquipmentInput').join('\n');
-      expect(body, contains('.map { PeriodInput.fromPeriod(\$0) }'));
-      expect(body, isNot(contains('?.map { PeriodInput.fromPeriod')));
-    });
   });
 
   group('String and ID fields sharing serialized type are auto-mapped', () {

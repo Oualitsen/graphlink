@@ -15,6 +15,7 @@
     "outputDir": "lib/generated",
     "clientConfig": {
         "dart": {
+            "generateMappers": true,
             "packageName": "graphlink_gl_mapping_example",
             "generateAllFieldsFragments": true,
             "nullableFieldsRequired": false,

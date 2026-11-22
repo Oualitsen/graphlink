@@ -45,15 +45,6 @@ class MappingCase9Test {
         assertThat(input.toItemTag(Collections.emptyList()).labels()).isEmpty();
     }
 
-    @Test
-    void fromItemTag_reversesLabels() {
-        ItemTag tag = new ItemTag("it-4", Arrays.asList("green", "yellow"));
-        ItemTagInput result = ItemTagInput.fromItemTag(tag);
-
-        assertThat(result.id()).isEqualTo("it-4");
-        assertThat(result.labels()).containsExactly("green", "yellow");
-    }
-
     // CartItemInput — toCartItem / fromCartItem
 
     @Test
@@ -77,33 +68,4 @@ class MappingCase9Test {
         assertThatCode(() -> input.toCartItem(Collections.emptyList())).doesNotThrowAnyException();
     }
 
-    @Test
-    void fromCartItem_passesTagsParamThrough() {
-        CartItem cartItem = new CartItem("ci-3", Arrays.asList(new ItemTag("it-6", Arrays.asList("x"))));
-        List<ItemTagInput> tagsParam = Arrays.asList(new ItemTagInput("it-6", Arrays.asList("x")));
-
-        CartItemInput result = CartItemInput.fromCartItem(cartItem, tagsParam);
-
-        assertThat(result.id()).isEqualTo("ci-3");
-        assertThat(result.tags()).isSameAs(tagsParam);
-    }
-
-    @Test
-    void fromCartItem_withNullLabelsInTagsParamDoesNotThrow() {
-        CartItem cartItem = new CartItem("ci-4", Arrays.asList(new ItemTag("it-7", Arrays.asList("y"))));
-        List<ItemTagInput> tagsParam = Arrays.asList(new ItemTagInput("it-7", null));
-
-        assertThatCode(() -> CartItemInput.fromCartItem(cartItem, tagsParam)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void roundTrip_itemTag_defaultLabelsPreserved() {
-        ItemTagInput original = new ItemTagInput("it-8", null);
-        ItemTag converted = original.toItemTag(Arrays.asList("fallback"));
-        ItemTagInput roundTrip = ItemTagInput.fromItemTag(converted);
-
-        assertThat(roundTrip.id()).isEqualTo("it-8");
-        // fromItemTag copies labels from ItemTag → ["fallback"]
-        assertThat(roundTrip.labels()).containsExactly("fallback");
-    }
 }

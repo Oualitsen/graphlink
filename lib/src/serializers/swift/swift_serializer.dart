@@ -178,9 +178,6 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
     final extraBody = [
       'public ${_generateToJson(fields, def)}',
       'public static ${_generateFromJson(fields, def.codeName, def)}',
-      // @glMapsTo: toXxx()/fromXxx() slot into the same struct body flatly —
-      // unlike Kotlin, Swift has no separate companion-object namespace to
-      // route the static fromXxx() into, so both go straight into extraBody.
       ...generateMappingMethods(def),
     ];
 
@@ -280,6 +277,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       extraBody.add('public ${_generateToJson(fields, def)}');
       extraBody.add('public static ${_generateFromJson(fields, def.codeName, def)}');
     }
+    extraBody.addAll(generateMappingMethods(def));
 
     // Deduplicate by name to avoid "redundant conformance" compile errors.
     final ifaces = def.interfaceNames.map((e) => resolveCodeName(e.token)).toSet().toList();

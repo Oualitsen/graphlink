@@ -34,23 +34,4 @@ class MappingCase2Test {
         assertThat(result.getId()).isEqualTo("person-42");
     }
 
-    @Test
-    void fromPerson_reversesAliases() {
-        Person person = new Person("p-1", "Alice", "Cooper", "alice@example.com");
-        CreatePersonInput result = CreatePersonInput.fromPerson(person);
-
-        assertThat(result.getFname()).isEqualTo("Alice");    // firstName → fname
-        assertThat(result.getLname()).isEqualTo("Cooper");   // lastName → lname
-        assertThat(result.getEmail()).isEqualTo("alice@example.com");
-    }
-
-    @Test
-    void toPerson_thenFromPerson_preservesAliasedFields() {
-        CreatePersonInput original = new CreatePersonInput("Bob", "Marley", "bob@example.com");
-        CreatePersonInput roundTrip = CreatePersonInput.fromPerson(original.toPerson("id-99"));
-
-        assertThat(roundTrip.getFname()).isEqualTo(original.getFname());
-        assertThat(roundTrip.getLname()).isEqualTo(original.getLname());
-        assertThat(roundTrip.getEmail()).isEqualTo(original.getEmail());
-    }
 }

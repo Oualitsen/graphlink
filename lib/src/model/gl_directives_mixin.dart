@@ -3,6 +3,8 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
+const _repeatableDirectives = {glMapsTo, glMapField};
+
 mixin GLDirectivesMixin {
   List<GLDirectiveValue>? _cachedDirectives;
   bool? _containsSkipOrIncludeDirective;
@@ -10,9 +12,13 @@ mixin GLDirectivesMixin {
 
   List<GLDirectiveValue> getDirectives({bool skipGenerated = false}) {
     final all = _cachedDirectives ??=
-        (_directives == null && _decorators == null)
+        (_directives == null && _decorators == null && _repeated == null)
             ? const []
-            : [...?_directives?.values, ...?_decorators];
+            : [
+                ...?_directives?.values,
+                ...?_decorators,
+                for (final list in _repeated?.values ?? const <List<GLDirectiveValue>>[]) ...list,
+              ];
     if (skipGenerated) {
       return all.where((d) => !d.generated).toList(growable: false);
     }
@@ -30,6 +36,8 @@ mixin GLDirectivesMixin {
   List<GLDirectiveValue>? _decorators;
 
   Map<String, GLDirectiveValue>? _directives;
+
+  Map<String, List<GLDirectiveValue>>? _repeated;
 
   List<GLDirectiveValue> getAnnotations({CodeGenerationMode? mode}) {
     return getDirectives().where((d) => d.getArgValueAsBool(glAnnotation)).where((d) {
@@ -52,6 +60,11 @@ mixin GLDirectivesMixin {
       _cachedDirectives = null;
       return;
     }
+    if (_repeatableDirectives.contains(directiveValue.token)) {
+      (_repeated ??= {}).putIfAbsent(directiveValue.token, () => []).add(directiveValue);
+      _cachedDirectives = null;
+      return;
+    }
     final directives = _directives ??= {};
     if (directives.containsKey(directiveValue.token)) {
       throw ParseException("Directive '${directiveValue.tokenInfo}' already exists",
@@ -62,21 +75,33 @@ mixin GLDirectivesMixin {
   }
 
   void addDirectiveIfAbsent(GLDirectiveValue directiveValue) {
+    if (_repeatableDirectives.contains(directiveValue.token)) {
+      addDirective(directiveValue);
+      return;
+    }
     (_directives ??= {}).putIfAbsent(directiveValue.token, () => directiveValue);
     _cachedDirectives = null;
   }
 
   void removeDirectiveByName(String name) {
     _directives?.remove(name);
+    _repeated?.remove(name);
     _cachedDirectives = null;
   }
 
   GLDirectiveValue? getDirectiveByName(String name) {
-    return _directives?[name];
+    return _directives?[name] ?? _repeated?[name]?.first;
+  }
+
+  List<GLDirectiveValue> getDirectivesByName(String name) {
+    final repeated = _repeated?[name];
+    if (repeated != null) return repeated;
+    final single = _directives?[name];
+    return single == null ? const [] : [single];
   }
 
   bool hasDirective(String name) {
-    return _directives?.containsKey(name) ?? false;
+    return (_directives?.containsKey(name) ?? false) || (_repeated?.containsKey(name) ?? false);
   }
 
   bool get isExternal => hasDirective(glExternal);

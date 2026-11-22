@@ -14,7 +14,9 @@ import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_mapping_serializer.dart';
 import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/utils.dart';
@@ -43,6 +45,12 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
     super.typeMapOverrides = const {},
     required super.importPrefix,
   });
+
+  @override
+  GLMappingSerializer get mapping => TypeScriptMappingSerializer(this);
+
+  String? wireTypeNameOf(GLTypeDefinition def) =>
+      def.interfaces.isNotEmpty && !def.isSyntheticImplementation ? (def.jsonTypeName ?? def.token) : null;
 
   @override
   String stringLiteral(String decoded) =>
@@ -218,6 +226,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
       statements: [
         _generateTypeToJson(def.codeName, fields, omitNulls: def.isOneOf),
         _generateTypeFromJson(def.codeName, fields, def),
+        ...generateMappingMethods(def),
       ],
     ));
     return buffer.toString();
@@ -275,8 +284,8 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
   /// GraphQL `type` → `export interface Foo { readonly field: Type; }`
   String _serializeType(GLTypeDefinition def) {
     final fields = def.getSerializableFields(grammar.mode);
-    final hasRealInterface = def.interfaces.isNotEmpty;
-    final wireTypeName = hasRealInterface && !def.isSyntheticImplementation ? (def.jsonTypeName ?? def.token) : null;
+    final wireTypeName = wireTypeNameOf(def);
+    final mappingMethods = generateMappingMethods(def);
     final buf = StringBuffer();
     buf.write(codeGenUtils.createInterface(
       interfaceName: def.codeName,
@@ -286,13 +295,16 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
       ],
     ));
     buf.writeln();
-    if (!shouldSkipJsonMethods(def)) {
+    if (!shouldSkipJsonMethods(def) || mappingMethods.isNotEmpty) {
       buf.write(codeGenUtils.createNamespace(
         namespaceName: def.codeName,
         statements: [
-          _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
-          _generateTypeFromJson(def.codeName, fields, def,
-              wireTypeName: wireTypeName, requiredChecksFor: def.token),
+          if (!shouldSkipJsonMethods(def)) ...[
+            _generateTypeToJson(def.codeName, fields, wireTypeName: wireTypeName),
+            _generateTypeFromJson(def.codeName, fields, def,
+                wireTypeName: wireTypeName, requiredChecksFor: def.token),
+          ],
+          ...mappingMethods,
         ],
       ));
     }

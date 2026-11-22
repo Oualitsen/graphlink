@@ -2,7 +2,6 @@ import 'package:graphlink/src/serializers/gl_mapping_serializer.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
 import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
@@ -197,11 +196,7 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
     instanceMethods.add(_generateToJson(fields, def));
     companionMethods.add(_generateFromJson(fields, def.codeName, def));
 
-    // @glMapsTo instance methods (toXxx) and companion methods (fromXxx)
-    final toMethods = _generateToMappingMethods(def);
-    final fromMethods = _generateFromMappingMethods(def);
-    instanceMethods.addAll(toMethods);
-    companionMethods.addAll(fromMethods);
+    instanceMethods.addAll(generateMappingMethods(def));
 
     if (!inputsAsDataClass) {
       instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));
@@ -336,6 +331,7 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
     if (!typesAsDataClass) {
       instanceMethods.addAll(_generateEqualsHashCode(def.codeName, fields, def));
     }
+    instanceMethods.addAll(generateMappingMethods(def));
 
     final body = <String>[
       if (instanceMethods.isNotEmpty) ...[...instanceMethods],
@@ -602,24 +598,6 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
       'override $equalsMethod',
       'override fun hashCode(): Int = Objects.hash($hashArgs)',
     ];
-  }
-
-  // ── @glMapsTo ────────────────────────────────────────────────────────────────
-
-  List<String> _generateToMappingMethods(GLInputDefinition def) {
-    final plan = grammar.resolveToMappingPlan(def, mode);
-    if (plan == null || !plan.derivesAnythingFromSource) return [];
-    final targetWireName = def.mapsToType!;
-    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
-    return [mapping.toMethod(def, targetName, plan)];
-  }
-
-  List<String> _generateFromMappingMethods(GLInputDefinition def) {
-    final fromPlan = grammar.resolveFromMappingPlan(def, mode);
-    if (fromPlan == null || !fromPlan.derivesAnythingFromTarget) return [];
-    final targetWireName = def.mapsToType!;
-    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
-    return [mapping.fromMethod(def, targetName, fromPlan)];
   }
 
   @override

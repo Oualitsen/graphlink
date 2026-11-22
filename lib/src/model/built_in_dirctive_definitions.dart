@@ -95,13 +95,14 @@ const glCacheTagList = "tags";
 const glCacheArgAll = "all";
 const glCacheArgStaleIfOffline = "staleIfOffline";
 
-/// Maps an input type to a target type or input, generating a toXxx() method.
+/// Declared on a type or input (repeatable): generates a toXxx() method for each target type or input.
 const glMapsTo = "@glMapsTo";
 const glMapsToType = "type";
 
-/// Aliases an input field to a differently-named field on the mapping target.
+/// Aliases a field to a differently-named field on a mapping target (repeatable, one per target).
 const glMapField = "@glMapField";
 const glMapFieldTo = "to";
+const glMapFieldTarget = "target";
 
 /// Marks a scalar as a file upload type.
 /// The generator will produce GLUpload (Dart) / GLUpload (Java) as the type,

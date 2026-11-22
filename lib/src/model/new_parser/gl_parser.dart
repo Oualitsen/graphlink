@@ -249,6 +249,7 @@ class GLParser {
   final bool generateAllFieldsFragments;
   final bool nullableFieldsRequired;
   final bool tolerantEnums;
+  final bool generateMappers;
   final bool persistedQueries;
   final bool persistedQueriesUseGet;
   final bool autoGenerateQueries;
@@ -348,6 +349,7 @@ class GLParser {
     this.generateAllFieldsFragments = false,
     this.nullableFieldsRequired = false,
     this.tolerantEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = false,
     this.persistedQueriesUseGet = false,
     this.autoGenerateQueries = false,
@@ -427,6 +429,7 @@ class GLParser {
     checkInterfaceInheritance();
     skipFieldOfSkipOnServerTypes();
     handleGLExternal();
+    validateMapsToDirectives();
     if (mode == CodeGenerationMode.client) {
       stripSkipOnClientMembers();
       handleRepositories(false);
@@ -462,7 +465,6 @@ class GLParser {
       checkGLCacheInvalidateDirectives();
       checkGLCacheTags();
       if (disableCache) stripCacheDirectives();
-      validateMapsToDirectives();
       checkGLCaptureErrorsDirectives();
       checkUploadDirectivePlacement();
       checkUploadScalarUsage();

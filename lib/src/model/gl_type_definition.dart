@@ -2,6 +2,7 @@ import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/code_name_mixin.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
@@ -213,6 +214,7 @@ class GLTypeDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNam
         result.add(token!);
       }
     }
+    result.addAll(mappingDependencies(g));
     return result;
   }
 

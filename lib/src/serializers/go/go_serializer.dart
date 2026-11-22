@@ -317,6 +317,7 @@ class GoSerializer extends GLSerializer {
     }
     final identity = def.getIdentityFields(grammar);
     if (identity.isNotEmpty) blocks.add(_equals(name, fields, identity));
+    blocks.addAll(generateMappingMethods(def));
     return blocks.join('\n\n');
   }
 

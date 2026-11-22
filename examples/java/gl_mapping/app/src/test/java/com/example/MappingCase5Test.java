@@ -59,29 +59,4 @@ class MappingCase5Test {
         assertThat(result.getId()).isEqualTo("product-99");
     }
 
-    @Test
-    void fromProduct_reversesAliases() {
-        Product product = new Product("p-5", "Doohickey", 750, 8, "cat-6");
-        CreateProductInput result = CreateProductInput.fromProduct(product, "internal");
-
-        assertThat(result.getName()).isEqualTo("Doohickey");    // title → name
-        assertThat(result.getPrice()).isEqualTo(750);           // priceInCents → price
-        assertThat(result.getCatId()).isEqualTo("cat-6");       // categoryId → catId
-        assertThat(result.getStock()).isEqualTo(8);
-    }
-
-    @Test
-    void fromProduct_passesInputOnlyNoteAsParam() {
-        Product product = new Product("p-6", "Gizmo", 300, 1, "cat-7");
-        CreateProductInput result = CreateProductInput.fromProduct(product, "for internal use");
-
-        assertThat(result.getInternalNote()).isEqualTo("for internal use");
-    }
-
-    @Test
-    void fromProduct_allowsNullInputOnlyNote() {
-        Product product = new Product("p-7", "Knick-knack", 50, 100, "cat-8");
-
-        assertThatCode(() -> CreateProductInput.fromProduct(product, null)).doesNotThrowAnyException();
-    }
 }

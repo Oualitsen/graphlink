@@ -15,6 +15,7 @@
     "outputDir": "app/src/main/java/com/example/generated",
     "clientConfig": {
         "java": {
+            "generateMappers": true,
             "packageName": "com.example.generated",
             "generateAllFieldsFragments": true,
             "nullableFieldsRequired": false,

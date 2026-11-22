@@ -199,9 +199,6 @@ void _case4Tests() {
       test('toEmployee() body maps only id and name, not salary', () {
         expect(out, contains('return Employee(id: id, name: name)'));
       });
-      test('fromEmployee() still accepts salary as input-only param', () {
-        expect(out, contains('required int salary'));
-      });
     });
 
     group('Java', () {

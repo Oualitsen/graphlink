@@ -149,26 +149,6 @@ void main() {
       expect(body, contains('maintenancePeriod().toPeriod()'));
     });
   });
-
-  group("mapped booleans should use get accessor instead of is accessor in java when generated as Boolean", () {
-    test("get instead of is for Boolean in Java", () {
-     var p =  GLParser(mode: CodeGenerationMode.server);
-     p.parse(_mappedToBool);
-     var serializer = JavaSerializer(p, importPrefix: "dev.graphlink", typeMapOverrides: {
-      "ID": "String",
-      "String": "String",
-      "Float": "Double",
-      "Int": "Integer",
-      "Boolean": "boolean",
-      "Bool": "Boolean",
-      "Null": "null"
-     });
-     var input = serializer.serializeInputDefinition(p.inputs['MissionInfoInput']!);
-     expect(input, contains('missionInfo.getLookingForFullTime()'));
-     expect(input, contains('missionInfo.getAcceptsEveningShifts()'));
-    });
-
-  });
 }
 
 

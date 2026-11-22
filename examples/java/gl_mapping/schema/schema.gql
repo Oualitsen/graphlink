@@ -1,5 +1,5 @@
-directive @glMapsTo(type: String!) on INPUT_OBJECT
-directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
+directive @glMapsTo(type: String!) repeatable on OBJECT | INPUT_OBJECT
+directive @glMapField(to: String!, target: String) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
 
 # ---------------------------------------------------------------------------
 # Case 1 — All fields match by name, no extras
@@ -154,15 +154,13 @@ input CreateOrderInput @glMapsTo(type: "Order") {
 # Case 9 — Nested mapped input list where the nested toXxx() requires params
 #
 # ItemTagInput maps to ItemTag. ItemTag.labels is non-null but ItemTagInput.labels
-# is nullable → toItemTag() gets required defaultLabels, fromItemTag() gets
-# optional defaultLabels = const [].
+# is nullable → toItemTag() gets a required defaultLabels.
 #
 # CartItemInput maps to CartItem and holds [ItemTagInput!]!.
 # Because toItemTag() has required params it cannot be called inside a map lambda.
 # Therefore tags is promoted to a required param in toCartItem():
 #   required List<ItemTag> tags
-# The caller must pre-convert. fromCartItem() can still auto-map because
-# fromItemTag() only has optional default params.
+# The caller must pre-convert.
 # ---------------------------------------------------------------------------
 
 type ItemTag {
@@ -173,7 +171,6 @@ type ItemTag {
 input ItemTagInput @glMapsTo(type: "ItemTag") {
   id: ID!
   labels: [String!]    # nullable in input → toItemTag() requires defaultLabels
-                       #                   → fromItemTag() gets defaultLabels = const []
 }
 
 type CartItem {
@@ -184,7 +181,7 @@ type CartItem {
 input CartItemInput @glMapsTo(type: "CartItem") {
   id: ID!
   tags: [ItemTagInput!]!  # toItemTag() has required params → tags becomes required
-                          # param in toCartItem(); fromCartItem() auto-maps via lambda
+                          # param in toCartItem()
 }
 
 # ---------------------------------------------------------------------------
@@ -193,9 +190,7 @@ input CartItemInput @glMapsTo(type: "CartItem") {
 # Cell elements are nullable in the type ([Cell]) but non-null in the input
 # ([CellInput!]). The inner list is nullable, the outer list is non-null.
 #
-# toGrid():   cells → cells.map((e0) => e0?.map((e1) => e1.toCell()).toList()).toList()
-# fromGrid(): nullable Cell? elements cannot feed a non-null CellInput! slot
-#             directly — generation behaviour TBD.
+# toGrid(): cells → cells.map((e0) => e0?.map((e1) => e1.toCell()).toList()).toList()
 # ---------------------------------------------------------------------------
 
 type Cell {
@@ -261,7 +256,35 @@ type EnumListD { statuses: [Status!] }
 input EnumListInputD @glMapsTo(type: "EnumListD") { statuses: [Status!] }
 
 # ---------------------------------------------------------------------------
+# Case 11 — Declared on a type, several targets
+#
+# Article maps to a type (ArticleSummary) and to an input (UpdateArticleInput).
+# With several targets, every @glMapField names its target.
+# ---------------------------------------------------------------------------
+
+type Article
+  @glMapsTo(type: "ArticleSummary")
+  @glMapsTo(type: "UpdateArticleInput") {
+  id: ID!
+  title: String! @glMapField(to: "headline", target: "ArticleSummary")
+  body: String!
+}
+
+type ArticleSummary {
+  id: ID!
+  headline: String!
+}
+
+input UpdateArticleInput {
+  id: ID!
+  title: String!
+  body: String!
+  status: String!       # not on Article → required param of toUpdateArticleInput()
+}
+
 type Query {
+  getArticle(id: ID!): Article
+  getArticleSummary(id: ID!): ArticleSummary
   getAddress(id: ID!): Address
   getPerson(id: ID!): Person
   getUser(id: ID!): User
@@ -297,4 +320,5 @@ type Mutation {
   createEnumListD(input: EnumListInputD!): EnumListD!
   createCartItem(input: CartItemInput!): CartItem!
   createGrid(input: GridInput!): Grid!
+  updateArticle(input: UpdateArticleInput!): Article!
 }

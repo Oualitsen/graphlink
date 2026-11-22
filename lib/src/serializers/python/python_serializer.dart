@@ -212,6 +212,7 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
         if (fields.isEmpty) 'pass' else ...fields.map(fieldDeclaration),
         if (!shouldSkipJsonMethods(def)) ..._jsonMethods(def, fields, typename: def.jsonTypeName),
         if (identity.isNotEmpty) ..._equalsAndHash(def, identity),
+        ...generateMappingMethods(def).expand((m) => ['', m]),
       ],
     );
   }

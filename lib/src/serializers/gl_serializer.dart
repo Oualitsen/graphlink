@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
@@ -160,28 +161,16 @@ abstract class GLSerializer extends GLImportRendering {
     return "${serializeListText(decorators, withParenthesis: false, join: joiner)}$joiner";
   }
 
-  // ---------------------------------------------------------------------------
-  // Mapping — @glMapsTo / @glMapField
-  // Override generateToMethod and generateFromMethod in language serializers.
-  // ---------------------------------------------------------------------------
-
   /// The `@glMapsTo` mapping generator of the language, or null when it has none.
   GLMappingSerializer? get mapping => null;
 
-  /// Returns the mapping method strings for [def] if it declares @glMapsTo,
-  /// otherwise returns an empty list.
-  List<String> generateMappingMethods(GLInputDefinition def) {
-    if (mapping == null) return [];
-    final toPlan = grammar.resolveToMappingPlan(def, mode);
-    if (toPlan == null) return [];
-    final fromPlan = grammar.resolveFromMappingPlan(def, mode)!;
-    final targetWireName = def.mapsToType!;
-    final targetName = grammar.types[targetWireName]?.codeName ?? targetWireName;
+  /// The `to<Target>()` methods of [def], one per `@glMapsTo` it declares.
+  List<String> generateMappingMethods(GLTokenWithFields def) {
+    final serializer = mapping;
+    if (serializer == null) return [];
     return [
-      if (toPlan.derivesAnythingFromSource)
-        mapping!.toMethod(def, targetName, toPlan),
-      if (fromPlan.derivesAnythingFromTarget)
-        mapping!.fromMethod(def, targetName, fromPlan),
+      for (final resolved in grammar.resolveMappings(def, mode))
+        if (resolved.plan.derivesAnythingFromSource) serializer.toMethod(def, resolved.target, resolved.plan),
     ].where((s) => s.isNotEmpty).toList();
   }
 

@@ -6,10 +6,8 @@ import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
-import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
-import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
 class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNameMixin {
   @override
@@ -28,28 +26,6 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNa
 
   /// `@oneOf`: exactly one member may be present, so unused members must be left out of the payload.
   bool get isOneOf => hasDirective(oneOf);
-
-  /// Returns the target type name from @glMapsTo, or null if not declared.
-  String? get mapsToType =>
-      getDirectiveByName(glMapsTo)?.getArgValueAsString(glMapsToType);
-
-  ToMappingPlan buildToMappingPlan(
-          GLTypeDefinition target,
-          Map<String, GLInputDefinition> allInputs,
-          Map<String, GLTypeDefinition> allTypes,
-          CodeGenerationMode mode, {
-          Map<String, String> typeMap = const {},
-          }) =>
-      ToMappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
-
-  FromMappingPlan buildFromMappingPlan(
-          GLTypeDefinition target,
-          Map<String, GLInputDefinition> allInputs,
-          Map<String, GLTypeDefinition> allTypes,
-          CodeGenerationMode mode, {
-          Map<String, String> typeMap = const {},
-          }) =>
-      FromMappingPlan.resolve(this, target, allInputs, allTypes, mode, typeMap: typeMap);
 
   void _collectDefaultValueDeps(
       Object? value, String typeName, GLParser g, Map<String, GLToken> result) {
@@ -84,29 +60,7 @@ class GLInputDefinition extends GLTokenWithFields with GLDirectivesMixin, CodeNa
     }
     result.addAll(extraDeps.values);
 
-    final targetName = mapsToType;
-    if (targetName == null) return result;
-
-    if (g.mode == CodeGenerationMode.client && !g.projectedTypes.containsKey(targetName)) {
-      return result;
-    }
-
-
-    final target = g.types[targetName]!;
-    result.add(target);
-
-    final toPlan = buildToMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
-    final fromPlan = buildFromMappingPlan(target, g.inputs, g.types, g.mode, typeMap: g.typeMap);
-
-    for (final f in toPlan.requiredParams) {
-      final token = g.getTokenByKey(f.targetField.type.firstType.token);
-      if (filterDependecy(token, g)) result.add(token!);
-    }
-
-    for (final f in fromPlan.inputOnly) {
-      final token = g.getTokenByKey(f.type.firstType.token);
-      if (filterDependecy(token, g)) result.add(token!);
-    }
+    result.addAll(mappingDependencies(g));
 
     return result;
   }

@@ -649,7 +649,7 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
     }
     if (typesAsRecords && def.getDirectiveByName(glInternal) == null) {
       buffer.writeln(serializeRecord(codeName, def.fields, interfaceNames, def,
-          skipJsonMethods: shouldSkipJsonMethods(def)));
+          skipJsonMethods: shouldSkipJsonMethods(def), extraStatements: generateMappingMethods(def)));
       return buffer.toString();
     }
     buffer.writeln(codeGenUtils.createClass(className: codeName, interfaceNames: interfaceNames.toList(), statements: [
@@ -674,6 +674,7 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
         generateFromJson(def.getSerializableFields(grammar.mode), codeName, def),
         generateToJson(def.getSerializableFields(grammar.mode), def),
       ],
+      ...generateMappingMethods(def),
     ]));
     return buffer.toString();
   }

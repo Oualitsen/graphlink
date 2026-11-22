@@ -1,12 +1,9 @@
-import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 
 abstract class GLMappingSerializer {
   const GLMappingSerializer();
 
-  /// The `toXxx()` method of [def] → [targetType].
-  String toMethod(GLInputDefinition def, String targetType, ToMappingPlan plan);
-
-  /// The `fromXxx()` method of [targetType] → [def].
-  String fromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan);
+  /// The `to<Target>()` method of [def] → [target].
+  String toMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan);
 }

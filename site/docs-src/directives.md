@@ -45,8 +45,8 @@ directive @glExpand(depth: Int) on OBJECT
 directive @glExternal(glClass: String, glImport: String) on INPUT_OBJECT | OBJECT | SCALAR | INTERFACE
 directive @glInjectContext on FIELD_DEFINITION
 directive @glIntercept(tag: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT
-directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
-directive @glMapsTo(type: String!) on INPUT_OBJECT
+directive @glMapField(to: String!, target: String) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+directive @glMapsTo(type: String!) repeatable on OBJECT | INPUT_OBJECT
 directive @glRepository(glType: String, glIdType: String) on INTERFACE | OBJECT
 directive @glServerLenient on OBJECT
 directive @glServiceName(name: String!) on ENUM | FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT
@@ -558,50 +558,49 @@ public interface VehicleService {
 
 ## @glMapsTo
 
-**Target:** BOTH · **Placement:** `INPUT_OBJECT`
+**Target:** SERVER by default (clients with `generateMappers: true`) · **Placement:** `OBJECT`, `INPUT_OBJECT` · **Repeatable**
 
-Declares that a GraphQL input type maps to an existing class in the target language. GraphLink validates that the target class and all field mappings exist at generation time and emits a mapping constructor or method on the generated input class. Use `@glMapField` on individual fields to rename them during mapping.
+Declared on the source, it generates one method on the source: `to<Target>()`. The target is a GraphQL `type` or `input`. There is no `from` method: a reverse mapping is a second `@glMapsTo` on the other side.
 
 | Argument | Type | Description |
 |---|---|---|
-| `type` | `String!` | The fully-qualified target class name to map to. |
+| `type` | `String!` | Name of the target type or input. |
 
 ```graphql title="Example"
-# Map GraphQL input to an existing Java/Dart class
-input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleCommand") {
+input CreateArticleInput @glMapsTo(type: "Article") {
+  title: String!
+  authorId: ID!
+}
+
+type Article @glMapsTo(type: "ArticleSummary") @glMapsTo(type: "UpdateArticleInput") {
   id: ID!
-  brand: String!
-  model: String!
-  year: Int!
-  # Rename during mapping — see @glMapField below
-  fuelKind: FuelType! @glMapField(to: "fuelType")
+  title: String! @glMapField(to: "headline", target: "ArticleSummary")
+  authorId: ID!
 }
 ```
 
-GraphLink generates a `toMappedType()` method on the input class that constructs the target type from the input fields, applying any `@glMapField` renames in the process.
+- Fields with the same name (or `@glMapField` alias) and a compatible type are copied.
+- Target fields without a source counterpart become required parameters of `to<Target>()`; nullable-to-non-null fields get a `default<Field>` parameter.
+- Fields with arguments and `@glSkipOnServer` fields never take part in a mapping.
+- Enums, scalars, unions and interfaces cannot be a source or a target. A source cannot target itself or declare the same target twice.
+- On a client, mappers are generated only with `"generateMappers": true` in that client's config.
+
+Migrating from v6: replace `X.fromT(t, ...)` with a `@glMapsTo(type: "X")` on `T` and call `t.toX(...)`; add `"generateMappers": true` to client configs that used mappings.
 
 ---
 
 ## @glMapField
 
-**Target:** BOTH · **Placement:** `FIELD_DEFINITION` on `input` types annotated with `@glMapsTo`
+**Target:** BOTH · **Placement:** `FIELD_DEFINITION`, `INPUT_FIELD_DEFINITION` on a source with `@glMapsTo` · **Repeatable**
 
-Renames a field during the input-to-target mapping. The GraphQL field name is used in the schema and the generated input class; the `to` value is the field name on the target class.
+Renames a field for one mapping target.
 
 | Argument | Type | Description |
 |---|---|---|
-| `to` | `String!` | The field name on the target mapped class. |
+| `to` | `String!` | The field name on the target. |
+| `target` | `String` | Which `@glMapsTo` target the rename applies to. Optional with one target, required on every `@glMapField` when the source declares several. |
 
-```graphql title="Example"
-input UpdateVehicleInput @glMapsTo(type: "com.example.domain.UpdateVehicleCommand") {
-  id: ID!
-  brand: String!
-  # GraphQL field is "fuelKind", target class field is "fuelType"
-  fuelKind: FuelType! @glMapField(to: "fuelType")
-}
-```
-
-GraphLink validates at generation time that the `to` field name exists on the target class. If it does not, generation fails with a clear error message.
+Generation fails when `to` does not exist on the target, when `target` is not one of the source's targets, or when the field has arguments or `@glSkipOnServer`.
 
 ---
 

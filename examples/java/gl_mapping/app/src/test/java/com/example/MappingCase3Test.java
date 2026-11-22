@@ -47,12 +47,4 @@ class MappingCase3Test {
         assertThat(result.getUsername()).isEqualTo("dave");
     }
 
-    @Test
-    void fromUser_mapsUsernameAndRole() {
-        User user = new User("u-5", "eve", "superadmin");
-        CreateUserInput result = CreateUserInput.fromUser(user);
-
-        assertThat(result.getUsername()).isEqualTo("eve");
-        assertThat(result.getRole()).isEqualTo("superadmin");
-    }
 }

@@ -30,19 +30,6 @@ class MappingCase7Test {
                 .containsExactly("foo", "bar");
     }
 
-    @Test
-    void caseA_fromScalarListA_copiesTagsDirectly() {
-        assertThat(ScalarListInputA.fromScalarListA(new ScalarListA(Arrays.asList("x", "y"))).tags())
-                .containsExactly("x", "y");
-    }
-
-    @Test
-    void caseA_roundTrip() {
-        ScalarListInputA original = new ScalarListInputA(Arrays.asList("a", "b", "c"));
-        assertThat(ScalarListInputA.fromScalarListA(original.toScalarListA()).tags())
-                .isEqualTo(original.tags());
-    }
-
     // Case B — nullable source needs defaultTags in toXxx
     @Test
     void caseB_toScalarListB_usesActualTagsWhenPresent() {
@@ -56,29 +43,11 @@ class MappingCase7Test {
                 .containsExactly("fallback");
     }
 
-    @Test
-    void caseB_fromScalarListB_copiesTagsDirectly() {
-        assertThat(ScalarListInputB.fromScalarListB(new ScalarListB(Arrays.asList("p", "q"))).tags())
-                .containsExactly("p", "q");
-    }
-
     // Case C — non-null source → nullable target; fromXxx needs defaultTags
     @Test
     void caseC_toScalarListC_copiesTagsDirectly() {
         assertThat(new ScalarListInputC(Arrays.asList("m", "n")).toScalarListC().tags())
                 .containsExactly("m", "n");
-    }
-
-    @Test
-    void caseC_fromScalarListC_copiesTagsWhenPresent() {
-        assertThat(ScalarListInputC.fromScalarListC(new ScalarListC(Arrays.asList("r", "s")), Arrays.asList("default")).tags())
-                .containsExactly("r", "s");
-    }
-
-    @Test
-    void caseC_fromScalarListC_usesDefaultWhenTargetTagsNull() {
-        assertThat(ScalarListInputC.fromScalarListC(new ScalarListC(null), Arrays.asList("fallback")).tags())
-                .containsExactly("fallback");
     }
 
     // Case D — both nullable
@@ -93,9 +62,4 @@ class MappingCase7Test {
         assertThatCode(() -> new ScalarListInputD(null).toScalarListD()).doesNotThrowAnyException();
     }
 
-    @Test
-    void caseD_fromScalarListD_copiesNullableTags() {
-        assertThat(ScalarListInputD.fromScalarListD(new ScalarListD(Arrays.asList("w"))).tags())
-                .containsExactly("w");
-    }
 }

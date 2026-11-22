@@ -42,21 +42,4 @@ class MappingCase4Test {
         assertThatCode(() -> input.toAccount("id-1")).doesNotThrowAnyException();
     }
 
-    @Test
-    void fromAccount_mapsEmailAndDisplayName() {
-        Account account = new Account("acc-2", "b@c.com", "Dave");
-        RegisterAccountInput result = RegisterAccountInput.fromAccount(account, "pw1", "pw1");
-
-        assertThat(result.getEmail()).isEqualTo("b@c.com");
-        assertThat(result.getDisplayName()).isEqualTo("Dave");
-    }
-
-    @Test
-    void fromAccount_passesInputOnlyFieldsThroughAsParams() {
-        Account account = new Account("acc-3", "c@d.com", "Eve");
-        RegisterAccountInput result = RegisterAccountInput.fromAccount(account, "hunter2", "hunter2");
-
-        assertThat(result.getPassword()).isEqualTo("hunter2");
-        assertThat(result.getConfirmPassword()).isEqualTo("hunter2");
-    }
 }
