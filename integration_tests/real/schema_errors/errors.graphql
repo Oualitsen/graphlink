@@ -1,0 +1,23 @@
+enum Reason { SPAM ABUSE }
+
+type Article { id: ID! title: String! }
+input ArticleInput { title: String! }
+
+type ArticleNotFound @glError { id: ID! }
+type TitleTaken @glError { title: String! suggestions: [String!] }
+type Banned @glError(value: "BANNED") { reason: Reason! until: Int }
+type Forbidden @glError(field: "extensions.kind", value: "forbidden") { }
+
+type Query {
+  article(id: ID!): Article @glThrows(errors: [ArticleNotFound, Forbidden])
+  secret: String @glThrows(errors: [Forbidden])
+  plain(id: ID!): Article
+  other(id: ID!): Article
+}
+
+type Mutation {
+  createArticle(input: ArticleInput!): Article @glThrows(errors: [TitleTaken, Banned])
+}
+
+query pair { first: article(id: "missing") { id } second: other(id: "1") { id } }
+query captured @glCaptureErrors { article(id: "missing") { id } }

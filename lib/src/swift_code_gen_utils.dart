@@ -230,13 +230,15 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
   String initDecl({
     required List<String> params,
     List<String>? assignments,
+    bool override = false,
   }) {
     final buffer = StringBuffer();
+    final modifiers = override ? 'public override' : 'public';
     if (params.isEmpty) {
-      buffer.write('public init() ');
+      buffer.write('$modifiers init() ');
     } else {
       final paramsStr = params.join(',\n').ident();
-      buffer.write('public init(\n$paramsStr\n) ');
+      buffer.write('$modifiers init(\n$paramsStr\n) ');
     }
     buffer.write(block(assignments ?? const []));
     return buffer.toString();

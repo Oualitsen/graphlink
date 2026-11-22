@@ -460,7 +460,7 @@ class GoSerializer extends GLSerializer {
     final type = def.type;
     final name = type.codeName;
     final fields = serializableFields(type);
-    final base = 'GraphLinkDomainError';
+    const base = 'GraphLinkDomainError';
     final decoding = [
       for (final f in fields)
         codeGenUtils.ifStatement(

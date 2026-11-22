@@ -150,28 +150,3 @@ void main() {
     });
   });
 }
-
-
-const _mappedToBool = '''
-directive @FieldNameConstants on OBJECT
-type MissionInfo implements Base @FieldNameConstants  {
-    hourlyRate: Float
-    lookingForFullTime: Boolean!
-    acceptsEveningShifts: Boolean!
-}
-
-interface Base {
-  lookingForFullTime: Boolean
-  acceptsEveningShifts: Boolean
-}
-
-input MissionInfoInput @glMapsTo(type: "MissionInfo") {
-    hourlyRate: Float
-    lookingForFullTime: Boolean!
-    acceptsEveningShifts: Boolean!
-}
-
-  
-  type Query { noop: String }
-''';
-

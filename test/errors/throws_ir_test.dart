@@ -1,5 +1,6 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:test/test.dart';
@@ -149,6 +150,57 @@ void main() {
 
     test('an unknown argument is rejected', () {
       _fails('type Query { a: Article @glThrows(errors: [ArticleNotFound], code: "x") }', 'code');
+    });
+  });
+
+  group('operations of the client', () {
+    const schema = '''
+      type Query {
+        article(id: ID!): Article @glThrows(errors: [ArticleNotFound])
+        other(id: ID!): Article
+      }
+      type Mutation { create(input: ArticleInput!): Article @glThrows(errors: [TitleTaken]) }
+      query load { article(id: "1") { id } }
+      query aliased { first: article(id: "1") { id } }
+      query pair { a: article(id: "1") { id } b: other(id: "2") { id } }
+      query plain { other(id: "1") { id } }
+      query captured @glCaptureErrors { article(id: "1") { id } }
+    ''';
+    late GLParser g;
+    setUpAll(() => g = GLParser(autoGenerateQueries: true, generateAllFieldsFragments: true)..parse('$_base$schema'));
+
+    GLThrownErrors? of(String name, [GLQueryType type = GLQueryType.query]) =>
+        g.thrownErrorsOf(g.queries[GLOperationKey(name, type)]!);
+
+    test('an auto-generated operation throws the errors of its root field', () {
+      final thrown = of('article')!;
+      expect(thrown.errors.map((e) => e.name), ['ArticleNotFound']);
+      expect(thrown.responseKey, 'article');
+    });
+
+    test('a mutation throws its errors', () {
+      expect(of('create', GLQueryType.mutation)!.errors.map((e) => e.name), ['TitleTaken']);
+    });
+
+    test('a custom operation with one root field throws them', () {
+      expect(of('load')!.errors.map((e) => e.name), ['ArticleNotFound']);
+    });
+
+    test('an alias becomes the response key', () {
+      expect(of('aliased')!.responseKey, 'first');
+    });
+
+    test('an operation with several root fields throws no typed error', () {
+      expect(of('pair'), isNull);
+    });
+
+    test('a root field without the directive throws none', () {
+      expect(of('other'), isNull);
+      expect(of('plain'), isNull);
+    });
+
+    test('capture-errors operations throw none', () {
+      expect(of('captured'), isNull);
     });
   });
 }

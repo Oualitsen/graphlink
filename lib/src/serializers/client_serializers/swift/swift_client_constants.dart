@@ -1758,3 +1758,36 @@ extension GraphLinkDomainError: LocalizedError {
     public var errorDescription: String? { message.isEmpty ? String(describing: type(of: self)) : message }
 }
 ''';
+
+const swiftDomainMatcher = r'''
+public struct GraphLinkDomainMatcher {
+    public let field: [String]
+    public let value: String
+    public let build: ([String: Any?], String) throws -> GraphLinkDomainError
+
+    public init(field: [String], value: String, build: @escaping ([String: Any?], String) throws -> GraphLinkDomainError) {
+        self.field = field
+        self.value = value
+        self.build = build
+    }
+
+    public static func resolve(_ error: Error, responseKey: String, matchers: [GraphLinkDomainMatcher]) -> Error {
+        guard let exception = error as? GraphLinkException else { return error }
+        for entry in exception.errors {
+            guard let key = entry.path?.first as? String, key == responseKey else { continue }
+            let extensions = entry.extensions ?? [:]
+            for matcher in matchers {
+                var found: Any? = ["message": entry.message, "extensions": extensions] as [String: Any?]
+                for segment in matcher.field {
+                    found = (found as? [String: Any?])?[segment] ?? nil
+                }
+                guard let text = found as? String, text == matcher.value else { continue }
+                if let typed = try? matcher.build(extensions, entry.message) {
+                    return typed
+                }
+            }
+        }
+        return error
+    }
+}
+''';

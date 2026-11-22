@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/config.dart';
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -111,6 +112,10 @@ Future<Set<String>> generateSwiftClientClasses(
 
   if (parser.errors.isNotEmpty) {
     clientFiles['GraphLinkDomainError.swift'] = clientSerializer.generateDomainErrorFile();
+  }
+
+  if (parser.throwsTypedErrors) {
+    clientFiles['GraphLinkDomainMatcher.swift'] = clientSerializer.generateDomainMatcherFile();
   }
 
   if (parser.persistedQueries) {

@@ -182,6 +182,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       imports: {
         ..._parser.scalarImportsOfOperationType(GLQueryType.query),
         ..._errorImport(),
+        ..._thrownErrorImports(GLQueryType.query),
         if (observables) "import { Observable } from 'rxjs';",
         "import { GraphLinkResolverBase } from './graph-link-resolver-base.js';",
         "import type { $adapterType } from './graph-link-adapter.js';",
@@ -203,6 +204,7 @@ class TypeScriptClientSerializer extends GLClientSerializer {
       imports: {
         ..._parser.scalarImportsOfOperationType(GLQueryType.mutation),
         ..._errorImport(),
+        ..._thrownErrorImports(GLQueryType.mutation),
         if (observables) "import { Observable } from 'rxjs';",
         if (_parser.hasUploadMutations)
           "import { GLUpload, GLMultipartAdapter, UploadProgressCallback } from './graph-link-uploads.js';",
@@ -510,6 +512,20 @@ class TypeScriptClientSerializer extends GLClientSerializer {
   GLClassModel? getSubscriptionsClass() {
     final body = _buildClass(GLQueryType.subscription);
     return body != null ? GLClassModel(body: body) : null;
+  }
+
+  List<String> _thrownErrorImports(GLQueryType type) {
+    final errors = {
+      for (final entry in _parser.thrownErrors.entries)
+        if (entry.key.type == type) ...entry.value,
+    };
+    if (errors.isEmpty) return const [];
+    return [
+      "import { glDomainError } from './$tsDomainErrorModule';",
+      "import type { GraphLinkDomainMatcher } from './$tsDomainErrorModule';",
+      for (final error in errors)
+        "import { ${error.type.codeName} } from '../errors/${serializer.getFileNameFor(error.type).replaceAll('.ts', '.js')}';",
+    ];
   }
 
   List<String> _errorImport() {

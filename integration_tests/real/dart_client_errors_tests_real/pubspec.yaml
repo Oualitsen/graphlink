@@ -1,0 +1,16 @@
+name: graphlink_dart_errors_real_tests
+description: Real-socket tests for the typed domain errors thrown by the generated Dart client.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../
+  http: ^1.2.0
+  web_socket_channel: ^3.0.0
+
+dev_dependencies:
+  test: ^1.24.0

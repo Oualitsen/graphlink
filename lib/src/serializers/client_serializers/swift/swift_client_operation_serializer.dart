@@ -1,5 +1,6 @@
 import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
@@ -27,6 +28,22 @@ class SwiftClientOperationSerializer {
 
   SwiftClientOperationSerializer(this.grammar, this.gqlSerializer, this.serializer, this.codeGenUtils);
 
+  List<String> _throwingTypedErrors(GLQueryDefinition def, List<String> statements) {
+    final thrown = grammar.thrownErrorsOf(def);
+    if (thrown == null) return statements;
+    final matchers = thrown.errors
+        .map((e) => 'GraphLinkDomainMatcher(field: [${e.field.map((f) => '"$f"').join(', ')}], value: "${e.value}") '
+            '{ extensions, message in try ${e.type.codeName}.fromJson(extensions, message: message) }')
+        .join(', ');
+    return [
+      codeGenUtils.tryCatchFinally(
+        tryStatements: statements,
+        catchVariable: 'error',
+        catchStatements: ['throw GraphLinkDomainMatcher.resolve(error, responseKey: "${thrown.responseKey}", matchers: [$matchers])'],
+      ),
+    ];
+  }
+
   // ── Query (cache-aware) ────────────────────────────────────────────────────
 
   String queryToMethod(GLQueryDefinition def) {
@@ -53,7 +70,7 @@ class SwiftClientOperationSerializer {
         'return try await executeData(query: $svQuery, fragmentNames: $svFragmentNames, operationName: "${def.tokenInfo}", variables: ${_variablesExpr(def)}, fromJson: $parseType.fromJson).data!',
     ];
 
-    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(statements)}';
+    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(_throwingTypedErrors(def, statements))}';
   }
 
   String _cachedQueryToMethod(GLQueryDefinition def, List<DividedQuery> dividedQueries) {
@@ -68,7 +85,7 @@ class SwiftClientOperationSerializer {
       'return try await executeCached(partialQueries: $svPartialQueries, operationName: "${def.tokenInfo}", directives: "$directives", fromJson: $parseType.fromJson, captureErrors: ${isCE ? 'true' : 'false'})${isCE ? '' : '.data!'}',
     ];
 
-    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(statements)}';
+    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(_throwingTypedErrors(def, statements))}';
   }
 
   // ── Mutation ───────────────────────────────────────────────────────────────
@@ -104,7 +121,7 @@ class SwiftClientOperationSerializer {
       ],
     ];
 
-    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(statements)}';
+    return 'public func ${def.codeName}${codeGenUtils.parentheses(getArguments(def))} async throws -> ${returnTypeByQueryType(def)} ${codeGenUtils.block(_throwingTypedErrors(def, statements))}';
   }
 
   List<String> _mutationReturnStatements(GLQueryDefinition def, bool isCE) {
@@ -201,7 +218,7 @@ class SwiftClientOperationSerializer {
       'public func $methodName${codeGenUtils.parentheses(argsNoProgress)} async throws -> $returnType ${codeGenUtils.block([
             'return try await $methodName($argNamesNoProgress, onProgress: nil)',
           ])}',
-      'public func $methodName${codeGenUtils.parentheses(argsWithProgress)} async throws -> $returnType ${codeGenUtils.block(body)}',
+      'public func $methodName${codeGenUtils.parentheses(argsWithProgress)} async throws -> $returnType ${codeGenUtils.block(_throwingTypedErrors(def, body))}',
     ].join('\n\n');
   }
 

@@ -5,6 +5,7 @@ import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
+import 'package:graphlink/src/capture_errors_utils.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
@@ -28,7 +29,26 @@ const _baseMembers = {
   'unwrap',
 };
 
+class GLThrownErrors {
+  final String responseKey;
+  final List<GLErrorDefinition> errors;
+
+  const GLThrownErrors(this.responseKey, this.errors);
+}
+
 extension GLGrammarErrorExtension on GLParser {
+  /// The typed errors a client operation can throw, or null when it throws none: only operations with a single
+  /// root field throw typed errors, and never in capture-errors mode.
+  GLThrownErrors? thrownErrorsOf(GLQueryDefinition def) {
+    if (def.type == GLQueryType.subscription || def.elements.length != 1 || def.isCaptureErrors(this)) return null;
+    final element = def.elements.single;
+    final errors = thrownErrors[GLOperationKey(element.token, def.type)];
+    if (errors == null) return null;
+    return GLThrownErrors(element.alias?.token ?? element.token, errors);
+  }
+
+  bool get throwsTypedErrors => thrownErrors.isNotEmpty;
+
   /// Moves every `@glError` type out of [GLParser.types] into [GLParser.errors], after checking it is used
   /// nowhere as a normal type. Runs right after the directives are validated so no later pass sees them.
   void extractErrorTypes() {
@@ -98,7 +118,7 @@ extension GLGrammarErrorExtension on GLParser {
       for (final field in owner.fields) {
         final directive = field.getDirectiveByName(glThrows);
         if (directive == null) continue;
-        final kind = owner is GLTypeDefinition ? roots[owner.token] : null;
+        final kind =  roots[owner.token];
         if (kind == null) {
           throw ParseException("$glThrows is only allowed on a root field of Query or Mutation, not on ${owner.token}.${field.name.token}",
               info: directive.tokenInfo);
@@ -126,7 +146,8 @@ extension GLGrammarErrorExtension on GLParser {
       if (result.contains(error)) {
         throw ParseException("$glThrows on '$at' lists '$name' more than once", info: directive.tokenInfo);
       }
-      final clash = result.where((other) => _sameMatch(other, error)).firstOrNull;
+      final clashList = result.where((other) => _sameMatch(other, error)).toList();
+      final clash = clashList.isEmpty ? null: clashList.first;
       if (clash != null) {
         throw ParseException(
             "$glThrows on '$at' is ambiguous: '${clash.name}' and '$name' both match ${error.field.join('.')} == '${error.value}'",

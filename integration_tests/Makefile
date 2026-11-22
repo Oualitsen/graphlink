@@ -1,4 +1,4 @@
-.PHONY: persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: dart-errors-real typescript-errors-real python-errors-real go-errors-real kotlin-errors-real swift-errors-real java-errors-real java-reactor-errors-real java-rxjava3-errors-real java-mutiny-errors-real persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -166,9 +166,39 @@ go-real:
 go-rest-real:
 	$(MAKE) -C real/go_rest_client_tests_real ci
 
+dart-errors-real:
+	$(MAKE) -C real/dart_client_errors_tests_real ci
+
+typescript-errors-real:
+	$(MAKE) -C real/typescript_client_errors_tests_real ci
+
+python-errors-real:
+	$(MAKE) -C real/python_client_errors_tests_real ci
+
+go-errors-real:
+	$(MAKE) -C real/go_client_errors_tests_real ci
+
+kotlin-errors-real:
+	$(MAKE) -C real/kotlin_client_errors_tests_real ci
+
+swift-errors-real:
+	$(MAKE) -C real/swift_client_errors_tests_real ci
+
+java-errors-real:
+	$(MAKE) -C real/java_client_errors_tests_real ci
+
+java-reactor-errors-real:
+	$(MAKE) -C real/java_client_errors_reactor_tests_real ci
+
+java-rxjava3-errors-real:
+	$(MAKE) -C real/java_client_errors_rxjava3_tests_real ci
+
+java-mutiny-errors-real:
+	$(MAKE) -C real/java_client_errors_mutiny_tests_real ci
+
 all: dart dart-rest typescript typescript-rest java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin kotlin-rest swift swift-rest python python-rest go go-rest
 
-all-real: dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
+all-real: dart-errors-real typescript-errors-real python-errors-real go-errors-real kotlin-errors-real swift-errors-real java-errors-real java-reactor-errors-real java-rxjava3-errors-real java-mutiny-errors-real dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
 
 start-server:
 	curl -s -X POST http://localhost:9990/actuator/shutdown || true

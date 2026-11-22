@@ -200,9 +200,9 @@ public class GetUserFullResponse {
 
 **Target:** CLIENT · **Placement:** `OBJECT`
 
-!!! warning "Preview"
-    This release generates the error classes only. The client does not match or throw them yet, so nothing in a
-    response becomes one of these classes for now.
+!!! note "Preview"
+    GraphQL operations throw these classes when they declare them with [`@glThrows`](#glthrows). REST (`status`) and the
+    server side come in later releases.
 
 Declares a business error. The type becomes an **exception class** in every client, with its fields as typed members,
 and is not a type of your API: it is never a field type, an argument, an input, an interface implementer or a union
@@ -248,6 +248,48 @@ class TitleTaken extends GraphLinkDomainError {
 | Python | `Exception` | `except TitleTaken as e:` |
 | Swift | `Error` | `catch let e as TitleTaken` |
 | Go | `error` | `errors.As(err, &titleTaken)` |
+
+---
+
+## @glThrows
+
+**Target:** CLIENT · **Placement:** `FIELD_DEFINITION` (a root field of `Query` or `Mutation`)
+
+Lists the [`@glError`](#glerror) types an operation can throw. The generated method throws the matching class, so the
+caller writes `catch (ArticleNotFound e)` instead of inspecting `GraphLinkException`.
+
+| Argument | Type | Description |
+|---|---|---|
+| `errors` | `[String!]!` | The error types, tried in order. Names are written bare or quoted |
+
+```graphql title="Example"
+type Query {
+  article(id: ID!): Article @glThrows(errors: [ArticleNotFound, Forbidden])
+}
+type Mutation {
+  createArticle(input: ArticleInput!): Article @glThrows(errors: [TitleTaken])
+}
+```
+
+```dart title="Caller code (Dart)"
+try {
+  final res = await client.queries.article(id: '42');
+} on ArticleNotFound catch (e) {
+  showMissing(e.id);
+}
+```
+
+A response error is matched on its `path[0]` (the response key of the root field, so an alias works) and on the error's
+`field` and `value` (by default `extensions.code` equal to the type name). The error is built from `extensions` and the
+entry's `message`. The first entry that matches, in the order of the list, is thrown. The discriminator is looked up in
+the entry's `message`, `path` and `extensions` only.
+
+What keeps throwing `GraphLinkException` (it carries every entry): no match, an entry without `path`, a missing or
+mistyped field, an operation without `@glThrows`, an operation with several root fields, and, with `@glCaptureErrors`,
+nothing is thrown at all.
+
+The schema is rejected if `@glThrows` is on a nested field, a subscription, a type, a custom `query` / `mutation`
+operation, if it names a type that is not an `@glError`, repeats one, or lists two errors that match the same way.
 
 ---
 

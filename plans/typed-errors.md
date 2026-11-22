@@ -1,7 +1,7 @@
 # Typed domain errors (`@glError`, `@glThrows`)
 
-Status: phase 1 in progress (IR, validation, exception classes in every client). Matching and throwing are a later
-phase. Target: v7 (breaking changes allowed).
+Status: phases 1 and 2 done (IR, exception classes, `@glThrows`, matching and throwing for GraphQL in every client). REST
+and the server side are later phases. Target: v7 (breaking changes allowed).
 
 ## Goal
 
@@ -25,8 +25,8 @@ GraphQL and REST work the same way, so moving an operation from one to the other
 
 | Phase | Content | State |
 |---|---|---|
-| 1 | `@glError` IR + validation + exception classes and the `GraphLinkDomainError` base in every client | in progress |
-| 2 | `@glThrows`, matching and throwing for GraphQL (client) | later |
+| 1 | `@glError` IR + validation + exception classes and the `GraphLinkDomainError` base in every client | done |
+| 2 | `@glThrows`, matching and throwing for GraphQL (client) | done: `integration_tests/real/*_client_errors_tests_real` |
 | 3 | Matching and throwing for REST (client) | later |
 | 4 | OpenAPI responses, docs page, `llms.txt` | later |
 | 5 | Server side | later, own plan |

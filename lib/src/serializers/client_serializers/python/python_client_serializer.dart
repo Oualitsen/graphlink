@@ -147,7 +147,20 @@ class PythonClientSerializer extends GLClientSerializer {
     ];
   }
 
+  List<String> _errorImportsFor(GLQueryType type) {
+    final errors = {
+      for (final entry in _parser.thrownErrors.entries)
+        if (entry.key.type == type) ...entry.value,
+    };
+    if (errors.isEmpty) return const [];
+    return [
+      'from .$pythonDomainErrorModule import GraphLinkDomainMatcher, gl_domain_error',
+      for (final error in errors) 'from ..errors.${_py.moduleNameFor(error.type)} import ${error.type.codeName}',
+    ];
+  }
+
   List<String> _importsForType(GLQueryType type) => [
+        ..._errorImportsFor(type),
         'from .graph_link_cache_store import $cacheStoreClassName',
         'from .graph_link_lock import GraphLinkLock',
         'from .graph_link_resolver_base import $resolverBaseClassName',

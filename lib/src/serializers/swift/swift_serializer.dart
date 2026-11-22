@@ -305,6 +305,7 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
     final name = type.codeName;
     final fields = type.getSerializableFields(grammar.mode);
     final initDecl = codeGenUtils.initDecl(
+      override: fields.isEmpty,
       params: [...fields.map(_initParam), 'message: String = ""'],
       assignments: [
         ...fields.map((f) => 'self.${f.codeName} = ${f.codeName}'),

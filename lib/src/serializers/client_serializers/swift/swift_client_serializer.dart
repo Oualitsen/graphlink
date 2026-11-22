@@ -216,6 +216,8 @@ class SwiftClientSerializer extends GLClientSerializer {
 
   GLClassModel generateDomainErrorFile() => const GLClassModel(imports: ['Foundation'], body: swiftDomainError);
 
+  GLClassModel generateDomainMatcherFile() => const GLClassModel(body: swiftDomainMatcher);
+
   GLClassModel generateExceptionFile() => const GLClassModel(body: swiftGraphLinkException);
 
   GLClassModel generateSha256File() {

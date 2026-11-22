@@ -33,7 +33,11 @@ void main() {
 
     test('an error without fields only has the message', () {
       final out = flat(_error('Forbidden'));
-      expect(out, contains('public init( message: String = "" ) {'));
+      expect(out, contains('public override init( message: String = "" ) {'));
+    });
+
+    test('an error with fields does not override the base initializer', () {
+      expect(flat(_error('TitleTaken')), isNot(contains('override init')));
     });
 
     test('fromJson decodes a dictionary and takes the message', () {

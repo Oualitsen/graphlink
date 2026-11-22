@@ -2156,4 +2156,40 @@ type GraphLinkDomainError struct {
 func (e *GraphLinkDomainError) Error() string {
 	return e.Message
 }
+
+type GraphLinkDomainMatcher struct {
+	Field []string
+	Value string
+	Build func(extensions map[string]any, message string) (error, bool)
+}
+
+func glDomainError(err error, responseKey string, matchers []GraphLinkDomainMatcher) error {
+	var exception *GraphLinkException
+	if !errors.As(err, &exception) {
+		return err
+	}
+	for _, entry := range exception.Errors {
+		if len(entry.Path) == 0 || entry.Path[0] != responseKey {
+			continue
+		}
+		for _, matcher := range matchers {
+			var found any = map[string]any{"message": entry.Message, "path": entry.Path, "extensions": entry.Extensions}
+			for _, segment := range matcher.Field {
+				object, ok := found.(map[string]any)
+				if !ok {
+					found = nil
+					break
+				}
+				found = object[segment]
+			}
+			if found != matcher.Value {
+				continue
+			}
+			if typed, ok := matcher.Build(entry.Extensions, entry.Message); ok {
+				return typed
+			}
+		}
+	}
+	return err
+}
 ''';
