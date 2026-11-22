@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:graphlink/src/io_utils.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/dart/dart_serializer.dart';
@@ -18,6 +20,7 @@ abstract class GLBarrelFileHandler {
   bool get isTypeScript;
   String exportLine(String subdir, String fileName);
   String fileNameFor(GLToken def);
+  String? mapperFileNameFor(GLTokenWithFields def);
 
   Future<File> generate() {
     final lines = <String>{};
@@ -48,6 +51,11 @@ abstract class GLBarrelFileHandler {
       });
     }
 
+    for (final def in parser.mapperClassSources) {
+      final fileName = mapperFileNameFor(def);
+      if (fileName != null) lines.add(exportLine('mappers', fileName));
+    }
+
     for (final fileName in clientFiles) {
       lines.add(exportLine('client', fileName));
     }
@@ -76,6 +84,10 @@ class DartBarrelFileHandler extends GLBarrelFileHandler {
 
   @override
   String fileNameFor(GLToken def) => serializer.getFileNameFor(def);
+
+  @override
+  String? mapperFileNameFor(GLTokenWithFields def) =>
+      serializer.serializeMapperClass(def) == null ? null : serializer.getMapperFileName(def);
 }
 
 class TypeScriptBarrelFileHandler extends GLBarrelFileHandler {
@@ -95,4 +107,8 @@ class TypeScriptBarrelFileHandler extends GLBarrelFileHandler {
 
   @override
   String fileNameFor(GLToken def) => serializer.getFileNameFor(def);
+
+  @override
+  String? mapperFileNameFor(GLTokenWithFields def) =>
+      serializer.serializeMapperClass(def) == null ? null : serializer.getMapperFileName(def);
 }

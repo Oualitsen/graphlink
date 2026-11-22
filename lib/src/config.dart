@@ -158,6 +158,12 @@ String _restNullableSuffix(Object? value) {
   return value;
 }
 
+bool _mapperAsClass(Object? value) {
+  if (value == null || value == 'inline') return false;
+  if (value == 'class') return true;
+  throw ArgumentError('mapperStyle must be "inline" or "class", got $value.');
+}
+
 bool _restNullable(Object? value) {
   if (value == null) return false;
   if (value is! bool) throw ArgumentError('restNullable must be a boolean, got $value.');
@@ -183,6 +189,10 @@ class GeneratorConfig {
 
   /// Treats every REST operation as if it carried `@glRestNullable`.
   final bool restNullable;
+
+  /// `mapperStyle: "class"`: `@glMapsTo` mappings go to `<Source>Mapper` classes instead of methods on the source.
+  /// Mappings whose source is `@glExternal` always do.
+  final bool mapperAsClass;
   final String outputDir;
   final ServerConfig? serverConfig;
   final ClientConfig? clientConfig;
@@ -201,6 +211,7 @@ class GeneratorConfig {
     this.disableCache = false,
     this.restNullableSuffix = defaultRestNullableSuffix,
     this.restNullable = false,
+    this.mapperAsClass = false,
     this.serverConfig,
     this.clientConfig,
   });
@@ -220,6 +231,7 @@ class GeneratorConfig {
       disableCache: (json['disableCache'] as bool?) ?? false,
       restNullableSuffix: _restNullableSuffix(json['restNullableSuffix']),
       restNullable: _restNullable(json['restNullable']),
+      mapperAsClass: _mapperAsClass(json['mapperStyle']),
       outputDir: json['outputDir'] ?? 'src/main/java',
       serverConfig: json['serverConfig'] != null ? ServerConfig.fromJson(json['serverConfig'] as Map<String, dynamic>) : null,
       clientConfig: json['clientConfig'] != null ? ClientConfig.fromJson(json['clientConfig'] as Map<String, dynamic>) : null,

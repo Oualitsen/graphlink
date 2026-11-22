@@ -27,6 +27,8 @@ import 'package:graphlink/src/serializers/typescript/express_apollo_server_seria
 import 'package:graphlink/src/serializers/typescript/nest_apollo_server_constants.dart';
 import 'package:graphlink/src/serializers/typescript/nest_apollo_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/java_serializer.dart';
+import 'package:graphlink/src/serializers/gl_serializer.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/serializers/java/java_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/kotlin/kotlin_spring_server_serializer.dart';
 import 'package:graphlink/src/serializers/java/spring_map_type_resolver_config.dart';
@@ -65,6 +67,24 @@ void _writeDefinitions<T>({
       appendStar: appendStar,
     ));
   }
+}
+
+void _writeMapperClasses({
+  required List<Future<File>> futures,
+  required GLParser grammar,
+  required GLSerializer serializer,
+  required String destinationDir,
+  required String packageName,
+}) {
+  _writeDefinitions(
+    futures: futures,
+    defs: grammar.mapperClassSources.where((def) => serializer.serializeMapperClass(def) != null),
+    data: (def) => serializer.serializeMapperClass(def)!,
+    fileName: serializer.getMapperFileName,
+    subdir: 'mappers',
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
 }
 
 void _writeSpringOpenApiController(List<Future<File>> futures, OpenApiOutput? openApi, SpringServerConfigBase springConfig,
@@ -135,6 +155,13 @@ Future<Set<String>> _generateServerTarget(
     destinationDir: destinationDir,
     packageName: packageName,
     appendStar: true,
+  );
+  _writeMapperClasses(
+    futures: futures,
+    grammar: grammar,
+    serializer: serializer,
+    destinationDir: destinationDir,
+    packageName: packageName,
   );
   _writeDefinitions(
     futures: futures,
@@ -350,6 +377,13 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     destinationDir: destinationDir,
     packageName: packageName,
   );
+  _writeMapperClasses(
+    futures: futures,
+    grammar: grammar,
+    serializer: serializer,
+    destinationDir: destinationDir,
+    packageName: packageName,
+  );
   _writeDefinitions(
     futures: futures,
     // GraphLinkInterceptor is written separately below (JVM-specific content).
@@ -560,6 +594,15 @@ Future<Set<String>> _generateExpressApolloClasses(
       typescriptSource: true,
     ));
   });
+  for (final def in grammar.mapperClassSources) {
+    final content = tsSerializer.serializeMapperClass(def);
+    if (content == null) continue;
+    futures.add(saveSource(
+      data: content,
+      path: '$destinationDir/mappers/${tsSerializer.getMapperFileName(def)}',
+      typescriptSource: true,
+    ));
+  }
   grammar.getSerializableInterfaces().forEach((def) {
     // GraphLinkInterceptor is written separately below (target-specific content).
     if (def.token == glInterceptorInterfaceName) return;
@@ -716,6 +759,10 @@ Future<Set<String>> _generateNestApolloClasses(
   grammar.getSerializableTypes().forEach((def) {
     add('types/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeTypeDefinition(def));
   });
+  for (final def in grammar.mapperClassSources) {
+    final content = tsSerializer.serializeMapperClass(def);
+    if (content != null) add('mappers/${tsSerializer.getMapperFileName(def)}', content);
+  }
   grammar.getSerializableInterfaces().forEach((def) {
     if (def.token == glInterceptorInterfaceName) return;
     add('interfaces/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeTypeDefinition(def));
@@ -831,6 +878,12 @@ Future<Set<String>> _generateAriadneClasses(
       models.add(def.codeName);
     }
   });
+  for (final def in grammar.mapperClassSources) {
+    final content = py.serializeMapperClass(def);
+    if (content == null) continue;
+    add('mappers/${py.getMapperFileName(def)}', content);
+    exports.add('from .mappers.${py.getMapperFileName(def).replaceAll('.py', '')} import ${py.mapping.mapperName(def)}');
+  }
   grammar.getSerializableInterfaces().forEach((def) {
     if (def.token == glInterceptorInterfaceName) return;
     final content = py.serializeTypeDefinition(def);
@@ -893,7 +946,7 @@ Future<Set<String>> _generateAriadneClasses(
 
   if (ariadneConfig.generateEntryPoint) add('app.py', serverSerializer.serializeEntryPoint());
 
-  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'services', 'guards', 'loaders']) {
+  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'mappers', 'services', 'guards', 'loaders']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
   }
   files['__init__.py'] = pythonBarrel(exports, models);

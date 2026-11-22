@@ -6,6 +6,8 @@ import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
+import 'package:graphlink/src/model/gl_input_mapping.dart';
+import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_type.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/scalar_codec.dart';
@@ -167,11 +169,43 @@ abstract class GLSerializer extends GLImportRendering {
   /// The `to<Target>()` methods of [def], one per `@glMapsTo` it declares.
   List<String> generateMappingMethods(GLTokenWithFields def) {
     final serializer = mapping;
-    if (serializer == null) return [];
+    if (serializer == null || grammar.mapsInMapperClass(def)) return [];
     return [
       for (final resolved in grammar.resolveMappings(def, mode))
         if (resolved.plan.derivesAnythingFromSource) serializer.toMethod(def, resolved.target, resolved.plan),
     ].where((s) => s.isNotEmpty).toList();
+  }
+
+  /// The mapper class file of [def], or null when [def] maps through inline methods or maps to nothing.
+  String? serializeMapperClass(GLTokenWithFields def) {
+    final serializer = mapping;
+    if (serializer == null || !grammar.mapsInMapperClass(def)) return null;
+    final methods = [
+      for (final resolved in grammar.resolveMappings(def, mode))
+        if (resolved.plan.derivesAnythingFromSource) serializer.mapperMethod(def, resolved.target, resolved.plan),
+    ];
+    if (methods.isEmpty) return null;
+    return serializer.mapperFile(def, methods, mapperImportLines(def));
+  }
+
+  /// The name of [def] in generated code: the `@glExternal` class when it has one.
+  String mappingTypeName(GLTokenWithFields def) => getTypeNameFromGQExternal(def.token) ?? def.mappingCodeName;
+
+  String getMapperFileName(GLTokenWithFields def) => mapping!.mapperFileName(def);
+
+  List<String> mapperImportLines(GLTokenWithFields def) {
+    final lines = <String>{};
+    for (final token in grammar.mapperDependencies(def)) {
+      final directives = token is GLDirectivesMixin ? token as GLDirectivesMixin : null;
+      final line = directives != null && directives.isExternal
+          ? (directives.externalImport == null ? '' : serializeImport(directives.externalImport!))
+          : serializeImportToken(token);
+      if (line.trim().isNotEmpty) lines.add(line);
+    }
+    for (final nested in grammar.nestedMapperSources(def)) {
+      lines.add(mapping!.mapperImport(nested));
+    }
+    return lines.toList();
   }
 
   String serializeToken(GLToken token) {

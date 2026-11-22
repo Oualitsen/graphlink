@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
@@ -65,6 +66,18 @@ Future<Set<String>> generateTypeScriptClientClasses(
       destinationDir: destinationDir,
     ));
   });
+
+  for (final def in parser.mapperClassSources) {
+    final content = serializer.serializeMapperClass(def);
+    if (content == null) continue;
+    futures.add(writeToFile(
+      data: content,
+      fileName: serializer.getMapperFileName(def),
+      subdir: 'mappers',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+  }
 
   parser.errors.forEach((k, def) {
     futures.add(writeToFile(

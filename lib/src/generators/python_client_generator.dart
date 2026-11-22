@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'dart:io';
 
 import 'package:graphlink/src/config.dart';
@@ -66,6 +67,13 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     }
   });
 
+  for (final def in parser.mapperClassSources) {
+    final content = serializer.serializeMapperClass(def);
+    if (content == null) continue;
+    add('mappers', serializer.getMapperFileName(def), content);
+    exports.add('from .mappers.${serializer.getMapperFileName(def).replaceAll('.py', '')} import ${serializer.mapping.mapperName(def)}');
+  }
+
   parser.errors.forEach((_, def) {
     add('errors', serializer.getFileNameFor(def.type), serializer.serializeErrorDefinition(def));
     exports.add(pythonExportLine('errors', serializer, def.type.codeName, def.type));
@@ -121,7 +129,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   }
   addClient('graph_link_client', clientSerializer.generateClientFile());
 
-  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'errors', 'client']) {
+  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'mappers', 'errors', 'client']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
   }
   files['__init__.py'] = pythonBarrel(exports, models);

@@ -244,6 +244,8 @@ class KotlinCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  String objectDecl(String name, List<String> body) => 'object $name ${block(body)}';
+
   String companionObject(List<String> body) {
     final buffer = StringBuffer();
     buffer.write('companion object ');

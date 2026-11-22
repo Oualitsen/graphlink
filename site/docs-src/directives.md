@@ -711,6 +711,31 @@ type Article @glMapsTo(type: "ArticleSummary") @glMapsTo(type: "UpdateArticleInp
 - Enums, scalars, unions and interfaces cannot be a source or a target. A source cannot target itself or declare the same target twice.
 - On a client, mappers are generated only with `"generateMappers": true` in that client's config.
 
+### Mapper classes and external types
+
+A mapping can live in a separate class, `<Source>Mapper`, generated in a `mappers` folder (`Mappers` in Swift, next to the other files in Go). It is a class of static functions: `UserMapper.toUserEntity(user)` (a namespace in TypeScript, an `enum` in Swift, a struct with methods in Go).
+
+- A mapping that involves an [`@glExternal`](#glexternal) type, as source or as target, is always generated in a mapper class: an external type has no generated class to hold a method, and GraphLink cannot know how to build it.
+- Between generated types the mapping stays a method on the source. Set `"mapperStyle": "class"` in the configuration to generate mapper classes for them too.
+- The external type is declared with its fields and its import; the fields are the contract your class must expose (getters in Java, properties elsewhere). Java and Kotlin build an external target with its no-argument constructor and setters (JPA convention); the other languages call a constructor taking every field by name.
+
+```graphql title="Hexagonal persistence boundary"
+type UserEntity @glExternal(glClass: "UserEntity", glImport: "com.acme.persistence.UserEntity") @glMapsTo(type: "User") {
+  id: ID!
+  fullName: String!
+}
+
+type User @glMapsTo(type: "UserEntity") {
+  id: ID!
+  fullName: String!
+}
+```
+
+```java title="Generated (Java)"
+UserEntityMapper.toUser(entity);   // UserEntity -> User
+UserMapper.toUserEntity(user);     // User -> UserEntity
+```
+
 Migrating from v6: replace `X.fromT(t, ...)` with a `@glMapsTo(type: "X")` on `T` and call `t.toX(...)`; add `"generateMappers": true` to client configs that used mappings.
 
 ---

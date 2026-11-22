@@ -1,3 +1,4 @@
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'dart:io';
 
 import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
@@ -86,6 +87,19 @@ Future<Set<String>> generateKotlinClientClasses(
       packageName: packageName,
     ));
   });
+
+  for (final def in parser.mapperClassSources) {
+    final content = serializer.serializeMapperClass(def);
+    if (content == null) continue;
+    futures.add(writeToFile(
+      data: content,
+      fileName: serializer.getMapperFileName(def),
+      subdir: 'mappers',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
 
   parser.errors.forEach((k, def) {
     futures.add(writeToFile(
