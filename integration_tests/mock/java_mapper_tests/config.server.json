@@ -1,0 +1,21 @@
+{
+  "schemaPaths": [
+    "schema.graphql"
+  ],
+  "mode": "server",
+  "mapperStyle": "class",
+  "typeMappings": {
+    "ID": "String",
+    "String": "String",
+    "Float": "Double",
+    "Int": "Integer",
+    "Boolean": "Boolean"
+  },
+  "outputDir": "client-app/src/main/java/dev/graphlink/mappermock/generatedserver",
+  "serverConfig": {
+    "spring": {
+      "basePackage": "dev.graphlink.mappermock.generatedserver",
+      "generateControllers": false
+    }
+  }
+}

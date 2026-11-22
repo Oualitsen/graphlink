@@ -1,0 +1,11 @@
+name: graphlink_swift_mapper_tests
+description: Generator runner for the Swift mapper tests
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ">=2.19.0 <4.0.0"
+
+dependencies:
+  graphlink:
+    path: ../../../

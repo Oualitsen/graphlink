@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": [
+    "test/**/*.ts",
+    "lib/persistence.ts",
+    "lib/generated/**/*.ts",
+    "lib/generated_express/types/**/*.ts",
+    "lib/generated_express/inputs/**/*.ts",
+    "lib/generated_express/enums/**/*.ts",
+    "lib/generated_express/interfaces/**/*.ts",
+    "lib/generated_express/mappers/**/*.ts",
+    "lib/generated_nest/types/**/*.ts",
+    "lib/generated_nest/inputs/**/*.ts",
+    "lib/generated_nest/enums/**/*.ts",
+    "lib/generated_nest/interfaces/**/*.ts",
+    "lib/generated_nest/mappers/**/*.ts"
+  ]
+}

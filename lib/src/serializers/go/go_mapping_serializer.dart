@@ -70,8 +70,11 @@ class GoMappingSerializer extends GLMappingSerializer {
     ];
     final prelude = <String>[];
     final assignments = [
-      ...plan.autoMapped.map((f) =>
-          '${f.targetField.codeName}: ${_mapperExpr('source.${f.sourceField!.codeName}', f.sourceField!.type, f.targetField.type, 0)},'),
+      ...plan.autoMapped.map((f) => '${f.targetField.codeName}: ${_asTargetPointer(
+            _mapperExpr('source.${f.sourceField!.codeName}', f.sourceField!.type, f.targetField.type, 0),
+            f.sourceField!.type,
+            f.targetField.type,
+          )},'),
       ...plan.defaultParams.map((f) {
         final local = 'resolved${f.targetField.codeName.firstUp}';
         final value = 'source.${f.sourceField!.codeName}';
@@ -93,6 +96,11 @@ class GoMappingSerializer extends GLMappingSerializer {
     );
   }
 
+  String _asTargetPointer(String expr, GLType sourceType, GLType targetType) {
+    if (sourceType.isList || !_owner.usesPointer(targetType) || _owner.usesPointer(sourceType)) return expr;
+    return _owner.codeGenUtils.ptr(_owner.nonPointerType(targetType), expr);
+  }
+
   String _mapperExpr(String expr, GLType sourceType, GLType targetType, int index) {
     if (sourceType.isList) {
       if (sourceType.firstType.token == targetType.firstType.token) return expr;
@@ -104,7 +112,7 @@ class GoMappingSerializer extends GLMappingSerializer {
     if (source != null && source.mapsToTarget(targetType.token)) {
       final call = '${mapperName(source)}{}.To${_owner.resolveCodeName(targetType.token).firstUp}';
       return sourceType.nullable
-          ? 'glMapPtr($expr, func(x ${_owner.mappingTypeName(source)}) ${_owner.serializeType(targetType)} { return $call(x) })'
+          ? 'glMapPtr($expr, func(x ${_owner.mappingTypeName(source)}) ${_owner.nonPointerType(targetType)} { return $call(x) })'
           : '$call($expr)';
     }
     return expr;
@@ -121,7 +129,7 @@ class GoMappingSerializer extends GLMappingSerializer {
     if (source != null && source.mapsToTarget(targetType.token)) {
       final target = _owner.resolveCodeName(targetType.token).firstUp;
       return sourceType.nullable
-          ? 'glMapPtr($expr, func(x ${source.mappingCodeName}) ${_owner.serializeType(targetType)} { return x.To$target() })'
+          ? 'glMapPtr($expr, func(x ${source.mappingCodeName}) ${_owner.nonPointerType(targetType)} { return x.To$target() })'
           : '$expr.To$target()';
     }
     return expr;

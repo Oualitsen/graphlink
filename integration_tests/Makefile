@@ -1,4 +1,4 @@
-.PHONY: dart-errors-real typescript-errors-real python-errors-real go-errors-real kotlin-errors-real swift-errors-real java-errors-real java-reactor-errors-real java-rxjava3-errors-real java-mutiny-errors-real persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
+.PHONY: dart-mappers typescript-mappers java-mappers kotlin-mappers swift-mappers python-mappers go-mappers mappers dart-errors-real typescript-errors-real python-errors-real go-errors-real kotlin-errors-real swift-errors-real java-errors-real java-reactor-errors-real java-rxjava3-errors-real java-mutiny-errors-real persisted-queries dart typescript java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin swift python go dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real typescript-rest typescript-rest-real kotlin-rest kotlin-rest-real python-rest python-rest-real swift-rest swift-rest-real go-rest go-rest-real typescript-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real python-real go-real server upload-server all all-real kill-servers kill-ports start-server start-upload-server start-main-server start-servers generate-all clean-all
 
 # Delete every previously generated output dir across all client projects.
 # Prune node_modules/build/target/.gradle/.dart_tool so we only ever touch
@@ -196,7 +196,30 @@ java-rxjava3-errors-real:
 java-mutiny-errors-real:
 	$(MAKE) -C real/java_client_errors_mutiny_tests_real ci
 
-all: dart dart-rest typescript typescript-rest java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin kotlin-rest swift swift-rest python python-rest go go-rest
+dart-mappers:
+	$(MAKE) -C mock/dart_mapper_tests ci
+
+typescript-mappers:
+	$(MAKE) -C mock/typescript_mapper_tests ci
+
+java-mappers:
+	$(MAKE) -C mock/java_mapper_tests ci
+
+kotlin-mappers:
+	$(MAKE) -C mock/kotlin_mapper_tests ci
+
+swift-mappers:
+	$(MAKE) -C mock/swift_mapper_tests ci
+
+python-mappers:
+	$(MAKE) -C mock/python_mapper_tests ci
+
+go-mappers:
+	$(MAKE) -C mock/go_mapper_tests ci
+
+mappers: dart-mappers typescript-mappers java-mappers kotlin-mappers swift-mappers python-mappers go-mappers
+
+all: mappers dart dart-rest typescript typescript-rest java java-rest java-rest-reactor java-rest-rxjava3 java-rest-mutiny kotlin kotlin-rest swift swift-rest python python-rest go go-rest
 
 all-real: dart-errors-real typescript-errors-real python-errors-real go-errors-real kotlin-errors-real swift-errors-real java-errors-real java-reactor-errors-real java-rxjava3-errors-real java-mutiny-errors-real dart-real dart-rest-real dart-rest-dio-real dart-upload-real dart-upload-dio-real java-upload-real java-upload-reactor-real typescript-real typescript-rest-real kotlin-rest-real kotlin-upload-real typescript-upload-real python-upload-real swift-upload-real go-upload-real java-rest-real java-rest-reactor-real java-rest-rxjava3-real java-rest-mutiny-real java-real java-reactor-real java-rxjava3-real java-mutiny-real kotlin-real swift-real swift-rest-real python-real python-rest-real go-real go-rest-real
 

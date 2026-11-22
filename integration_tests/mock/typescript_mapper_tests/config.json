@@ -1,0 +1,17 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "mapperStyle": "class",
+  "typeMappings": {"ID": "string", "String": "string", "Float": "number", "Int": "number", "Boolean": "boolean", "Null": "null"},
+  "outputDir": "lib/generated",
+  "clientConfig": {
+    "typescript": {
+      "generateMappers": true,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "httpAdapter": "none",
+      "immutableTypeFields": true,
+      "generateDefaultWsAdapter": false
+    }
+  }
+}

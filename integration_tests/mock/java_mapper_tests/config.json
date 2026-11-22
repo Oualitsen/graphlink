@@ -1,0 +1,21 @@
+{
+  "schemaPaths": ["schema.graphql"],
+  "mode": "client",
+  "mapperStyle": "class",
+  "typeMappings": {"ID": "String", "String": "String", "Float": "Double", "Int": "Integer", "Boolean": "Boolean"},
+  "outputDir": "client-app/src/main/java/dev/graphlink/mappermock/generated",
+  "clientConfig": {
+    "java": {
+      "packageName": "dev.graphlink.mappermock.generated",
+      "generateMappers": true,
+      "generateAllFieldsFragments": true,
+      "autoGenerateQueries": true,
+      "immutableInputFields": true,
+      "immutableTypeFields": true,
+      "inputAsRecord": false,
+      "typeAsRecord": false,
+      "jsonCodec": "jackson",
+      "wsAdapter": "none"
+    }
+  }
+}

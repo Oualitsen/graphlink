@@ -1,0 +1,20 @@
+{
+  "schemaPaths": [
+    "schema.graphql"
+  ],
+  "mode": "server",
+  "mapperStyle": "class",
+  "outputDir": "generated_django",
+  "serverConfig": {
+    "djangoAriadne": {
+      "port": 1
+    }
+  },
+  "typeMappings": {
+    "ID": "str",
+    "String": "str",
+    "Float": "float",
+    "Int": "int",
+    "Boolean": "bool"
+  }
+}
