@@ -67,12 +67,13 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
         [spec.config.specPath, 'spec', 'application/json', 'openApiSpec'],
         [spec.config.docsPath, 'docs', 'text/html', 'openApiDocsPage'],
       ])
-        '@Get(${route[0].quote()})\n${_cg.createMethod(
+        _cg.createMethod(
+          decorators: [_cg.decorator('Get', [route[0].quote()])],
           methodName: route[1],
           arguments: ['@Res() res: Response'],
           returnType: 'void',
           statements: ['res.type(${route[2].quote()}).send(${route[3]});'],
-        )}',
+        ),
     ];
     final imports = [
       "import { Controller, Get, Res } from '@nestjs/common';",
@@ -81,7 +82,7 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
     final body = [
       _cg.constDecl('openApiSpec', jsonEncode(spec.spec)),
       _cg.constDecl('openApiDocsPage', jsonEncode(spec.docsPage)),
-      '@Controller()\n${_cg.createClass(className: nestOpenApiControllerClass, statements: methods)}',
+      _cg.createClass(decorators: [_cg.decorator('Controller')], className: nestOpenApiControllerClass, statements: methods),
     ].join('\n\n');
     return '${GLClassModel(imports: imports, body: body).toFileContent()}\n';
   }
@@ -129,21 +130,23 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
 
     final methods = [
       for (final binding in bindings)
-        '@${_verb(binding.op)}(${expressPath(binding.op).quote()})\n${_cg.createMethod(
+        _cg.createMethod(
+          decorators: [_cg.decorator(_verb(binding.op), [expressPath(binding.op).quote()])],
           methodName: binding.op.field.codeName,
           arguments: ['@Req() req: Request', '@Res() res: Response'],
           returnType: 'void',
           async: true,
           statements: routeStatements(binding),
-        )}',
+        ),
     ];
 
     final className = controllerClassName(service);
     final classBody = _cg.createClass(
+      decorators: [_cg.decorator('Controller')],
       className: className,
       statements: [_constructor(dependencies), ...methods],
     );
-    return '${GLClassModel(imports: imports, body: '@Controller()\n$classBody').toFileContent()}\n';
+    return '${GLClassModel(imports: imports, body: classBody).toFileContent()}\n';
   }
 
   /// 405 for a path served under other methods only, 404 for anything else below the prefix every REST path shares.
@@ -156,22 +159,24 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
     final methods = <String>[];
     var index = 0;
     for (final entry in methodsByPath.entries) {
-      methods.add('@All(${entry.key.quote()})\n${_cg.createMethod(
+      methods.add(_cg.createMethod(
+        decorators: [_cg.decorator('All', [entry.key.quote()])],
         methodName: 'methodNotAllowed${index++}',
         arguments: ['@Res() res: Response'],
         returnType: 'void',
         statements: ['sendMethodNotAllowed(res, [${entry.value.map((m) => m.quote()).join(', ')}]);'],
-      )}');
+      ));
     }
     final prefix = _commonPrefix(bindings);
     if (prefix.isNotEmpty) {
       for (final path in [prefix, '$prefix/*splat']) {
-        methods.add('@All(${path.quote()})\n${_cg.createMethod(
+        methods.add(_cg.createMethod(
+          decorators: [_cg.decorator('All', [path.quote()])],
           methodName: 'notFound${index++}',
           arguments: ['@Res() res: Response'],
           returnType: 'void',
           statements: ['sendError(res, 404);'],
-        )}');
+        ));
       }
     }
     final imports = [
@@ -179,8 +184,8 @@ class NestApolloRestSerializer extends ExpressApolloRestSerializer {
       "import type { Response } from 'express';",
       "import { sendError, sendMethodNotAllowed } from './support.js';",
     ];
-    final classBody = _cg.createClass(className: nestRestFallbackControllerClass, statements: methods);
-    return '${GLClassModel(imports: imports, body: '@Controller()\n$classBody').toFileContent()}\n';
+    final classBody = _cg.createClass(decorators: [_cg.decorator('Controller')], className: nestRestFallbackControllerClass, statements: methods);
+    return '${GLClassModel(imports: imports, body: classBody).toFileContent()}\n';
   }
 
   String _commonPrefix(List<RouteBinding> bindings) {

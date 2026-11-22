@@ -82,6 +82,9 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     return "$condition ? $positiveStatement : $negativeStatement";
   }
 
+  /// `@Name(arg, ...)`
+  String decorator(String name, [List<String> args = const []]) => '@$name(${args.join(', ')})';
+
   /// Generates a plain function or class method.
   /// [async] wraps the return type in `Promise<T>`.
   /// [isGenerator] produces `async function*` with `AsyncGenerator<T>` return type.
@@ -94,8 +97,12 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     bool namedArguments = false,
     bool async = false,
     bool isGenerator = false,
+    List<String> decorators = const [],
   }) {
     var buffer = StringBuffer();
+    for (final d in decorators) {
+      buffer.writeln(d);
+    }
     if (async || isGenerator) buffer.write("async ");
     if (isGenerator) buffer.write("*");
     buffer.write(methodName);
@@ -247,8 +254,12 @@ class TypeScriptCodeGenUtils implements CodeGenUtilsBase {
     String? extendsName,
     bool exported = true,
     bool isAbstract = false,
+    List<String> decorators = const [],
   }) {
     var buffer = StringBuffer();
+    for (final d in decorators) {
+      buffer.writeln(d);
+    }
     if (exported) buffer.write("export ");
     if (isAbstract) buffer.write("abstract ");
     buffer.write("class $className");

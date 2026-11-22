@@ -3,17 +3,22 @@ import 'package:graphlink/src/generators/openapi_generator.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
+import 'package:graphlink/src/model/gl_directives_mixin.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_annotation_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_resolver_binding_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_response_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/python_code_gen_utils.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
+import 'package:graphlink/src/serializers/python/python_annotation_serializer.dart';
 import 'package:graphlink/src/serializers/python/python_rest_serializer.dart';
 import 'package:graphlink/src/serializers/python/python_ariadne_server_constants.dart';
 import 'package:graphlink/src/serializers/python/python_serializer.dart';
@@ -26,7 +31,24 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
 
   final OpenApiOutput? openApi;
 
-  PythonAriadneServerSerializer(super.grammar, this.py, this.config, {this.openApi});
+  PythonAriadneServerSerializer(super.grammar, this.py, this.config, {this.openApi}) {
+    grammar.convertAnnotationsToDecorators(_annotatedElements, PythonAnnotationSerializer.serializeAnnotation);
+  }
+
+  List<GLDirectivesMixin> get _annotatedElements {
+    final services = grammar.services.values.toList();
+    final fields = services.expand((s) => s.fields);
+    return [...services, ...fields, ...fields.expand((f) => f.arguments)];
+  }
+
+  List<String> _userDecorators(GLDirectivesMixin element) =>
+      GLGrammarExtension.extractDecorators(directives: element.getDirectives(), mode: grammar.mode);
+
+  String _subscriptionDecorator(String role, GLResolverBinding binding) =>
+      '@subscription.$role(${py.pythonStringLiteral(binding.wireName)})';
+
+  String _fieldDecorator(String variable, GLResolverBinding binding) =>
+      '@$variable.field(${py.pythonStringLiteral(binding.wireName)})';
 
   bool get servesOpenApi => hasRest && openApi != null && openApi!.serve;
 
@@ -417,6 +439,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
       if (hasUploads) 'from .file_upload import to_file_upload',
       'from .type_defs import TYPE_DEFS',
       ..._importLines(types, root: true),
+      ...grammar.decoratorImportsOf([for (final service in services) ...[service, ...service.fields, ...service.fields.expand((f) => f.arguments)]]),
       for (final service in services) ...[
         'from .services.${serviceFileName(service)} import ${service.token}',
         if (hasGuard(service)) 'from .guards.${guardFileName(service)} import ${guardName(service)}',
@@ -489,7 +512,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
     final resultExpr = py.carryingSource(() => py.toJsonExpr(field.type, 'result'));
     final name = '${binding}_$method';
     return cg.createMethod(
-      decorators: ['@$binding.field(${py.pythonStringLiteral(field.name.token)})'],
+      decorators: [_fieldDecorator(binding, grammar.rootResolverBinding(type, field.name.token)), ..._userDecorators(field)],
       async: true,
       methodName: name,
       arguments: ['_', 'info', '**args'],
@@ -514,9 +537,8 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
         final argNames = field.arguments.map((a) => a.codeName).toList();
         final callArgs = [...argNames, if (injectsContext(field)) 'context'].join(', ');
         final method = methodName(field.name.token);
-        final wire = py.pythonStringLiteral(field.name.token);
         result.add(cg.createMethod(
-          decorators: ['@subscription.source($wire)'],
+          decorators: [_subscriptionDecorator('source', grammar.rootResolverBinding(GLQueryType.subscription, field.name.token)), ..._userDecorators(field)],
           async: true,
           methodName: 'subscription_${method}_source',
           arguments: ['_', 'info', '**args'],
@@ -534,7 +556,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
         ));
         final payloadJson = py.carryingSource(() => py.toJsonExpr(field.type, 'payload'));
         result.add(cg.createMethod(
-          decorators: ['@subscription.field($wire)'],
+          decorators: [_subscriptionDecorator('field', grammar.rootResolverBinding(GLQueryType.subscription, field.name.token))],
           methodName: 'subscription_$method',
           arguments: ['payload', 'info', '**args'],
           statements: ['return $payloadJson'],
@@ -564,7 +586,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
       }
       for (final name in passThrough[typeName] ?? <String>[]) {
         statements.add(cg.createMethod(
-          decorators: ['@$variable.field(${py.pythonStringLiteral(name)})'],
+          decorators: [_fieldDecorator(variable, grammar.typeFieldResolverBinding(name))],
           methodName: '${variable}_${name.toSnakeCaseWords()}_passthrough',
           arguments: ['parent', 'info', '**args'],
           statements: ['return parent'],
@@ -593,9 +615,8 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
   }
 
   String? _mappingResolver(GLSchemaMapping m, GLService service, String variable) {
-    final wire = py.pythonStringLiteral(m.field.name.token);
     final name = '${variable}_${m.field.name.token.toSnakeCaseWords()}';
-    final decorator = '@$variable.field($wire)';
+    final decorators = [_fieldDecorator(variable, grammar.typeFieldResolverBinding(m.field.name.token)), ..._userDecorators(m.field)];
     final intercepted = grammar.isIntercepted(m.field);
     final realArgs = _realMappingArgs(m);
     final argCodeNames = realArgs.map((a) => a.codeName).toList();
@@ -603,7 +624,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
 
     if (m.forbid) {
       return cg.createMethod(
-        decorators: [decorator],
+        decorators: decorators,
         methodName: name,
         arguments: ['parent', 'info', '**args'],
         statements: ['raise GraphQLError("Access denied", extensions={"code": "FORBIDDEN"})'],
@@ -612,7 +633,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
     if (m.identity || m.forwarded) {
       if (runBefore == null) return null;
       return cg.createMethod(
-        decorators: [decorator],
+        decorators: decorators,
         async: true,
         methodName: name,
         arguments: ['parent', 'info', '**args'],
@@ -620,7 +641,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
           'context: GraphLinkContext = info.context',
           ..._decodeRealArgs(realArgs),
           runBefore,
-          'return parent.get($wire)',
+          'return parent.get(${py.pythonStringLiteral(m.field.name.token)})',
         ],
       );
     }
@@ -632,7 +653,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
           ? 'context.loaders.${methodName(m.key)}'
           : 'context.loaders.${methodName(m.key)}(${argCodeNames.join(', ')})';
       return cg.createMethod(
-        decorators: [decorator],
+        decorators: decorators,
         async: true,
         methodName: name,
         arguments: ['parent', 'info', '**args'],
@@ -652,7 +673,7 @@ abstract class PythonAriadneServerSerializer extends ServerSerializer with Serve
       if (config.useResolveInfo) 'info',
     ].join(', ');
     return cg.createMethod(
-      decorators: [decorator],
+      decorators: decorators,
       async: true,
       methodName: name,
       arguments: ['parent', 'info', '**args'],

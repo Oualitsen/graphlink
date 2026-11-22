@@ -8,13 +8,18 @@ import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_schema_mapping.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_type.dart';
+import 'package:graphlink/src/model/gl_directives_mixin.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_annotation_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_intercept_extension.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_resolver_binding_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_server_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_upload_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_validation_extension.dart';
 import 'package:graphlink/src/serializers/typescript/nest_apollo_rest_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/nest_apollo_server_constants.dart';
+import 'package:graphlink/src/serializers/typescript/typescript_annotation_serializer.dart';
 import 'package:graphlink/src/serializers/typescript/typescript_apollo_server_base.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 
@@ -29,7 +34,30 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
 
   final OpenApiOutput? openApi;
 
-  NestApolloServerSerializer(super.grammar, super.tsSerializer, NestApolloServerConfig super.apolloConfig, {this.openApi});
+  NestApolloServerSerializer(super.grammar, super.tsSerializer, NestApolloServerConfig super.apolloConfig, {this.openApi}) {
+    grammar.convertAnnotationsToDecorators(_annotatedElements, TypeScriptAnnotationSerializer.serializeAnnotation);
+  }
+
+  List<GLDirectivesMixin> get _annotatedElements {
+    final services = grammar.services.values.toList();
+    final fields = services.expand((s) => s.fields);
+    return [...services, ...fields, ...fields.expand((f) => f.arguments)];
+  }
+
+  List<String> _userDecorators(GLDirectivesMixin element) =>
+      GLGrammarExtension.extractDecorators(directives: element.getDirectives(), mode: grammar.mode);
+
+  String _resolverDecorator(GLResolverBinding binding, {List<String> extraArgs = const []}) {
+    final name = _decoratorName(binding.kind);
+    return _cg.decorator(name, [binding.wireName.quote(), ...extraArgs]);
+  }
+
+  String _decoratorName(GLResolverKind kind) {
+    if (kind == GLResolverKind.mutation) return 'Mutation';
+    if (kind == GLResolverKind.subscription) return 'Subscription';
+    if (kind == GLResolverKind.typeField) return 'ResolveField';
+    return 'Query';
+  }
 
   late final NestApolloRestSerializer rest = NestApolloRestSerializer(grammar, tsSerializer, apolloConfig, openApi: openApi);
 
@@ -129,7 +157,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
       collectType(e.returnType, types);
     }
     final decorators = <String>{
-      for (final e in entries) _decoratorOf(e.queryType),
+      for (final e in entries) _decoratorName(grammar.rootResolverBinding(e.queryType, e.fieldName).kind),
       for (final e in entries) ...[if (e.field.arguments.isNotEmpty) 'Args', if (e.contextInjected) 'Context', if (e.needsInfo) 'Info'],
     };
     final guarded = entries.any((e) => fieldHasValidation(e.field));
@@ -156,18 +184,14 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
       "import { ${service.token} } from '../services/${kebabJs(service.token)}';",
       if (guarded) "import { ${guardName(service)} } from '../guards/${kebabJs(guardName(service))}';",
       if (types.isNotEmpty) importLines(types),
+      ...grammar.decoratorImportsOf([service, ...service.fields, ...service.fields.expand((f) => f.arguments)]),
     ];
-    final body = '@Resolver()\n${_cg.createClass(
+    final body = _cg.createClass(
+      decorators: [_cg.decorator('Resolver')],
       className: rootResolverClassName(service),
       statements: [_constructor(dependencies), ...methods],
-    )}';
+    );
     return '${GLClassModel(imports: imports, body: body).toFileContent()}\n';
-  }
-
-  String _decoratorOf(GLQueryType type) {
-    if (type == GLQueryType.mutation) return 'Mutation';
-    if (type == GLQueryType.subscription) return 'Subscription';
-    return 'Query';
   }
 
   String _queryOrMutationMethod(RootEntry e) {
@@ -195,7 +219,8 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
     final validate = fieldHasValidation(e.field)
         ? 'await this.${guardName(e.service).firstLow}.${validationMethodName(e.fieldName)}($callArgs);'
         : null;
-    return '@${_decoratorOf(e.queryType)}(${e.fieldName.quote()})\n${_cg.createMethod(
+    return _cg.createMethod(
+      decorators: [_resolverDecorator(grammar.rootResolverBinding(e.queryType, e.fieldName)), ..._userDecorators(e.field)],
       methodName: e.fieldName,
       arguments: _rootParams(e),
       async: true,
@@ -205,7 +230,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
         if (validate != null) validate,
         'return $returned;',
       ],
-    )}';
+    );
   }
 
   String _subscriptionMethod(RootEntry e) {
@@ -213,16 +238,19 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
     final callArgs = [...e.argCodeNames, if (injectsContext(e.field)) 'context'].join(', ');
     final call = 'this.$member.${e.fieldName}($callArgs)';
     final toJson = tsSerializer.carryingSource(() => tsSerializer.toJsonExpr(e.returnType, 'payload'));
-    final decorator = '@Subscription(${e.fieldName.quote()}, { resolve: (payload: any) => $toJson })';
-    final method = e.intercepted
+    final decorators = [
+      _resolverDecorator(grammar.rootResolverBinding(e.queryType, e.fieldName), extraArgs: ['{ resolve: (payload: any) => $toJson }']),
+      ..._userDecorators(e.field),
+    ];
+    return e.intercepted
         ? _cg.createMethod(
+            decorators: decorators,
             methodName: e.fieldName,
             arguments: _rootParams(e),
             async: true,
             statements: [_runBefore(e), 'return $call;'],
           )
-        : _cg.createMethod(methodName: e.fieldName, arguments: _rootParams(e), statements: ['return $call;']);
-    return '$decorator\n$method';
+        : _cg.createMethod(decorators: decorators, methodName: e.fieldName, arguments: _rootParams(e), statements: ['return $call;']);
   }
 
   List<String> _rootParams(RootEntry e) => [
@@ -273,11 +301,13 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
 
     final methods = [
       for (final e in entries) _mappingMethod(e),
-      for (final name in passThrough) _cg.createMethod(
-        methodName: name,
-        arguments: ['@Parent() parent: any'],
-        statements: ['return parent;'],
-      ).prefixed('@ResolveField(${name.quote()})\n'),
+      for (final name in passThrough)
+        _cg.createMethod(
+          decorators: [_resolverDecorator(grammar.typeFieldResolverBinding(name))],
+          methodName: name,
+          arguments: ['@Parent() parent: any'],
+          statements: ['return parent;'],
+        ),
     ];
     final dependencies = [
       for (final service in services) _dependency(service.token),
@@ -294,11 +324,13 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
       ..._interceptorImports(intercepted),
       for (final service in services) "import { ${service.token} } from '../services/${kebabJs(service.token)}';",
       if (types.isNotEmpty) importLines(types),
+      ...grammar.decoratorImportsOf([for (final e in entries) ...[e.mapping.field, ...e.mapping.field.arguments]]),
     ];
-    final body = '@Resolver(${typeName.quote()})\n${_cg.createClass(
+    final body = _cg.createClass(
+      decorators: [_cg.decorator('Resolver', [typeName.quote()])],
       className: fieldsResolverClassName(typeName),
       statements: [_constructor(dependencies), ...methods],
-    )}';
+    );
     return '${GLClassModel(imports: imports, body: body).toFileContent()}\n';
   }
 
@@ -312,13 +344,14 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
   String _mappingMethod(MappingEntry entry) {
     final m = entry.mapping;
     final name = m.field.name.token;
-    final decorator = '@ResolveField(${name.quote()})\n';
+    final decorators = [_resolverDecorator(grammar.typeFieldResolverBinding(name)), ..._userDecorators(m.field)];
     if (m.forbid) {
       return _cg.createMethod(
+        decorators: decorators,
         methodName: name,
         returnType: 'never',
         statements: ["throw new GraphQLError('Access denied', { extensions: { code: 'FORBIDDEN' } });"],
-      ).prefixed(decorator);
+      );
     }
 
     final intercepted = grammar.isIntercepted(m.field);
@@ -329,11 +362,12 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
 
     if (m.identity || m.forwarded) {
       return _cg.createMethod(
+        decorators: decorators,
         methodName: name,
         arguments: ['@Parent() parent: any', ...argParams, if (intercepted) '@Context() context: GraphLinkContext'],
         async: intercepted,
         statements: [if (runBefore != null) runBefore, 'return parent.$name;'],
-      ).prefixed(decorator);
+      );
     }
 
     if (m.isBatch) {
@@ -341,6 +375,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
           ? 'context.loaders.${m.key}'
           : 'context.loaders.${m.key}(${realArgs.map((a) => a.codeName).join(', ')})';
       return _cg.createMethod(
+        decorators: decorators,
         methodName: name,
         arguments: [
           '@Parent() parent: any',
@@ -353,7 +388,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
           _cg.constDecl('_r', 'await $loader.load(parent)'),
           'return $toJson;',
         ],
-      ).prefixed(decorator);
+      );
     }
 
     final needsInfo = apolloConfig.useResolveInfo;
@@ -365,6 +400,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
       if (needsInfo) 'info',
     ].join(', ');
     return _cg.createMethod(
+        decorators: decorators,
       methodName: name,
       arguments: [
         '@Parent() parent: any',
@@ -378,7 +414,7 @@ class NestApolloServerSerializer extends TypeScriptApolloServerSerializerBase {
         _cg.constDecl('_r', 'await this.${entry.service.token.firstLow}.${m.key}($callArgs)'),
         'return $toJson;',
       ],
-    ).prefixed(decorator);
+    );
   }
 
   String _mappingRunBefore(GLSchemaMapping m, List<GLArgumentDefinition> realArgs) {
@@ -666,9 +702,5 @@ export async function restContext(options: GraphLinkModuleOptions, req: Request,
     ];
     return '${lines.join('\n')}\n';
   }
-}
-
-extension on String {
-  String prefixed(String prefix) => '$prefix$this';
 }
 
