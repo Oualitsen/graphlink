@@ -22,6 +22,19 @@ import 'package:graphlink/src/serializers/server_serializer.dart';
 /// What the Express and NestJS Apollo servers share: the service and guard contracts, loaders, context, type defs and
 /// the naming/import helpers. A subclass decides how a contract is declared and how resolvers and the entry point look.
 abstract class TypeScriptApolloServerSerializerBase extends ServerSerializer with ServerSerializerUtils {
+  bool get hasDomainErrors => grammar.errors.isNotEmpty;
+
+  String serializeDomainErrorSupport() => [
+        if (!grammar.restOnly) ...[
+          "import { GraphQLFormattedError } from 'graphql';",
+          "import { unwrapResolverError } from '@apollo/server/errors';",
+          '',
+        ],
+        tsServerDomainError.trim(),
+        if (!grammar.restOnly) ...['', tsServerFormatError.trim()],
+        '',
+      ].join('\n');
+
   final TypeScriptSerializer tsSerializer;
   final TypeScriptApolloServerConfig apolloConfig;
   final _cg = TypeScriptCodeGenUtils();

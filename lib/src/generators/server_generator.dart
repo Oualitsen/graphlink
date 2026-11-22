@@ -2,6 +2,7 @@ import 'package:graphlink/src/parser_extensions/gl_grammar_source_extension.dart
 import 'dart:io';
 
 import 'package:graphlink/src/generators/openapi_generator.dart';
+import 'package:graphlink/src/serializers/jvm_server_domain_error.dart';
 import 'package:graphlink/src/serializers/spring_openapi_controller_serializer.dart';
 
 import 'package:graphlink/src/config.dart';
@@ -174,6 +175,24 @@ Future<Set<String>> _generateServerTarget(
     packageName: packageName,
     appendStar: true,
   );
+  if (grammar.errors.isNotEmpty) {
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.errors.values,
+      data: serializer.serializeErrorDefinition,
+      fileName: (e) => serializer.getFileNameFor(e.type),
+      subdir: springDomainErrorDir,
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    );
+    _writeJvmDomainErrorSupport(futures, destinationDir, packageName, grammar,
+        kotlin: false,
+        base: javaServerDomainError,
+        resolver: javaServerDomainErrorResolver,
+        advice: javaServerDomainErrorAdvice,
+        generateControllers: springConfig.generateControllers);
+  }
   final interceptorInterface = springSerializer.serializeInterceptorInterface();
   if (interceptorInterface != null) {
     futures.add(writeToFile(
@@ -394,6 +413,24 @@ Future<Set<String>> _generateKotlinSpringClasses(GLParser grammar, GeneratorConf
     destinationDir: destinationDir,
     packageName: packageName,
   );
+  if (grammar.errors.isNotEmpty) {
+    _writeDefinitions(
+      futures: futures,
+      defs: grammar.errors.values,
+      data: serializer.serializeErrorDefinition,
+      fileName: (e) => serializer.getFileNameFor(e.type),
+      subdir: springDomainErrorDir,
+      destinationDir: destinationDir,
+      packageName: packageName,
+      appendStar: true,
+    );
+    _writeJvmDomainErrorSupport(futures, destinationDir, packageName, grammar,
+        kotlin: true,
+        base: kotlinServerDomainError,
+        resolver: kotlinServerDomainErrorResolver,
+        advice: kotlinServerDomainErrorAdvice,
+        generateControllers: springConfig.generateControllers);
+  }
   final interceptorInterface = springSerializer.serializeInterceptorInterface();
   if (interceptorInterface != null) {
     futures.add(writeToFile(
@@ -612,6 +649,20 @@ Future<Set<String>> _generateExpressApolloClasses(
       typescriptSource: true,
     ));
   });
+  grammar.errors.forEach((_, def) {
+    futures.add(saveSource(
+      data: tsSerializer.serializeErrorDefinition(def),
+      path: '$destinationDir/errors/${tsSerializer.getFileNameFor(def.type)}',
+      typescriptSource: true,
+    ));
+  });
+  if (serverSerializer.hasDomainErrors) {
+    futures.add(saveSource(
+      data: serverSerializer.serializeDomainErrorSupport(),
+      path: '$destinationDir/errors/graph-link-domain-error.ts',
+      typescriptSource: true,
+    ));
+  }
   final interceptorInterface = serverSerializer.serializeInterceptorInterface();
   if (interceptorInterface != null) {
     futures.add(saveSource(
@@ -767,6 +818,10 @@ Future<Set<String>> _generateNestApolloClasses(
     if (def.token == glInterceptorInterfaceName) return;
     add('interfaces/${tsSerializer.getFileNameFor(def)}', tsSerializer.serializeTypeDefinition(def));
   });
+  grammar.errors.forEach((_, def) {
+    add('errors/${tsSerializer.getFileNameFor(def.type)}', tsSerializer.serializeErrorDefinition(def));
+  });
+  if (serializer.hasDomainErrors) add('errors/graph-link-domain-error.ts', serializer.serializeDomainErrorSupport());
   final interceptorInterface = serializer.serializeInterceptorInterface();
   if (interceptorInterface != null) {
     add('interfaces/${tsSerializer.getFileNameFor(grammar.interfaces[glInterceptorInterfaceName]!)}', interceptorInterface);
@@ -898,6 +953,14 @@ Future<Set<String>> _generateAriadneClasses(
     add('interfaces/${serverSerializer.interceptorFileName}.py', wrap(interceptorInterface));
   }
 
+  grammar.errors.forEach((_, def) {
+    add('errors/${py.getFileNameFor(def.type)}', py.serializeErrorDefinition(def));
+    exports.add(pythonExportLine('errors', py, def.type.codeName, def.type));
+  });
+  if (grammar.errors.isNotEmpty) {
+    add('$ariadneRuntimeDir/graph_link_domain_error.py', wrap(serverSerializer.serializeDomainErrorRuntime()));
+  }
+
   grammar.services.forEach((_, service) {
     add('services/${serverSerializer.serviceFileName(service)}.py', wrap(serverSerializer.serializeService(service)));
     final guard = serverSerializer.serializeGuard(service);
@@ -946,7 +1009,7 @@ Future<Set<String>> _generateAriadneClasses(
 
   if (ariadneConfig.generateEntryPoint) add('app.py', serverSerializer.serializeEntryPoint());
 
-  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'mappers', 'services', 'guards', 'loaders']) {
+  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'errors', 'mappers', 'services', 'guards', 'loaders']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
   }
   files['__init__.py'] = pythonBarrel(exports, models);
@@ -960,4 +1023,34 @@ Future<Set<String>> _generateAriadneClasses(
   final paths = result.map((f) => f.path).toSet();
   await cleanUpObsoleteFiles(paths);
   return paths;
+}
+
+void _writeJvmDomainErrorSupport(
+  List<Future<File>> futures,
+  String destinationDir,
+  String packageName,
+  GLParser grammar, {
+  required bool kotlin,
+  required String base,
+  required String resolver,
+  required String advice,
+  required bool generateControllers,
+}) {
+  final extension = kotlin ? 'kt' : 'java';
+  void write(String name, String source, String subdir) {
+    futures.add(writeToFile(
+      data: source,
+      fileName: '$name.$extension',
+      subdir: subdir,
+      imports: const [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
+  write('GraphLinkDomainError', base, springDomainErrorDir);
+  if (!generateControllers) return;
+  final errorsImport = 'import $packageName.$springDomainErrorDir.GraphLinkDomainError${kotlin ? '' : ';'}\n\n';
+  if (!grammar.restOnly) write('GraphLinkDomainErrorResolver', '$errorsImport$resolver', 'controllers');
+  if (grammar.restOperations.isNotEmpty) write('GraphLinkDomainErrorAdvice', '$errorsImport$advice', 'controllers');
 }

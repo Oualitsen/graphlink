@@ -152,6 +152,7 @@ type Query {
    greet(name: String = "world", times: Int = 1): String!
    echoPriority(level: Priority = HIGH): Priority!
    restItemGraphql(id: ID!): RestItem
+   errProbe(id: ID!): ErrItem!
 }
 type class {
    id: ID!
@@ -350,6 +351,9 @@ type RestKeywords {
    return: String
    if: Int!
    switch: String!
+}
+type ErrItem {
+   id: ID!
 }
 interface Shape {
    id: ID!

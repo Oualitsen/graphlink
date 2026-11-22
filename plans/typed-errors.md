@@ -1,7 +1,7 @@
 # Typed domain errors (`@glError`, `@glThrows`)
 
-Status: phases 1 to 4 done (IR, exception classes, `@glThrows`, matching and throwing for GraphQL and REST in every client,
-OpenAPI responses, docs). The server side is phase 5. Target: v7 (breaking changes allowed).
+Status: all phases done (IR, exception classes, `@glThrows`, matching and throwing for GraphQL and REST in every client,
+OpenAPI responses, docs, server side in the eight generated servers). Target: v7 (breaking changes allowed).
 
 ## Goal
 
@@ -29,7 +29,7 @@ GraphQL and REST work the same way, so moving an operation from one to the other
 | 2 | `@glThrows`, matching and throwing for GraphQL (client) | done: `integration_tests/real/*_client_errors_tests_real` |
 | 3 | Matching and throwing for REST (client) | done: the REST cases of `integration_tests/real/*_client_errors_tests_real` |
 | 4 | OpenAPI responses, docs page, `llms.txt` | done (`llms.txt` is generated from `site/docs-src`) |
-| 5 | Server side | not started, design in §6 |
+| 5 | Server side | done: `server_integration_tests/server_errors`, `make ci-errors-<server>` |
 
 Everything below that describes matching or throwing is phase 2 or 3.
 
@@ -245,7 +245,7 @@ both the entry and the body. Unsolved on purpose: use two types.
 
 ---
 
-## 6. Server side (phase 5, not started)
+## 6. Server side (phase 5, done)
 
 The only contract with the client is the wire convention of §2, so the server is independent of the client phases.
 

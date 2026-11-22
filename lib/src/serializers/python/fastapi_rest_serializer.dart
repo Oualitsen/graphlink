@@ -14,6 +14,9 @@ class FastapiRestSerializer extends PythonRestSerializer {
   List<String> get requestImports => ['from starlette.requests import Request', 'from starlette.responses import Response'];
 
   @override
+  String get domainJsonResponse => 'JSONResponse(body, status_code=status)';
+
+  @override
   String get supportRuntime => pythonRestSupportStarlette;
 
   @override

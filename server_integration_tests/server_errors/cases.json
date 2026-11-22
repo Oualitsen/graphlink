@@ -1,0 +1,66 @@
+[
+  {
+    "name": "graphql_success",
+    "protocol": "graphql",
+    "query": "{ errProbe(id: \"ok\") { id } }",
+    "status": 200,
+    "data": {"errProbe": {"id": "ok"}}
+  },
+  {
+    "name": "graphql_error_with_default_code_and_fields",
+    "protocol": "graphql",
+    "query": "{ errProbe(id: \"missing\") { id } }",
+    "status": 200,
+    "error": {"message": "Item missing not found", "path": ["errProbe"], "extensions": {"code": "ErrNotFound", "id": "missing"}}
+  },
+  {
+    "name": "graphql_error_with_custom_field_and_value",
+    "protocol": "graphql",
+    "query": "{ errProbe(id: \"forbidden\") { id } }",
+    "status": 200,
+    "error": {"message": "No access", "path": ["errProbe"], "extensions": {"kind": "forbidden"}}
+  },
+  {
+    "name": "graphql_alias_keeps_the_response_key_in_the_path",
+    "protocol": "graphql",
+    "query": "{ a: errProbe(id: \"missing\") { id } }",
+    "status": 200,
+    "error": {"message": "Item missing not found", "path": ["a"], "extensions": {"code": "ErrNotFound", "id": "missing"}}
+  },
+  {
+    "name": "graphql_plain_exception_stays_internal",
+    "protocol": "graphql",
+    "query": "{ errProbe(id: \"boom\") { id } }",
+    "status": 200,
+    "internal": true
+  },
+  {
+    "name": "rest_success",
+    "protocol": "rest",
+    "path": "/rest/errors/ok",
+    "status": 200,
+    "json": {"id": "ok"}
+  },
+  {
+    "name": "rest_error_status_and_fields",
+    "protocol": "rest",
+    "path": "/rest/errors/missing",
+    "status": 404,
+    "jsonSubset": {"id": "missing", "message": "Item missing not found"},
+    "absent": ["code"]
+  },
+  {
+    "name": "rest_error_with_value_writes_the_discriminator",
+    "protocol": "rest",
+    "path": "/rest/errors/conflict",
+    "status": 409,
+    "jsonSubset": {"code": "CONFLICT", "reason": "duplicate", "message": "Conflict"}
+  },
+  {
+    "name": "rest_plain_exception_stays_internal",
+    "protocol": "rest",
+    "path": "/rest/errors/boom",
+    "status": 500,
+    "internal": true
+  }
+]

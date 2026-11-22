@@ -124,3 +124,58 @@ export function sourceOf<T>(json: unknown): T {
   return (source ?? json) as T;
 }
 ''';
+
+const tsServerDomainError = r'''
+export class GraphLinkDomainError extends Error {
+  constructor(message: string = '') {
+    super(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+    this.name = new.target.name;
+  }
+}
+
+interface GraphLinkErrorWire {
+  field: string[];
+  restField: string[] | null;
+  value: string;
+  status: number | null;
+}
+
+type DomainJson = { toJson(): Record<string, unknown> };
+
+function wireOf(error: GraphLinkDomainError): GraphLinkErrorWire {
+  return (error.constructor as unknown as { wire: GraphLinkErrorWire }).wire;
+}
+
+function setPath(target: Record<string, unknown>, path: string[], value: unknown): void {
+  let node = target;
+  for (const segment of path.slice(0, -1)) {
+    const next = node[segment];
+    node = next !== null && typeof next === 'object' ? (next as Record<string, unknown>) : (node[segment] = {});
+  }
+  node[path[path.length - 1]] = value;
+}
+
+export function domainErrorEntry(error: GraphLinkDomainError): Record<string, unknown> {
+  const wire = wireOf(error);
+  const entry: Record<string, unknown> = { extensions: { ...(error as unknown as DomainJson).toJson() } };
+  setPath(entry, wire.field, wire.value);
+  return entry;
+}
+
+export function domainErrorResponse(error: GraphLinkDomainError): { status: number; body: Record<string, unknown> } {
+  const wire = wireOf(error);
+  const body: Record<string, unknown> = { ...(error as unknown as DomainJson).toJson(), message: error.message };
+  if (wire.restField !== null) setPath(body, wire.restField, wire.value);
+  return { status: wire.status ?? 400, body };
+}
+''';
+
+const tsServerFormatError = r'''
+export function formatDomainError(formatted: GraphQLFormattedError, error: unknown): GraphQLFormattedError {
+  const original = unwrapResolverError(error);
+  if (!(original instanceof GraphLinkDomainError)) return formatted;
+  const entry = domainErrorEntry(original);
+  return { ...formatted, message: original.message, ...entry, extensions: entry.extensions as Record<string, unknown> };
+}
+''';

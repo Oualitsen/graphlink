@@ -365,6 +365,9 @@ ci-kotlin-suspend-client: kotlin-build kotlin-suspend-start-server
 # ---- Server GraphQL suite (server_graphql/): exact data, schema, defaults and subscriptions over raw HTTP and WebSocket ----
 # ci-http-<server> runs the three suites against one server start, which is what CI does.
 
+# servers whose generated code throws the typed domain errors of schema_errors/ (see plans/typed-errors.md)
+ERRORS_SERVERS := typescript nestjs python-fastapi python-django java java-reactive kotlin-blocking kotlin-suspend
+
 define fault_rule
 ci-faults-$(1): $(3) $(1)-start-server
 	python3 -I server_faults/run_faults.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
@@ -378,6 +381,10 @@ ci-graphql-$(1): $(3) $(1)-start-server
 	python3 -I server_graphql/run_graphql.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
 	$(MAKE) $(1)-stop-server
 
+ci-errors-$(1): $(3) $(1)-start-server
+	python3 -I server_errors/run_errors.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
+	$(MAKE) $(1)-stop-server
+
 ci-openapi-$(1): $(3) $(1)-start-server
 	python3 -I server_openapi/run_openapi.py $(2) $(4) || ($(MAKE) $(1)-stop-server && exit 1)
 	$(MAKE) $(1)-stop-server
@@ -388,6 +395,7 @@ ci-http-$(1): $(3) $(1)-start-server
 	python3 -I server_rest/run_rest.py $(2) $(4) || status=1; \
 	python3 -I server_openapi/run_openapi.py $(2) $(4) || status=1; \
 	python3 -I server_graphql/run_graphql.py $(2) $(4) || status=1; \
+	$(if $(filter $(1),$(ERRORS_SERVERS)),python3 -I server_errors/run_errors.py $(2) $(4) || status=1;) \
 	$(MAKE) $(1)-stop-server; \
 	exit $$$$status
 endef

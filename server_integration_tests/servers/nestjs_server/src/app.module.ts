@@ -9,6 +9,7 @@ import { CollideService } from './generated/services/collide-service.js';
 import { StatusService } from './generated/services/status-service.js';
 import { NestingService } from './generated/services/nesting-service.js';
 import { ReservedFieldsService } from './generated/services/reserved-fields-service.js';
+import { ErrItemService } from './generated/services/err-item-service.js';
 import { GreetingService } from './generated/services/greeting-service.js';
 import { GraphLinkInterceptor } from './generated/interfaces/graph-link-interceptor.js';
 import { TeamService } from './generated/services/team-service.js';
@@ -68,6 +69,7 @@ import { BulkCreateServiceImpl, BulkCreateGuardImpl} from './impl/bulk-create-se
 import { CollideServiceImpl} from './impl/collide-service.js';
 import { DefaultsServiceImpl} from './impl/defaults-service.js';
 import { DeleteArticleServiceImpl} from './impl/delete-article-service.js';
+import { ErrItemServiceImpl } from './impl/err-service.js';
 import { GreetingServiceImpl} from './impl/greeting-service.js';
 import { HoistServiceImpl} from './impl/hoist-service.js';
 import { InterceptorImpl} from './impl/interceptor.js';
@@ -116,6 +118,7 @@ const providers: Provider[] = [
   { provide: StatusService, useClass: StatusServiceImpl },
   { provide: NestingService, useClass: NestingServiceImpl },
   { provide: ReservedFieldsService, useClass: ReservedFieldsServiceImpl },
+  { provide: ErrItemService, useClass: ErrItemServiceImpl },
   { provide: GreetingService, useClass: GreetingServiceImpl },
   { provide: GraphLinkInterceptor, useClass: InterceptorImpl },
   { provide: TeamService, useClass: TeamServiceImpl },

@@ -31,6 +31,7 @@ const _skippedDirectives = {
   glCache,
   glCacheInvalidate,
   glCaptureErrors,
+  glThrows,
   glIntercept,
 };
 

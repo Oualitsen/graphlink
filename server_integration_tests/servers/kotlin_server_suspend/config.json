@@ -1,5 +1,5 @@
 {
-  "schemaPaths": ["../../schema/*.gql", "../../schema_rest/*.gql"],
+  "schemaPaths": ["../../schema/*.gql", "../../schema_rest/*.gql", "../../schema_errors/*.gql"],
   "mode": "server",
   "outputDir": "src/main/kotlin/dev/graphlink/kotlinserversuspend/generated",
   "serverConfig": {

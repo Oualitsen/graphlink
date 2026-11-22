@@ -262,11 +262,23 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
       'message',
       ...fields.map((f) => _fieldFromJsonExpr(f, name, type)),
     ];
+    final server = grammar.mode == CodeGenerationMode.server;
+    final restField = def.restField;
     final source = codeGenUtils.createClass(
       className: name,
       extendsName: tsDomainErrorBase,
       statements: [
         ...fields.map((f) => serializeField(f, true, true)),
+        if (server) ...[
+          'static readonly wire = { field: [${def.field.map((f) => f.quote()).join(', ')}], '
+              'restField: ${restField == null ? 'null' : '[${restField.map((f) => f.quote()).join(', ')}]'}, '
+              'value: ${def.value.quote()}, status: ${def.status ?? 'null'} };',
+          codeGenUtils.createMethod(
+            methodName: 'toJson',
+            returnType: 'Record<string, unknown>',
+            statements: ['return ${codeGenUtils.block(fields.map((f) => '"${f.name.token}": ${toJsonExpr(f.type, 'this.${f.codeName}')},').toList())};'],
+          ),
+        ],
         codeGenUtils.createMethod(
           methodName: 'constructor',
           arguments: ['init: { ${initMembers.join('; ')} }'],
@@ -283,7 +295,7 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
     return serializeWithImport(
       type,
       [
-        "import { $tsDomainErrorBase } from '../client/$tsDomainErrorModule';",
+        "import { $tsDomainErrorBase } from '${grammar.mode == CodeGenerationMode.server ? '.' : '../client'}/$tsDomainErrorModule';",
         '',
         source,
       ].join('\n'),

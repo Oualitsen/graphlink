@@ -8,6 +8,7 @@ import { BulkCreateServiceImpl, BulkCreateGuardImpl } from './impl/bulk-create-s
 import { CollideServiceImpl } from './impl/collide-service.js';
 import { DefaultsServiceImpl } from './impl/defaults-service.js';
 import { DeleteArticleServiceImpl } from './impl/delete-article-service.js';
+import { ErrItemServiceImpl } from './impl/err-service.js';
 import { GreetingServiceImpl } from './impl/greeting-service.js';
 import { HoistServiceImpl } from './impl/hoist-service.js';
 import { InterceptorImpl } from './impl/interceptor.js';
@@ -66,6 +67,7 @@ const httpServer = await createServer({
   statusService: new StatusServiceImpl(),
   nestingService: new NestingServiceImpl(),
   reservedFieldsService: new ReservedFieldsServiceImpl(),
+  errItemService: new ErrItemServiceImpl(),
   greetingService: new GreetingServiceImpl(),
   interceptor: new InterceptorImpl(),
   teamService: new TeamServiceImpl(),

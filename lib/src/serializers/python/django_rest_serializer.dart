@@ -14,6 +14,9 @@ class DjangoRestSerializer extends PythonRestSerializer {
   List<String> get requestImports => ['from django.http import HttpRequest, HttpResponse'];
 
   @override
+  String get domainJsonResponse => '_sized(_json(body, status))';
+
+  @override
   String get supportRuntime => pythonRestSupportDjango;
 
   @override
