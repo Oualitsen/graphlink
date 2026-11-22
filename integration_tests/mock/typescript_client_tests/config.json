@@ -12,6 +12,7 @@
   "outputDir": "lib/generated",
   "clientConfig": {
     "typescript": {
+      "generateMappers": true,
       "generateAllFieldsFragments": true,
       "autoGenerateQueries":        true,
       "httpAdapter":                "none",

@@ -188,9 +188,57 @@ input UpdateUserInput {
 }
 
 
+# ── 6b. Mappings — @glMapsTo with several targets ─────────────────────────────
+# MappedArticle declares three targets. `title` is renamed per target through
+# @glMapField(target:); `views` is nullable here and non-null on the card
+# (default param); the update input has fields the article lacks (required params).
+
+type MappedArticle
+  @glMapsTo(type: "MappedArticleSummary")
+  @glMapsTo(type: "MappedArticleCard")
+  @glMapsTo(type: "MappedArticleUpdateInput") {
+  id: ID!
+  title: String!
+    @glMapField(to: "headline", target: "MappedArticleSummary")
+    @glMapField(to: "name", target: "MappedArticleCard")
+  body: String!
+  views: Int
+}
+
+type MappedArticleSummary {
+  id: ID!
+  headline: String!
+}
+
+type MappedArticleCard {
+  id: ID!
+  name: String!
+  views: Int!
+}
+
+input MappedArticleUpdateInput {
+  id: ID!
+  title: String!
+  body: String!
+  status: String!
+}
+
+# An input with two targets: one type, one input.
+input MappedArticleDraftInput
+  @glMapsTo(type: "MappedArticle")
+  @glMapsTo(type: "MappedArticleUpdateInput") {
+  title: String!
+  body: String!
+  views: Int
+}
+
 # ── 7. Queries — plain ────────────────────────────────────────────────────────
 
 type Query {
+  getMappedArticle(id: ID!): MappedArticle!
+  getMappedArticleSummary(id: ID!): MappedArticleSummary!
+  getMappedArticleCard(id: ID!): MappedArticleCard!
+
   # Non-nullable single object — basic case.
   getUser(id: ID!): User!
 
@@ -253,6 +301,9 @@ type Query {
 # ── 10. Mutations — plain ─────────────────────────────────────────────────────
 
 type Mutation {
+  saveMappedArticleDraft(input: MappedArticleDraftInput!): MappedArticle!
+  updateMappedArticle(input: MappedArticleUpdateInput!): MappedArticle!
+
   # Returns the full created object.
   createUser(input: CreateUserInput!): User!
 

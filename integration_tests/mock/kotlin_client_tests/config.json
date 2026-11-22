@@ -11,6 +11,7 @@
   "outputDir": "client-app/src/main/kotlin/dev/graphlink/test/generated",
   "clientConfig": {
     "kotlin": {
+      "generateMappers": true,
       "packageName":                "dev.graphlink.test.generated",
       "generateAllFieldsFragments": true,
       "autoGenerateQueries":        true,

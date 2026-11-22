@@ -1,4 +1,5 @@
 import 'package:graphlink/src/extensions.dart';
+import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -37,7 +38,9 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
       final auto = autoByTarget[key];
       final withDefault = defaultByTarget[key];
       if (auto != null) {
-        entries.add('$name: ${_mapExpr('$source.${auto.sourceField!.codeName}', auto.sourceField!.type, auto.targetField.type, 0)}');
+        final expr = _mapExpr('$source.${auto.sourceField!.codeName}', auto.sourceField!.type, auto.targetField.type, 0);
+        final needsNull = _isOptional(def, auto.sourceField!.type.nullable) && !_isOptional(target, auto.targetField.type.nullable);
+        entries.add('$name: ${needsNull ? (expr.contains(' ? ') ? '($expr) ?? null' : '$expr ?? null') : expr}');
       } else if (withDefault != null) {
         entries.add('$name: $source.${withDefault.sourceField!.codeName} ?? default${name.firstUp}');
       } else if (requiredByTarget.containsKey(key)) {
@@ -53,6 +56,9 @@ class TypeScriptMappingSerializer extends GLMappingSerializer {
       statements: ['return ${_owner.codeGenUtils.block(entries.map((e) => '$e,').toList())};'],
     );
   }
+
+  bool _isOptional(GLTokenWithFields owner, bool nullable) =>
+      nullable && owner is GLInputDefinition && _owner.optionalNullableInputFields;
 
   String _mapExpr(String expr, GLType sourceType, GLType targetType, int index) {
     if (sourceType.isList) {
