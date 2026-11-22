@@ -52,8 +52,15 @@ Future<Set<String>> generateGoClientClasses(GLParser parser, GeneratorConfig con
     add(serializer.getFileNameFor(def), serializer.serializeTypeDefinition(def));
   });
 
+  parser.errors.forEach((_, def) {
+    add(serializer.getFileNameFor(def.type), serializer.serializeErrorDefinition(def));
+  });
+
   addClient('graph_link_util', clientSerializer.generateUtilFile());
   addClient('graph_link_exception', clientSerializer.generateExceptionFile());
+  if (parser.errors.isNotEmpty) {
+    addClient('graph_link_domain_error', clientSerializer.generateDomainErrorFile());
+  }
   addClient('graph_link_cache', clientSerializer.generateCacheFile());
   addClient('graph_link_partial_query', clientSerializer.generatePartialQueryFile());
   addClient('graph_link_resolver_base', clientSerializer.generateResolverBaseFile());

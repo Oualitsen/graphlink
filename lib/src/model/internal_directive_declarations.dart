@@ -29,6 +29,7 @@ directive @glNoCache on FIELD | FIELD_DEFINITION | QUERY | MUTATION | SUBSCRIPTI
 directive @glCaptureErrors on FIELD_DEFINITION | QUERY | MUTATION
 directive @glDecorators(value: [String!]!, applyOnClient: Boolean, applyOnServer: Boolean, glImport: String) repeatable on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION | ARGUMENT_DEFINITION
 directive @glEqualsHashcode(fields: [String!]) on FIELD | OBJECT | INPUT_OBJECT | INTERFACE
+directive @glError(field: String, value: String, status: Int) on OBJECT
 directive @glExpand(depth: Int) on OBJECT
 directive @glExternal(glClass: String, glImport: String) on INPUT_OBJECT | OBJECT | SCALAR | INTERFACE
 directive @glInjectContext on FIELD_DEFINITION

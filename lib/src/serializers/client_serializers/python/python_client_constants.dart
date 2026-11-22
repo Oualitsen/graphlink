@@ -34,6 +34,15 @@ class GraphLinkException(Exception):
         super().__init__(message or "GraphQL request failed")
 ''';
 
+const pythonDomainError = r'''
+class GraphLinkDomainError(Exception):
+    message: str
+
+    def __init__(self, message: str = "") -> None:
+        super().__init__(message)
+        self.message = message
+''';
+
 const pythonJsonChecks = r'''
 import math
 from typing import Any, Dict, List

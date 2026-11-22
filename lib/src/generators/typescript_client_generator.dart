@@ -66,6 +66,16 @@ Future<Set<String>> generateTypeScriptClientClasses(
     ));
   });
 
+  parser.errors.forEach((k, def) {
+    futures.add(writeToFile(
+      data: serializer.serializeErrorDefinition(def),
+      fileName: serializer.getFileNameFor(def.type),
+      subdir: 'errors',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+  });
+
   // ── Client infrastructure files ───────────────────────────────────────────
 
   void emitClient(String fileName, GLClassModel model) {
@@ -101,6 +111,10 @@ Future<Set<String>> generateTypeScriptClientClasses(
   if (parser.persistedQueries) {
     addClient('graph-link-sha256$ext', cs.runtime.generateSha256File());
     addClient('graph-link-persisted-queries$ext', cs.runtime.generatePersistedQueriesFile());
+  }
+
+  if (parser.errors.isNotEmpty) {
+    addClient('graph-link-domain-error$ext', cs.runtime.generateDomainErrorFile());
   }
 
   // WebSocket infrastructure (only when subscriptions exist)

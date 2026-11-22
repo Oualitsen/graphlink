@@ -1743,3 +1743,18 @@ String swiftGlSendHashOnly(bool withOpName) => '''
         }
     }
 ''';
+
+
+const swiftDomainError = r'''
+open class GraphLinkDomainError: Error, @unchecked Sendable {
+    public let message: String
+
+    public init(message: String = "") {
+        self.message = message
+    }
+}
+
+extension GraphLinkDomainError: LocalizedError {
+    public var errorDescription: String? { message.isEmpty ? String(describing: type(of: self)) : message }
+}
+''';

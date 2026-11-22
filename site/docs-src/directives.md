@@ -41,6 +41,7 @@ directive @glNoCache on FIELD | FIELD_DEFINITION | QUERY | MUTATION | SUBSCRIPTI
 directive @glCaptureErrors on FIELD_DEFINITION | QUERY | MUTATION
 directive @glDecorators(value: [String!]!, applyOnClient: Boolean, applyOnServer: Boolean, glImport: String) repeatable on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION | ARGUMENT_DEFINITION
 directive @glEqualsHashcode(fields: [String!]) on FIELD | OBJECT | INPUT_OBJECT | INTERFACE
+directive @glError(field: String, value: String, status: Int) on OBJECT
 directive @glExpand(depth: Int) on OBJECT
 directive @glExternal(glClass: String, glImport: String) on INPUT_OBJECT | OBJECT | SCALAR | INTERFACE
 directive @glInjectContext on FIELD_DEFINITION
@@ -191,6 +192,61 @@ public class GetUserFullResponse {
 **Validation:** applying `@glCaptureErrors` to a subscription field is rejected at parse time with a `ParseException`.
 
 **Global config alternative:** instead of annotating each field, set `captureErrors: true` in `clientConfig.dart` / `clientConfig.java` / `clientConfig.typescript` to apply the behaviour to every query and mutation automatically.
+
+---
+
+## @glError
+
+**Target:** CLIENT · **Placement:** `OBJECT`
+
+!!! warning "Preview"
+    This release generates the error classes only. The client does not match or throw them yet, so nothing in a
+    response becomes one of these classes for now.
+
+Declares a business error. The type becomes an **exception class** in every client, with its fields as typed members,
+and is not a type of your API: it is never a field type, an argument, an input, an interface implementer or a union
+member (the schema is rejected with a message if you try), and a server does not serve it.
+
+| Argument | Type | Default | Description |
+|---|---|---|---|
+| `field` | `String` | `"extensions.code"` | Dotted path of the discriminator, relative to the GraphQL error entry |
+| `value` | `String` | the type name | The string the discriminator must equal |
+| `status` | `Int` | none | HTTP status (REST). Accepted today, used by a later release |
+
+```graphql title="Example"
+type ArticleNotFound @glError { id: ID! }
+type TitleTaken      @glError { title: String!  suggestions: [String!] }
+type Forbidden       @glError { }
+
+# a third-party server that sends { "extensions": { "code": "NOT_FOUND" } }
+type NotFound @glError(value: "NOT_FOUND") { id: ID }
+```
+
+Fields must be scalars, enums or lists of them, with no arguments and no default values, and their names must not
+clash with the exception's own members (`message`, `path`, `extensions`, `cause`, `stack`, `args`, ...). `extend type`
+works on an error type.
+
+Every client gets a small `GraphLinkDomainError` base (the language's plain exception with a `message`) and one class
+per error, built from a map with `fromJson`:
+
+```dart title="Generated errors/title_taken.dart (Dart)"
+class TitleTaken extends GraphLinkDomainError {
+  final String title;
+  final List<String>? suggestions;
+  const TitleTaken({required this.title, this.suggestions, String message = ''}) : super(message);
+  static TitleTaken fromJson(Map<String, dynamic> json, {String message = ''}) => /* ... */;
+}
+```
+
+| Target | Base extends | Caller code |
+|---|---|---|
+| Dart | `Exception` | `on TitleTaken catch (e)` |
+| TypeScript | `Error` | `if (e instanceof TitleTaken)` |
+| Java | `RuntimeException` (unchecked) | `catch (TitleTaken e)` |
+| Kotlin | `RuntimeException` | `catch (e: TitleTaken)` |
+| Python | `Exception` | `except TitleTaken as e:` |
+| Swift | `Error` | `catch let e as TitleTaken` |
+| Go | `error` | `errors.As(err, &titleTaken)` |
 
 ---
 

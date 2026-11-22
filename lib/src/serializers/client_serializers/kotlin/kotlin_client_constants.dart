@@ -855,3 +855,8 @@ fun glRequireData(decoded: Map<String, Any?>, text: String): Map<String, Any?> {
     throw GraphLinkException(listOf(GraphLinkError(message = "GraphQL response has no data", body = text)))
 }
 ''';
+
+
+const kotlinDomainError = r'''
+open class GraphLinkDomainError(message: String = "") : RuntimeException(message)
+''';

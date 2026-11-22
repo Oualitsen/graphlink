@@ -86,6 +86,8 @@ class GoClientSerializer extends GLClientSerializer {
 
   GLClassModel generateExceptionFile() => const GLClassModel(body: goException);
 
+  GLClassModel generateDomainErrorFile() => const GLClassModel(body: goDomainError);
+
   GLClassModel generateCacheFile() => const GLClassModel(body: goCache);
 
   GLClassModel generatePartialQueryFile() => const GLClassModel(body: goPartialQuery);

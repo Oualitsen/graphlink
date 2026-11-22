@@ -6,6 +6,7 @@ import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_defaults_extension.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -20,6 +21,9 @@ import 'package:graphlink/src/serializers/typescript/typescript_mapping_serializ
 import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/typescript_code_gen_utils.dart';
 import 'package:graphlink/src/utils.dart';
+
+const tsDomainErrorBase = 'GraphLinkDomainError';
+const tsDomainErrorModule = 'graph-link-domain-error.js';
 
 class TypeScriptSerializer extends GLSerializer with JsonExpressions {
   final codeGenUtils = TypeScriptCodeGenUtils();
@@ -243,6 +247,47 @@ class TypeScriptSerializer extends GLSerializer with JsonExpressions {
       return _serializeInterfaceAsUnion(def);
     }
     return _serializeType(def);
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = type.getSerializableFields(grammar.mode);
+    final initMembers = [
+      ...fields.map((f) => '${f.codeName}${f.type.nullable ? '?' : ''}: ${serializeType(f.type)}'),
+      'message?: string',
+    ];
+    final assignments = fields.map((f) => 'this.${f.codeName} = init.${f.codeName}${f.type.nullable ? ' ?? null' : ''};');
+    final entries = [
+      'message',
+      ...fields.map((f) => _fieldFromJsonExpr(f, name, type)),
+    ];
+    final source = codeGenUtils.createClass(
+      className: name,
+      extendsName: tsDomainErrorBase,
+      statements: [
+        ...fields.map((f) => serializeField(f, true, true)),
+        codeGenUtils.createMethod(
+          methodName: 'constructor',
+          arguments: ['init: { ${initMembers.join('; ')} }'],
+          statements: ['super(init.message);', 'Object.setPrototypeOf(this, $name.prototype);', ...assignments],
+        ),
+        codeGenUtils.createMethod(
+          methodName: 'static fromJson',
+          arguments: ['json: Record<string, unknown>', "message: string = ''"],
+          returnType: name,
+          statements: ['return new $name(${codeGenUtils.block(entries.map((e) => '$e,').toList())});'],
+        ),
+      ],
+    );
+    return serializeWithImport(
+      type,
+      [
+        "import { $tsDomainErrorBase } from '../client/$tsDomainErrorModule';",
+        '',
+        source,
+      ].join('\n'),
+    );
   }
 
   /// A developer-implemented interface (e.g. `GraphLinkInterceptor`) whose fields are

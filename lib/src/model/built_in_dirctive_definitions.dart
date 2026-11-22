@@ -121,6 +121,12 @@ const glExpandDepth = "depth";
 /// The caller checks response.hasErrors instead of using try/catch.
 const glCaptureErrors = "@glCaptureErrors";
 
+/// Declares a domain error: the type becomes an exception class on the clients and is not a type of the API.
+const glError = "@glError";
+const glErrorFieldArg = "field";
+const glErrorValueArg = "value";
+const glErrorStatusArg = "status";
+
 /// REST operations — see rest-client-specs.md.
 const glRest = "@glRest";
 const glRestPrefix = "@glRestPrefix";

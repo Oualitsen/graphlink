@@ -66,6 +66,11 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
     }
   });
 
+  parser.errors.forEach((_, def) {
+    add('errors', serializer.getFileNameFor(def.type), serializer.serializeErrorDefinition(def));
+    exports.add(pythonExportLine('errors', serializer, def.type.codeName, def.type));
+  });
+
   void addClient(String fileName, GLClassModel? model) {
     if (model == null) return;
     add('client', '$fileName.py', serializer.serializeGlClass(model));
@@ -74,6 +79,9 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
 
   add('client', 'graph_link_model.py', serializer.serializeGlClass(clientSerializer.runtime.generateModelBaseFile()));
   addClient('graph_link_exception', clientSerializer.runtime.generateExceptionFile());
+  if (parser.errors.isNotEmpty) {
+    addClient(pythonDomainErrorModule, clientSerializer.runtime.generateDomainErrorFile());
+  }
   addClient('graph_link_lock', clientSerializer.runtime.generateLockFile());
   addClient('graph_link_json', clientSerializer.runtime.generateJsonChecksFile());
   addClient('graph_link_cache_entry', clientSerializer.runtime.generateCacheEntryFile());
@@ -113,7 +121,7 @@ Future<Set<String>> generatePythonClientClasses(GLParser parser, GeneratorConfig
   }
   addClient('graph_link_client', clientSerializer.generateClientFile());
 
-  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'client']) {
+  for (final subdir in const ['enums', 'inputs', 'types', 'interfaces', 'errors', 'client']) {
     if (files.keys.any((k) => k.startsWith('$subdir/'))) files['$subdir/__init__.py'] = '';
   }
   files['__init__.py'] = pythonBarrel(exports, models);

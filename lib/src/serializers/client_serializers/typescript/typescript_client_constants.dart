@@ -1109,3 +1109,14 @@ function _checkHttpStatus(status: number, body: string): string {
   throw [error];
 }
 ''';
+
+
+const tsDomainError = r'''
+export class GraphLinkDomainError extends Error {
+  constructor(message: string = '') {
+    super(message);
+    Object.setPrototypeOf(this, new.target.prototype);
+    this.name = new.target.name;
+  }
+}
+''';

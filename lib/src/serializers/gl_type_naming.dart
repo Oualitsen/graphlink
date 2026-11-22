@@ -29,6 +29,7 @@ abstract class GLTypeNaming {
         grammar.inputs[wireToken]?.codeName ??
         grammar.enums[wireToken]?.codeName ??
         grammar.unions[wireToken]?.codeName ??
+        grammar.errors[wireToken]?.type.codeName ??
         wireToken;
   }
 

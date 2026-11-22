@@ -13,6 +13,8 @@ class PythonClientRuntimeSerializer {
 
   GLClassModel generateExceptionFile() => _client.static(pythonException);
 
+  GLClassModel generateDomainErrorFile() => _client.static(pythonDomainError);
+
   GLClassModel generateLockFile() => _client.static(pythonLock);
 
   GLClassModel generateJsonChecksFile() => _client.static(pythonJsonChecks);
