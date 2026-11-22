@@ -57,15 +57,6 @@ class MappingCase9Test {
         assertThat(result.getLabels()).isEmpty();
     }
 
-    @Test
-    void fromItemTag_reversesLabels() {
-        ItemTag tag = new ItemTag("it-4", Arrays.asList("green", "yellow"));
-        ItemTagInput result = ItemTagInput.fromItemTag(tag);
-
-        assertThat(result.getId()).isEqualTo("it-4");
-        assertThat(result.getLabels()).containsExactly("green", "yellow");
-    }
-
     // -------------------------------------------------------------------------
     // CartItemInput — toCartItem / fromCartItem
     // tags is a required param because toItemTag() itself requires params.
@@ -93,33 +84,4 @@ class MappingCase9Test {
         assertThatCode(() -> input.toCartItem(Collections.emptyList())).doesNotThrowAnyException();
     }
 
-    @Test
-    void fromCartItem_passesTagsParamThrough() {
-        CartItem cartItem = new CartItem("ci-3", Arrays.asList(new ItemTag("it-6", Arrays.asList("x"))));
-        List<ItemTagInput> tagsParam = Arrays.asList(new ItemTagInput("it-6", Arrays.asList("x")));
-
-        CartItemInput result = CartItemInput.fromCartItem(cartItem, tagsParam);
-
-        assertThat(result.getId()).isEqualTo("ci-3");
-        assertThat(result.getTags()).isSameAs(tagsParam);
-    }
-
-    @Test
-    void fromCartItem_withNullLabelsInTagsParamDoesNotThrow() {
-        CartItem cartItem = new CartItem("ci-4", Arrays.asList(new ItemTag("it-7", Arrays.asList("y"))));
-        List<ItemTagInput> tagsParam = Arrays.asList(new ItemTagInput("it-7", null)); // nullable labels
-
-        assertThatCode(() -> CartItemInput.fromCartItem(cartItem, tagsParam)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void roundTrip_itemTag_withNullLabels() {
-        ItemTagInput original = new ItemTagInput("it-8", null);
-        ItemTag converted = original.toItemTag(Arrays.asList("fallback"));
-        ItemTagInput roundTrip = ItemTagInput.fromItemTag(converted);
-
-        assertThat(roundTrip.getId()).isEqualTo("it-8");
-        // fromItemTag copies the non-null labels from ItemTag → roundTrip has ["fallback"]
-        assertThat(roundTrip.getLabels()).containsExactly("fallback");
-    }
 }

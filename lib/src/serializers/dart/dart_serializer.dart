@@ -381,6 +381,7 @@ class DartSerializer extends GLSerializer with JsonExpressions {
           generateToJson(fields, typeName: def.jsonTypeName),
           generateFromJson(fields, codeName),
         ],
+        ...generateMappingMethods(def),
       ],
     ));
     return buffer.toString();

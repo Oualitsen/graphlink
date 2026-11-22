@@ -2,8 +2,8 @@ import 'package:graphlink/src/serializers/java/java_imports.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/java_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_maps_to_extension.dart';
 import 'package:graphlink/src/model/gl_field.dart';
-import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_token.dart';
 import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/gl_type.dart';
@@ -15,7 +15,8 @@ class JavaMappingSerializer extends GLMappingSerializer {
   const JavaMappingSerializer(this._owner);
 
   @override
-  String toMethod(GLInputDefinition def, String targetType, ToMappingPlan plan) {
+  String toMethod(GLTokenWithFields def, GLTokenWithFields target, ToMappingPlan plan) {
+    final targetType = target.mappingCodeName;
     // Whether the source input and target type are records (affects accessor style).
     final targetIsRecord = _owner.typesAsRecords;
 
@@ -34,8 +35,7 @@ class JavaMappingSerializer extends GLMappingSerializer {
 
     if (targetIsRecord) {
       // Build positional constructor args in the target type's field declaration order.
-      final targetDef = _owner.grammar.types[def.mapsToType!];
-      final targetFields = targetDef?.getSerializableFields(_owner.grammar.mode) ?? [];
+      final targetFields = target.getSerializableFields(_owner.grammar.mode);
 
       // Index mappings by target field name for quick lookup.
       final autoByTarget = {for (final f in plan.autoMapped) f.targetField.name.token: f};
@@ -101,68 +101,6 @@ class JavaMappingSerializer extends GLMappingSerializer {
     );
   }
 
-  @override
-  String fromMethod(GLInputDefinition def, String targetType, FromMappingPlan plan) {
-    final targetVar = targetType.firstLow;
-    final targetDef = _owner.grammar.types[def.mapsToType!]!;
-
-    final nullableListDefaultParams =
-        plan.nullableListDefaults.map((f) => '${_owner.serializeType(f.sourceField!.type)} default${f.sourceField!.codeName.firstUp}');
-
-    final promotedParams = plan.promoted.map(
-      (f) => '${_owner.serializeType(f.sourceField!.type)} ${f.sourceField!.codeName}',
-    );
-
-    final inputOnlyParams = plan.inputOnly.map(
-      (f) => '${_owner.serializeType(f.type)} ${f.codeName}',
-    );
-
-    if (plan.promoted.any((f) => f.sourceField!.type.isList) || plan.inputOnly.any((f) => f.type.isList) || plan.nullableListDefaults.isNotEmpty) {
-      def.addImport(JavaImports.list);
-    }
-
-    final autoBySource = {for (final f in plan.autoMapped) f.sourceField!.name.token: f};
-    final nullableListBySource = {for (final f in plan.nullableListDefaults) f.sourceField!.name.token: f};
-    final promotedNames = {for (final f in plan.promoted) f.sourceField!.name.token};
-    final inputOnlyNames = {for (final f in plan.inputOnly) f.name.token};
-
-    final fields = def.getSerializableFields(_owner.grammar.mode);
-    final constructorArgs = <String>[];
-    for (final field in fields) {
-      final fieldName = field.name.token;
-      if (autoBySource.containsKey(fieldName)) {
-        final f = autoBySource[fieldName]!;
-        final sourceExpr = '${targetVar}.${_getterFieldName(targetDef, f.targetField, false)}';
-        constructorArgs.add(_fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def));
-      } else if (nullableListBySource.containsKey(fieldName)) {
-        final f = nullableListBySource[fieldName]!;
-        final sourceExpr = '${targetVar}.${_getterFieldName(targetDef, f.targetField, false)}';
-        final expr = _fromMappingExpr(sourceExpr, f.sourceField!.type.firstType.token, f.targetField.type, 0, def);
-        constructorArgs.add('$expr != null ? $expr : default${f.sourceField!.codeName.firstUp}');
-      } else if (promotedNames.contains(fieldName) || inputOnlyNames.contains(fieldName)) {
-        constructorArgs.add(field.codeName);
-      }
-    }
-
-    return _owner.codeGenUtils.createMethod(
-      returnType: 'public static ${def.codeName}',
-      methodName: 'from${targetType.firstUp}',
-      arguments: [
-        '$targetType $targetVar',
-        ...nullableListDefaultParams,
-        ...promotedParams,
-        ...inputOnlyParams,
-      ],
-      statements: [
-        'return new ${def.codeName}(',
-        ...constructorArgs.asMap().entries.map(
-              (e) => e.key < constructorArgs.length - 1 ? '${e.value},' : e.value,
-            ),
-        ');',
-      ],
-    );
-  }
-
   /// Returns the Java expression for a toXxx() field assignment.
   /// Uses builder-chain suffix via stream().map().collect() for lists.
   String _toMappingExpr(String variable, GLType sourceType, GLType targetType, int index, GLToken context) {
@@ -175,29 +113,9 @@ class JavaMappingSerializer extends GLMappingSerializer {
       context.addImport(JavaImports.collectors);
       return JavaCodeGenUtils.streamMapCollect(receiver: variable, param: varName, body: inner, nullable: sourceType.nullable);
     }
-    final sourceInput = _owner.grammar.inputs[sourceType.token];
-    if (sourceInput?.mapsToType == targetType.token) {
+    final source = _owner.grammar.mappingToken(sourceType.token);
+    if (source != null && source.mapsToTarget(targetType.token)) {
       return JavaCodeGenUtils.safeCall(variable, 'to${_owner.resolveCodeName(targetType.token).firstUp}()', sourceType.nullable);
-    }
-    return variable; // same type — direct copy
-  }
-
-  /// Returns the Java expression for a fromXxx() field assignment.
-  String _fromMappingExpr(String variable, String sourceElemToken, GLType targetType, int index, GLToken context) {
-    if (targetType.isList) {
-      if (sourceElemToken == targetType.firstType.token) {
-        return variable; // same element type — pass directly
-      }
-      final varName = 'e$index';
-      final inner = _fromMappingExpr(varName, sourceElemToken, targetType.inlineType, index + 1, context);
-      context.addImport(JavaImports.collectors);
-      return JavaCodeGenUtils.streamMapCollect(receiver: variable, param: varName, body: inner, nullable: targetType.nullable);
-    }
-    final sourceInput = _owner.grammar.inputs[sourceElemToken];
-    if (sourceInput?.mapsToType == targetType.token) {
-      final sourceCodeName = _owner.resolveCodeName(sourceElemToken);
-      final targetCodeName = _owner.resolveCodeName(targetType.token);
-      return JavaCodeGenUtils.nullSafeExpr(variable, '$sourceCodeName.from${targetCodeName.firstUp}($variable)', targetType.nullable);
     }
     return variable; // same type — direct copy
   }

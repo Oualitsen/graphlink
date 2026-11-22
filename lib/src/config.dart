@@ -88,6 +88,7 @@ abstract class ClientLanguageConfig {
   bool get immutableTypeFields => true;
   bool get captureErrors => false;
   bool get strictEnums => false;
+  bool get generateMappers => false;
   PersistedQueriesMode get persistedQueries => PersistedQueriesMode.off;
   bool get persistedQueriesUseGet => false;
   String? get defaultAlias => null;
@@ -708,6 +709,7 @@ class DartClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -736,6 +738,7 @@ class DartClientConfig extends ClientLanguageConfig {
     required this.operationNameAsParameter,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.defaultAlias,
@@ -763,6 +766,7 @@ class DartClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       defaultAlias: json['defaultAlias'] as String?,
@@ -800,6 +804,7 @@ class JavaClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -828,6 +833,7 @@ class JavaClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.immutableInputFields = true,
@@ -857,6 +863,7 @@ class JavaClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableInputFields: (json['immutableInputFields'] as bool?) ?? true,
@@ -900,6 +907,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -924,6 +932,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
     this.immutableTypeFields = true,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.optionalNullableInputFields = true,
@@ -947,6 +956,7 @@ class TypeScriptClientConfig extends ClientLanguageConfig {
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       optionalNullableInputFields: (json['optionalNullableInputFields'] as bool?) ?? true,
@@ -979,6 +989,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -1004,6 +1015,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
@@ -1028,6 +1040,7 @@ class KotlinClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
@@ -1060,6 +1073,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -1085,6 +1099,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
@@ -1107,6 +1122,7 @@ class SwiftClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
@@ -1137,6 +1153,7 @@ class PythonClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -1159,6 +1176,7 @@ class PythonClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
@@ -1181,6 +1199,7 @@ class PythonClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,
@@ -1215,6 +1234,7 @@ class GoClientConfig extends ClientLanguageConfig {
   @override final bool immutableTypeFields;
   @override final bool captureErrors;
   @override final bool strictEnums;
+  @override final bool generateMappers;
   @override final PersistedQueriesMode persistedQueries;
   @override final bool persistedQueriesUseGet;
   @override final String? defaultAlias;
@@ -1239,6 +1259,7 @@ class GoClientConfig extends ClientLanguageConfig {
     this.operationNameAsParameter = false,
     this.captureErrors = false,
     this.strictEnums = false,
+    this.generateMappers = false,
     this.persistedQueries = PersistedQueriesMode.off,
     this.persistedQueriesUseGet = false,
     this.immutableTypeFields = true,
@@ -1262,6 +1283,7 @@ class GoClientConfig extends ClientLanguageConfig {
       operationNameAsParameter: (json['operationNameAsParameter'] as bool?) ?? false,
       captureErrors: (json['captureErrors'] as bool?) ?? false,
       strictEnums: (json['strictEnums'] as bool?) ?? false,
+      generateMappers: (json['generateMappers'] as bool?) ?? false,
       persistedQueries: persistedQueriesModeFromJson(json),
       persistedQueriesUseGet: persistedQueriesUseGetFromJson(json),
       immutableTypeFields: (json['immutableTypeFields'] as bool?) ?? true,

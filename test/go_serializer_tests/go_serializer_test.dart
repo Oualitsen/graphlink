@@ -267,12 +267,5 @@ void main() {
       ]));
     });
 
-    test('generates a package-level From function', () {
-      final out = serializer.doSerializeInputDefinition(g.inputs['CreatePersonInput']!);
-      expect(lines(out), containsAllInOrder([
-        'func CreatePersonInputFromPerson(person Person) CreatePersonInput {',
-        'Fname: person.FirstName,',
-      ]));
-    });
   });
 }

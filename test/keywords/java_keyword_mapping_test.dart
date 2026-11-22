@@ -38,6 +38,5 @@ void main() {
     final out = out0(records: true);
     // record accessor for the keyword field is `default_()`.
     expect(out, contains("default_()"));
-    expect(out, contains("address.default_()"));
   });
 }

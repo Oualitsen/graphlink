@@ -37,22 +37,6 @@ class MappingCase7Test {
         assertThat(result.getTags()).containsExactly("foo", "bar");
     }
 
-    @Test
-    void caseA_fromScalarListA_copiesTagsDirectly() {
-        ScalarListA source = new ScalarListA(Arrays.asList("x", "y"));
-        ScalarListInputA result = ScalarListInputA.fromScalarListA(source);
-
-        assertThat(result.getTags()).containsExactly("x", "y");
-    }
-
-    @Test
-    void caseA_roundTrip() {
-        ScalarListInputA original = new ScalarListInputA(Arrays.asList("a", "b", "c"));
-        ScalarListInputA roundTrip = ScalarListInputA.fromScalarListA(original.toScalarListA());
-
-        assertThat(roundTrip.getTags()).isEqualTo(original.getTags());
-    }
-
     // -------------------------------------------------------------------------
     // Case B: [String!] (nullable) → [String!]! (non-null target) — default param
     // -------------------------------------------------------------------------
@@ -73,14 +57,6 @@ class MappingCase7Test {
         assertThat(result.getTags()).containsExactly("fallback");
     }
 
-    @Test
-    void caseB_fromScalarListB_copiesTagsDirectly() {
-        ScalarListB source = new ScalarListB(Arrays.asList("p", "q"));
-        ScalarListInputB result = ScalarListInputB.fromScalarListB(source);
-
-        assertThat(result.getTags()).containsExactly("p", "q");
-    }
-
     // -------------------------------------------------------------------------
     // Case C: [String!]! (non-null) → [String!] (nullable target) — direct copy
     // -------------------------------------------------------------------------
@@ -91,23 +67,6 @@ class MappingCase7Test {
         ScalarListC result = input.toScalarListC();
 
         assertThat(result.getTags()).containsExactly("m", "n");
-    }
-
-    @Test
-    void caseC_fromScalarListC_copiesNullableTagsWhenPresent() {
-        ScalarListC source = new ScalarListC(Arrays.asList("r", "s"));
-        ScalarListInputC result = ScalarListInputC.fromScalarListC(source, Arrays.asList("default"));
-
-        assertThat(result.getTags()).containsExactly("r", "s");
-    }
-
-    @Test
-    void caseC_fromScalarListC_usesDefaultWhenTargetTagsNull() {
-        // target tags is nullable → fromScalarListC needs a defaultTags param for non-null input
-        ScalarListC source = new ScalarListC(null);
-        ScalarListInputC result = ScalarListInputC.fromScalarListC(source, Arrays.asList("fallback"));
-
-        assertThat(result.getTags()).containsExactly("fallback");
     }
 
     // -------------------------------------------------------------------------
@@ -129,11 +88,4 @@ class MappingCase7Test {
         assertThatCode(() -> input.toScalarListD()).doesNotThrowAnyException();
     }
 
-    @Test
-    void caseD_fromScalarListD_copiesNullableTags() {
-        ScalarListD source = new ScalarListD(Arrays.asList("w"));
-        ScalarListInputD result = ScalarListInputD.fromScalarListD(source);
-
-        assertThat(result.getTags()).containsExactly("w");
-    }
 }

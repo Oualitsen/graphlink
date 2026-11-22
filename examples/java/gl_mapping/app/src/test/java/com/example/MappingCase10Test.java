@@ -37,22 +37,6 @@ class MappingCase10Test {
         assertThat(result.getValue()).isEqualTo("hello");
     }
 
-    @Test
-    void fromCell_mapsValueDirectly() {
-        Cell cell = new Cell("world");
-        CellInput result = CellInput.fromCell(cell);
-
-        assertThat(result.getValue()).isEqualTo("world");
-    }
-
-    @Test
-    void cell_roundTrip() {
-        CellInput original = new CellInput("data");
-        CellInput roundTrip = CellInput.fromCell(original.toCell());
-
-        assertThat(roundTrip.getValue()).isEqualTo(original.getValue());
-    }
-
     // -------------------------------------------------------------------------
     // GridInput — toGrid
     // -------------------------------------------------------------------------
@@ -109,49 +93,4 @@ class MappingCase10Test {
     // cells is a required param because Cell? elements can't feed CellInput! slots.
     // -------------------------------------------------------------------------
 
-    @Test
-    void fromGrid_usesCellsParam() {
-        Grid grid = new Grid(Arrays.asList(
-                Arrays.asList(new Cell("p"), new Cell("q"))
-        ));
-        List<List<CellInput>> cellsParam = Arrays.asList(
-                Arrays.asList(new CellInput("p"), new CellInput("q"))
-        );
-
-        GridInput result = GridInput.fromGrid(grid, cellsParam);
-
-        assertThat(result.getCells()).isSameAs(cellsParam);
-    }
-
-    @Test
-    void fromGrid_withNullInnerRowInParamDoesNotThrow() {
-        Grid grid = new Grid(Arrays.asList(
-                Arrays.asList(new Cell("z"))
-        ));
-        List<List<CellInput>> cellsParam = Arrays.asList(
-                null,
-                Arrays.asList(new CellInput("z"))
-        );
-
-        assertThatCode(() -> GridInput.fromGrid(grid, cellsParam)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void fromGrid_thenToGrid_roundTrip() {
-        Grid original = new Grid(Arrays.asList(
-                Arrays.asList(new Cell("v1"), new Cell("v2")),
-                Arrays.asList(new Cell("v3"))
-        ));
-        List<List<CellInput>> cellsParam = Arrays.asList(
-                Arrays.asList(new CellInput("v1"), new CellInput("v2")),
-                Arrays.asList(new CellInput("v3"))
-        );
-        GridInput input = GridInput.fromGrid(original, cellsParam);
-        Grid result = input.toGrid();
-
-        assertThat(result.getCells()).hasSize(2);
-        assertThat(result.getCells().get(0).get(0).getValue()).isEqualTo("v1");
-        assertThat(result.getCells().get(0).get(1).getValue()).isEqualTo("v2");
-        assertThat(result.getCells().get(1).get(0).getValue()).isEqualTo("v3");
-    }
 }

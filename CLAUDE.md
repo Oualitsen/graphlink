@@ -137,7 +137,7 @@ serializers/
   gl_type_naming.dart              # Root of the base chain: typeMap, resolveCodeName()
   gl_import_rendering.dart         # extends GLTypeNaming: import lines
   gl_serializer.dart               # extends GLImportRendering: abstract base for types/inputs/enums
-  gl_mapping_serializer.dart       # @glMapsTo contract (toMethod/fromMethod); <lang>/<lang>_mapping_serializer.dart implement it
+  gl_mapping_serializer.dart       # @glMapsTo contract (toMethod); <lang>/<lang>_mapping_serializer.dart implement it
   json_expressions.dart            # shared toJsonExpr/fromJsonExpr logic
   openapi_serializer.dart          # GLOpenApiDocument → OpenAPI 3.1 JSON (openapi_constants.dart: Swagger UI page)
   spring_openapi_controller_serializer.dart  # Spring GraphLinkOpenApiController (Java/Kotlin)

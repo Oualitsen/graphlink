@@ -27,7 +27,4 @@ void main() {
     expect(out(), contains("object_ = object_"));
   });
 
-  test("fromAddress() maps the keyword field via the sanitized identifier", () {
-    expect(out(), contains("object_ = address.object_"));
-  });
 }

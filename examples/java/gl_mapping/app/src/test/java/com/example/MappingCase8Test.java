@@ -38,22 +38,6 @@ class MappingCase8Test {
         assertThat(result.getStatuses()).containsExactly(Status.ACTIVE, Status.PENDING);
     }
 
-    @Test
-    void caseA_fromEnumListA_copiesStatusesDirectly() {
-        EnumListA source = new EnumListA(Arrays.asList(Status.INACTIVE));
-        EnumListInputA result = EnumListInputA.fromEnumListA(source);
-
-        assertThat(result.getStatuses()).containsExactly(Status.INACTIVE);
-    }
-
-    @Test
-    void caseA_roundTrip() {
-        EnumListInputA original = new EnumListInputA(Arrays.asList(Status.ACTIVE, Status.INACTIVE, Status.PENDING));
-        EnumListInputA roundTrip = EnumListInputA.fromEnumListA(original.toEnumListA());
-
-        assertThat(roundTrip.getStatuses()).isEqualTo(original.getStatuses());
-    }
-
     // -------------------------------------------------------------------------
     // Case B: [Status!] (nullable) → [Status!]! (non-null) — default param
     // -------------------------------------------------------------------------
@@ -74,14 +58,6 @@ class MappingCase8Test {
         assertThat(result.getStatuses()).containsExactly(Status.PENDING);
     }
 
-    @Test
-    void caseB_fromEnumListB_copiesStatusesDirectly() {
-        EnumListB source = new EnumListB(Arrays.asList(Status.ACTIVE, Status.PENDING));
-        EnumListInputB result = EnumListInputB.fromEnumListB(source);
-
-        assertThat(result.getStatuses()).containsExactly(Status.ACTIVE, Status.PENDING);
-    }
-
     // -------------------------------------------------------------------------
     // Case C: [Status!]! → [Status!] (nullable target)
     // -------------------------------------------------------------------------
@@ -92,23 +68,6 @@ class MappingCase8Test {
         EnumListC result = input.toEnumListC();
 
         assertThat(result.getStatuses()).containsExactly(Status.INACTIVE, Status.ACTIVE);
-    }
-
-    @Test
-    void caseC_fromEnumListC_copiesNullableStatusesWhenPresent() {
-        EnumListC source = new EnumListC(Arrays.asList(Status.PENDING));
-        EnumListInputC result = EnumListInputC.fromEnumListC(source, Arrays.asList(Status.INACTIVE));
-
-        assertThat(result.getStatuses()).containsExactly(Status.PENDING);
-    }
-
-    @Test
-    void caseC_fromEnumListC_usesDefaultWhenTargetStatusesNull() {
-        // target statuses is nullable → fromEnumListC needs a defaultStatuses param
-        EnumListC source = new EnumListC(null);
-        EnumListInputC result = EnumListInputC.fromEnumListC(source, Arrays.asList(Status.INACTIVE));
-
-        assertThat(result.getStatuses()).containsExactly(Status.INACTIVE);
     }
 
     // -------------------------------------------------------------------------
@@ -130,11 +89,4 @@ class MappingCase8Test {
         assertThat(result.getStatuses()).containsExactly(Status.ACTIVE);
     }
 
-    @Test
-    void caseD_fromEnumListD_copiesNullableStatuses() {
-        EnumListD source = new EnumListD(Arrays.asList(Status.INACTIVE));
-        EnumListInputD result = EnumListInputD.fromEnumListD(source);
-
-        assertThat(result.getStatuses()).containsExactly(Status.INACTIVE);
-    }
 }

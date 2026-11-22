@@ -1,35 +1,95 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
-import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_input_mapping.dart';
-import 'package:graphlink/src/model/gl_type_definition.dart';
+import 'package:graphlink/src/model/gl_token_with_fields.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 
-extension GLGrammarMapsToExtension on GLParser {
-  /// Validates all @glMapsTo and @glMapField usages across the schema.
-  void validateMapsToDirectives() {
-    for (final input in inputs.values) {
-      final targetName = input.mapsToType;
-      if (targetName == null) continue;
+class ResolvedMapping {
+  final GLTokenWithFields target;
+  final ToMappingPlan plan;
 
-      final target = _resolveTarget(targetName);
-      if (target == null) {
+  const ResolvedMapping(this.target, this.plan);
+}
+
+extension GLGrammarMapsToExtension on GLParser {
+  GLTokenWithFields? mappingToken(String name) => types[name] ?? inputs[name];
+
+  Iterable<GLTokenWithFields> get _mappingSources => [...types.values, ...inputs.values];
+
+  void validateMapsToDirectives() {
+    for (final source in _mappingSources) {
+      final declared = source.mapsTo;
+      final seen = <String>{};
+
+      for (final m in declared) {
+        final target = mappingToken(m.targetName);
+        if (target == null) {
+          throw ParseException(
+            "$glMapsTo target '${m.targetName}' does not exist or is not a type or input",
+            info: m.tokenInfo,
+          );
+        }
+        if (m.targetName == source.token) {
+          throw ParseException("$glMapsTo on '${source.token}' cannot target itself", info: m.tokenInfo);
+        }
+        if (!seen.add(m.targetName)) {
+          throw ParseException(
+            "$glMapsTo(type: '${m.targetName}') is declared twice on '${source.token}'",
+            info: m.tokenInfo,
+          );
+        }
+      }
+
+      _validateMapFields(source, declared);
+    }
+  }
+
+  void _validateMapFields(GLTokenWithFields source, List<GLMapsTo> declared) {
+    final targetNames = declared.map((m) => m.targetName).toSet();
+
+    for (final field in source.fields) {
+      final directives = field.getDirectivesByName(glMapField);
+      if (directives.isEmpty) continue;
+
+      if (declared.isEmpty) {
         throw ParseException(
-          "$glMapsTo target '$targetName' does not exist or is not a type",
-          info: input.tokenInfo,
+          "$glMapField on field '${field.name.token}' requires $glMapsTo on '${source.token}'",
+          info: field.name,
+        );
+      }
+      if (field.arguments.isNotEmpty || field.hasDirective(glSkipOnServer)) {
+        throw ParseException(
+          "$glMapField cannot be used on field '${field.name.token}': fields with arguments "
+          "or $glSkipOnServer never take part in a mapping",
+          info: field.name,
         );
       }
 
-      final targetFieldNames = target.fields.map((f) => f.name.token).toSet();
-
-      for (final field in input.fields) {
-        final aliasTarget = field.mapFieldTo;
-        if (aliasTarget == null) continue;
-        if (!targetFieldNames.contains(aliasTarget)) {
+      for (final d in directives) {
+        final explicitTarget = d.getArgValueAsString(glMapFieldTarget);
+        if (explicitTarget == null && declared.length > 1) {
           throw ParseException(
-            "$glMapField(to: '$aliasTarget') on field '${field.name.token}' "
-            "does not match any field on target type '$targetName'",
+            "$glMapField on field '${field.name.token}' needs target: because '${source.token}' "
+            "declares several $glMapsTo",
+            info: field.name,
+          );
+        }
+        if (explicitTarget != null && !targetNames.contains(explicitTarget)) {
+          throw ParseException(
+            "$glMapField(target: '$explicitTarget') on field '${field.name.token}' is not one of "
+            "the $glMapsTo targets of '${source.token}'",
+            info: field.name,
+          );
+        }
+
+        final targetName = explicitTarget ?? declared.first.targetName;
+        final alias = d.getArgValueAsString(glMapFieldTo);
+        final target = mappingToken(targetName);
+        if (target != null && alias != null && !target.fields.any((f) => f.name.token == alias)) {
+          throw ParseException(
+            "$glMapField(to: '$alias') on field '${field.name.token}' "
+            "does not match any field on target '$targetName'",
             info: field.name,
           );
         }
@@ -37,28 +97,32 @@ extension GLGrammarMapsToExtension on GLParser {
     }
   }
 
-  /// Resolves the [ToMappingPlan] for [input] if it declares @glMapsTo.
-  /// Returns null if the input has no @glMapsTo directive, or in client mode
-  /// when the target type is not among the projected (generated) types.
-  ToMappingPlan? resolveToMappingPlan(GLInputDefinition input, CodeGenerationMode mode) {
-    final targetName = input.mapsToType;
-    if (targetName == null) return null;
-    if (mode == CodeGenerationMode.client && !projectedTypes.containsKey(targetName)) {
-      return null;
-    }
-    return input.buildToMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
-  }
+  /// The `to<Target>()` mappings [def] generates in the current mode. Empty on a client
+  /// unless `generateMappers` is on and the target is generated for that client.
+  List<ResolvedMapping> resolveMappings(GLTokenWithFields def, CodeGenerationMode mode) {
+    final declared = def.mapsTo;
+    if (declared.isEmpty) return const [];
+    if (mode == CodeGenerationMode.client && !generateMappers) return const [];
 
-  /// Resolves the [FromMappingPlan] for [input] if it declares @glMapsTo.
-  /// Returns null under the same conditions as [resolveToMappingPlan].
-  FromMappingPlan? resolveFromMappingPlan(GLInputDefinition input, CodeGenerationMode mode) {
-    final targetName = input.mapsToType;
-    if (targetName == null) return null;
-    if (mode == CodeGenerationMode.client && !projectedTypes.containsKey(targetName)) {
-      return null;
-    }
-    return input.buildFromMappingPlan(_resolveTarget(targetName)!, inputs, types, mode, typeMap: typeMap);
-  }
+    final result = <ResolvedMapping>[];
+    final methodNames = <String, String>{};
+    for (final m in declared) {
+      final target = mappingToken(m.targetName)!;
+      final isGenerated = mode == CodeGenerationMode.server ||
+          projectedTypes.containsKey(m.targetName) ||
+          inputs.containsKey(m.targetName);
+      if (!isGenerated) continue;
 
-  GLTypeDefinition? _resolveTarget(String name) => types[name];
+      final previous = methodNames[target.mappingCodeName];
+      if (previous != null) {
+        throw ParseException(
+          "$glMapsTo targets '$previous' and '${m.targetName}' of '${def.token}' both generate to${target.mappingCodeName}()",
+          info: m.tokenInfo,
+        );
+      }
+      methodNames[target.mappingCodeName] = m.targetName;
+      result.add(ResolvedMapping(target, ToMappingPlan.resolve(def, target, this, mode)));
+    }
+    return result;
+  }
 }

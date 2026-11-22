@@ -33,8 +33,8 @@ directive @glExpand(depth: Int) on OBJECT
 directive @glExternal(glClass: String, glImport: String) on INPUT_OBJECT | OBJECT | SCALAR | INTERFACE
 directive @glInjectContext on FIELD_DEFINITION
 directive @glIntercept(tag: String) on FIELD_DEFINITION | INPUT_FIELD_DEFINITION | OBJECT
-directive @glMapField(to: String!) on INPUT_FIELD_DEFINITION
-directive @glMapsTo(type: String!) on INPUT_OBJECT
+directive @glMapField(to: String!, target: String) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+directive @glMapsTo(type: String!) repeatable on OBJECT | INPUT_OBJECT
 directive @glRepository(glType: String, glIdType: String) on INTERFACE | OBJECT
 directive @glServerLenient on OBJECT
 directive @glServiceName(name: String!) on ENUM | FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT

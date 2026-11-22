@@ -118,6 +118,7 @@ GLParser createGrammar(GeneratorConfig config) {
     generateAllFieldsFragments: lang.generateAllFieldsFragments,
     nullableFieldsRequired: lang.nullableFieldsRequired,
     tolerantEnums: !lang.strictEnums,
+    generateMappers: lang.generateMappers,
     persistedQueries: lang.persistedQueries == PersistedQueriesMode.apq,
     persistedQueriesUseGet: lang.persistedQueriesUseGet,
     autoGenerateQueries: lang.autoGenerateQueries,

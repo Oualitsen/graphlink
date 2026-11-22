@@ -48,7 +48,7 @@ void main() {
     expect(() => parser().parse(text), returnsNormally);
   });
 
-  test("@glMapsTo targeting another input throws ParseException", () {
+  test("@glMapsTo targeting another input passes", () {
     const text = '''
       input AddressInput {
         street: String!
@@ -63,14 +63,7 @@ void main() {
       type Query { noop: String }
     ''';
 
-    expect(
-      () => parser().parse(text),
-      throwsA(isA<ParseException>().having(
-        (e) => e.errorMessage,
-        'errorMessage',
-        contains("$glMapsTo target 'AddressInput' does not exist or is not a type"),
-      )),
-    );
+    expect(() => parser().parse(text), returnsNormally);
   });
 
   test("input without @glMapsTo is unaffected", () {
@@ -139,7 +132,7 @@ void main() {
         (e) => e.errorMessage,
         'errorMessage',
         contains(
-            "$glMapField(to: 'fullName') on field 'fname' does not match any field on target type 'User'"),
+            "$glMapField(to: 'fullName') on field 'fname' does not match any field on target 'User'"),
       )),
     );
   });

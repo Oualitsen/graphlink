@@ -59,14 +59,6 @@ void _case1Tests() {
         expect(out, contains('.city(getCity())'));
         expect(out, contains('.country(getCountry())'));
       });
-      test('fromAddress() takes Address param', () {
-        expect(out, contains('public static CreateAddressInput fromAddress(Address address)'));
-      });
-      test('fromAddress() reads target getters', () {
-        expect(out, contains('address.getStreet()'));
-        expect(out, contains('address.getCity()'));
-        expect(out, contains('address.getCountry()'));
-      });
     });
 
     group('record mode', () {
@@ -84,11 +76,6 @@ void _case1Tests() {
       });
       test('toAddress() does not call builder()', () {
         expect(out, isNot(contains('.builder()')));
-      });
-      test('fromAddress() reads target component accessors', () {
-        expect(out, contains('address.street()'));
-        expect(out, contains('address.city()'));
-        expect(out, contains('address.country()'));
       });
     });
   });
@@ -120,9 +107,6 @@ void _case2Tests() {
       test('toP maps alias fname → firstName via getter', () {
         expect(out, contains('.firstName(getFname())'));
       });
-      test('fromP reverses alias: firstName → fname via target getter', () {
-        expect(out, contains('person.getFirstName()'));
-      });
     });
 
     group('record mode', () {
@@ -132,10 +116,6 @@ void _case2Tests() {
       test('toP maps alias fname → firstName via component accessor', () {
         expect(out, contains('fname()'));
         expect(out, isNot(contains('getFname()')));
-      });
-      test('fromP reverses alias via target component accessor', () {
-        expect(out, contains('person.firstName()'));
-        expect(out, isNot(contains('person.getFirstName()')));
       });
     });
   });
@@ -166,9 +146,6 @@ void _case3Tests() {
       test('toUser uses ternary with getter for null check', () {
         expect(out, contains('getRole() != null ? getRole() : defaultRole'));
       });
-      test('fromUser reads target getter', () {
-        expect(out, contains('user.getRole()'));
-      });
     });
 
     group('record mode', () {
@@ -177,9 +154,6 @@ void _case3Tests() {
 
       test('toUser uses ternary with component accessor', () {
         expect(out, contains('role() != null ? role() : defaultRole'));
-      });
-      test('fromUser reads target component accessor', () {
-        expect(out, contains('user.role()'));
       });
     });
   });
@@ -271,9 +245,6 @@ void _case5Tests() {
       test('toProduct maps alias catId → categoryId', () {
         expect(out, contains('.categoryId(getCatId())'));
       });
-      test('fromProduct reverses title → name', () {
-        expect(out, contains('product.getTitle()'));
-      });
       test('fromProduct takes internalNote as input-only param', () {
         expect(out, contains('String internalNote'));
       });
@@ -289,11 +260,6 @@ void _case5Tests() {
       });
       test('toProduct uses ternary with component accessor for stock', () {
         expect(out, contains('stock() != null ? stock() : defaultStock'));
-      });
-      test('fromProduct reads target component accessors', () {
-        expect(out, contains('product.title()'));
-        expect(out, contains('product.priceInCents()'));
-        expect(out, contains('product.categoryId()'));
       });
     });
   });
@@ -345,12 +311,6 @@ void _case6Tests() {
       test('toOrder null-guards optional tag list', () {
         expect(out, contains('getOptionalTags() == null ? null : getOptionalTags().stream().map(e0 -> e0.toTag()).collect(Collectors.toList())'));
       });
-      test('fromOrder reverses tags via stream', () {
-        expect(out, contains('order.getTags().stream().map(e0 -> TagInput.fromTag(e0)).collect(Collectors.toList())'));
-      });
-      test('fromOrder null-guards optional tags', () {
-        expect(out, contains('order.getOptionalTags() == null ? null'));
-      });
     });
 
     group('record mode', () {
@@ -363,10 +323,6 @@ void _case6Tests() {
       });
       test('toOrder null-guards optional tags via component accessor', () {
         expect(out, contains('optionalTags() == null ? null : optionalTags().stream()'));
-      });
-      test('fromOrder reads target component accessors', () {
-        expect(out, contains('order.tags().stream()'));
-        expect(out, contains('order.optionalTags() == null ? null'));
       });
     });
   });
@@ -404,11 +360,6 @@ void _case7Tests() {
         expect(out, contains('public ScalarListB toScalarListB(List<String> defaultTags)'));
         expect(out, contains('getTags() != null ? getTags() : defaultTags'));
       });
-      test('C: [String!]! → [String!] — fromScalarListC has defaultTags param', () {
-        final out = _class(_case7, 'ScalarListInputC');
-        expect(out, contains('fromScalarListC(ScalarListC scalarListC, List<String> defaultTags)'));
-        expect(out, contains('scalarListC.getTags() != null ? scalarListC.getTags() : defaultTags'));
-      });
       test('D: [String!] → [String!] — both nullable, direct copy', () {
         final out = _class(_case7, 'ScalarListInputD');
         expect(out, contains('public ScalarListD toScalarListD()'));
@@ -425,10 +376,6 @@ void _case7Tests() {
       test('B: ternary uses component accessor', () {
         final out = _record(_case7, 'ScalarListInputB');
         expect(out, contains('tags() != null ? tags() : defaultTags'));
-      });
-      test('C: fromScalarListC reads target component accessor', () {
-        final out = _record(_case7, 'ScalarListInputC');
-        expect(out, contains('scalarListC.tags() != null ? scalarListC.tags() : defaultTags'));
       });
     });
   });
@@ -462,21 +409,12 @@ void _case8Tests() {
         expect(out, contains('public EnumListB toEnumListB(List<Status> defaultStatuses)'));
         expect(out, contains('getStatuses() != null ? getStatuses() : defaultStatuses'));
       });
-      test('C: [Status!]! → [Status!] — fromEnumListC has defaultStatuses param', () {
-        final out = _class(_case8, 'EnumListInputC');
-        expect(out, contains('fromEnumListC(EnumListC enumListC, List<Status> defaultStatuses)'));
-        expect(out, contains('enumListC.getStatuses() != null ? enumListC.getStatuses() : defaultStatuses'));
-      });
     });
 
     group('record mode', () {
       test('B: ternary uses component accessor', () {
         final out = _record(_case8, 'EnumListInputB');
         expect(out, contains('statuses() != null ? statuses() : defaultStatuses'));
-      });
-      test('C: fromEnumListC reads target component accessor', () {
-        final out = _record(_case8, 'EnumListInputC');
-        expect(out, contains('enumListC.statuses() != null ? enumListC.statuses() : defaultStatuses'));
       });
     });
   });
@@ -513,9 +451,6 @@ void _case9Tests() {
         test('toItemTag uses ternary for labels', () {
           expect(out, contains('getLabels() != null ? getLabels() : defaultLabels'));
         });
-        test('fromItemTag has no extra params', () {
-          expect(out, contains('public static ItemTagInput fromItemTag(ItemTag itemTag)'));
-        });
       });
 
       group('record mode', () {
@@ -524,9 +459,6 @@ void _case9Tests() {
 
         test('toItemTag uses component accessor in ternary', () {
           expect(out, contains('labels() != null ? labels() : defaultLabels'));
-        });
-        test('fromItemTag reads target component accessor', () {
-          expect(out, contains('itemTag.labels()'));
         });
       });
     });
@@ -540,13 +472,8 @@ void _case9Tests() {
           expect(out, contains('public CartItem toCartItem(List<ItemTag> tags)'));
         });
         test('toCartItem does not auto-map tags via stream', () {
-          final method = out.substring(
-              out.indexOf('public CartItem toCartItem'),
-              out.indexOf('public static CartItemInput fromCartItem'));
+          final method = out.substring(out.indexOf('public CartItem toCartItem'));
           expect(method, isNot(contains('stream().map')));
-        });
-        test('fromCartItem takes tags as required param', () {
-          expect(out, contains('fromCartItem(CartItem cartItem, List<ItemTagInput> tags)'));
         });
       });
 
@@ -556,9 +483,6 @@ void _case9Tests() {
 
         test('toCartItem still promotes tags to required param', () {
           expect(out, contains('public CartItem toCartItem(List<ItemTag> tags)'));
-        });
-        test('fromCartItem uses id() component accessor for id field', () {
-          expect(out, contains('cartItem.id()'));
         });
       });
     });
@@ -590,9 +514,6 @@ void _case10Tests() {
         test('toCell uses builder with getter', () {
           expect(out, contains('.value(getValue())'));
         });
-        test('fromCell reads target getter', () {
-          expect(out, contains('cell.getValue()'));
-        });
       });
 
       group('record mode', () {
@@ -603,9 +524,6 @@ void _case10Tests() {
           expect(out, contains('return new Cell('));
           expect(out, contains('value()'));
           expect(out, isNot(contains('getValue()')));
-        });
-        test('fromCell reads target component accessor', () {
-          expect(out, contains('cell.value()'));
         });
       });
     });
@@ -673,10 +591,6 @@ void _case11Tests() {
         expect(out, isNot(contains('isWoman()')));
       });
       
-      test('fromP uses getWoman() on target for boxed Boolean field', () {
-        expect(out, contains('person.getWoman()'));
-        expect(out, isNot(contains('person.isWoman()')));
-      });
     });
 
     group('record mode', () {

@@ -31,7 +31,7 @@ void main() {
       final g = _parse(javaReservedTypeNames, CodeGenerationMode.server);
       final out = JavaSerializer(g, importPrefix: '', typesAsRecords: true)
           .serializeInputDefinition(g.inputs['ErrorInput']!);
-      expect(out, contains('fromError_'));
+      expect(out, contains('toError_'));
     });
 
     test('Kotlin', () {

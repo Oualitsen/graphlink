@@ -39,9 +39,4 @@ void main() {
     expect(lines(), contains('return Address(default_: default_, city: city);'));
   });
 
-  test("fromAddress() maps the keyword field via the sanitized identifier", () {
-    expect(lines(),
-        contains(
-            'return CreateAddressInput(default_: address.default_, city: address.city);'));
-  });
 }

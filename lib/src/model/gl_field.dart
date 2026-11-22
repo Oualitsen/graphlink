@@ -95,9 +95,17 @@ class GLField with GLDirectivesMixin, CodeNameMixin {
     return reason is String ? decodeGraphqlString(reason) : "No longer supported";
   }
 
-  /// Returns the target field name from @glMapField, or null if not declared.
-  String? get mapFieldTo =>
-      getDirectiveByName(glMapField)?.getArgValueAsString(glMapFieldTo);
+  /// The name this field maps to on [targetName] through @glMapField, or null when it keeps its own name.
+  /// An occurrence without `target:` applies to every target (validation allows it only with a single target).
+  String? mapFieldTo(String targetName) {
+    String? untargeted;
+    for (final d in getDirectivesByName(glMapField)) {
+      final target = d.getArgValueAsString(glMapFieldTarget);
+      if (target == targetName) return d.getArgValueAsString(glMapFieldTo);
+      if (target == null) untargeted = d.getArgValueAsString(glMapFieldTo);
+    }
+    return untargeted;
+  }
 
 
 

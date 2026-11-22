@@ -119,26 +119,7 @@ void main() {
       );
     });
 
-    test('fromAddress() takes only the required Address param', () {
-      expect(
-        _lines(_case1, 'CreateAddressInput'),
-        containsAllInOrder([
-          'static CreateAddressInput fromAddress({',
-          'required Address address',
-          '}) {',
-        ]),
-      );
-    });
 
-    test('fromAddress() maps all fields from the Address instance', () {
-      final lines = _lines(_case1, 'CreateAddressInput');
-      expect(
-        lines,
-        contains(
-          'return CreateAddressInput(street: address.street, city: address.city, country: address.country);',
-        ),
-      );
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -162,13 +143,6 @@ void main() {
       expect(lines, contains('return Person(firstName: fname, lastName: lname, email: email, id: id);'));
     });
 
-    test('fromPerson() reverses aliases: reads firstName→fname, lastName→lname', () {
-      final lines = _lines(_case2, 'CreatePersonInput');
-      expect(
-        lines,
-        contains('return CreatePersonInput(fname: person.firstName, lname: person.lastName, email: person.email);'),
-      );
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -193,24 +167,7 @@ void main() {
       expect(lines, contains('return User(username: username, role: role ?? defaultRole, id: id);'));
     });
 
-    test('fromUser() has no extra params beyond the required User instance', () {
-      expect(
-        _lines(_case3, 'CreateUserInput'),
-        containsAllInOrder([
-          'static CreateUserInput fromUser({',
-          'required User user',
-          '}) {',
-        ]),
-      );
-    });
 
-    test('fromUser() maps username and role directly', () {
-      final lines = _lines(_case3, 'CreateUserInput');
-      expect(
-        lines,
-        contains('return CreateUserInput(username: user.username, role: user.role);'),
-      );
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -235,26 +192,7 @@ void main() {
       expect(returnLine, isNot(contains('password')));
     });
 
-    test('fromAccount() requires the Account instance plus input-only fields', () {
-      expect(
-        _lines(_case4, 'RegisterAccountInput'),
-        containsAllInOrder([
-          'static RegisterAccountInput fromAccount({',
-          'required Account account,',
-          'required String password,',
-          'required String confirmPassword',
-          '}) {',
-        ]),
-      );
-    });
 
-    test('fromAccount() assigns email and displayName from account and passes through input-only fields', () {
-      final lines = _lines(_case4, 'RegisterAccountInput');
-      expect(
-        lines,
-        contains('return RegisterAccountInput(email: account.email, displayName: account.displayName, password: password, confirmPassword: confirmPassword);'),
-      );
-    });
   });
 
   // -------------------------------------------------------------------------
@@ -360,14 +298,5 @@ void main() {
   });
 
   group('Case 5 — nullable nested mapped input in fromXxx()', () {
-    test('fromEquipment() generates a null guard for maintenancePeriod', () {
-      final lines = _lines(case5, 'EquipmentInput');
-      expect(
-        lines,
-        contains(
-          'return EquipmentInput(name: equipment.name, maintenancePeriod: equipment.maintenancePeriod != null ? PeriodInput.fromPeriod(period: equipment.maintenancePeriod!) : null);',
-        ),
-      );
-    });
   });
 }

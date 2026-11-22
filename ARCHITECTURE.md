@@ -183,7 +183,7 @@ Each serializer **only builds strings** — no schema queries.
 | `gl_type_naming.dart` | `GLTypeNaming` | Root of the serializer base chain: `typeMap` (defaults + user overrides + unknown-scalar fallback), `resolveCodeName()`, `getTypeNameFromGQExternal()` |
 | `gl_import_rendering.dart` | `GLImportRendering` (extends `GLTypeNaming`) | Import lines: `serializeImports()`, `serializeWithImport()`, `serializeGlClass()`; languages implement `serializeImportToken()` / `serializeImport()` |
 | `gl_serializer.dart` | `GLSerializer` (extends `GLImportRendering`) | Abstract base — `serializeType()`, `serializeField()`, `serializeEnumDefinition()`, `serializeInputDefinition()`, `serializeTypeDefinition()`, scalar/JSON expression contracts |
-| `gl_mapping_serializer.dart` | `GLMappingSerializer` | Contract for `@glMapsTo`: `toMethod()` / `fromMethod()`. A language exposes its implementation through `GLSerializer.mapping`; `generateMappingMethods()` iterates the plans |
+| `gl_mapping_serializer.dart` | `GLMappingSerializer` | Contract for `@glMapsTo`: `toMethod()`. A language exposes its implementation through `GLSerializer.mapping`; `generateMappingMethods()` iterates the plans |
 | `<lang>/<lang>_mapping_serializer.dart` | `<Lang>MappingSerializer` (Dart, Java, Kotlin, Swift, Python, Go) | The `toXxx()` / `fromXxx()` mapping methods of that language |
 | `java/java_interface_serializer.dart` | `JavaInterfaceSerializer` | Java interface bodies, covariant list getters and the `__typename` / discriminator `fromJson`; reached as `javaSerializer.interfaces` |
 | `java/java_accessor_serializer.dart` | `JavaAccessorSerializer` | Java constructors, builders, getters and setters of types and inputs; reached as `javaSerializer.accessors` |

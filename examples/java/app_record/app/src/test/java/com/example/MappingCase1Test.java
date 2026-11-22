@@ -22,23 +22,4 @@ class MappingCase1Test {
         assertThat(result.country()).isEqualTo("US");
     }
 
-    @Test
-    void fromAddress_mapsAllFieldsDirectly() {
-        Address address = new Address("10 Elm St", "Shelbyville", "CA");
-        CreateAddressInput result = CreateAddressInput.fromAddress(address);
-
-        assertThat(result.street()).isEqualTo("10 Elm St");
-        assertThat(result.city()).isEqualTo("Shelbyville");
-        assertThat(result.country()).isEqualTo("CA");
-    }
-
-    @Test
-    void toAddress_thenFromAddress_isSymmetric() {
-        CreateAddressInput original = new CreateAddressInput("1 Loop", "Portland", "US");
-        CreateAddressInput roundTrip = CreateAddressInput.fromAddress(original.toAddress());
-
-        assertThat(roundTrip.street()).isEqualTo(original.street());
-        assertThat(roundTrip.city()).isEqualTo(original.city());
-        assertThat(roundTrip.country()).isEqualTo(original.country());
-    }
 }
