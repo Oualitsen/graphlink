@@ -11,6 +11,7 @@
   "outputDir": "Sources/GraphLinkGenerated",
   "clientConfig": {
     "swift": {
+      "generateMappers": true,
       "moduleName":                 "GraphLinkGenerated",
       "generateAllFieldsFragments": true,
       "autoGenerateQueries":        true,

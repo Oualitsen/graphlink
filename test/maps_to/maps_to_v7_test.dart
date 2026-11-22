@@ -199,6 +199,17 @@ input PostInput { tags: [TagInput!]! main: TagInput }
     });
   });
 
+  test('TypeScript turns an optional input field into null for a required nullable target field', () {
+    const schema = '''
+type Query { noop: String }
+input DraftInput @glMapsTo(type: "Post") { views: Int }
+type Post { views: Int }
+''';
+    final g = _parse(schema);
+    final out = TypeScriptSerializer(g, importPrefix: '').serializeInputDefinition(g.inputs['DraftInput']!);
+    expect(out, contains('views: obj.views ?? null,'));
+  });
+
   test('mutual mappings do not recurse forever', () {
     const schema = '''
 type Query { noop: String }

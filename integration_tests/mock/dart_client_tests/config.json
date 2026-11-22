@@ -12,6 +12,7 @@
   "outputDir": "lib/generated",
   "clientConfig": {
     "dart": {
+      "generateMappers": true,
       "packageName":               "graphlink_client_integration_tests",
       "httpAdapter":               "none",
       "generateAllFieldsFragments": true,

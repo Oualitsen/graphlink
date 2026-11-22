@@ -12,6 +12,7 @@
   "outputDir": "client-app/src/main/java/dev/graphlink/test/generated",
   "clientConfig": {
     "java": {
+      "generateMappers": true,
       "packageName":               "dev.graphlink.test.generated",
       "wsAdapter":                 "java11",
       "jsonCodec":                 "jackson",
