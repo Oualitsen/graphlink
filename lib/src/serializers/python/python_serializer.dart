@@ -4,6 +4,7 @@ import 'package:graphlink/src/graphql_string_literal.dart';
 import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -21,6 +22,8 @@ import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/serializers/python/python_mapping_serializer.dart';
 
 const pythonModelBaseName = 'GraphLinkModel';
+const pythonDomainErrorBase = 'GraphLinkDomainError';
+const pythonDomainErrorModule = 'graph_link_domain_error';
 
 class PythonSerializer extends GLSerializer with JsonExpressions {
   @override
@@ -215,6 +218,54 @@ class PythonSerializer extends GLSerializer with JsonExpressions {
         ...generateMappingMethods(def).expand((m) => ['', m]),
       ],
     );
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = type.getSerializableFields(grammar.mode);
+    final required = fields.where((f) => !f.type.nullable);
+    final optional = fields.where((f) => f.type.nullable);
+    final params = [
+      'self',
+      '*',
+      ...required.map((f) => '${f.codeName}: ${serializeType(f.type)}'),
+      ...optional.map((f) => '${f.codeName}: ${serializeType(f.type)} = None'),
+      'message: str = ""',
+    ];
+    final fromJsonArgs = [
+      ...fields.map((f) => '${f.codeName}=${checkedFromJsonExpr(f.type, _jsonAccess(f), '$name.${f.name.token}')}'),
+      'message=message',
+    ];
+    final source = codeGenUtils.createClass(
+      className: name,
+      baseClassNames: [pythonDomainErrorBase],
+      statements: [
+        ...fields.map((f) => '${f.codeName}: ${serializeType(f.type)}'),
+        if (fields.isNotEmpty) '',
+        codeGenUtils.createMethod(
+          methodName: '__init__',
+          arguments: params,
+          returnType: 'None',
+          statements: [
+            'super().__init__(message)',
+            ...fields.map((f) => 'self.${f.codeName} = ${f.codeName}'),
+          ],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          decorators: ['@classmethod'],
+          methodName: 'from_json',
+          arguments: ['cls', 'json: Dict[str, Any]', 'message: str = ""'],
+          returnType: '"$name"',
+          statements: [
+            ..._requiredKeyCheck(type, fields),
+            'return cls(\n${fromJsonArgs.join(',\n').identPy()}\n)',
+          ],
+        ),
+      ],
+    );
+    return serializeWithImport(type, 'from ..$runtimeDir.$pythonDomainErrorModule import $pythonDomainErrorBase\n\n\n$source');
   }
 
   List<String> _equalsAndHash(GLTypeDefinition def, Set<String> identityFields) {

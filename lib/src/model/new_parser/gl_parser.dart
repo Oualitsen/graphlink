@@ -60,6 +60,8 @@ import 'package:graphlink/src/model/gl_controller.dart';
 import 'package:graphlink/src/model/gl_repository.dart';
 import 'package:graphlink/src/model/gl_service.dart';
 import 'package:graphlink/src/model/gl_token.dart';
+import 'package:graphlink/src/model/gl_error.dart';
+import 'package:graphlink/src/parser_extensions/gl_grammar_error_extension.dart';
 import 'package:graphlink/src/serializers/gl_graphql_serializer.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/constants.dart';
@@ -222,6 +224,8 @@ class GLParser {
   final Map<String, GLUnionDefinition> unions = {};
   final Map<String, GLInputDefinition> inputs = {};
   final Map<String, GLTypeDefinition> types = {};
+  final Map<String, GLErrorDefinition> errors = {};
+  Iterable<GLTypeDefinition> get errorTypeDefinitions => errors.values.map((e) => e.type);
   final Map<String, GLInterfaceDefinition> interfaces = {};
   final Map<String, GLRepository> repositories = {};
   final Map<GLOperationKey, GLQueryDefinition> queries = {};
@@ -405,6 +409,7 @@ class GLParser {
     if (!_validate) return;
     rejectTypeNameOnRestOperations();
     validateDirectives();
+    extractErrorTypes();
     validateInputReferences();
     validateDefaultValues();
     validateTypeReferences();

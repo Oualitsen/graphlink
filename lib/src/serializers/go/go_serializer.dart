@@ -6,6 +6,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/go_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -453,6 +454,46 @@ class GoSerializer extends GLSerializer {
         'return m, nil',
       ],
     );
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = serializableFields(type);
+    final base = 'GraphLinkDomainError';
+    final decoding = [
+      for (final f in fields)
+        codeGenUtils.ifStatement(
+          condition: 'v.${f.codeName}, err = ${_decoder(f.type)}(m[${stringLiteral(f.name.token)}]); err != nil',
+          ifBlockStatements: ['return nil, glFieldError(${stringLiteral(name)}, ${stringLiteral(f.name.token)}, err)'],
+        ),
+    ];
+    return assembleFile([
+      codeGenUtils.structDecl(name, [base, if (fields.isNotEmpty) _fieldLines(fields)]),
+      codeGenUtils.createMethod(
+        receiver: 'v *$name',
+        methodName: 'Error',
+        returnType: 'string',
+        statements: [
+          codeGenUtils.ifStatement(
+            condition: 'v.Message == ""',
+            ifBlockStatements: ['return ${stringLiteral(name)}'],
+          ),
+          'return ${stringLiteral('$name: ')} + v.Message',
+        ],
+      ),
+      codeGenUtils.createMethod(
+        methodName: '${name}FromJson',
+        arguments: ['m map[string]any', 'message string'],
+        returnType: '(*$name, error)',
+        statements: [
+          'v := &$name{$base: $base{Message: message}}',
+          if (fields.isNotEmpty) 'var err error',
+          ...decoding,
+          'return v, nil',
+        ],
+      ),
+    ].join('\n\n'));
   }
 
   String _fromJsonFunction(String owner, String name, List<GLField> fields) {

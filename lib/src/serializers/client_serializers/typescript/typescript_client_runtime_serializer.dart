@@ -28,6 +28,8 @@ class TypeScriptClientRuntimeSerializer {
   GLClassModel generateJsonChecksFile() =>
       const GLClassModel(body: tsJsonChecks);
 
+  GLClassModel generateDomainErrorFile() => const GLClassModel(body: tsDomainError);
+
   GLClassModel generateLockFile() =>
       const GLClassModel(body: tsLock);
 

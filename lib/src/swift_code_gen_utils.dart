@@ -206,6 +206,22 @@ class SwiftCodeGenUtils implements CodeGenUtilsBase {
     return buffer.toString();
   }
 
+  /// `public final class Name: Conformances { members }`; pass [modifiers] (`open`) to change the leading keywords.
+  String classDecl({
+    required String name,
+    required List<String> members,
+    List<String>? conformances,
+    String modifiers = 'public final',
+  }) {
+    final buffer = StringBuffer('$modifiers class $name');
+    if (conformances != null && conformances.isNotEmpty) {
+      buffer.write(': ${conformances.join(', ')}');
+    }
+    buffer.write(' ');
+    buffer.write(block(members));
+    return buffer.toString();
+  }
+
   /// Emits the explicit memberwise `public init(...)` every generated
   /// `struct` needs (Swift only auto-synthesizes a memberwise init when it
   /// can stay internal — never `public`). [params] are full parameter

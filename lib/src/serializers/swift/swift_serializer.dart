@@ -6,6 +6,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -37,6 +38,8 @@ const _jsonTypeHelpers = {
   'Map': 'glMap',
   'List': 'glList',
 };
+
+const swiftDomainErrorBase = 'GraphLinkDomainError';
 
 class SwiftSerializer extends GLSerializer with JsonExpressions {
   @override
@@ -295,6 +298,42 @@ class SwiftSerializer extends GLSerializer with JsonExpressions {
       conformances: conformances,
     );
     return fields.any((f) => grammar.isRecursiveField(def, f)) ? '$decl\n\n$_indirectBox' : decl;
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = type.getSerializableFields(grammar.mode);
+    final initDecl = codeGenUtils.initDecl(
+      params: [...fields.map(_initParam), 'message: String = ""'],
+      assignments: [
+        ...fields.map((f) => 'self.${f.codeName} = ${f.codeName}'),
+        'super.init(message: message)',
+      ],
+    );
+    final args = [
+      ...fields.map((f) => '${f.codeName}: ${checkedFromJsonExpr(f.type, 'map["${f.name}"]', '$name.${f.name}')}'),
+      'message: message',
+    ].join(',\n').ident();
+    final fromJson = 'public static ${codeGenUtils.createMethod(
+      returnType: name,
+      methodName: 'fromJson',
+      arguments: ['_ map: [String: Any?]', 'message: String = ""'],
+      statements: ['return $name(\n$args\n)'],
+      throws: true,
+    )}';
+    final source = codeGenUtils.classDecl(
+      name: name,
+      conformances: [swiftDomainErrorBase, '@unchecked Sendable'],
+      members: [
+        ...fields.map((f) => 'public let ${f.codeName}: ${serializeType(f.type)}'),
+        '',
+        initDecl,
+        '',
+        fromJson,
+      ],
+    );
+    return serializeWithImport(type, source);
   }
 
   String _serializeInterface(GLInterfaceDefinition def) {

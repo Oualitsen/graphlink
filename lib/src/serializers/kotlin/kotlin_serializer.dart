@@ -5,6 +5,7 @@ import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/kotlin_code_gen_utils.dart';
 import 'package:graphlink/src/model/gl_class_model.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -38,6 +39,8 @@ const _kotlinNumberCasts = <String, String>{
 };
 
 const _kotlinNumbers = {'Int', 'Long', 'Double', 'Float'};
+
+const kotlinDomainErrorBase = 'GraphLinkDomainError';
 
 class KotlinSerializer extends GLSerializer with JsonExpressions {
   @override
@@ -350,6 +353,33 @@ class KotlinSerializer extends GLSerializer with JsonExpressions {
     }
     return codeGenUtils.openClass(
         name: def.codeName, params: params, body: body.isEmpty ? null : body, interfaces: ifaces.isEmpty ? null : ifaces);
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = type.getSerializableFields(grammar.mode);
+    final params = [
+      ...fields.map((f) => 'val ${f.codeName}: ${serializeType(f.type)}${f.type.nullable ? ' = null' : ''}'),
+      'message: String = ""',
+    ];
+    final assignments = [
+      ...fields.map((f) => '${f.codeName} = ${fromJsonExpr(f.type, 'map["${f.name}"]')}'),
+      'message = message',
+    ];
+    final fromJson = '@Suppress("UNCHECKED_CAST")\n'
+        '${codeGenUtils.createMethod(
+      methodName: 'fromJson',
+      arguments: ['map: $_mapType', 'message: String = ""'],
+      returnType: name,
+    )} = ${codeGenUtils.constructorCall(name, assignments)}';
+    final source = codeGenUtils.kotlinClass(
+      name: name,
+      params: params,
+      interfaces: ['$kotlinDomainErrorBase(message)'],
+      body: [codeGenUtils.companionObject([fromJson])],
+    );
+    return serializeWithImport(type, '${serializeImport('$importPrefix.client.$kotlinDomainErrorBase')}\n\n$source');
   }
 
   String serializeInterface(GLInterfaceDefinition def,

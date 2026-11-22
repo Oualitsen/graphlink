@@ -42,6 +42,12 @@ abstract class GLBarrelFileHandler {
       lines.add(exportLine('interfaces', fileNameFor(def)));
     });
 
+    if (isClient) {
+      parser.errors.forEach((_, def) {
+        lines.add(exportLine('errors', fileNameFor(def.type)));
+      });
+    }
+
     for (final fileName in clientFiles) {
       lines.add(exportLine('client', fileName));
     }

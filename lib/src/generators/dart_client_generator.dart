@@ -63,6 +63,16 @@ Future<Set<String>> generateDartClientClasses(
     ));
   });
 
+  parser.errors.forEach((k, def) {
+    futures.add(writeToFile(
+      data: serializer.serializeErrorDefinition(def),
+      fileName: serializer.getFileNameFor(def.type),
+      subdir: 'errors',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+  });
+
   final flutterConfig = dartConfig.flutter;
   if (flutterConfig != null && flutterConfig.generateTypes) {
     
@@ -241,6 +251,17 @@ Future<Set<String>> generateDartClientClasses(
     imports: [],
     destinationDir: destinationDir,
   ));
+
+  if (parser.errors.isNotEmpty) {
+    clientFiles.add(dartDomainErrorFile);
+    futures.add(writeToFile(
+      data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainErrorFile()),
+      fileName: dartDomainErrorFile,
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+    ));
+  }
 
   // GraphLinkLock — separate public file
   const lockFileName = 'graph_link_lock.dart';

@@ -99,6 +99,28 @@ Future<Set<String>> generateJavaClientClasses(
     ));
   });
 
+  parser.errors.forEach((k, def) {
+    futures.add(writeToFile(
+      data: serializer.serializeErrorDefinition(def),
+      fileName: serializer.getFileNameFor(def.type),
+      subdir: 'errors',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  });
+
+  if (parser.errors.isNotEmpty) {
+    futures.add(writeToFile(
+      data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainErrorFile()),
+      fileName: 'GraphLinkDomainError.java',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   futures.add(writeToFile(
     data: serializer.serializeGlClass(clientSerializer.generateClient(hasDefaultAdapters: wsAdapter != JavaWsAdapter.none)),
     fileName: 'GraphLinkClient${clientSerializer.fileExtension}',

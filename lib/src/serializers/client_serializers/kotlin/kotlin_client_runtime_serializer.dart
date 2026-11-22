@@ -792,5 +792,7 @@ class KotlinClientRuntimeSerializer {
     );
   }
 
+  GLClassModel generateDomainErrorFile() => const GLClassModel(body: kotlinDomainError);
+
   // ── Helpers ─────────────────────────────────────────────────────────────────
 }

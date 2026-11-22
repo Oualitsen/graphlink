@@ -1052,3 +1052,15 @@ String _checkDioStatus(int? status, String body) {
   throw [GraphLinkError(message: 'HTTP $code: $body', status: code, body: body)];
 }
 ''';
+
+
+const dartDomainError = r'''
+class GraphLinkDomainError implements Exception {
+  final String message;
+
+  const GraphLinkDomainError([this.message = '']);
+
+  @override
+  String toString() => message.isEmpty ? runtimeType.toString() : '$runtimeType: $message';
+}
+''';

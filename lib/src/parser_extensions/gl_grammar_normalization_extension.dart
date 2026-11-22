@@ -43,6 +43,7 @@ extension GLGrammarNormalizationExtension on GLParser {
     // whatever this pass computes for them is discarded regardless.
     final typeContainers = <CodeNameMixin>[
       ...types.values,
+      ...errorTypeDefinitions,
       ...inputs.values,
       ...interfaces.values.where((i) => !i.fromUnion),
       ...unions.values,
@@ -50,6 +51,7 @@ extension GLGrammarNormalizationExtension on GLParser {
     ];
     final takenTypeNames = <String>{
       ...types.keys,
+      ...errors.keys,
       ...inputs.keys,
       ...interfaces.keys,
       ...unions.keys,
@@ -74,7 +76,7 @@ extension GLGrammarNormalizationExtension on GLParser {
     }
 
     // ── Field identifiers ──────────────────────────────────────────────────
-    for (final t in types.values) {
+    for (final t in [...types.values, ...errorTypeDefinitions]) {
       t.applyFieldNaming(convention);
     }
     for (final i in inputs.values) {
@@ -141,6 +143,7 @@ extension GLGrammarNormalizationExtension on GLParser {
     // sanitized code name.
     final allContainers = <CodeNameMixin>[
       ...types.values,
+      ...errorTypeDefinitions,
       ...inputs.values,
       ...interfaces.values.where((i) => !i.fromUnion),
       ...unions.values,
@@ -151,6 +154,7 @@ extension GLGrammarNormalizationExtension on GLParser {
     // assigned by the normalization pass.
     final taken = <String>{
       ...types.keys,
+      ...errors.keys,
       ...inputs.keys,
       ...interfaces.keys,
       ...unions.keys,

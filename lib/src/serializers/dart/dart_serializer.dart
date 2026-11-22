@@ -7,6 +7,7 @@ import 'package:graphlink/src/model/gl_rest_discriminator.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
 import 'package:graphlink/src/model/gl_interface_definition.dart';
@@ -18,6 +19,9 @@ import 'package:graphlink/src/serializers/annotation_serializer.dart';
 import 'package:graphlink/src/serializers/gl_serializer.dart';
 import 'package:graphlink/src/serializers/json_expressions.dart';
 import 'package:graphlink/src/serializers/dart/dart_mapping_serializer.dart';
+
+const dartDomainErrorBase = 'GraphLinkDomainError';
+const dartDomainErrorFile = 'graph_link_domain_error.dart';
 
 class DartSerializer extends GLSerializer with JsonExpressions {
   @override
@@ -385,6 +389,37 @@ class DartSerializer extends GLSerializer with JsonExpressions {
       ],
     ));
     return buffer.toString();
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final codeName = def.type.codeName;
+    final fields = def.type.getSerializableFields(grammar.mode);
+    final source = codeGenUtils.createClass(
+      className: codeName,
+      extendsClassName: dartDomainErrorBase,
+      statements: [
+        ...fields.map((e) => serializeField(e, true, true)),
+        codeGenUtils.createMethod(
+          methodName: codeName,
+          namedArguments: false,
+          isConst: true,
+          arguments: ['{${[...fields.map(toConstructorDeclaration), "String message = ''"].join(', ')}}'],
+          initializers: ['super(message)'],
+        ),
+        codeGenUtils.createMethod(
+          returnType: 'static $codeName',
+          methodName: 'fromJson',
+          namedArguments: false,
+          arguments: ['Map<String, dynamic> json', "{String message = ''}"],
+          statements: [
+            'return $codeName(',
+            ...[...fields.map(fieldFromJson), 'message: message'].map((e) => '$e,'.ident()),
+            ');',
+          ],
+        ),
+      ],
+    );
+    return serializeWithImport(def.type, '${serializeImport('$importPrefix/client/$dartDomainErrorFile')}\n\n$source');
   }
 
   String generateEqualsAndHashCode(GLTypeDefinition def) {

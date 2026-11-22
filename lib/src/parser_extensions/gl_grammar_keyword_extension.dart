@@ -35,7 +35,7 @@ extension GLGrammarKeywordExtension on GLParser {
     // and generated method names). TypeScript leaves this empty because reserved
     // words are legal as object-property names and method names.
     if (reservedWords.isNotEmpty) {
-      for (final t in types.values) {
+      for (final t in [...types.values, ...errorTypeDefinitions]) {
         t.assignCodeNames(reservedWords);
       }
       for (final i in inputs.values) {
@@ -155,6 +155,7 @@ extension GLGrammarKeywordExtension on GLParser {
 
     final allContainers = <CodeNameMixin>[
       ...types.values,
+      ...errorTypeDefinitions,
       ...inputs.values,
       ...interfaces.values.where((i) => !i.fromUnion),
       ...unions.values,
@@ -165,6 +166,7 @@ extension GLGrammarKeywordExtension on GLParser {
 
     final taken = <String>{
       ...types.keys,
+      ...errors.keys,
       ...inputs.keys,
       ...interfaces.keys,
       ...unions.keys,

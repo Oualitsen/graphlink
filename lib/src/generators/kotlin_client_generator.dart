@@ -86,6 +86,28 @@ Future<Set<String>> generateKotlinClientClasses(
     ));
   });
 
+  parser.errors.forEach((k, def) {
+    futures.add(writeToFile(
+      data: serializer.serializeErrorDefinition(def),
+      fileName: serializer.getFileNameFor(def.type),
+      subdir: 'errors',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  });
+
+  if (parser.errors.isNotEmpty) {
+    futures.add(writeToFile(
+      data: serializer.serializeGlClass(clientSerializer.runtime.generateDomainErrorFile()),
+      fileName: 'GraphLinkDomainError.kt',
+      subdir: 'client',
+      imports: [],
+      destinationDir: destinationDir,
+      packageName: packageName,
+    ));
+  }
+
   // ── Core client files ──────────────────────────────────────────────────────
 
   futures.add(writeToFile(

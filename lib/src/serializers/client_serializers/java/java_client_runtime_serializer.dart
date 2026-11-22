@@ -895,6 +895,22 @@ class JavaClientRuntimeSerializer {
       body: subscriptionHandlerClass,
     );
   }
+  GLClassModel generateDomainErrorFile() {
+    final body = codeGenUtils.createClass(
+      className: 'GraphLinkDomainError',
+      superClass: 'RuntimeException',
+      statements: [
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: 'GraphLinkDomainError',
+          arguments: ['String message'],
+          statements: ['super(message == null ? "" : message);'],
+        ),
+      ],
+    );
+    return GLClassModel(body: body);
+  }
+
   GLClassModel generateGraphLinkExceptionFile(String importPrefix) {
     final errorToken = _grammar.getTokenByKey('GraphLinkError');
 

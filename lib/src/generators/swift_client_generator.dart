@@ -76,6 +76,16 @@ Future<Set<String>> generateSwiftClientClasses(
     ));
   });
 
+  parser.errors.forEach((k, def) {
+    futures.add(writeToFile(
+      data: serializer.serializeErrorDefinition(def),
+      fileName: serializer.getFileNameFor(def.type),
+      subdir: 'Errors',
+      imports: const [],
+      destinationDir: destinationDir,
+    ));
+  });
+
   // ── Client runtime infrastructure ──────────────────────────────────────────
 
   // GraphLinkPayload and GraphLinkError are NOT written here — they're
@@ -98,6 +108,10 @@ Future<Set<String>> generateSwiftClientClasses(
     'GraphLinkResolverBase.swift': clientSerializer.generateResolverBaseFile(),
     'GraphLinkClient.swift': clientSerializer.generateClient(),
   };
+
+  if (parser.errors.isNotEmpty) {
+    clientFiles['GraphLinkDomainError.swift'] = clientSerializer.generateDomainErrorFile();
+  }
 
   if (parser.persistedQueries) {
     clientFiles['GraphLinkSha256.swift'] = clientSerializer.generateSha256File();

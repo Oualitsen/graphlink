@@ -2145,3 +2145,15 @@ func (a *GraphLinkHttpAdapter) MultipartCall(ctx context.Context, parts map[stri
     if (hasUploads) multipart,
   ].join('\n');
 }
+
+
+const goDomainError = r'''
+// GraphLinkDomainError is embedded by every error declared with @glError.
+type GraphLinkDomainError struct {
+	Message string
+}
+
+func (e *GraphLinkDomainError) Error() string {
+	return e.Message
+}
+''';

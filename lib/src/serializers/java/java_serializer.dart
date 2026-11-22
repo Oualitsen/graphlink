@@ -10,6 +10,7 @@ import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_argument.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_enum_definition.dart';
+import 'package:graphlink/src/model/gl_error.dart';
 import 'package:graphlink/src/model/gl_field.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_rest_extension.dart';
 import 'package:graphlink/src/model/gl_input_definition.dart';
@@ -59,6 +60,8 @@ const Set<String> javaPrimitives = {
 String mapOf(String key, String type) {
   return '${_map}<${key}, ${type}>';
 }
+
+const javaDomainErrorBase = 'GraphLinkDomainError';
 
 class JavaSerializer extends GLSerializer with JsonExpressions {
   late final accessors = JavaAccessorSerializer(this);
@@ -677,6 +680,72 @@ class JavaSerializer extends GLSerializer with JsonExpressions {
       ...generateMappingMethods(def),
     ]));
     return buffer.toString();
+  }
+
+  String serializeErrorDefinition(GLErrorDefinition def) {
+    final type = def.type;
+    final name = type.codeName;
+    final fields = type.getSerializableFields(grammar.mode);
+    type
+      ..addImport(JavaImports.map)
+      ..addImport(JavaImports.suppressWarnings);
+    final checksNulls = typesCheckForNulls && fields.any((f) => !f.type.nullable && !isPrimitiveType(f.type));
+    if (checksNulls) type.addImport(JavaImports.objects);
+    final fieldParams = fields.map((f) => serializeArgumentField(f, isTypeField: true)).toList();
+    final fromJsonArgs = [
+      ...fields.map((f) => fromJsonExpr(f.type, 'json.get("${f.name.token}")', context: type)),
+      'message',
+    ];
+    final requiredChecks = [
+      for (final f in fields)
+        if (!f.type.nullable && f.initialValue == null)
+          codeGenUtils.ifStatement(
+            condition: 'json.get("${f.name.token}") == null',
+            ifBlockStatements: ['throw new IllegalArgumentException("$name.${f.name.token} is missing or null in the response");'],
+          ),
+    ];
+    final source = codeGenUtils.createClass(
+      className: name,
+      superClass: javaDomainErrorBase,
+      statements: [
+        ...fields.map((f) => serializeField(f, true, true)),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: name,
+          arguments: [...fieldParams, 'String message'],
+          statements: [
+            'super(message);',
+            if (checksNulls)
+              ...fields.where((f) => !f.type.nullable && !isPrimitiveType(f.type)).map((f) => 'Objects.requireNonNull(${f.codeName});'),
+            ...fields.map((f) => 'this.${f.codeName} = ${f.codeName};'),
+          ],
+        ),
+        '',
+        codeGenUtils.createMethod(
+          returnType: 'public',
+          methodName: name,
+          arguments: fieldParams,
+          statements: ['this(${[...fields.map((f) => f.codeName), '""'].join(', ')});'],
+        ),
+        '',
+        ...fields.map((f) => accessors.serializeGetter(f, type, checkForNulls: typesCheckForNulls, isTypeField: true)),
+        '',
+        '@SuppressWarnings("unchecked")',
+        codeGenUtils.createMethod(
+          returnType: 'public static $name',
+          methodName: 'fromJson',
+          arguments: ['${mapOf('String', 'Object')} json', 'String message'],
+          statements: [
+            ...requiredChecks,
+            'return new $name(',
+            fromJsonArgs.join(',\n').ident(),
+            ');',
+          ],
+        ),
+      ],
+    );
+    return serializeWithImport(type, '${serializeImport('$importPrefix.client.$javaDomainErrorBase')}\n\n$source');
   }
 
   String generateEqualsAndHashCode(GLTypeDefinition def) {
