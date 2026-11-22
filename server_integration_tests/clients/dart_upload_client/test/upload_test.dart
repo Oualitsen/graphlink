@@ -86,4 +86,51 @@ void main() {
       expect(res.uploadFileList, isFalse);
     });
   });
+
+  group('a rejected upload throws its typed error', () {
+    Future<Object> thrownBy(Future<Object?> Function() call) async {
+      try {
+        await call();
+      } catch (e) {
+        return e;
+      }
+      fail('expected an exception');
+    }
+
+    test('uploadOneFile', () async {
+      final file = GLUpload.fromBytes(utf8.encode('hello world'), filename: 'hello.txt', mimeType: 'text/plain');
+      final e = await thrownBy(() => client.mutations.uploadOneFile(userId: 'rejected', file: file));
+      expect(e, isA<UploadRejected>());
+      expect(e, isA<GraphLinkDomainError>());
+      expect((e as UploadRejected).userId, 'rejected');
+      expect(e.reason, 'quota exceeded');
+      expect(e.message, 'Upload rejected');
+    });
+
+    test('it can be caught by type', () async {
+      final file = GLUpload.fromBytes(utf8.encode('hello world'), filename: 'hello.txt', mimeType: 'text/plain');
+      var caught = '';
+      try {
+        await client.mutations.uploadOneFile(userId: 'rejected', file: file);
+      } on UploadRejected catch (e) {
+        caught = e.reason;
+      }
+      expect(caught, 'quota exceeded');
+    });
+
+    test('uploadFileList', () async {
+      final files = [
+        GLUpload.fromBytes(utf8.encode('file one'), filename: 'one.txt', mimeType: 'text/plain'),
+        GLUpload.fromBytes(utf8.encode('file two'), filename: 'two.txt', mimeType: 'text/plain'),
+      ];
+      final e = await thrownBy(() => client.mutations.uploadFileList(userId: 'rejected', files: files));
+      expect(e, isA<UploadRejected>());
+      expect((e as UploadRejected).userId, 'rejected');
+    });
+
+    test('another user is not rejected', () async {
+      final file = GLUpload.fromBytes(utf8.encode('hello world'), filename: 'hello.txt', mimeType: 'text/plain');
+      expect((await client.mutations.uploadOneFile(userId: 'user-2', file: file)).uploadOneFile, isTrue);
+    });
+  });
 }
