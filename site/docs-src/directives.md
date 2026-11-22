@@ -53,6 +53,7 @@ directive @glServerLenient on OBJECT
 directive @glServiceName(name: String!) on ENUM | FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT
 directive @glSkipOnClient on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION
 directive @glSkipOnServer(batch: Boolean, mapTo: String) on ENUM | ENUM_VALUE | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | INPUT_OBJECT | INTERFACE | OBJECT | SCALAR | UNION
+directive @glThrows(errors: [String!]!) on FIELD_DEFINITION
 directive @glTypeName(name: String!) on FIELD | INLINE_FRAGMENT | FRAGMENT_DEFINITION | INPUT_OBJECT | QUERY | MUTATION | SUBSCRIPTION
 directive @glUpload on SCALAR
 directive @glValidate on FIELD_DEFINITION

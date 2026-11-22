@@ -126,6 +126,8 @@ const glError = "@glError";
 const glErrorFieldArg = "field";
 const glErrorValueArg = "value";
 const glErrorStatusArg = "status";
+const glThrows = "@glThrows";
+const glThrowsErrorsArg = "errors";
 
 /// REST operations — see rest-client-specs.md.
 const glRest = "@glRest";

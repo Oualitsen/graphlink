@@ -225,6 +225,7 @@ class GLParser {
   final Map<String, GLInputDefinition> inputs = {};
   final Map<String, GLTypeDefinition> types = {};
   final Map<String, GLErrorDefinition> errors = {};
+  final Map<GLOperationKey, List<GLErrorDefinition>> thrownErrors = {};
   Iterable<GLTypeDefinition> get errorTypeDefinitions => errors.values.map((e) => e.type);
   final Map<String, GLInterfaceDefinition> interfaces = {};
   final Map<String, GLRepository> repositories = {};
@@ -429,6 +430,7 @@ class GLParser {
     setDirectivesDefaultValues();
     proparageAnnotationsOnFields();
     mergeTokens();
+    resolveThrownErrors();
     validateNonEmptyFieldLists();
     updateInterfaceReferences();
     checkInterfaceInheritance();

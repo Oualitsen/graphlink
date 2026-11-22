@@ -1,7 +1,10 @@
 import 'package:graphlink/src/exceptions/parse_exception.dart';
+import 'package:graphlink/src/extensions.dart';
 import 'package:graphlink/src/model/built_in_dirctive_definitions.dart';
 import 'package:graphlink/src/model/gl_directive.dart';
 import 'package:graphlink/src/model/gl_error.dart';
+import 'package:graphlink/src/model/gl_field.dart';
+import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/gl_type_definition.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
 import 'package:graphlink/src/model/token_info.dart';
@@ -84,6 +87,58 @@ extension GLGrammarErrorExtension on GLParser {
       }
     }
   }
+
+  void resolveThrownErrors() {
+    final roots = {
+      schema.getByQueryType(GLQueryType.query): GLQueryType.query,
+      schema.getByQueryType(GLQueryType.mutation): GLQueryType.mutation,
+      schema.getByQueryType(GLQueryType.subscription): GLQueryType.subscription,
+    };
+    for (final owner in [...types.values, ...interfaces.values]) {
+      for (final field in owner.fields) {
+        final directive = field.getDirectiveByName(glThrows);
+        if (directive == null) continue;
+        final kind = owner is GLTypeDefinition ? roots[owner.token] : null;
+        if (kind == null) {
+          throw ParseException("$glThrows is only allowed on a root field of Query or Mutation, not on ${owner.token}.${field.name.token}",
+              info: directive.tokenInfo);
+        }
+        if (kind == GLQueryType.subscription) {
+          throw ParseException("$glThrows cannot be applied to subscription field '${field.name.token}'", info: directive.tokenInfo);
+        }
+        thrownErrors[GLOperationKey(field.name.token, kind)] = _thrownBy(field, directive);
+      }
+    }
+  }
+
+  List<GLErrorDefinition> _thrownBy(GLField field, GLDirectiveValue directive) {
+    final names = ((directive.getArgValue(glThrowsErrorsArg) as List?) ?? const []).map((e) => e.toString().removeQuotes()).toList();
+    final at = field.name.token;
+    if (names.isEmpty) {
+      throw ParseException("$glThrows on '$at' must list at least one error", info: directive.tokenInfo);
+    }
+    final result = <GLErrorDefinition>[];
+    for (final name in names) {
+      final error = errors[name];
+      if (error == null) {
+        throw ParseException("$glThrows on '$at' names '$name', which is not an $glError type", info: directive.tokenInfo);
+      }
+      if (result.contains(error)) {
+        throw ParseException("$glThrows on '$at' lists '$name' more than once", info: directive.tokenInfo);
+      }
+      final clash = result.where((other) => _sameMatch(other, error)).firstOrNull;
+      if (clash != null) {
+        throw ParseException(
+            "$glThrows on '$at' is ambiguous: '${clash.name}' and '$name' both match ${error.field.join('.')} == '${error.value}'",
+            info: directive.tokenInfo);
+      }
+      result.add(error);
+    }
+    return result;
+  }
+
+  bool _sameMatch(GLErrorDefinition a, GLErrorDefinition b) =>
+      a.field.join('.') == b.field.join('.') && a.value == b.value && a.status == b.status;
 
   GLErrorDefinition _definitionOf(GLTypeDefinition type) {
     final directive = type.getDirectiveByName(glError)!;
