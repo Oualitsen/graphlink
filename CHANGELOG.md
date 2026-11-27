@@ -774,3 +774,10 @@
 - **Flutter: guards in generated forms use braces** — the `if` guards of the error summary and change handlers (`mounted`, `state == null`, `errors.isEmpty`, `!_asyncNotifying`, ...) are generated as blocks instead of one-line `if` statements.
 - **Flutter: the time picker follows the date pattern's hour format** — a date-time field with a 24-hour pattern (`yyyy-MM-dd HH:mm`) showed "Enter a valid time" when the user typed an hour above 12 in the picker's keyboard entry, whenever the app's locale or `MediaQuery` was 12-hour (the default en_US, for example). Typing `14:30` worked or failed depending on the browser's language. The generated pickers now set the hour format from the pattern: `H` or `k` selects 24-hour, `h` or `K` selects 12-hour (quoted text in the pattern is ignored), and a pattern with none of them keeps the platform setting. This applies to the Material time picker and to the Cupertino date picker (`use24hFormat`), in dialog and inline mode.
 - **Spring: a repository on a renamed type uses the generated name** — `@glRepository(glType: "Supplier")` on a type whose name is reserved (`Supplier` becomes `Supplier_` in Java, `Result` becomes `Result_` in Kotlin) generated `extends JpaRepository<Supplier, String>` next to the `Supplier_` import. The type argument now uses the generated name; the schema keeps the original name in `glType`.
+
+## 6.1.1 - 2026-11-27
+
+### Fixes
+
+- **Flutter: `unknownValue__` was offered as a choice in generated forms** — with `strictEnums: false` (the default) every enum has a fallback member, `unknownValue__`, for wire values the client does not know. The input forms listed `Enum.values`, which includes it, so the dropdown, choice chips, radio group, checkbox list and filter chips all showed `unknownValue__` as something the user could pick. The forms now list only the members the schema declares, in the schema's order. With `strictEnums: true` the output keeps the same choices.
+- **Note on `strictEnums: false`** — the fallback adds `unknownValue__` to every generated Dart enum, so an exhaustive `switch` over a generated enum in your own code needs a case for it (or a default).

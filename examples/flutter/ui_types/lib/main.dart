@@ -122,7 +122,7 @@ class _DisplayTabState extends State<_DisplayTab> {
         brand: 'Toyota',
         model: 'Camry',
         year: 2023,
-        fuelType: FuelType.HYBRID,
+        fuelType: FuelType.hybrid,
         available: true,
         mileage: 12500.5,
         notes: 'Great condition',
@@ -439,7 +439,7 @@ class _HiddenFieldsTabState extends State<_HiddenFieldsTab> {
             ),
             hiddenDefaults: const AddVehicleInputDefaults(
               available: true,
-              fuelType: FuelType.ELECTRIC,
+              fuelType: FuelType.electric,
             ),
             // custom labels
             labels: const AddVehicleInputLabels(
@@ -1319,7 +1319,7 @@ class _TypeWidgetsTabState extends State<_TypeWidgetsTab> {
           brand: 'Toyota',
           model: 'Camry',
           year: 2023,
-          fuelType: FuelType.HYBRID,
+          fuelType: FuelType.hybrid,
           available: true,
           mileage: 12500.5,
           notes: 'Great condition',
@@ -1329,7 +1329,7 @@ class _TypeWidgetsTabState extends State<_TypeWidgetsTab> {
           brand: 'Tesla',
           model: 'Model 3',
           year: 2024,
-          fuelType: FuelType.ELECTRIC,
+          fuelType: FuelType.electric,
           available: false,
         ),
       );
@@ -1548,7 +1548,7 @@ class _CompositionTabState extends State<_CompositionTab> {
             strings: _stringsFor(_locale),
             requiredIndicator: RequiredIndicator.asterisk,
             values: AddressInputValues(
-              country: (key) => SimpleFieldForm<String>(
+              country: (key, label) => SimpleFieldForm<String>(
                 key: key,
                 reader: () => _country ??
                     (throw const InputReadException('Country is required')),
@@ -2010,7 +2010,7 @@ class _ExpandableTabState extends State<_ExpandableTab> {
             brand: 'Toyota',
             model: 'Land Cruiser',
             year: 2022,
-            fuelType: FuelType.GASOLINE,
+            fuelType: FuelType.gasoline,
             available: true,
             mileage: 34000,
           ),
@@ -2021,7 +2021,7 @@ class _ExpandableTabState extends State<_ExpandableTab> {
             brand: 'Renault',
             model: 'Symbol',
             year: 2020,
-            fuelType: FuelType.GASOLINE,
+            fuelType: FuelType.gasoline,
             available: true,
             mileage: 78000,
           ),
@@ -2030,7 +2030,7 @@ class _ExpandableTabState extends State<_ExpandableTab> {
             brand: 'Hyundai',
             model: 'Tucson',
             year: 2023,
-            fuelType: FuelType.HYBRID,
+            fuelType: FuelType.hybrid,
             available: false,
             mileage: 12000,
           ),
@@ -2039,7 +2039,7 @@ class _ExpandableTabState extends State<_ExpandableTab> {
             brand: 'Kia',
             model: 'Sportage',
             year: 2021,
-            fuelType: FuelType.DIESEL,
+            fuelType: FuelType.diesel,
             available: true,
           ),
         ],
@@ -2161,14 +2161,14 @@ class _DynamicFormsTabState extends State<_DynamicFormsTab> {
                   ? FieldVisibility.enabled
                   : FieldVisibility.hidden,
               // electric cars don't have a conventional mileage figure — disable, don't hide
-              mileage: (ctx) => ctx.fuelType == FuelType.ELECTRIC
+              mileage: (ctx) => ctx.fuelType == FuelType.electric
                   ? FieldVisibility.disabled
                   : FieldVisibility.enabled,
             ),
             validations: AddVehicleInputValidations(
               // electric vehicles weren't available before 2010
               year: (v, ctx) {
-                if (ctx.fuelType == FuelType.ELECTRIC) {
+                if (ctx.fuelType == FuelType.electric) {
                   final y = int.tryParse(v ?? '');
                   if (y != null && y < 2010) return 'Electric vehicles were not available before 2010';
                 }
@@ -2225,7 +2225,7 @@ class _FieldInfoTabState extends State<_FieldInfoTab> {
         brand: 'Toyota',
         model: 'Camry',
         year: 2023,
-        fuelType: FuelType.HYBRID,
+        fuelType: FuelType.hybrid,
         available: true,
         mileage: 12500.5,
         notes: 'Great condition',
@@ -2738,10 +2738,11 @@ class _FieldIconsTabState extends State<_FieldIconsTab> {
       );
 
   IconData _fuelTypeIcon(FuelType ft) => switch (ft) {
-        FuelType.ELECTRIC => Icons.electric_bolt,
-        FuelType.HYBRID => Icons.bolt,
-        FuelType.DIESEL => Icons.opacity,
-        FuelType.GASOLINE => Icons.local_gas_station,
+        FuelType.electric => Icons.electric_bolt,
+        FuelType.hybrid => Icons.bolt,
+        FuelType.diesel => Icons.opacity,
+        FuelType.gasoline => Icons.local_gas_station,
+        FuelType.unknownValue__ => Icons.help_outline,
       };
 }
 
