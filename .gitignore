@@ -96,3 +96,5 @@ server_integration_tests/**/.server.pid
 
 # Python virtualenvs
 **/.venv/
+
+.openidea/

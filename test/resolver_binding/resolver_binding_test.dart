@@ -1,6 +1,5 @@
 import 'package:graphlink/src/model/gl_queries.dart';
 import 'package:graphlink/src/model/new_parser/gl_parser.dart';
-import 'package:graphlink/src/parser_extensions/gl_grammar_annotation_extension.dart';
 import 'package:graphlink/src/parser_extensions/gl_grammar_resolver_binding_extension.dart';
 import 'package:graphlink/src/serializers/code_generation_mode.dart';
 import 'package:graphlink/src/serializers/python/python_annotation_serializer.dart';
