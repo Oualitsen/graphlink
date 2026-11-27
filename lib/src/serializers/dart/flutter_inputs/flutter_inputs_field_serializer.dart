@@ -174,7 +174,7 @@ class FlutterInputsFieldSerializer {
       dropdownValueArg('_$name'),
       _u.listArg('items', [
         "DropdownMenuItem<$enumType?>(value: null, child: _form.dropdownLabels?.$name?.unselected ?? Text(_form.strings.chooseAnOption, style: TextStyle(fontStyle: FontStyle.italic, color: Theme.of(context).hintColor)))",
-        '...$enumType.values.map((e) => DropdownMenuItem<$enumType?>(value: e, child: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)))',
+        '...${_types.enumChoices(f.type.firstType.token)}.map((e) => DropdownMenuItem<$enumType?>(value: e, child: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)))',
       ]),
       'onChanged: $enabledExpr ? (v) => setState(() => _$name = v) : null',
       'validator: ${_u.functionLiteral(['v'], validators)}',
@@ -209,7 +209,7 @@ class FlutterInputsFieldSerializer {
           'const SizedBox(height: 4)',
           _u.callExpression('Wrap', [
             'spacing: 8',
-            'children: $enumType.values.map((e) => ${_u.callExpression('ChoiceChip', [
+            'children: ${_types.enumChoices(f.type.firstType.token)}.map((e) => ${_u.callExpression('ChoiceChip', [
               'key: ValueKey(e)',
               'avatar: _form.widgets?.${name}Avatar?.call(e)',
               'label: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
@@ -244,7 +244,7 @@ class FlutterInputsFieldSerializer {
                 'borderRadius: BorderRadius.circular(4)',
               ])} : null',
               'child: ${radio.group(_u.callExpression('Column', [
-                'children: $enumType.values.map((e) => ${radio.tile([
+                'children: ${_types.enumChoices(f.type.firstType.token)}.map((e) => ${radio.tile([
                   'key: ValueKey(e)',
                   'contentPadding: EdgeInsets.zero',
                   'title: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
@@ -558,7 +558,7 @@ class FlutterInputsFieldSerializer {
         'crossAxisAlignment: CrossAxisAlignment.start',
         _u.listArg('children', [
           'label',
-          '...$enumType.values.map((e) => ${_u.callExpression('CheckboxListTile', [
+          '...${_types.enumChoices(f.type.inlineType.firstType.token)}.map((e) => ${_u.callExpression('CheckboxListTile', [
             'contentPadding: EdgeInsets.zero',
             'enabled: $enabledExpr',
             'title: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
@@ -575,7 +575,7 @@ class FlutterInputsFieldSerializer {
         'const SizedBox(height: 4)',
         _u.callExpression('Wrap', [
           'spacing: 8',
-          'children: $enumType.values.map((e) => ${_u.callExpression('FilterChip', [
+          'children: ${_types.enumChoices(f.type.inlineType.firstType.token)}.map((e) => ${_u.callExpression('FilterChip', [
             'label: _form.dropdownLabels?.$name?.call(e) ?? Text(e.name)',
             'selected: _$name.contains(e)',
             'onSelected: ${_listOnSelected(name, enabledExpr)}',

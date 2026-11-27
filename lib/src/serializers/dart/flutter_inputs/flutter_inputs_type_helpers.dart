@@ -67,6 +67,11 @@ class FlutterInputsTypeHelpers {
       _parser.interfaces[wireToken]?.codeName ??
       wireToken;
 
+  String enumChoices(String wireToken) {
+    final def = _parser.enums[wireToken]!;
+    return '[${def.values.map((v) => '${def.codeName}.${v.codeName}').join(', ')}]';
+  }
+
   String dartScalarType(GLField f) =>
       _dartSerializer.typeMap[f.type.firstType.token] ?? resolveTypeCodeName(f.type.firstType.token);
 
